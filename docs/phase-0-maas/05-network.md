@@ -28,11 +28,12 @@ ip a
 ```
 
 ```text
-enx00e04c6802b8 → 10.0.0.1/24    (cluster network — Ethernet)
-wlp0s20f3       → 192.168.1.x    (internet — WiFi)
+enx00e04c6802b8 → 10.0.0.1/24    (cluster network — USB Ethernet adapter → switch)
+enp0s31f6       → dedicated internet uplink (keeps cluster traffic isolated from home network)
+wlp0s20f3       → 192.168.1.x    (home WiFi — kept separate, not used for cluster)
 ```
 
-The controller bridges internet access (WiFi) to the isolated cluster network (Ethernet), acting as the default gateway.
+The controller uses a dedicated Ethernet uplink (`enp0s31f6`) for internet access rather than the home WiFi, keeping the cluster network fully isolated. MAAS DHCP runs only on `enx00e04c6802b8`.
 
 ---
 

@@ -90,3 +90,75 @@ Node deployment hangs indefinitely at the disk erasing phase.
 ```
 
 The node will go through commissioning again cleanly.
+
+---
+
+## Issue 6 — PXE Boot Loop (dhcpd Crashed)
+
+**Symptom:**
+Node powers on, shows Lenovo logo, attempts "PXE boot over IPv4", then resets and loops endlessly — never reaches Ubuntu.
+
+**Cause:**
+The MAAS dhcpd process crashed on the controller (stale PID file). Nodes send DHCP DISCOVER on boot but receive no response, so PXE times out and the machine resets.
+
+**Diagnose:**
+```bash
+# Run on the MAAS controller (10.0.0.1)
+ps aux | grep dhcpd | grep -v grep
+```
+If this returns no output, dhcpd is dead.
+
+**Fix:**
+```bash
+sudo snap restart maas
+```
+Wait ~30 seconds, then power-cycle the affected nodes. They will boot normally once dhcpd is responding.
+
+**Verify dhcpd is back:**
+```bash
+ps aux | grep dhcpd | grep -v grep
+# Should show two lines: one for IPv4 (-4) and one for IPv6 (-6)
+```
+
+:::warning Boot order matters
+Always power on the MAAS controller first and wait ~30 seconds before turning on the cluster nodes. Nodes PXE boot on every startup and require dhcpd to be ready. If all machines are powered on simultaneously, nodes may start before dhcpd is up and enter this loop.
+:::
+
+---
+
+## Issue 7 — Node Boots with Wrong Hostname (Auto-Renamed by MAAS)
+
+**Symptom:**
+Node boots successfully but the login screen shows a random `adjective-animal` hostname (e.g. `needed-lion`) instead of the correct name (`fast-heron`, `set-hog`, etc.).
+
+**Cause:**
+During a PXE boot loop, MAAS can accidentally trigger a re-deploy and assign the node a new auto-generated hostname. The OS gets installed with that temporary name.
+
+**Fix:**
+```bash
+# SSH in using the IP (still correct even if hostname is wrong)
+ssh ubuntu@10.0.0.7
+
+# Set the correct hostname
+sudo hostnamectl set-hostname fast-heron
+
+# Update /etc/hosts to match
+sudo sed -i 's/needed-lion/fast-heron/g' /etc/hosts
+
+# Exit and verify
+exit
+ssh ubuntu@10.0.0.7 "hostname"
+```
+
+Then update MAAS to stay in sync (run on controller):
+```bash
+maas admin machine update q6m3px hostname=fast-heron
+```
+
+Replace `q6m3px` with the correct system_id for the affected node:
+
+| Node | system_id |
+|---|---|
+| set-hog | `nbc6cx` |
+| fast-skunk | `sby3w7` |
+| fast-heron | `q6m3px` |
