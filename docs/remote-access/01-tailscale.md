@@ -169,11 +169,49 @@ Manage all your devices and routes at [login.tailscale.com/admin](https://login.
 
 ---
 
+## How Subnet Routing Works (Why 10.0.0.x Is Reachable Remotely)
+
+`10.0.0.x` is a private IP — normally unreachable from any device outside the home network. With Tailscale subnet routing enabled, this changes completely.
+
+When you ran `sudo tailscale up --advertise-routes=10.0.0.0/24` and approved the route in the admin console, Tailscale told every connected device: *"any traffic to 10.0.0.x, send it through the tunnel to the controller."*
+
+```text
+MacBook Air (any WiFi)
+    │  wants 10.0.0.2:30902
+    │
+    ▼
+Tailscale tunnel → 100.88.123.8 (MAAS controller)
+    │  knows 10.0.0.2 is on its local cluster network
+    │
+    ▼
+set-hog (10.0.0.2) → Homer pod on port 30902
+```
+
+This is why `http://10.0.0.2:30902` (Homer dashboard) opens in your browser from a MacBook on a completely different WiFi — the controller acts as a gateway into the cluster network through the encrypted tunnel.
+
+Without Tailscale, that URL would time out. With it, the entire `10.0.0.0/24` subnet is transparently accessible from any Tailscale-connected device, anywhere in the world.
+
+---
+
+## Verified Access Points (Controller Tailscale IP: 100.88.123.8)
+
+| What | URL / Command |
+|---|---|
+| MAAS UI | `http://100.88.123.8:5240/MAAS` |
+| Homer dashboard | `http://10.0.0.2:30902` |
+| SSH into controller | `ssh ktayl@100.88.123.8` |
+| SSH into node (via jump) | `ssh -J ktayl@100.88.123.8 ubuntu@10.0.0.2` |
+| Ping cluster nodes | `ping 10.0.0.2` / `10.0.0.4` / `10.0.0.7` |
+
+---
+
 ## Done When
 
 ```text
 ✔ tailscale ip -4 returns a 100.x.x.x address on the controller
-✔ ping from remote machine to Tailscale IP works
-✔ MAAS UI opens in browser from remote machine
-✔ kubectl get nodes works remotely
+✔ ping 100.88.123.8 works from remote machine (0% packet loss)
+✔ ping 10.0.0.2 works from remote machine (subnet routing confirmed)
+✔ http://100.88.123.8:5240/MAAS opens in browser from remote machine
+✔ http://10.0.0.2:30902 opens Homer dashboard from remote machine
+✔ ssh ktayl@100.88.123.8 connects from remote machine
 ```
