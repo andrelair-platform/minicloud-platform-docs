@@ -29,6 +29,23 @@ MetalLB announces the IP via ARP (Layer 2 mode) so the network switch routes tra
 
 ---
 
+## Why MetalLB Instead of k3s Built-in Load Balancer
+
+k3s ships with a built-in load balancer called **klipper-lb** (`servicelb`). It works by binding ports directly on the host node's IP — so a service on port 80 becomes reachable at `10.0.0.2:80`, tied to that specific node. If the pod moves to another node, the IP changes. It is not a stable, dedicated IP.
+
+MetalLB gives each service its **own dedicated IP** from a pool, completely independent of which node the pod runs on:
+
+```text
+klipper-lb:   nginx → 10.0.0.2:80    ← tied to set-hog's IP, breaks if pod moves to another node
+MetalLB:      nginx → 10.0.0.200:80  ← dedicated IP, works regardless of which node runs the pod
+```
+
+**Why this matters for later phases:** NGINX Ingress (Phase 6), Harbor (Phase 7), and Grafana (Phase 8) each need their own stable external IP. Without MetalLB, all services would share node IPs and conflict on ports. MetalLB is the foundation that makes Phase 6 onward work cleanly.
+
+klipper-lb must be **disabled** before installing MetalLB to avoid both competing for LoadBalancer services. This is done by adding `disable: servicelb` to `/etc/rancher/k3s/config.yaml` on the control plane.
+
+---
+
 ## Install MetalLB
 
 ```bash

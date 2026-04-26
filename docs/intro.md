@@ -43,7 +43,7 @@ Each phase builds directly on the previous one — nothing requires something th
 | **1** | Kubernetes cluster | k3s | ✅ Done |
 | **2** | kubectl local access | kubeconfig | ✅ Done |
 | **3** | Remote access from anywhere | Tailscale, Cloudflare Tunnel, Homer | ✅ Done |
-| **4** | Load balancer IPs on bare-metal | MetalLB | 🔜 |
+| **4** | Load balancer IPs on bare-metal | MetalLB | ✅ Done |
 | **5** | Persistent storage | Longhorn, NFS | 🔜 |
 | **6** | Expose apps to the network | NGINX Ingress | 🔜 |
 | **7** | Private container registry | Harbor + Trivy | 🔜 |
