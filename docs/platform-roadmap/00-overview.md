@@ -69,7 +69,8 @@ From current bare-metal infra → full private cloud platform (production-grade)
 | 0 | MAAS + 3-node provisioning | ✅ Complete |
 | 1 | Kubernetes (k3s) | ✅ Complete |
 | 2 | kubectl local access | ✅ Complete |
-| 3 | Ingress controller | 🔜 Next |
+| 3 | Remote access (Tailscale + Homer) | ✅ Complete |
+| 4 | Ingress controller | 🔜 Next |
 | 4 | Monitoring stack | 🔜 |
 | 5 | First workload | 🔜 |
 | 6 | ArgoCD (GitOps) | 🔜 |

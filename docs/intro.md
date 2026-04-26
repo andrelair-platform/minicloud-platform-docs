@@ -42,7 +42,7 @@ Each phase builds directly on the previous one — nothing requires something th
 | **0** | MAAS + 3-node provisioning | MAAS, PXE, cloud-init | ✅ Done |
 | **1** | Kubernetes cluster | k3s | ✅ Done |
 | **2** | kubectl local access | kubeconfig | ✅ Done |
-| **3** | Remote access from anywhere | Tailscale, Cloudflare Tunnel, Homer | 🔜 Next |
+| **3** | Remote access from anywhere | Tailscale, Cloudflare Tunnel, Homer | ✅ Done |
 | **4** | Load balancer IPs on bare-metal | MetalLB | 🔜 |
 | **5** | Persistent storage | Longhorn, NFS | 🔜 |
 | **6** | Expose apps to the network | NGINX Ingress | 🔜 |
