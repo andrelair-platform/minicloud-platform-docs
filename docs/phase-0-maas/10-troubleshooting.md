@@ -93,35 +93,113 @@ The node will go through commissioning again cleanly.
 
 ---
 
-## Issue 6 — PXE Boot Loop (dhcpd Crashed)
+## Issue 6 — PXE Boot Loop (dhcpd Missing After Controller Reboot)
 
 **Symptom:**
 Node powers on, shows Lenovo logo, attempts "PXE boot over IPv4", then resets and loops endlessly — never reaches Ubuntu.
 
-**Cause:**
-The MAAS dhcpd process crashed on the controller (stale PID file). Nodes send DHCP DISCOVER on boot but receive no response, so PXE times out and the machine resets.
-
 **Diagnose:**
 ```bash
 # Run on the MAAS controller (10.0.0.1)
-ps aux | grep dhcpd | grep -v grep
+pgrep -af dhcpd
 ```
-If this returns no output, dhcpd is dead.
+If this returns no output, dhcpd is not running. Nodes send DHCP DISCOVER on boot but receive no response, so PXE times out and the machine resets.
 
-**Fix:**
+**Cause:**
+This was originally diagnosed as a dhcpd "crash", but log analysis showed the real cause is a **boot-time startup race inside the MAAS snap**:
+
+1. On controller boot, `pebble` (MAAS's internal service supervisor) starts `regiond`, `apiserver`, and `rackd` in parallel.
+2. `rackd` calls `regiond`'s HTTP endpoint at `http://10.0.0.1:5240/MAAS` to fetch the DHCP config.
+3. If `regiond` isn't yet listening when `rackd` asks, `rackd` logs `"Region is not advertising RPC endpoints"`, retries a few times, and **gives up without ever telling pebble to start `dhcpd`**.
+4. From the user's perspective the MAAS UI works (regiond + http are up), but the cluster nodes can't PXE-boot.
+
+You can confirm this in the journal — look for these lines around boot time:
+```bash
+journalctl --since "<controller boot time>" | grep -E "(rackd.*Region|dhcpd)"
+```
+A failed boot shows `Region not available: Connection refused` and **no `dhcpd` start lines**. A successful boot shows `Service "dhcpd" starting`.
+
+**Manual fix (still useful for ad-hoc situations):**
 ```bash
 sudo snap restart maas
 ```
-Wait ~30 seconds, then power-cycle the affected nodes. They will boot normally once dhcpd is responding.
+Wait ~30 seconds, then power-cycle the affected nodes. By the time `rackd` asks `regiond` for RPC info on a clean restart, `regiond` is already listening, so `dhcpd` starts cleanly.
 
 **Verify dhcpd is back:**
 ```bash
-ps aux | grep dhcpd | grep -v grep
-# Should show two lines: one for IPv4 (-4) and one for IPv6 (-6)
+pgrep -af dhcpd
+# Should show two lines: one with `-f -4` (IPv4) and one with `-f -6` (IPv6)
 ```
 
-:::warning Boot order matters
-Always power on the MAAS controller first and wait ~30 seconds before turning on the cluster nodes. Nodes PXE boot on every startup and require dhcpd to be ready. If all machines are powered on simultaneously, nodes may start before dhcpd is up and enter this loop.
+### Permanent fix — boot reconciler
+
+A small systemd timer fires 120 s after every boot, checks whether `dhcpd` is running, and runs `snap restart maas` automatically if it isn't. This makes the cluster self-healing on cold boot — no manual intervention needed.
+
+**Three files:**
+
+`/usr/local/sbin/maas-dhcpd-reconciler`
+```bash
+#!/bin/bash
+# Restart the MAAS snap once if dhcpd didn't come up at boot.
+# Triggered by maas-dhcpd-reconciler.timer ~120s after boot.
+
+set -euo pipefail
+LOG_TAG="maas-dhcpd-reconciler"
+
+if pgrep -f '/snap/maas/.*/usr/sbin/dhcpd -f -4' >/dev/null; then
+    logger -t "$LOG_TAG" "dhcpd is running; nothing to do"
+    exit 0
+fi
+
+logger -t "$LOG_TAG" "dhcpd not running 120s after boot; restarting MAAS snap"
+/usr/bin/snap restart maas
+logger -t "$LOG_TAG" "MAAS snap restart complete"
+```
+
+`/etc/systemd/system/maas-dhcpd-reconciler.service`
+```ini
+[Unit]
+Description=Restart MAAS snap if dhcpd did not start at boot
+After=snap.maas.pebble.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/maas-dhcpd-reconciler
+StandardOutput=journal
+StandardError=journal
+```
+
+`/etc/systemd/system/maas-dhcpd-reconciler.timer`
+```ini
+[Unit]
+Description=Reconcile MAAS dhcpd 120s after boot
+
+[Timer]
+OnBootSec=120s
+Unit=maas-dhcpd-reconciler.service
+
+[Install]
+WantedBy=timers.target
+```
+
+**Install:**
+```bash
+sudo chmod +x /usr/local/sbin/maas-dhcpd-reconciler
+sudo systemctl daemon-reload
+sudo systemctl enable --now maas-dhcpd-reconciler.timer
+```
+
+**Verify it's enabled:**
+```bash
+systemctl list-timers --all | grep maas-dhcpd-reconciler
+journalctl -t maas-dhcpd-reconciler -n 20
+```
+
+After installation, every boot logs either `"dhcpd is running; nothing to do"` (happy path) or `"dhcpd not running 120s after boot; restarting MAAS snap"` (race hit, auto-recovered).
+
+:::tip Boot order still recommended
+The reconciler removes the *requirement* to power on the controller before the cluster nodes, but it still adds ~2 minutes of recovery time on a bad boot. Powering on the MAAS controller first and waiting ~30 seconds is still the cleanest sequence.
 :::
 
 ---
