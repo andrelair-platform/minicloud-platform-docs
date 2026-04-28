@@ -71,9 +71,10 @@ From current bare-metal infra → full private cloud platform (production-grade)
 | 2 | kubectl local access | ✅ Complete |
 | 3 | Remote access (Tailscale + Homer) | ✅ Complete |
 | 4 | MetalLB load balancer | ✅ Complete |
-| 5 | Ingress controller | 🔜 Next |
-| 4 | Monitoring stack | 🔜 |
-| 5 | First workload | 🔜 |
+| 5 | Persistent storage (Longhorn + NFS) | ✅ Complete |
+| 6 | Ingress controller | 🔜 Next |
+| 7 | Monitoring stack | 🔜 |
+| 8 | First workload | 🔜 |
 | 6 | ArgoCD (GitOps) | 🔜 |
 | 7 | CI/CD platform | 🔜 |
 | 8 | Container strategy | 🔜 |

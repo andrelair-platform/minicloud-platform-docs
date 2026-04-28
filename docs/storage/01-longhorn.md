@@ -144,3 +144,42 @@ kubectl create secret generic longhorn-backup-secret \
 ✔ PVC created and bound
 ✔ Longhorn set as default StorageClass
 ```
+
+---
+
+## Result on this cluster
+
+Installed and verified on 2026-04-28:
+
+- **Version:** Longhorn v1.6.0 (matches the manifest above)
+- **Pods Running in `longhorn-system`:** 27 (3× longhorn-manager, 3× engine-image, 3× longhorn-csi-plugin, 3× csi-attacher, 3× csi-provisioner, 3× csi-resizer, 3× csi-snapshotter, 3× instance-manager, 2× longhorn-ui, 1× longhorn-driver-deployer)
+- **Nodes registered:** all 3 (`set-hog`, `fast-skunk`, `fast-heron`) — Ready, Schedulable
+- **Default StorageClass:** `longhorn` (k3s's `local-path` was demoted via `is-default-class: "false"` to avoid the "two defaults" warning)
+
+### Persistence test passed
+
+A 1 GiB PVC + busybox pod that wrote a marker file. After deleting and recreating the pod, the marker survived intact:
+
+```text
+hello-from-longhorn-test-pod-at-2026-04-28T18:02:04+00:00
+   ↓ kubectl delete pod ... && kubectl apply ...
+   ↓ pod rescheduled, PVC re-attached
+hello-from-longhorn-test-pod-at-2026-04-28T18:02:04+00:00   ← original content read back
+```
+
+The volume showed **3 replicas, one per node**, all `running` — verified via:
+
+```bash
+kubectl get replicas.longhorn.io -n longhorn-system
+```
+
+### iSCSI is required on every node
+
+`open-iscsi` must be installed and `iscsid` enabled on **every** node (not just where Longhorn pods land). Longhorn exposes each volume as an iSCSI target; the kubelet on the consuming node mounts it as if it were a SAN. If iscsid is missing on a node, pods using Longhorn volumes will fail to attach with cryptic errors.
+
+```bash
+sudo apt install -y open-iscsi nfs-common
+sudo systemctl enable --now iscsid
+```
+
+The `nfs-common` package is installed at the same time because Phase 5 also adds NFS — and Longhorn's optional ReadWriteMany support uses NFS internally if you ever need it.
