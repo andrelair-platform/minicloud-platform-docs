@@ -78,7 +78,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Phase 6 — Ingress Controller',
       collapsed: true,
-      items: ['platform-roadmap/phase-3-ingress'],
+      items: ['platform-roadmap/phase-6-ingress'],
     },
 
     // ── Phase 7 ─────────────────────────────────────────────────────
