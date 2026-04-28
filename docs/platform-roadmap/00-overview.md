@@ -73,7 +73,8 @@ From current bare-metal infra → full private cloud platform (production-grade)
 | 4 | MetalLB load balancer | ✅ Complete |
 | 5 | Persistent storage (Longhorn + NFS) | ✅ Complete |
 | 6 | Ingress controller (F5 NGINX) | ✅ Complete |
-| 7 | Monitoring stack | 🔜 Next |
+| 7 | Harbor + Trivy (private registry) | ✅ Complete |
+| 8 | Monitoring stack | 🔜 Next |
 | 8 | First workload | 🔜 |
 | 6 | ArgoCD (GitOps) | 🔜 |
 | 7 | CI/CD platform | 🔜 |

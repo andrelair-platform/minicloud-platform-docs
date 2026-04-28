@@ -46,7 +46,7 @@ Each phase builds directly on the previous one — nothing requires something th
 | **4** | Load balancer IPs on bare-metal | MetalLB | ✅ Done |
 | **5** | Persistent storage | Longhorn, NFS | ✅ Done |
 | **6** | Expose apps to the network | F5 NGINX Ingress | ✅ Done |
-| **7** | Private container registry | Harbor + Trivy | 🔜 |
+| **7** | Private container registry | Harbor + Trivy | ✅ Done |
 | **8** | Cluster monitoring | Prometheus, Grafana | 🔜 |
 | **9** | First real workload | kubectl, containerd | 🔜 |
 | **10** | Infrastructure automation | Ansible | 🔜 |
