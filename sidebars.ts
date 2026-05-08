@@ -132,7 +132,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Phase 12 — GitOps (ArgoCD)',
       collapsed: true,
-      items: ['platform-roadmap/phase-6-gitops'],
+      items: ['platform-roadmap/phase-12-gitops'],
     },
 
     // ── Phase 13 ────────────────────────────────────────────────────

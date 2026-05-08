@@ -51,7 +51,7 @@ Each phase builds directly on the previous one — nothing requires something th
 | **9** | First real workload | podinfo, HPA, ServiceMonitor | ✅ Done |
 | **10** | Infrastructure automation | Ansible | ✅ Done |
 | **11** | Infrastructure as Code | OpenTofu (MAAS) — Crossplane deferred | ✅ Done |
-| **12** | GitOps deployment | ArgoCD | 🔜 |
+| **12** | GitOps deployment | ArgoCD (App-of-Apps) | ✅ Done |
 | **13** | CI/CD pipelines | GitLab / Gitea | 🔜 |
 | **14** | Backup & disaster recovery | Velero, etcd snapshots | 🔜 |
 | **15** | Security hardening | Vault, cert-manager, RBAC | 🔜 |
