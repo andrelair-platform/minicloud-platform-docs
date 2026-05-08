@@ -79,7 +79,8 @@ From current bare-metal infra → full private cloud platform (production-grade)
 | 10 | Ansible (post-MAAS bootstrap + Day-2 ops) | ✅ Complete |
 | 11 | OpenTofu (IaC, MAAS provider) — Crossplane deferred | ✅ Complete |
 | 12 | ArgoCD (GitOps, App-of-Apps) — Homer + whoami managed | ✅ Complete |
-| 13 | CI/CD platform | 🔜 Next |
+| 13 | CI/CD pipeline (GitHub Actions + ghcr.io + ArgoCD image promotion) — GitLab/Gitea deferred | ✅ Complete |
+| 14 | Velero + etcd snapshots (backup/DR) | 🔜 Next |
 | 12 | Container strategy | 🔜 |
 | 13 | Ansible automation | 🔜 |
 | 14 | Security hardening | 🔜 |

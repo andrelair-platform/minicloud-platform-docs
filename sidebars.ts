@@ -141,7 +141,7 @@ const sidebars: SidebarsConfig = {
       label: 'Phase 13 — CI/CD',
       collapsed: true,
       items: [
-        'platform-roadmap/phase-7-cicd',
+        'platform-roadmap/phase-13-cicd',
         'platform-roadmap/phase-8-containers',
       ],
     },
