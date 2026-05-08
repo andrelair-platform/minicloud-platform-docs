@@ -53,7 +53,7 @@ Each phase builds directly on the previous one — nothing requires something th
 | **11** | Infrastructure as Code | OpenTofu (MAAS) — Crossplane deferred | ✅ Done |
 | **12** | GitOps deployment | ArgoCD (App-of-Apps) | ✅ Done |
 | **13** | CI/CD pipelines | GitHub Actions + ghcr.io + ArgoCD image promotion | ✅ Done |
-| **14** | Backup & disaster recovery | Velero, etcd snapshots | 🔜 |
+| **14** | Backup & disaster recovery | Velero + MinIO on controller + hourly k3s SQLite pull | ✅ Done |
 | **15** | Security hardening | Vault, cert-manager, RBAC | 🔜 |
 | **16** | Automation & workflows | n8n, Temporal, Apache Airflow | 🔜 |
 | **17** | Event-driven & autoscaling | KEDA, NATS | 🔜 |
