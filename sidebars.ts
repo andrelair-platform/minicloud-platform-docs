@@ -243,7 +243,7 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: [
         'developer-platform/backstage',
-        'platform-roadmap/phase-9-ansible',
+        'platform-roadmap/phase-10-ansible',
       ],
     },
 

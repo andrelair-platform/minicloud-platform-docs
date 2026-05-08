@@ -49,7 +49,7 @@ Each phase builds directly on the previous one — nothing requires something th
 | **7** | Private container registry | Harbor + Trivy | ✅ Done |
 | **8** | Cluster monitoring | Prometheus, Grafana | ✅ Done |
 | **9** | First real workload | podinfo, HPA, ServiceMonitor | ✅ Done |
-| **10** | Infrastructure automation | Ansible | 🔜 |
+| **10** | Infrastructure automation | Ansible | ✅ Done |
 | **11** | Infrastructure as Code | Terraform / OpenTofu, Crossplane | 🔜 |
 | **12** | GitOps deployment | ArgoCD | 🔜 |
 | **13** | CI/CD pipelines | GitLab / Gitea | 🔜 |
