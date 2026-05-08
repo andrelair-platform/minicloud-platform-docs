@@ -75,8 +75,9 @@ From current bare-metal infra → full private cloud platform (production-grade)
 | 6 | Ingress controller (F5 NGINX) | ✅ Complete |
 | 7 | Harbor + Trivy (private registry) | ✅ Complete |
 | 8 | Monitoring stack (Prometheus + Grafana) | ✅ Complete |
-| 9 | First workload | 🔜 Next |
-| 10 | ArgoCD (GitOps) | 🔜 |
+| 9 | First workload (podinfo) | ✅ Complete |
+| 10 | Ansible (infrastructure automation) | 🔜 Next |
+| 11 | ArgoCD (GitOps) | 🔜 |
 | 11 | CI/CD platform | 🔜 |
 | 12 | Container strategy | 🔜 |
 | 13 | Ansible automation | 🔜 |

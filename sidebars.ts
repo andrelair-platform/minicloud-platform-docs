@@ -103,7 +103,7 @@ const sidebars: SidebarsConfig = {
       label: 'Phase 9 — First Workload',
       collapsed: true,
       items: [
-        'platform-roadmap/phase-5-workload',
+        'platform-roadmap/phase-9-workload',
         'platform-roadmap/phase-8-containers',
       ],
     },
