@@ -2,7 +2,9 @@
 
 > **Complete bare-metal enterprise infrastructure** — built from scratch with MAAS, k3s, ArgoCD, GitOps, a full data layer, and an enterprise security layer.
 
-**Live site:** https://andreliar.github.io/minicloud-platform-docs/
+**Live site:** https://andrelair-platform.github.io/minicloud-platform-docs/
+
+**Part of the [andrelair-platform](https://github.com/andrelair-platform) GitHub organization** — see also: [minicloud-ansible](https://github.com/andrelair-platform/minicloud-ansible) · [minicloud-opentofu](https://github.com/andrelair-platform/minicloud-opentofu) · [minicloud-gitops](https://github.com/andrelair-platform/minicloud-gitops) · [platform-demo](https://github.com/andrelair-platform/platform-demo)
 
 ---
 
