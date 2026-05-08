@@ -1,10 +1,39 @@
 ---
 id: crossplane
-title: Phase 11 — Crossplane
+title: Phase 11 — Crossplane (Deferred)
 sidebar_position: 2
 ---
 
-# Phase 11 — Crossplane — Kubernetes-Native IaC
+# Phase 11 — Crossplane (Deferred)
+
+:::caution Status: Deferred to a later phase
+The original 22-phase plan paired **OpenTofu** and **Crossplane** in
+Phase 11. During execution we explicitly scoped Crossplane out, for two
+reasons:
+
+1. **Different paradigms.** OpenTofu manages external infrastructure from
+   *outside* Kubernetes; Crossplane manages external infrastructure
+   *as Kubernetes resources from inside the cluster*. Same problem
+   space, fundamentally different mental models. Doing both shallowly
+   in one phase is worse than doing one well.
+2. **No compelling external infrastructure to manage.** On a 3-node
+   bare-metal cluster, there are no AWS RDS instances, GCP GKE clusters,
+   or Azure subscriptions to provision. Crossplane's value lights up
+   when there's a cloud account or a self-service portal in front of it.
+   On this cluster, Phase 11 (OpenTofu against MAAS) is the right fit;
+   Crossplane lands later when there's a real use case.
+
+The most likely home for Crossplane is **Phase 18 (Backstage / developer
+portal)**, where Crossplane Compositions act as the templates a developer
+clicks "create" on. That's where it earns its weight.
+
+This page is kept as conceptual reference. The implementation has not
+been done.
+:::
+
+---
+
+## What Crossplane is
 
 Crossplane extends Kubernetes with Custom Resource Definitions (CRDs) to manage external infrastructure. Instead of running `tofu apply` from a terminal, you `kubectl apply` a YAML file — and Kubernetes continuously reconciles the desired state, just like it does for pods.
 
