@@ -90,7 +90,7 @@ const config: Config = {
             {label: 'Overview', to: '/platform-roadmap/roadmap-overview'},
             {label: 'Kubernetes (k3s)', to: '/platform-roadmap/phase-1-kubernetes'},
             {label: 'GitOps (ArgoCD)', to: '/platform-roadmap/phase-6-gitops'},
-            {label: 'Monitoring', to: '/platform-roadmap/phase-4-monitoring'},
+            {label: 'Monitoring', to: '/platform-roadmap/phase-8-monitoring'},
           ],
         },
       ],

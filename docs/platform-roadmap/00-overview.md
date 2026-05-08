@@ -74,11 +74,11 @@ From current bare-metal infra → full private cloud platform (production-grade)
 | 5 | Persistent storage (Longhorn + NFS) | ✅ Complete |
 | 6 | Ingress controller (F5 NGINX) | ✅ Complete |
 | 7 | Harbor + Trivy (private registry) | ✅ Complete |
-| 8 | Monitoring stack | 🔜 Next |
-| 8 | First workload | 🔜 |
-| 6 | ArgoCD (GitOps) | 🔜 |
-| 7 | CI/CD platform | 🔜 |
-| 8 | Container strategy | 🔜 |
-| 9 | Ansible automation | 🔜 |
-| 10 | Security hardening | 🔜 |
-| 11 | Advanced observability | 🔜 |
+| 8 | Monitoring stack (Prometheus + Grafana) | ✅ Complete |
+| 9 | First workload | 🔜 Next |
+| 10 | ArgoCD (GitOps) | 🔜 |
+| 11 | CI/CD platform | 🔜 |
+| 12 | Container strategy | 🔜 |
+| 13 | Ansible automation | 🔜 |
+| 14 | Security hardening | 🔜 |
+| 15 | Advanced observability | 🔜 |

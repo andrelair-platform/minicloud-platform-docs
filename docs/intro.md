@@ -47,7 +47,7 @@ Each phase builds directly on the previous one — nothing requires something th
 | **5** | Persistent storage | Longhorn, NFS | ✅ Done |
 | **6** | Expose apps to the network | F5 NGINX Ingress | ✅ Done |
 | **7** | Private container registry | Harbor + Trivy | ✅ Done |
-| **8** | Cluster monitoring | Prometheus, Grafana | 🔜 |
+| **8** | Cluster monitoring | Prometheus, Grafana | ✅ Done |
 | **9** | First real workload | kubectl, containerd | 🔜 |
 | **10** | Infrastructure automation | Ansible | 🔜 |
 | **11** | Infrastructure as Code | Terraform / OpenTofu, Crossplane | 🔜 |

@@ -94,7 +94,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Phase 8 — Monitoring',
       collapsed: true,
-      items: ['platform-roadmap/phase-4-monitoring'],
+      items: ['platform-roadmap/phase-8-monitoring'],
     },
 
     // ── Phase 9 ─────────────────────────────────────────────────────
