@@ -56,7 +56,7 @@ Each phase builds directly on the previous one — nothing requires something th
 | **14** | Backup & disaster recovery | Velero + MinIO on controller + hourly k3s SQLite pull | ✅ Done |
 | **15** | TLS / cert-manager (internal PKI) — Vault + RBAC deferred | cert-manager, self-signed root CA | ✅ Done |
 | **16** | Harbor as Sovereign Registry — 4 proxy-cache projects, mirror+fallback, supply-chain control point. Original n8n/Temporal/Airflow plan deferred. | Harbor proxy cache | ✅ Done |
-| **17** | Event-driven & autoscaling | KEDA, NATS | 🔜 |
+| **17** | Event-driven autoscaling — KEDA + NATS JetStream HA, scale-to-zero verified end-to-end | KEDA, NATS | ✅ Done |
 | **18** | Developer platform | Backstage | 🔜 |
 | **19** | AI / ML platform | Ollama, MLflow, Kubeflow | 🔜 |
 | **20** | Reliability & chaos testing | Chaos Mesh | 🔜 |
