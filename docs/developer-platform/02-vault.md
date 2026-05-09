@@ -1,10 +1,46 @@
 ---
 id: vault
-title: Phase 16 — Vault
+title: Vault (Deferred)
 sidebar_position: 2
 ---
 
 # HashiCorp Vault — Production Secrets Management
+
+:::caution Status: Deferred to a future phase
+The original 22-phase plan called for **Vault** alongside cert-manager
+(Phase 15) and Backstage (Phase 18). It's been **deliberately deferred
+twice** — once during Phase 15 (where we shipped cert-manager only) and
+again during Phase 18 (where we shipped catalog-only Backstage).
+
+Reasons (consistent across both deferrals):
+
+1. **Single-control-plane SPOF.** Vault on a single-node k3s cluster
+   without HA introduces its own SPOF. The right time to introduce
+   Vault is when there's a real workload that needs dynamic credentials
+   AND we have HA control plane.
+2. **No current workload needs it.** We have ~6 admin passwords stored
+   in `~/.*-admin` files mode 600 on the controller. Vault is meant to
+   replace static secrets with dynamic ones (e.g., per-pod database
+   credentials that auto-expire). On this homelab, we have nothing
+   that needs that yet.
+3. **Same scope-reduction pattern as everything else.** Phase 11
+   deferred Crossplane. Phase 13 deferred GitLab. Phase 15 deferred
+   Vault + RBAC. Phase 16 deferred n8n/Temporal/Airflow. Doing one
+   heavy tool well > three shallow ones.
+
+The likely future home is **alongside an external-DB-credentials need**
+(e.g., when we install a real PostgreSQL workload that other apps need
+to connect to with rotating credentials), or **alongside Keycloak SSO**
+(when secret-management for OAuth client secrets becomes the right
+shape).
+
+This page is kept as conceptual reference. The implementation has not
+been done.
+:::
+
+---
+
+## What Vault would solve
 
 Kubernetes Secrets are base64-encoded — not encrypted. Anyone with cluster access can read them. Vault is the industry-standard solution: secrets are encrypted at rest, access is audited, and credentials can be dynamically generated and automatically rotated.
 

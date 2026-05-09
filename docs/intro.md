@@ -57,7 +57,7 @@ Each phase builds directly on the previous one — nothing requires something th
 | **15** | TLS / cert-manager (internal PKI) — Vault + RBAC deferred | cert-manager, self-signed root CA | ✅ Done |
 | **16** | Harbor as Sovereign Registry — 4 proxy-cache projects, mirror+fallback, supply-chain control point. Original n8n/Temporal/Airflow plan deferred. | Harbor proxy cache | ✅ Done |
 | **17** | Event-driven autoscaling — KEDA + NATS JetStream HA, scale-to-zero verified end-to-end | KEDA, NATS | ✅ Done |
-| **18** | Developer platform | Backstage | 🔜 |
+| **18** | Backstage minimal IDP — catalog-only, off-the-shelf image, Vault/plugins/templates deferred | Backstage | ✅ Done |
 | **19** | AI / ML platform | Ollama, MLflow, Kubeflow | 🔜 |
 | **20** | Reliability & chaos testing | Chaos Mesh | 🔜 |
 | **21** | Advanced observability | Loki, Jaeger, Alertmanager | 🔜 |

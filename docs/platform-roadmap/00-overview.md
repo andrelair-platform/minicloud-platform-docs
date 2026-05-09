@@ -84,7 +84,8 @@ From current bare-metal infra → full private cloud platform (production-grade)
 | 15 | TLS / cert-manager (self-signed root CA + chained ClusterIssuer) — Vault + RBAC deferred | ✅ Complete |
 | 16 | Harbor as Sovereign Registry (4 proxy-cache projects + mirror config). Original n8n/Temporal/Airflow plan deferred. | ✅ Complete |
 | 17 | KEDA + NATS event-driven autoscaling (3-replica HA + JetStream + scale-to-zero verified) | ✅ Complete |
-| 18 | Backstage (developer portal) | 🔜 Next |
+| 18 | Backstage minimal IDP (catalog-only, 5 Components + 1 System) — Vault/plugins/templates deferred | ✅ Complete |
+| 19 | Ollama + MLflow + Kubeflow (AI/ML) | 🔜 Next |
 | 12 | Container strategy | 🔜 |
 | 13 | Ansible automation | 🔜 |
 | 14 | Security hardening | 🔜 |
