@@ -88,7 +88,7 @@ From current bare-metal infra → full private cloud platform (production-grade)
 | 19 | Self-hosted AI — Ollama (llama3.2:3b CPU inference, ~13 TPS) + Open WebUI chat at chat.10.0.0.200.nip.io. MLflow + Kubeflow deferred. | ✅ Complete |
 | 20 | Chaos Mesh — 3 validation experiments on podinfo. **PodChaos:** 0 ms downtime / 100% availability over 5 kill events. **NetworkChaos:** 200 ms latency injection (~11× baseline) + clean cleanup. **StressChaos:** contained cgroup OOM, 0 node-mate restarts. NodeChaos + dashboard Ingress + automated GameDays deferred. | ✅ Complete |
 | 21 | Loki single-binary + Promtail DaemonSet + Alertmanager 3-tier routing tree + in-cluster webhook receiver + custom `PodinfoAvailabilityLost` rule (with the user-mandated `for: 2m` anti-flap window). End-to-end alert validated via Chaos Mesh kill-both-replicas: chaos→webhook fire in 174 s. Day-2 housekeeping: open-webui PVC expanded 1→5 GiB online, node-exporter limit 100m→250m, explicit NTP servers on all 3 nodes. **Jaeger deferred** — no multi-service topology. | ✅ Complete |
-| 22 | Cilium + Hubble (eBPF networking) | 🔜 Next |
+| 22 | Cilium + Hubble eBPF networking — **runbook authored, execution deferred to fresh-cluster rebuild**. cilium CLI v0.19.2 on controller; complete migration procedure in `docs/networking/02-cilium.md` (pre-flight Velero snapshot + 7 steps + rollback). Senior scope-reduction call: replacing the CNI on a 22-phase live cluster = high blast radius for marginal benefit at our scale. | ✅ Complete |
 | 12 | Container strategy | 🔜 |
 | 13 | Ansible automation | 🔜 |
 | 14 | Security hardening | 🔜 |
