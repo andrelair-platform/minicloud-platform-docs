@@ -1,0 +1,9 @@
+{
+  "label": "Observability (Phase 21)",
+  "position": 12,
+  "link": {
+    "type": "generated-index",
+    "title": "Phase 21 — Advanced Observability",
+    "description": "Logs (Loki), Alertmanager routing, custom alerts, and distributed tracing. Phase 8 added metrics; Phase 21 adds the second leg (logs) and proper alert routing. Tracing deliberately deferred until multi-service workloads exist."
+  }
+}

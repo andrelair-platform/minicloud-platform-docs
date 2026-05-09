@@ -60,7 +60,7 @@ Each phase builds directly on the previous one — nothing requires something th
 | **18** | Backstage minimal IDP — catalog-only, off-the-shelf image, Vault/plugins/templates deferred | Backstage | ✅ Done |
 | **19** | Self-hosted AI — Ollama (CPU, llama3.2:3b, ~13 TPS) + Open WebUI chat. MLflow + Kubeflow deferred. | Ollama, Open WebUI | ✅ Done |
 | **20** | Reliability & chaos engineering — 3 validation experiments on podinfo: PodChaos (0 ms downtime under 5 pod kills), NetworkChaos (200 ms latency injection + clean recovery), StressChaos (contained cgroup OOM, 0 node-mate restarts). NodeChaos / dashboard Ingress / automated GameDays deferred. | Chaos Mesh | ✅ Done |
-| **21** | Advanced observability | Loki, Jaeger, Alertmanager | 🔜 |
+| **21** | Logs (Loki single-binary, Promtail DaemonSet, Grafana datasource) + Alertmanager 3-tier routing tree + in-cluster webhook receiver + custom `PodinfoAvailabilityLost` rule. End-to-end alert validated via Chaos Mesh kill-both-replicas → webhook receives FIRING JSON. **Jaeger / distributed tracing deferred** — no multi-service topology to trace. | Loki, Promtail, Alertmanager | ✅ Done |
 | **22** | eBPF networking (advanced) | Cilium, Hubble | 🔜 |
 | **—** | **Data Layer** | Kafka/Redpanda, ClickHouse, dbt, Superset, OpenMetadata | 🔜 |
 | **—** | **Security Layer** | Keycloak, OPA/Gatekeeper, Falco, Cosign+SBOM, kube-bench | 🔜 |
