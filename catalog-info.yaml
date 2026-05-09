@@ -1,0 +1,55 @@
+---
+# Phase 18: Backstage System — the umbrella that owns all 5 Components.
+# Defined in this repo because it's the most descriptive ("docs"/portfolio).
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: minicloud-platform
+  description: |
+    3-node bare-metal Kubernetes platform on ThinkPads (set-hog / fast-skunk /
+    fast-heron). Built across an 18-phase roadmap: MAAS provisioning,
+    k3s, Longhorn storage, MetalLB, NGINX Ingress, Harbor (sovereign
+    proxy-cache registry), kube-prometheus-stack, ArgoCD, GitHub-Actions
+    CI/CD, Velero+MinIO off-cluster backup, cert-manager TLS,
+    KEDA+NATS event-driven autoscaling, and Backstage as IDP.
+  tags:
+    - homelab
+    - bare-metal
+    - portfolio
+  links:
+    - url: https://andrelair-platform.github.io/minicloud-platform-docs/
+      title: Live docs (Docusaurus)
+      icon: docs
+    - url: https://github.com/andrelair-platform
+      title: GitHub organization
+      icon: github
+spec:
+  owner: andrelair-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: minicloud-platform-docs
+  description: |
+    Docusaurus 3 documentation site for the minicloud platform. Hosts
+    phase-by-phase technical write-ups, decision records, and
+    architectural diagrams. Auto-deploys to GitHub Pages on push to main.
+  annotations:
+    backstage.io/source-location: url:https://github.com/andrelair-platform/minicloud-platform-docs
+    github.com/project-slug: andrelair-platform/minicloud-platform-docs
+  tags:
+    - documentation
+    - docusaurus
+    - typescript
+  links:
+    - url: https://andrelair-platform.github.io/minicloud-platform-docs/
+      title: Live docs site
+      icon: docs
+    - url: https://github.com/andrelair-platform/minicloud-platform-docs/actions
+      title: CI runs
+      icon: github
+spec:
+  type: documentation
+  lifecycle: production
+  owner: andrelair-platform
+  system: minicloud-platform
