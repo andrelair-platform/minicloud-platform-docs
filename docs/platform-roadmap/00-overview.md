@@ -81,7 +81,8 @@ From current bare-metal infra → full private cloud platform (production-grade)
 | 12 | ArgoCD (GitOps, App-of-Apps) — Homer + whoami managed | ✅ Complete |
 | 13 | CI/CD pipeline (GitHub Actions + ghcr.io + ArgoCD image promotion) — GitLab/Gitea deferred | ✅ Complete |
 | 14 | Backup/DR (Velero → MinIO on controller + hourly k3s SQLite snapshot) — etcd-snapshot pivoted to SQLite | ✅ Complete |
-| 15 | Vault + cert-manager + RBAC (secrets) | 🔜 Next |
+| 15 | TLS / cert-manager (self-signed root CA + chained ClusterIssuer) — Vault + RBAC deferred | ✅ Complete |
+| 16 | n8n + Temporal + Apache Airflow (automation/workflows) | 🔜 Next |
 | 12 | Container strategy | 🔜 |
 | 13 | Ansible automation | 🔜 |
 | 14 | Security hardening | 🔜 |

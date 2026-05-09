@@ -209,7 +209,7 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: [
         'developer-platform/vault',
-        'platform-roadmap/phase-10-security',
+        'platform-roadmap/phase-15-cert-manager',
       ],
     },
 

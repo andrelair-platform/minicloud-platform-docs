@@ -54,7 +54,7 @@ Each phase builds directly on the previous one — nothing requires something th
 | **12** | GitOps deployment | ArgoCD (App-of-Apps) | ✅ Done |
 | **13** | CI/CD pipelines | GitHub Actions + ghcr.io + ArgoCD image promotion | ✅ Done |
 | **14** | Backup & disaster recovery | Velero + MinIO on controller + hourly k3s SQLite pull | ✅ Done |
-| **15** | Security hardening | Vault, cert-manager, RBAC | 🔜 |
+| **15** | TLS / cert-manager (internal PKI) — Vault + RBAC deferred | cert-manager, self-signed root CA | ✅ Done |
 | **16** | Automation & workflows | n8n, Temporal, Apache Airflow | 🔜 |
 | **17** | Event-driven & autoscaling | KEDA, NATS | 🔜 |
 | **18** | Developer platform | Backstage | 🔜 |
