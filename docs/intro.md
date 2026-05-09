@@ -55,7 +55,7 @@ Each phase builds directly on the previous one — nothing requires something th
 | **13** | CI/CD pipelines | GitHub Actions + ghcr.io + ArgoCD image promotion | ✅ Done |
 | **14** | Backup & disaster recovery | Velero + MinIO on controller + hourly k3s SQLite pull | ✅ Done |
 | **15** | TLS / cert-manager (internal PKI) — Vault + RBAC deferred | cert-manager, self-signed root CA | ✅ Done |
-| **16** | Automation & workflows | n8n, Temporal, Apache Airflow | 🔜 |
+| **16** | Harbor as Sovereign Registry — 4 proxy-cache projects, mirror+fallback, supply-chain control point. Original n8n/Temporal/Airflow plan deferred. | Harbor proxy cache | ✅ Done |
 | **17** | Event-driven & autoscaling | KEDA, NATS | 🔜 |
 | **18** | Developer platform | Backstage | 🔜 |
 | **19** | AI / ML platform | Ollama, MLflow, Kubeflow | 🔜 |

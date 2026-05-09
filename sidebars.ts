@@ -86,7 +86,10 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Phase 7 — Harbor (Registry)',
       collapsed: true,
-      items: ['registry/harbor'],
+      items: [
+        'registry/harbor',
+        'registry/harbor-proxy-cache',
+      ],
     },
 
     // ── Phase 8 ─────────────────────────────────────────────────────

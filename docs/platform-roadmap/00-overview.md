@@ -82,7 +82,8 @@ From current bare-metal infra → full private cloud platform (production-grade)
 | 13 | CI/CD pipeline (GitHub Actions + ghcr.io + ArgoCD image promotion) — GitLab/Gitea deferred | ✅ Complete |
 | 14 | Backup/DR (Velero → MinIO on controller + hourly k3s SQLite snapshot) — etcd-snapshot pivoted to SQLite | ✅ Complete |
 | 15 | TLS / cert-manager (self-signed root CA + chained ClusterIssuer) — Vault + RBAC deferred | ✅ Complete |
-| 16 | n8n + Temporal + Apache Airflow (automation/workflows) | 🔜 Next |
+| 16 | Harbor as Sovereign Registry (4 proxy-cache projects + mirror config). Original n8n/Temporal/Airflow plan deferred. | ✅ Complete |
+| 17 | KEDA + NATS (event-driven autoscaling) | 🔜 Next |
 | 12 | Container strategy | 🔜 |
 | 13 | Ansible automation | 🔜 |
 | 14 | Security hardening | 🔜 |
