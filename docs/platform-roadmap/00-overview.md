@@ -85,7 +85,8 @@ From current bare-metal infra → full private cloud platform (production-grade)
 | 16 | Harbor as Sovereign Registry (4 proxy-cache projects + mirror config). Original n8n/Temporal/Airflow plan deferred. | ✅ Complete |
 | 17 | KEDA + NATS event-driven autoscaling (3-replica HA + JetStream + scale-to-zero verified) | ✅ Complete |
 | 18 | Backstage minimal IDP (catalog-only, 5 Components + 1 System) — Vault/plugins/templates deferred | ✅ Complete |
-| 19 | Ollama + MLflow + Kubeflow (AI/ML) | 🔜 Next |
+| 19 | Self-hosted AI — Ollama (llama3.2:3b CPU inference, ~13 TPS) + Open WebUI chat at chat.10.0.0.200.nip.io. MLflow + Kubeflow deferred. | ✅ Complete |
+| 20 | Chaos Mesh (reliability testing) | 🔜 Next |
 | 12 | Container strategy | 🔜 |
 | 13 | Ansible automation | 🔜 |
 | 14 | Security hardening | 🔜 |
