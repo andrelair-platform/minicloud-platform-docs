@@ -58,8 +58,8 @@ Each phase builds directly on the previous one — nothing requires something th
 | **16** | Harbor as Sovereign Registry — 4 proxy-cache projects, mirror+fallback, supply-chain control point. Original n8n/Temporal/Airflow plan deferred. | Harbor proxy cache | ✅ Done |
 | **17** | Event-driven autoscaling — KEDA + NATS JetStream HA, scale-to-zero verified end-to-end | KEDA, NATS | ✅ Done |
 | **18** | Backstage minimal IDP — catalog-only, off-the-shelf image, Vault/plugins/templates deferred | Backstage | ✅ Done |
-| **19** | AI / ML platform | Ollama, MLflow, Kubeflow | 🔜 |
-| **20** | Reliability & chaos testing | Chaos Mesh | 🔜 |
+| **19** | Self-hosted AI — Ollama (CPU, llama3.2:3b, ~13 TPS) + Open WebUI chat. MLflow + Kubeflow deferred. | Ollama, Open WebUI | ✅ Done |
+| **20** | Reliability & chaos engineering — 3 validation experiments on podinfo: PodChaos (0 ms downtime under 5 pod kills), NetworkChaos (200 ms latency injection + clean recovery), StressChaos (contained cgroup OOM, 0 node-mate restarts). NodeChaos / dashboard Ingress / automated GameDays deferred. | Chaos Mesh | ✅ Done |
 | **21** | Advanced observability | Loki, Jaeger, Alertmanager | 🔜 |
 | **22** | eBPF networking (advanced) | Cilium, Hubble | 🔜 |
 | **—** | **Data Layer** | Kafka/Redpanda, ClickHouse, dbt, Superset, OpenMetadata | 🔜 |

@@ -86,7 +86,8 @@ From current bare-metal infra → full private cloud platform (production-grade)
 | 17 | KEDA + NATS event-driven autoscaling (3-replica HA + JetStream + scale-to-zero verified) | ✅ Complete |
 | 18 | Backstage minimal IDP (catalog-only, 5 Components + 1 System) — Vault/plugins/templates deferred | ✅ Complete |
 | 19 | Self-hosted AI — Ollama (llama3.2:3b CPU inference, ~13 TPS) + Open WebUI chat at chat.10.0.0.200.nip.io. MLflow + Kubeflow deferred. | ✅ Complete |
-| 20 | Chaos Mesh (reliability testing) | 🔜 Next |
+| 20 | Chaos Mesh — 3 validation experiments on podinfo. **PodChaos:** 0 ms downtime / 100% availability over 5 kill events. **NetworkChaos:** 200 ms latency injection (~11× baseline) + clean cleanup. **StressChaos:** contained cgroup OOM, 0 node-mate restarts. NodeChaos + dashboard Ingress + automated GameDays deferred. | ✅ Complete |
+| 21 | Loki + Jaeger + Alertmanager (advanced observability) | 🔜 Next |
 | 12 | Container strategy | 🔜 |
 | 13 | Ansible automation | 🔜 |
 | 14 | Security hardening | 🔜 |
