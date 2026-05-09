@@ -1,10 +1,35 @@
 ---
 id: mlflow
-title: Phase 20 — MLflow
+title: MLflow (Deferred)
 sidebar_position: 2
 ---
 
 # MLflow — ML Experiment Tracking & Model Registry
+
+:::caution Status: Deferred to a future phase
+The original Phase 19 plan called for **Ollama + MLflow + Kubeflow**.
+We deliberately scoped Phase 19 down to **Ollama + Open WebUI only** —
+same pattern as Phase 11 (deferred Crossplane), Phase 13 (deferred
+GitLab), Phase 15 (deferred Vault), Phase 16 (deferred
+n8n/Temporal/Airflow), Phase 18 (deferred Backstage plugins).
+
+**Why MLflow is deferred:**
+
+1. **No active ML training workload.** MLflow's value is tracking
+   experiments + registering trained models. We have no model training
+   on this cluster. Installing MLflow without a real workload to feed
+   it = "MLflow exists" theatre.
+2. **Pairs naturally with a real ML pipeline.** The right time to
+   install MLflow is alongside an actual training workload (e.g.,
+   fine-tuning a model from Ollama, an RL training loop, a Jupyter
+   notebook with sklearn experiments).
+
+The likely future home is a dedicated "ML pipeline" phase when there's
+a real training/experimentation workload to track.
+
+This page is kept as conceptual reference. The implementation has not
+been done.
+:::
 
 MLflow tracks your machine learning experiments — hyperparameters, metrics, model artifacts — and provides a model registry where you promote models from experimentation to production. It gives your ML work the same discipline as software engineering.
 

@@ -1,10 +1,34 @@
 ---
 id: kubeflow
-title: Phase 20 — Kubeflow
+title: Kubeflow (Deferred)
 sidebar_position: 3
 ---
 
 # Kubeflow — Full ML Platform on Kubernetes
+
+:::caution Status: Deferred to a future phase
+The original Phase 19 plan called for **Ollama + MLflow + Kubeflow**.
+We deliberately scoped Phase 19 down to **Ollama + Open WebUI only**.
+
+**Why Kubeflow is deferred:**
+
+1. **8-12 GiB RAM + Istio service-mesh dependency.** Kubeflow pulls in
+   ~30 pods plus Istio. On our 48 GiB cluster, that's ~25% of total
+   memory just for the platform — leaving little room for actual
+   workloads.
+2. **No ML pipelines to run.** Kubeflow is designed for organizations
+   running dozens of training pipelines simultaneously. A single-
+   operator homelab with no pipelines = pure theatre.
+3. **Istio conflicts with NGINX Ingress.** Adding Istio means rewiring
+   the ingress story for every other workload that's currently on
+   NGINX (Phase 6). Days of work for marginal gain at this scale.
+
+The likely future home is **only if/when scale/use-case justifies it**.
+For single-operator portfolios, this is firmly out-of-scope.
+
+This page is kept as conceptual reference. The implementation has not
+been done.
+:::
 
 Kubeflow is the Kubernetes-native ML platform. It orchestrates end-to-end ML pipelines — data prep, training, evaluation, serving — as reproducible, versioned DAGs running directly on your cluster.
 
