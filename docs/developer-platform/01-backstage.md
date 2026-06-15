@@ -144,11 +144,51 @@ The image is built from `packages/app` and `packages/backend` in the Backstage r
 
 This is a structural issue with running the upstream example app, not a per-version bug that can be pinned around. Every tag from when the notifications UI was added until someone wires the API factory in `packages/app/src/apis.ts` exhibits this.
 
-### Working with the bug today (Option 1 — what we chose)
+### Working with the bug today — what actually works
 
-Dismiss the error overlay. The catalog page renders, Components list correctly, navigation works, guest auth works. The notifications bell is non-functional but you have no notifications to view anyway. Cost: one click per browser session.
+**What does NOT work** (and the doc said it would — corrected here):
 
-The pin to `1.51.2` is still kept because the drift-control value is real and orthogonal to the visible error. The pinning lesson generalizes; the no-op fallback claim did not.
+- "Dismiss the error overlay" — the overlay rendering is React's `ErrorBoundary` catching the failed apiRef lookup, but the lookup re-fires on every route render because the notifications plugin is registered globally in the Header component. There's no dismissable state; the overlay re-appears immediately on any navigation.
+- Hard-refresh, incognito mode, different browsers, direct URL navigation to `/catalog` — none of these bypass the error, because the failing component is in the always-rendered Header tree.
+
+**Also tried (2026-06-15) — downgrade to `1.25.0`** (a tag that likely predates the notifications-plugin-in-frontend era):
+
+```bash
+sed -i 's|tag: "1.51.2"|tag: "1.25.0"|' backstage-values.yaml
+helm upgrade backstage backstage/backstage -n backstage -f backstage-values.yaml
+# Result: CrashLoopBackOff on backstage-77745c54d-5przd
+# Logs: error in BackendInitializer.start at backend-app-api/dist/index.cjs.js:1486
+```
+
+The backend config schema between 1.25.0 and the chart `backstage-2.7.0` is incompatible. The pod can't even reach the point where the frontend would be served. Reverted to `1.51.2` via `helm upgrade`; old pod kept running throughout (rolling deploy preserved availability). Net result: pinning experiments are exhausted in both directions — neither newer nor older off-the-shelf tags resolve the UI issue.
+
+**What actually works — use the catalog via API, not the UI.**
+
+At Phase 18's scope, Backstage is a read-only catalog. The catalog data is served cleanly by the API regardless of UI state. A shell function gives equivalent functionality without the broken UI:
+
+```bash
+bs_catalog() {
+  local CA="${BS_CA:-$HOME/minicloud-ca.crt}"
+  local TOKEN
+  TOKEN=$(curl -sf --cacert "$CA" -X POST https://backstage.10.0.0.200.nip.io/api/auth/guest/refresh | jq -r '.backstageIdentity.token')
+  curl -sf --cacert "$CA" -H "Authorization: Bearer $TOKEN" \
+    "https://backstage.10.0.0.200.nip.io/api/catalog/entities?filter=kind=${1:-component}" \
+  | jq -r '.[] | "\(.metadata.name) [\(.kind)] (\(.spec.type // "n/a")) — owner: \(.spec.owner // "n/a") — \(.metadata.description // "no description")"'
+}
+```
+
+Usage:
+
+```bash
+bs_catalog              # all Components
+bs_catalog system       # all Systems
+bs_catalog api          # all APIs
+bs_catalog location     # all catalog Locations
+```
+
+The function is stashed durably in [`minicloud-ansible/scripts/bs-catalog.sh`](https://github.com/andrelair-platform/minicloud-ansible/blob/main/scripts/bs-catalog.sh) so it survives a controller wipe and is usable from any machine with the CA cert.
+
+**The pin to `1.51.2` is kept** because the drift-control value is real and orthogonal to the visible UI error. The pinning lesson generalizes (and uncovered 2 more `:latest` references in Phase 3 + Phase 19). What was wrong was the specific claim that a tag-level fix exists for this bug.
 
 ### Real fix (Option 3 — deferred to a future "Backstage Plugins" phase)
 
