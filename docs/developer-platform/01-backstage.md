@@ -34,7 +34,7 @@ architecture without burning a weekend on plugins nobody will use.
        ▼                  │  │ Backstage Pod (1 replica)│              │
   cert-manager TLS        │  │  off-the-shelf image:    │              │
   + NGINX Ingress  ──────▶│  │  ghcr.io/backstage/      │              │
-                          │  │    backstage:latest       │              │
+                          │  │    backstage:1.51.2       │              │
                           │  │  pulled through Harbor's  │              │
                           │  │   ghcr proxy (Phase 16)   │              │
                           │  └─────────┬────────────────┘              │
@@ -63,7 +63,7 @@ Components (one per repo in `andrelair-platform`).
 | Decision | Choice | Rationale |
 |---|---|---|
 | Install method | Helm chart `backstage/backstage` v2.7.0 | Standard install path; bundles Postgres subchart |
-| Image | **Off-the-shelf `ghcr.io/backstage/backstage:latest`** (pulled through Harbor `ghcr` proxy cache) | Avoids 3+ hours of Node.js scaffold + Docker build for marginal portfolio gain. Custom build deferred. |
+| Image | **Off-the-shelf `ghcr.io/backstage/backstage:1.51.2`** (pulled through Harbor `ghcr` proxy cache, **pinned 2026-06-15** — see "Image tag pinning" section) | Avoids 3+ hours of Node.js scaffold + Docker build for marginal portfolio gain. Custom build deferred. |
 | Database | **PostgreSQL** (bitnami subchart, standalone), 1 GiB on Longhorn | SQLite is documented as "for development only"; Postgres is the right shape for portfolio even at this scale |
 | Authentication | **Guest auth** (no SSO) with `dangerouslyAllowOutsideDevelopment: true` | GitHub OAuth requires GitHub App + browser setup; SSO requires Keycloak (future phase). Guest gets us to "logged in" instantly. |
 | Plugins | **Catalog-only** (chart's default — no Kubernetes/ArgoCD/Grafana plugins) | Each plugin requires custom-build with its node module. Deferred. |
@@ -89,6 +89,58 @@ Same scope-reduction pattern as Phase 11 (Crossplane), Phase 13
 
 This means Phase 18 ships ~30% of "real Backstage" — the catalog. Honest
 about what's missing and why.
+
+---
+
+## Image tag pinning (2026-06-15)
+
+### The incident
+
+Six weeks after install, opening Backstage from a browser surfaced this React error overlay:
+
+```text
+NotImplementedError
+Message: No implementation available for apiRef{plugin.notifications.service}
+```
+
+The catalog still worked — dismissing the overlay or hard-refreshing the page got past it — but the error reappeared on every fresh load. Root cause: the `:latest` tag is a rolling reference that points at whatever the Backstage team most recently published from the off-the-shelf example app, and over those six weeks the frontend bundle started including a Notifications-plugin UI component that calls a backend API client that the example app's backend doesn't actually wire up. Spotify's own off-the-shelf image is a *demonstration of plugin capability*, not a production deployment — the frontend/backend can drift out of sync on any new build.
+
+### The fix — pin to `1.51.2`
+
+Edited `backstage-values.yaml`:
+
+```diff
+   image:
+     registry: ghcr.io
+     repository: backstage/backstage
+-    tag: latest
++    tag: "1.51.2"
+```
+
+Applied with `helm upgrade backstage backstage/backstage -n backstage -f backstage-values.yaml`. Rollout took ~24 s (336 MB image, pulled through Harbor's `ghcr` proxy cache). Browser hard-refresh confirmed the error gone.
+
+### Why `1.51.2` specifically
+
+| Requirement | How 1.51.2 meets it |
+|---|---|
+| Includes the upstream fix for `plugin.notifications.service` | Fix shipped in **1.49.0** as a no-op fallback implementation; 1.51.2 carries it forward |
+| Frozen identity that won't drift on the next pod restart | Specific patch version, not a rolling tag |
+| Available in the registry we're pulling from | Verified via `curl https://harbor.10.0.0.200.nip.io/v2/ghcr/backstage/backstage/tags/list` — 1.47.0 through 1.51.2 were published, 1.51.2 was newest at pin time |
+| Not so new it carries different bugs | One minor patch behind newest available; same era of code, settled |
+
+### Lessons for future workloads
+
+This is a generic anti-pattern, not Backstage-specific. **Any off-the-shelf image pulled with `:latest` is a time bomb on a long-running cluster** — silently drifts on every pod restart, until it suddenly doesn't work. Audit other workloads for `:latest` references:
+
+```bash
+kubectl get pods -A -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}: {range .spec.containers[*]}{.image}{"\n"}{end}{end}' | grep ':latest$'
+```
+
+Pin every result to a specific version. Use a renovate-bot or Dependabot equivalent to surface upgrade PRs rather than hoping `:latest` does the right thing.
+
+### Where the pinned values file lives
+
+The `backstage-values.yaml` is **not** in `minicloud-gitops` (Backstage is Helm-installed, not yet ArgoCD-managed). To survive a controller wipe, the file is mirrored into the [`minicloud-ansible` repo](https://github.com/andrelair-platform/minicloud-ansible) under `helm-values/backstage-values.yaml`. Migration to ArgoCD-managed Helm is a future phase — it requires preserving the live Postgres StatefulSet + 1 GiB PVC through the cut-over, which is non-trivial and deserves its own focused work block.
 
 ---
 
@@ -131,7 +183,8 @@ backstage:
   image:
     registry: ghcr.io
     repository: backstage/backstage
-    tag: latest
+    # Pinned 2026-06-15 (see "Image tag pinning" section below)
+    tag: "1.51.2"
     # ghcr.io is routed through Harbor's ghcr proxy via the Phase 16
     # mirror config in /etc/rancher/k3s/registries.yaml — no override needed
 
