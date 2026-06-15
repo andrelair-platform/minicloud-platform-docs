@@ -105,7 +105,7 @@ Message: No implementation available for apiRef{plugin.notifications.service}
 
 The catalog still worked — dismissing the overlay or hard-refreshing the page got past it — but the error reappeared on every fresh load. Root cause: the `:latest` tag is a rolling reference that points at whatever the Backstage team most recently published from the off-the-shelf example app, and over those six weeks the frontend bundle started including a Notifications-plugin UI component that calls a backend API client that the example app's backend doesn't actually wire up. Spotify's own off-the-shelf image is a *demonstration of plugin capability*, not a production deployment — the frontend/backend can drift out of sync on any new build.
 
-### The fix — pin to `1.51.2`
+### What pinning did and didn't fix
 
 Edited `backstage-values.yaml`:
 
@@ -117,16 +117,55 @@ Edited `backstage-values.yaml`:
 +    tag: "1.51.2"
 ```
 
-Applied with `helm upgrade backstage backstage/backstage -n backstage -f backstage-values.yaml`. Rollout took ~24 s (336 MB image, pulled through Harbor's `ghcr` proxy cache). Browser hard-refresh confirmed the error gone.
+Applied with `helm upgrade backstage backstage/backstage -n backstage -f backstage-values.yaml`. Rollout took ~24 s (336 MB image, pulled through Harbor's `ghcr` proxy cache).
 
-### Why `1.51.2` specifically
+**What the pin DID fix:** silent drift on every pod restart. Previously, any random pod reschedule could land on a new `:latest` image with subtly different behavior. Now the image identity is frozen — pod restarts, node reboots, full cluster wipes all converge on the exact same byte-for-byte image.
 
-| Requirement | How 1.51.2 meets it |
-|---|---|
-| Includes the upstream fix for `plugin.notifications.service` | Fix shipped in **1.49.0** as a no-op fallback implementation; 1.51.2 carries it forward |
-| Frozen identity that won't drift on the next pod restart | Specific patch version, not a rolling tag |
-| Available in the registry we're pulling from | Verified via `curl https://harbor.10.0.0.200.nip.io/v2/ghcr/backstage/backstage/tags/list` — 1.47.0 through 1.51.2 were published, 1.51.2 was newest at pin time |
-| Not so new it carries different bugs | One minor patch behind newest available; same era of code, settled |
+**What the pin DID NOT fix:** the `NotImplementedError` overlay itself. Verification after the pin took effect:
+
+```bash
+# pod confirmed at 1.51.2:
+kubectl get pod -n backstage -o jsonpath='{.items[0].spec.containers[0].image}'
+# → ghcr.io/backstage/backstage:1.51.2
+
+# bundle hash served by 1.51.2:
+curl -s https://backstage.10.0.0.200.nip.io/ | grep -oE 'module-backstage\.[a-f0-9]+\.js'
+# → module-backstage.5c25c313.js
+
+# This is the SAME hash as the original error stack trace, meaning :latest
+# at audit time was already 1.51.2 — the pin was a no-op in functional terms.
+```
+
+The off-the-shelf image at 1.51.2 still ships the same `apiRef{plugin.notifications.service}` registration gap. An early version of this section claimed "1.49.0 shipped a no-op fallback" — that was wishful inference, not verified upstream behavior. Corrected here for honesty.
+
+### Why the off-the-shelf image carries this bug at every version (so far)
+
+The image is built from `packages/app` and `packages/backend` in the Backstage repo — the example app the maintainers ship to *demonstrate* what's possible, not a turnkey production deployment. Over the past ~18 months they added the notifications plugin's UI components to `packages/app/src/App.tsx` (the bell icon in the header) without registering the matching `notificationsApiRef` factory in `packages/app/src/apis.ts`. Frontend imports the plugin → plugin code runs on every page load → tries to resolve its API client → no implementation registered → `NotImplementedError` overlay.
+
+This is a structural issue with running the upstream example app, not a per-version bug that can be pinned around. Every tag from when the notifications UI was added until someone wires the API factory in `packages/app/src/apis.ts` exhibits this.
+
+### Working with the bug today (Option 1 — what we chose)
+
+Dismiss the error overlay. The catalog page renders, Components list correctly, navigation works, guest auth works. The notifications bell is non-functional but you have no notifications to view anyway. Cost: one click per browser session.
+
+The pin to `1.51.2` is still kept because the drift-control value is real and orthogonal to the visible error. The pinning lesson generalizes; the no-op fallback claim did not.
+
+### Real fix (Option 3 — deferred to a future "Backstage Plugins" phase)
+
+The proper resolution is to stop running the off-the-shelf example app and ship a custom image:
+
+1. `npx @backstage/create-app minicloud-backstage` — scaffolds the TypeScript monorepo locally
+2. Edit `packages/app/src/apis.ts` — either remove the notifications-plugin import OR register a no-op `notificationsApiRef` factory
+3. Add the plugins we actually want (`@backstage/plugin-kubernetes`, `@backstage/plugin-argocd`, `@backstage/plugin-grafana`, `@backstage/plugin-techdocs`)
+4. `yarn build-image` → custom Docker image
+5. `crane copy` to `harbor.10.0.0.200.nip.io/library/backstage:<sha>`
+6. Point `backstage-values.yaml` at the custom image, ship via Helm upgrade
+
+Realistic effort: one focused 3-4 hour session. The notifications mismatch gets fixed for free because you control `apis.ts`. Same session unlocks Kubernetes/ArgoCD/Grafana plugins — converting Backstage from a read-only catalog into a true Internal Developer Portal.
+
+### Why the pinning section still belongs in this doc
+
+The visible bug is the trigger that uncovered a broader anti-pattern: `:latest` on a long-running cluster is a time bomb regardless of whether a specific symptom is visible. The cluster-wide audit one-liner that came out of this work found 2 more `:latest` references (Phase 3 Homer, Phase 19 Ollama), both of which were pinned the same day for the same drift-control reason. **The lesson holds even though the specific Backstage symptom didn't go away.**
 
 ### Lessons for future workloads
 
