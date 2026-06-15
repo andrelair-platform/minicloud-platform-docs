@@ -256,6 +256,8 @@ from any Tailscale-connected machine.
 
 ## Customize Homer
 
+### Original method (pre-Phase 12, ad-hoc)
+
 Edit `homer-config.yml` and update the ConfigMap:
 
 ```bash
@@ -266,6 +268,47 @@ kubectl create configmap homer-config \
 
 kubectl rollout restart deployment/homer -n homer
 ```
+
+This works for one-off local development. **Do NOT use it in production** — ArgoCD's `selfHeal` (Phase 12) reverts any `kubectl`-applied changes within ~3 minutes.
+
+### Production method (Phase 12 onwards — GitOps-managed)
+
+Homer is one of the workloads managed by ArgoCD's app-of-apps pattern. Source-of-truth lives in `andrelair-platform/minicloud-gitops` at `manifests/homer/`. Two edits are needed for every tile change:
+
+1. **Edit `manifests/homer/01-configmap.yaml`** — add/remove/modify the `services` block
+2. **Bump `manifests/homer/02-deployment.yaml`** — change the `config-checksum` annotation value (e.g. `v10-minio-tile` → `v11-github-tile`)
+
+The annotation bump is essential. Homer mounts the ConfigMap with `subPath`, which Kubernetes does NOT auto-propagate when the ConfigMap changes. Without the annotation change, the pod keeps serving the stale tile list forever even after the ConfigMap update succeeds. Annotation change → pod-template hash changes → rolling restart → new ConfigMap picked up. (Production teams automate this with [Reloader](https://github.com/stakater/Reloader) or kustomize `configMapGenerator`. We do it by hand for the learning value.)
+
+After both file edits:
+
+```bash
+cd minicloud-gitops
+git add manifests/homer/
+git commit -m "feat(homer): <what you changed>"
+git push origin main
+# ArgoCD reconciles within ~3 min:
+kubectl get app homer -n argocd -w
+# Watch for: Synced → OutOfSync → Synced → Progressing → Healthy
+```
+
+### Current tile inventory (as of 2026-06-15)
+
+The dashboard is organized into four sections. **Latest changes**: added MinIO tile under DevOps; replaced the GitLab placeholder with a GitHub tile pointing at the `andrelair-platform` organization.
+
+| Section | Tiles |
+|---|---|
+| **Infrastructure** | MAAS, set-hog, fast-skunk, fast-heron (link to MAAS machine page) |
+| **Observability** | Grafana (live), Prometheus + Alertmanager (internal — port-forward) |
+| **DevOps** | ArgoCD, **GitHub** (was: GitLab), Harbor, **MinIO** (new) |
+| **Apps** | podinfo, whoami, platform-demo, NATS, Backstage, Chat (Open WebUI) |
+
+**Notes on tile design decisions:**
+
+- **GitHub tile** uses `fab fa-github` (Font Awesome Brands) and points at `https://github.com/orgs/andrelair-platform/repositories`. The earlier "GitLab — soon" placeholder was removed during the same edit because Phase 13 chose GitHub Actions over self-hosted GitLab.
+- **MinIO tile** uses `fas fa-database` and points at `http://100.88.123.8:9001` (the controller's Tailscale IP — see the [Velero/MinIO doc](../backup-dr/01-velero.md#4a-accessing-the-minio-console-from-outside-the-controller) for why this URL and not `http://10.0.0.1:9001`).
+- **All `*.10.0.0.200.nip.io` tiles** route through the cluster Ingress (Phase 6 NGINX + Phase 15 TLS). Mac access works because Tailscale's subnet-route advertisement makes `10.0.0.0/24` reachable.
+- **Prometheus and Alertmanager are deliberately tagged `internal`** with `url: '#'` — these are cluster-internal services (`ClusterIP`), reachable only via `kubectl port-forward`. Exposing them via Ingress would be a security regression.
 
 ---
 

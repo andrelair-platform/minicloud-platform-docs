@@ -102,14 +102,21 @@ Type=simple
 Restart=on-failure
 RestartSec=10s
 
-ExecStartPre=-/usr/bin/docker stop minio
-ExecStartPre=-/usr/bin/docker rm minio
+# Remove any leftover container before starting — only if it actually exists,
+# so first-boot doesn't log a spurious "No such container" stderr line.
+ExecStartPre=/bin/bash -c 'if /usr/bin/docker container inspect minio >/dev/null 2>&1; then /usr/bin/docker rm -f minio; fi'
 
-# Bind explicitly to 10.0.0.1 only (port 9000 is taken on 127.0.0.1).
+# Bind to TWO specific IPs:
+#   - 10.0.0.1       (cluster switch — for kubelet → MinIO pulls from cluster nodes)
+#   - 100.88.123.8   (Tailscale interface — for browser access from any tailnet device)
+# DO NOT bind to 0.0.0.0 — port 9000 is already taken on 127.0.0.1 by MAAS,
+# and binding 0.0.0.0:9000 fails with EADDRINUSE.
 ExecStart=/usr/bin/docker run \
     --name minio --rm \
     -p 10.0.0.1:9000:9000 \
+    -p 100.88.123.8:9000:9000 \
     -p 10.0.0.1:9001:9001 \
+    -p 100.88.123.8:9001:9001 \
     -e MINIO_ROOT_USER=admin \
     -e MINIO_ROOT_PASSWORD_FILE=/run/secrets/minio_admin \
     -v /srv/backups/minio:/data \
@@ -131,11 +138,34 @@ sudo systemctl daemon-reload
 sudo systemctl enable minio.service
 sudo systemctl start minio.service
 
-# Verify
-curl -sf http://10.0.0.1:9000/minio/health/live -o /dev/null -w "S3 API:  %{http_code}\n"
-curl -sf http://10.0.0.1:9001/             -o /dev/null -w "Console: %{http_code}\n"
-# Both should return 200
+# Verify (cluster-side bind)
+curl -sf http://10.0.0.1:9000/minio/health/live -o /dev/null -w "S3 API (cluster):     %{http_code}\n"
+curl -sf http://10.0.0.1:9001/                  -o /dev/null -w "Console (cluster):    %{http_code}\n"
+# Verify (Tailscale-side bind — what makes the Mac access work)
+curl -sf http://100.88.123.8:9000/minio/health/live -o /dev/null -w "S3 API (tailnet):     %{http_code}\n"
+curl -sf http://100.88.123.8:9001/                  -o /dev/null -w "Console (tailnet):    %{http_code}\n"
+# All four should return 200
 ```
+
+### 4a. Accessing the MinIO console from outside the controller
+
+From any Tailscale-connected device (Mac, phone, second laptop), browse to:
+
+```text
+http://100.88.123.8:9001
+```
+
+— login `admin` + the password from `~/.minio-admin` on the controller. Use **`http://`** (not `https://`); the console is served HTTP-only for simplicity, behind the Tailscale auth boundary.
+
+The reason this works after the dual-IP bind: Tailscale advertises the controller as `100.88.123.8`, and when MinIO is bound to that interface specifically, packets arriving over the WireGuard tunnel hit the listening socket without needing Linux `rp_filter` to forgive asymmetric routing. A naive `0.0.0.0` bind is blocked by the `127.0.0.1:9000` collision; a bind to only `10.0.0.1` excludes the Tailscale path. Two explicit `-p` lines per port is the right shape.
+
+#### Real install gotchas (discovered 2026-06-15)
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `systemctl status minio.service` showed `Error response from daemon: No such container: minio` on every boot | The original cleanup hooks (`docker stop minio` / `docker rm minio`) always ran even on first-boot when no container existed | Replaced with a single `bash -c` conditional: `if docker container inspect minio; then docker rm -f minio; fi` |
+| MAC browser couldn't reach `http://10.0.0.1:9001` even with Tailscale connected and subnet routes accepted | Linux's reverse-path filter dropped packets arriving on `tailscale0` destined for `10.0.0.1` (configured on a different interface) | Added explicit `-p 100.88.123.8:9001:9001` line — the Tailnet bind avoids the cross-interface routing entirely |
+| First attempt at the dual-IP fix used `-p 9000:9000` (bind all interfaces) | Docker tried `0.0.0.0:9000` which collided with MAAS's `127.0.0.1:9000` → exit code 125 crashloop | Bind to specific addresses (`10.0.0.1` + `100.88.123.8`), never `0.0.0.0` |
 
 ### 5. Create the `velero` bucket via `mc`
 

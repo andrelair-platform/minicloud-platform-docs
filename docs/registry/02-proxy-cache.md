@@ -37,6 +37,68 @@ chain."**
 
 ---
 
+## Harbor vs ghcr.io — when do you need both?
+
+A natural first reaction looking at the architecture: *"I already use GitHub for source code, and `ghcr.io` is GitHub's container registry — why run Harbor at all?"* The answer is they solve different problems on the supply chain, and Harbor in front of `ghcr.io` is the production-grade pattern.
+
+| | GitHub (`github.com`) | ghcr.io | Harbor (this cluster) |
+|---|---|---|---|
+| **Stores** | Source code (text) | Container images (binary) | Container images (binary) |
+| **Position in pipeline** | Where humans write code | Where CI publishes built images | Where the cluster pulls runtime images |
+| **Consumer** | Developers + CI | CI + kubelets (worldwide) | Cluster kubelets (only this cluster) |
+| **Trivy scanning** | No (paid via GHAS) | No (paid via GHAS) | **Yes, built-in** |
+| **Survives upstream outage** | n/a | If ghcr.io is down, kubelets fail to pull | **Harbor serves cached images** even if ghcr.io is down |
+| **Bandwidth for 3-node cluster pulling same image** | n/a | 3 × full pull from internet | 1 pull from internet, 2 from internal LAN |
+| **Audit "what images run on my cluster"** | n/a | Query 4 separate registries | One Harbor query |
+
+### The full data-flow (where each tool plugs in)
+
+```text
+Developer pushes code   ──► GitHub  (andrelair-platform/platform-demo)
+                              │
+                              ▼  (GitHub Actions builds image)
+                       docker build .
+                              │
+                              ▼  (docker push)
+                       ghcr.io/andrelair-platform/platform-demo:<sha>
+                              │
+                              ▼  (gitops bump commits new SHA)
+                       andrelair-platform/minicloud-gitops
+                              │
+                              ▼  (ArgoCD reconciles)
+                       k8s Deployment manifest references the new SHA
+                              │
+                              ▼  (kubelet on each node pulls)
+                       Harbor ─►  ghcr.io  (first time only — Harbor caches)
+                              ─►  cache  (subsequent pulls served locally)
+                              │
+                              ▼
+                       Container running on the cluster
+```
+
+**Notice the last three steps.** That's where Harbor lives. GitHub doesn't help here at all — it stores source code, not container layers, and `kubelet` can't `git pull`. Harbor is the cluster's local pantry; GitHub is the developer's workshop.
+
+### Why proxy `ghcr.io` specifically (and not just use it directly)
+
+Three concrete wins, all of which apply equally to docker.io, quay.io, registry.k8s.io:
+
+1. **Sovereignty when GitHub has an outage.** GitHub has degraded availability incidents multiple times per year. Without Harbor in front, a 30-minute GitHub outage = 30 minutes during which no pod can restart in your cluster. With Harbor, every previously-pulled image still works.
+
+2. **Bandwidth on home WiFi.** A 200 MB image × 3 nodes = 600 MB over your home internet. With Harbor: 200 MB from internet (one node, cache fill), 400 MB from internal 1 Gbps LAN.
+
+3. **Free Trivy scanning.** Harbor scans every pushed image for CVEs. `ghcr.io` only does this if you buy GitHub Advanced Security ($21/user/month at the time of writing). With Harbor in front, you get free vulnerability scanning of YOUR images on every push.
+
+### When would you skip Harbor and use ghcr.io directly?
+
+Honest answer:
+- **Single-machine personal projects** where you don't care about supply-chain control
+- **Heavily ephemeral environments** (Codespaces, GitHub Actions runners) where cluster state doesn't outlive the build
+- **Teams paying for GHAS** for whom Harbor's Trivy value is duplicated
+
+For any persistent multi-node cluster you actually own — Harbor or an equivalent (Artifactory, Nexus, ECR Pull-Through Cache, GitLab Dependency Proxy) is the production-grade choice.
+
+---
+
 ## Architecture
 
 ```text
