@@ -82,7 +82,7 @@ internal.
 | Open WebUI auth | First-user-becomes-admin (Open WebUI default) | Acceptable: TLS Ingress is internal-only via private nip.io hostname |
 | Open WebUI memory | **1.5 GiB limit** (initial 512 MiB OOMKilled the pod) | Open WebUI bundles sentence-transformers + embedding models for RAG; startup needs 700-900 MiB before any traffic |
 | TLS | cert-manager `chat-tls` Certificate, Phase 15 root CA | Same pattern as every other Ingress |
-| Image source | Both `ollama/ollama:latest` and `ghcr.io/open-webui/open-webui:0.9.4` pulled through Phase 16 Harbor proxy cache | Validates Sovereign Registry pattern again |
+| Image source | Both `ollama/ollama:0.23.2` (**pinned 2026-06-15**, was `:latest`) and `ghcr.io/open-webui/open-webui:0.9.4` pulled through Phase 16 Harbor proxy cache | Validates Sovereign Registry pattern again |
 
 ---
 
@@ -119,7 +119,8 @@ helm repo update
 image:
   registry: docker.io
   repository: ollama/ollama
-  tag: latest
+  # Pinned 2026-06-15 — see "Image tag pinning" section
+  tag: "0.23.2"
 
 ollama:
   port: 11434
@@ -386,6 +387,51 @@ usage. Pull on demand:
 ```bash
 kubectl exec -n ai deploy/ollama -- ollama pull mistral:7b
 ```
+
+---
+
+## Image tag pinning (2026-06-15)
+
+Ollama was originally installed with `image.tag: latest` — a rolling reference to whatever upstream `ollama/ollama` had most recently published. During the 2026-06-15 platform-wide `:latest` audit (one of only two `:latest` references found cluster-wide), this was pinned.
+
+**Change in `ollama-values.yaml`:**
+
+```diff
+ image:
+   registry: docker.io
+   repository: ollama/ollama
+-  tag: latest
++  tag: "0.23.2"
+```
+
+Applied with:
+
+```bash
+helm repo add ollama https://otwld.github.io/ollama-helm/   # if not already added
+helm upgrade ollama ollama/ollama --version 1.56.0 -n ai -f ollama-values.yaml
+```
+
+The chart version (`1.56.0`) was explicitly pinned too — same logic, no surprise upgrades.
+
+**Why `0.23.2` specifically:**
+
+| Requirement | How `0.23.2` meets it |
+|---|---|
+| Matches exactly what was running and validated | `kubectl exec deploy/ollama -- ollama -v` reported `0.23.2` at audit time |
+| Llama3.2:3b model + Open WebUI integration proven at this version | 35+ days of continuous use at this exact version, ~13 TPS sustained |
+| Upstream is at `0.30.x` — why not upgrade? | **Pin + upgrade in one move is anti-pattern.** A pin freezes known-good state; an upgrade is a separate deliberate change. Bundling them defeats the purpose of either. |
+
+**Where the pinned values file lives:**
+
+Mirrored to [`minicloud-ansible/helm-values/ollama-values.yaml`](https://github.com/andrelair-platform/minicloud-ansible/blob/main/helm-values/ollama-values.yaml) so it survives a controller wipe. Same pattern as `backstage-values.yaml`. Ollama is not in `minicloud-gitops` (direct Helm install, not yet ArgoCD-managed).
+
+**Cluster-wide audit pattern:**
+
+```bash
+kubectl get pods -A -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}: {range .spec.containers[*]}{.image}{"\n"}{end}{end}' | grep ':latest$'
+```
+
+Empty output = cluster is fully pinned. Full incident story (including the more dramatic Backstage `NotImplementedError` overlay symptom that surfaced the same anti-pattern) is in [the Phase 18 doc](../developer-platform/01-backstage.md#image-tag-pinning-2026-06-15).
 
 ---
 

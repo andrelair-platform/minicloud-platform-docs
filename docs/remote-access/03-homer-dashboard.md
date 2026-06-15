@@ -176,7 +176,9 @@ spec:
     spec:
       containers:
         - name: homer
-          image: b4bz/homer:latest
+          # Pinned 2026-06-15 — see "Image tag pinning" section
+          image: b4bz/homer:v26.4.2
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
           volumeMounts:
@@ -322,6 +324,36 @@ The dashboard is organized into four sections. **Latest changes**: added MinIO t
 | **Flame** | `pawelmalak/flame` | Bookmarks + weather widgets |
 
 Homer is recommended for simplicity — no database, purely static, minimal resources (~10MB RAM).
+
+---
+
+## Image tag pinning (2026-06-15)
+
+Homer was originally installed with `image: b4bz/homer:latest` and `imagePullPolicy: Always` — the "pull the newest thing on every restart" pattern. During the 2026-06-15 platform-wide `:latest` audit (one of only two `:latest` references found cluster-wide), this was pinned to a specific version.
+
+**Change:**
+
+```diff
+-          image: b4bz/homer:latest
+-          imagePullPolicy: Always
++          # Pinned 2026-06-15
++          image: b4bz/homer:v26.4.2
++          imagePullPolicy: IfNotPresent
+```
+
+Applied via the GitOps workflow above: edit `manifests/homer/02-deployment.yaml` in `minicloud-gitops` → commit + push → ArgoCD reconciles. Force-sync with `kubectl patch app homer -n argocd --type merge -p '{"operation":{"sync":{}}}'` if you don't want to wait for the 3-min cycle.
+
+**Why `v26.4.2`:** Newest published tag at pin time, immutable, low surprise risk (Homer is static HTML/JS — major version changes are infrequent and well-publicized).
+
+**Why `imagePullPolicy: IfNotPresent`:** With a mutable `:latest` tag, `Always` was required to ensure pod restarts caught updates. With an immutable tag, `Always` is pure waste — every pod restart hits the registry for an image we know hasn't changed. `IfNotPresent` is correct: pull once per node, reuse from containerd cache.
+
+**Cluster-wide audit pattern** (worth keeping in your shell history for periodic re-checks):
+
+```bash
+kubectl get pods -A -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}: {range .spec.containers[*]}{.image}{"\n"}{end}{end}' | grep ':latest$'
+```
+
+Empty output = cluster is fully pinned. The full incident story (which surfaced the same `:latest` anti-pattern on Backstage with much more dramatic symptoms — a `NotImplementedError` overlay on every page load) is documented in [the Phase 18 doc](../developer-platform/01-backstage.md#image-tag-pinning-2026-06-15).
 
 ---
 
