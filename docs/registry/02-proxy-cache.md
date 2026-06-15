@@ -300,6 +300,56 @@ All three pair naturally with Phase 17's planned Kyverno work.
 
 ---
 
+## Acceptance test — verify all 4 proxy caches end-to-end
+
+The "Done When" checklist above describes the install. This section is the **operational test that proves all 4 proxies are actually caching**, runnable any time against the live system. Discovered and documented during the 2026-06-15 health-check pass.
+
+### The one-liner
+
+```bash
+# 1) Force-pull one image through each proxy (manifest + blobs)
+for proj in docker-hub ghcr quay k8s-registry; do
+  case "$proj" in
+    docker-hub)   IMG="library/alpine:3.20" ;;
+    ghcr)         IMG="andrelair-platform/platform-demo:latest" ;;
+    quay)         IMG="jetstack/cert-manager-controller:v1.20.2" ;;
+    k8s-registry) IMG="pause:3.10" ;;
+  esac
+  crane pull --insecure "harbor.10.0.0.200.nip.io/${proj}/${IMG}" "/tmp/${proj}-test.tar"
+  rm -f "/tmp/${proj}-test.tar"
+done
+
+# 2) Confirm each project now reports a non-zero cached-repo count
+HARBOR_PW=$(cat ~/.harbor-admin)
+for proj in docker-hub ghcr quay k8s-registry; do
+  COUNT=$(curl -s --cacert ~/minicloud-ca.crt -u "admin:${HARBOR_PW}" \
+    "https://harbor.10.0.0.200.nip.io/api/v2.0/projects/${proj}/repositories" \
+    | jq 'length')
+  echo "${proj}: ${COUNT} repos cached"
+done
+```
+
+Expected output (numbers grow over time as more workloads pull):
+
+```
+docker-hub: 10 repos cached
+ghcr: 10 repos cached
+quay: 1 repos cached
+k8s-registry: 1 repos cached
+```
+
+### Two gotchas discovered while building this test
+
+1. **A manifest-only fetch does NOT populate Harbor's proxy-cache repository listing.** A `curl` against `/v2/<proj>/<image>/manifests/<tag>` returns `HTTP/1.1 200 OK` and proxies the manifest from upstream, but Harbor only formally registers the repository when the actual image *layer blobs* are pulled. Use `crane pull` (which fetches manifest + all blobs) — not just `crane manifest` or curl-against-manifest — when validating cache fill.
+
+2. **Do NOT pass `?page_size=100` to `GET /api/v2.0/projects/{name}/repositories`.** It returns an inflated repo count vs. the un-parameterized call. Observed: docker-hub returned 16 with `?page_size=100` but 10 without. The naked endpoint is the source of truth.
+
+### Why this test matters
+
+The original Phase 16 plan ended with cluster-level cold/warm benchmarks (Section 5) for the `docker-hub` proxy only. That proved one proxy worked; this test proves **all four** are caching, which is the actual definition of "sovereign supply chain." Without it, the 0-count behavior on `quay` and `k8s-registry` (caused by containerd's per-node image cache short-circuiting kubelet's pull when images predate Phase 16) looks like a broken proxy. With this test, we confirm the proxies are fully functional — the empty initial state is just an artifact of timing, not configuration.
+
+---
+
 ## Real-world skills demonstrated
 
 | Skill | Industry context |
