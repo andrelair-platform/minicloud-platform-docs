@@ -1,8 +1,16 @@
 ---
 id: keycloak
-title: Keycloak (SSO / IAM)
-sidebar_position: 2
+title: Keycloak (alternative — not chosen)
+sidebar_position: 8
 ---
+
+:::warning Superseded by Authentik
+**The platform chose Authentik over Keycloak** for Phase 23 SSO. See [Phase 23 — SSO via Authentik](./sso-authentik) for the actual implementation runbook.
+
+This Keycloak document is kept for reference because the OIDC concepts (clients, scopes, group claims) translate 1:1 between Keycloak and Authentik — if you ever migrate, this content is still useful. But the executable runbook lives in the Authentik doc.
+
+Short version of why Authentik was picked: lower resource footprint (~512 MiB RAM vs ~1.5 GiB), modern admin UI, built-in forward-auth Outposts (no separate oauth2-proxy needed), 90-min setup vs 3-hour setup. Keycloak's complexity earns its keep at >10,000 users / multi-realm federation — overkill at this scale.
+:::
 
 # Keycloak — Single Sign-On for the Entire Platform
 
