@@ -1,14 +1,50 @@
 ---
 id: sso-authentik
-title: Phase 23 — SSO via Authentik
+title: Phase 23 — SSO + IAM via Authentik
 sidebar_position: 2
 ---
 
-# Phase 23 — Single Sign-On via Authentik
+# Phase 23 — SSO + IAM via Authentik
 
 By Phase 22, the platform was running 13 user-facing apps. Seven of those had local admin passwords (`~/.argocd-admin`, `~/.grafana-admin`, `~/.harbor-admin`, `~/.minio-admin`, MAAS admin, plus the chart-installed defaults), four were wide-open ("none" auth — Homer, podinfo, platform-demo, whoami, NATS monitoring), and the rest used guest auth or first-signup. **Credential sprawl**. Every onboarding required tracking down 7+ passwords; every offboarding required revoking 7+ accounts; security audit said "show me who has access to what" required walking through 13 separate UIs.
 
 Phase 23 ships **one Authentik instance that every app trusts**: log in once, access everything. Native OIDC for the apps that support it, NGINX `forward-auth` for the apps that don't. Same architectural skill set as deploying Auth0/Okta in a real org, but self-hosted under your own control.
+
+---
+
+## What this phase delivers — the IAM capability map
+
+The doc title says "SSO + IAM" because this phase covers both. "SSO" is what end-users experience (one login button). "IAM" is what the platform engineer is actually building: a centralized control plane for **identity** + **access management**. The two words describe the same system from different angles.
+
+Industry-standard Identity & Access Management has six core capabilities. Phase 23 delivers all six:
+
+| IAM capability | Industry term | Stage where shipped | What it means in practice |
+|---|---|---|---|
+| **Authentication** | "Who are you?" | Stage 1 (Authentik server) | Single login page (`auth.10.0.0.200.nip.io`) replaces 7 separate admin passwords |
+| **Multi-factor auth** | MFA / 2FA | Stage 1.7 (mandatory first step) | TOTP or WebAuthn enforced once at the IdP; all 13 apps inherit the MFA-protected session |
+| **Authorization** | RBAC | Stages 3 + 4 + 5 (per-app) | Group claim (`authentik-admins`) → role mapping (ArgoCD `role:admin`, Grafana `Admin`, Harbor admin group, etc.) |
+| **Identity lifecycle** | Provisioning / deprovisioning | Stage 1 + Stage 6 | One Authentik UI toggle disables a user across all 13 apps instantly. No more "did we remember to revoke ArgoCD too?" |
+| **Audit** | Event log / access log | Stage 1 (Events tab) | Every login, MFA challenge, consent decision recorded — answers "who accessed Grafana last Tuesday at 3 PM" in one query |
+| **Session management** | Session control | Stage 1 + 6 (admin-side) | Admin can terminate any session globally; users see a forced logout from every app |
+
+**TL;DR** — when someone asks "do you have IAM?", the answer after Phase 23 is *yes, here are the six capabilities, here's the runbook for each.* That's the bar that distinguishes "we have SSO" from "we have IAM."
+
+---
+
+## What's IAM, what's NOT (deliberate scope decisions)
+
+These sub-categories sometimes get lumped under "IAM" in enterprise vendor marketing. Phase 23 deliberately does not include them:
+
+| Sub-category | Status | Why this scope |
+|---|---|---|
+| **External identity federation** (LDAP, Google Workspace, Azure AD, SAML to upstream IdP) | Deferred | Single-user portfolio context — no external directory to federate to. Authentik supports it natively when you're ready (future phase, add 2 hours). |
+| **SCIM auto-provisioning** (HR system pushes new hires → user accounts appear) | Deferred | Same reason — needs a source-of-truth HR system. Authentik supports SCIM 2.0 sources. |
+| **Vault-backed OIDC client secrets** | Deferred | Vault itself is deferred (honest scope note from Phase 15). Today, per-app OIDC client secrets live in k8s Secrets in their consumer namespaces. |
+| **Privileged Access Management** (just-in-time admin escalation, session recording, password vault rotation) | **Out of scope — separate category** | PAM is a different enterprise product line entirely — Teleport, CyberArk, BeyondTrust live there. Not on the roadmap for this platform. |
+| **Conditional access policies** (location/device/risk-based) | Deferred | Authentik supports it via expression policies; not needed at single-user scale |
+| **Passwordless / FIDO2-only** | Deferred | The hybrid (password + MFA) is the industry-standard configuration today. WebAuthn-only would be a future hardening step. |
+
+The scope decisions above are the same discipline as Phase 11 (Crossplane deferred), Phase 13 (GitLab deferred), Phase 15 (Vault deferred), Phase 18 (Backstage plugins deferred). **Ship the foundational IAM first; layer federation/SCIM/PAM as separate dedicated phases when there's a real use case.**
 
 ---
 
