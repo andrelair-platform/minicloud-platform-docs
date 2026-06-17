@@ -171,7 +171,22 @@ All four must be green before starting Stage 1.
 
 ---
 
-## Stage 1 — Deploy Authentik (target: ~2 hours)
+## Stage 1 — Deploy Authentik (target: ~2 hours) — ✅ Done 2026-06-17
+
+**Status:** Authentik 2026.5.3 live at `https://auth.10.0.0.200.nip.io`. Server + worker + Bitnami Postgres on Longhorn, TLS via `minicloud-ca`. `akadmin` bootstrap user disabled; personal MFA-enrolled admin account is the active operator identity. All acceptance criteria verified in [the Stage 1 acceptance section](#stage-1-acceptance) below.
+
+Bootstrap secrets preserved at mode 600 on the controller:
+
+```text
+~/.authentik-bootstrap-password   ← akadmin login pw (now-disabled user)
+~/.authentik-bootstrap-token      ← bootstrap API token
+~/.authentik-secret-key           ← cookie-signing key (DO NOT rotate)
+~/.authentik-postgres             ← Postgres password
+```
+
+Recovery path: if your personal MFA authenticator dies, the `akadmin` user can be re-enabled via the Authentik admin API using `~/.authentik-bootstrap-token`, MFA reset, then disable `akadmin` again.
+
+
 
 ### 1.1 — Add the Helm repo and bootstrap secrets
 
