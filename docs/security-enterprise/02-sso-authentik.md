@@ -417,88 +417,187 @@ cd ansible && git add helm-values/authentik-values.yaml && \
 
 ---
 
-## Stage 2 — Forward-auth for unauthenticated apps (target: ~1.5 hours)
+## Stage 2 — Forward-auth for unauthenticated apps (target: ~1.5 hours) — ✅ Done 2026-06-18
 
-The five unauthenticated apps (Homer, podinfo, platform-demo, whoami, NATS monitoring) get gated by Authentik's Proxy Outpost at the Ingress layer — no app code touched.
+**Status:** All 5 previously-unauthenticated apps (Homer, podinfo, platform-demo, whoami, NATS monitoring) are now gated behind Authentik OIDC via the embedded Proxy Outpost. Domain-level cookie at `10.0.0.200.nip.io` means logging in once at any of the 5 URLs grants access to all 5 (true SSO). NGINX `auth_request` middleware does the per-request validation against `authentik-server.authentik.svc:80/outpost.goauthentik.io/auth/nginx`.
 
-### 2.1 — Create a Proxy Provider in Authentik
+Annotated Ingresses (5):
+- `homer/homer` (GitOps via `minicloud-gitops/manifests/homer/04-ingress.yaml`)
+- `gitops-demo/platform-demo` (GitOps)
+- `gitops-demo/whoami` (GitOps)
+- `podinfo/podinfo` (Helm via `podinfo-values.yaml`)
+- `messaging/nats-monitor` (kubectl patch — was created out-of-band, not under any chart or GitOps)
 
-In Authentik admin UI → **Applications** → **Providers** → **Create**:
+### 2.1 — Create the Proxy Provider (browser, one-time)
+
+In Authentik admin UI → **Applications** → **Providers** → **Create** → **Proxy Provider**:
 
 | Field | Value |
 |---|---|
-| Type | **Proxy Provider** |
 | Name | `minicloud-forward-auth` |
-| Authentication flow | `default-authentication-flow` |
-| Authorization flow | `default-provider-authorization-explicit-consent` |
-| External host | `https://homer.10.0.0.200.nip.io` (placeholder — gets overridden per Application below) |
-| Mode | **Forward auth (single application)** |
-| Token validity | `hours=24` |
+| Authorization flow | `default-provider-authorization-explicit-consent (Authorize Application)` |
+| Mode | **Forward auth (domain level)** — NOT "single application" |
+| External host | `https://auth.10.0.0.200.nip.io` |
+| Cookie domain | `10.0.0.200.nip.io` (no leading dot, no protocol — must be a parent domain of the apps) |
+| Token validity | leave default (`hours=24`) |
 
-### 2.2 — Create one Authentik Application per protected app
+### 2.2 + 2.3 — Create 5 Applications + bind to embedded Outpost (scripted)
 
-For each of the 5 unauthenticated apps, in **Applications** → **Applications** → **Create**:
-
-| App | Slug | Launch URL | Provider |
-|---|---|---|---|
-| Homer | `homer` | `https://homer.10.0.0.200.nip.io` | `minicloud-forward-auth` |
-| podinfo | `podinfo` | `https://podinfo.10.0.0.200.nip.io` | `minicloud-forward-auth` |
-| platform-demo | `platform-demo` | `https://platform-demo.10.0.0.200.nip.io` | `minicloud-forward-auth` |
-| whoami | `whoami` | `https://whoami.10.0.0.200.nip.io` | `minicloud-forward-auth` |
-| NATS monitoring | `nats` | `https://nats.10.0.0.200.nip.io` | `minicloud-forward-auth` |
-
-### 2.3 — Deploy the embedded Outpost
-
-In Authentik admin UI → **Applications** → **Outposts** → **Edit `authentik Embedded Outpost`** → check all 5 Applications → **Save**.
-
-The embedded Outpost runs as part of the `authentik-server` pod, listening on port 9000 for forward-auth requests.
-
-### 2.4 — Annotate each Ingress to use forward-auth
-
-For each of the 5 Ingresses, add these NGINX annotations:
-
-```yaml
-annotations:
-  nginx.org/server-snippets: |
-    auth_request /outpost.goauthentik.io/auth/nginx;
-    error_page 401 = @goauthentik_proxy_signin;
-    auth_request_set $auth_cookie $upstream_http_set_cookie;
-    add_header Set-Cookie $auth_cookie;
-    auth_request_set $authentik_username   $upstream_http_x_authentik_username;
-    auth_request_set $authentik_groups     $upstream_http_x_authentik_groups;
-    auth_request_set $authentik_email      $upstream_http_x_authentik_email;
-    proxy_set_header X-authentik-username  $authentik_username;
-    proxy_set_header X-authentik-groups    $authentik_groups;
-    proxy_set_header X-authentik-email     $authentik_email;
-  nginx.org/location-snippets: |
-    location /outpost.goauthentik.io {
-      proxy_pass              http://authentik-server.authentik.svc.cluster.local:9000/outpost.goauthentik.io;
-      proxy_set_header        Host $host;
-      proxy_set_header        X-Original-URL $scheme://$http_host$request_uri;
-      add_header              Set-Cookie $auth_cookie;
-      auth_request_set        $auth_cookie $upstream_http_set_cookie;
-      proxy_pass_request_body off;
-      proxy_set_header        Content-Length "";
-    }
-    location @goauthentik_proxy_signin {
-      internal;
-      add_header Set-Cookie $auth_cookie;
-      return 302 /outpost.goauthentik.io/start?rd=$request_uri;
-    }
-```
-
-For Homer (GitOps-managed via `minicloud-gitops/manifests/homer/04-ingress.yaml`), bump the `config-checksum` annotation on the Deployment as always (Phase 12 GitOps gotcha).
-
-### Stage 2 acceptance
+Manual click-through is painful (5 apps × ~10 fields = 50 clicks). Use the idempotent script instead:
 
 ```bash
-✔ Visit https://homer.10.0.0.200.nip.io in incognito → 302 to auth.10.0.0.200.nip.io
-✔ Log in via Authentik → 302 back to Homer dashboard
-✔ Repeat for podinfo, platform-demo, whoami, NATS — all 5 forward-auth gated
-✔ Authentik admin UI → Events → 5 "logged in" events visible per session
+# Mint an API token first (one-time):
+#   Authentik admin UI -> Directory -> Tokens & App Passwords -> Create
+#   Type: API Token, Intent: api, User: <your personal admin user>
+#   Copy the token value and save to ~/.authentik-api-token (mode 600).
+echo "<token-value>" > ~/.authentik-api-token && chmod 600 ~/.authentik-api-token
+
+# Run the script (idempotent — safe to re-run; existing apps skipped):
+~/minicloud-ktaylorganisation/ansible/scripts/authentik-apps-create.sh
 ```
 
-**Effort so far: 5 of 13 apps now on SSO. 8 to go.**
+Script source: [`minicloud-ansible/scripts/authentik-apps-create.sh`](https://github.com/andrelair-platform/minicloud-ansible/blob/main/scripts/authentik-apps-create.sh).
+
+What it does:
+1. Verifies the API token via `/api/v3/core/users/me/`
+2. Looks up the Proxy Provider PK by name
+3. For the **anchor app** (first app that gets the provider attached — typically Homer if manually created first), leaves it alone
+4. For the other 4 apps, creates them as **catalog tiles without a provider** (see Gotcha 7 below — Authentik enforces 1:1 between app and provider)
+5. Binds the provider to the embedded Outpost via `PATCH /api/v3/outposts/instances/<pk>/`
+
+### 2.4 — Annotate the 5 Ingresses
+
+Same annotation block on each Ingress. The F5 NGINX `nginx.org/` annotation pattern:
+
+```yaml
+metadata:
+  annotations:
+    nginx.org/redirect-to-https: "true"
+    # --- Authentik forward-auth ---
+    nginx.org/server-snippets: |
+      location /outpost.goauthentik.io {
+          proxy_pass              http://authentik-server.authentik.svc.cluster.local/outpost.goauthentik.io;
+          proxy_set_header        Host $host;
+          proxy_set_header        X-Original-URL $scheme://$http_host$request_uri;
+          add_header              Set-Cookie $auth_cookie;
+          auth_request_set        $auth_cookie $upstream_http_set_cookie;
+          proxy_pass_request_body off;
+          proxy_set_header        Content-Length "";
+      }
+      location @goauthentik_proxy_signin {
+          internal;
+          add_header Set-Cookie $auth_cookie;
+          return 302 /outpost.goauthentik.io/start?rd=$request_uri;
+      }
+    nginx.org/location-snippets: |
+      auth_request     /outpost.goauthentik.io/auth/nginx;
+      error_page       401 = @goauthentik_proxy_signin;
+      auth_request_set $auth_cookie $upstream_http_set_cookie;
+      add_header       Set-Cookie $auth_cookie;
+      auth_request_set $authentik_username $upstream_http_x_authentik_username;
+      auth_request_set $authentik_groups   $upstream_http_x_authentik_groups;
+      auth_request_set $authentik_email    $upstream_http_x_authentik_email;
+      proxy_set_header X-authentik-username $authentik_username;
+      proxy_set_header X-authentik-groups   $authentik_groups;
+      proxy_set_header X-authentik-email    $authentik_email;
+```
+
+**Critical:** `proxy_pass` uses port **80** (NOT 9000) — see Gotcha 9 below.
+
+How to apply per Ingress:
+| Ingress | Apply via |
+|---|---|
+| `homer/homer` | Edit `minicloud-gitops/manifests/homer/04-ingress.yaml` → commit → push → `kubectl patch app homer -n argocd --type merge -p '{"operation":{"sync":{}}}'` |
+| `gitops-demo/platform-demo` | Same GitOps pattern in `minicloud-gitops/manifests/platform-demo/02-ingress.yaml` |
+| `gitops-demo/whoami` | Same GitOps pattern in `minicloud-gitops/manifests/whoami/03-ingress.yaml` |
+| `podinfo/podinfo` | Edit `podinfo-values.yaml` (`ingress.annotations`) → `helm upgrade podinfo podinfo/podinfo -n podinfo -f podinfo-values.yaml` |
+| `messaging/nats-monitor` | Direct `kubectl patch ingress nats-monitor -n messaging --patch-file <yaml>` — not under any chart or GitOps |
+
+### 2.5 — Enable snippets on the F5 NGINX controller (one-time, cluster-wide)
+
+F5 NGINX **disables `nginx.org/server-snippets` and `nginx.org/location-snippets` by default** for security (snippets allow arbitrary nginx config injection — see Gotcha 8). The forward-auth pattern needs them enabled:
+
+```yaml
+# In /home/ktayl/minicloud-ktaylorganisation/nginx-ingress-values.yaml:
+controller:
+  enableSnippets: true    # Phase 23 Stage 2 — for Authentik forward-auth
+  # ... rest of values ...
+```
+
+```bash
+helm upgrade nginx-ingress nginx-stable/nginx-ingress -n ingress-nginx -f nginx-ingress-values.yaml
+kubectl rollout status deploy/nginx-ingress-controller -n ingress-nginx --timeout=120s
+```
+
+### Stage 2 acceptance — verified 2026-06-18
+
+```bash
+$ for url in homer podinfo platform-demo whoami nats; do
+    curl -sI --cacert ~/minicloud-ca.crt -m 5 "https://${url}.10.0.0.200.nip.io/" \
+      | grep -i "^location:" | tr -d '\r'
+  done
+Location: https://homer.10.0.0.200.nip.io/outpost.goauthentik.io/start?rd=/
+Location: https://podinfo.10.0.0.200.nip.io/outpost.goauthentik.io/start?rd=/
+Location: https://platform-demo.10.0.0.200.nip.io/outpost.goauthentik.io/start?rd=/
+Location: https://whoami.10.0.0.200.nip.io/outpost.goauthentik.io/start?rd=/
+Location: https://nats.10.0.0.200.nip.io/outpost.goauthentik.io/start?rd=/
+```
+
+All 5 apps return HTTP 302 to the Authentik outpost start path. The `Set-Cookie` on those responses has `Domain=10.0.0.200.nip.io` — meaning the session established after one login is valid for all 5 subdomains. True SSO.
+
+**Effort so far: 5 of 13 apps on SSO. 8 to go (3 of which deferred — Backstage to Phase 24, plus future scope).**
+
+### Stage 2 install gotchas (discovered 2026-06-18)
+
+#### Gotcha 7: Authentik enforces 1:1 between Application and Proxy Provider
+
+Even in "Forward auth (domain level)" mode where ONE provider conceptually covers many subdomains, Authentik's data model has a **UNIQUE constraint on `application.provider`**. Trying to attach the same provider to a second application returns:
+
+```json
+{"provider": ["Application with this provider already exists."]}
+```
+
+The actual model is: ONE app holds the provider (the "anchor"), the OTHER apps exist as **catalog tiles without a provider field**. The auth flow doesn't care which app the user requests — the NGINX `auth_request` middleware calls the Outpost (bound to the provider) regardless. The "provider on app" is only meaningful for the Authentik user-dashboard launcher links.
+
+The script in [`authentik-apps-create.sh`](https://github.com/andrelair-platform/minicloud-ansible/blob/main/scripts/authentik-apps-create.sh) detects which app is currently the anchor and creates the rest as naked catalog entries.
+
+#### Gotcha 8: F5 NGINX requires `enableSnippets: true` (off by default)
+
+Without `controller.enableSnippets: true` in the chart values, every Ingress with `nginx.org/server-snippets` or `nginx.org/location-snippets` gets rejected with:
+
+```
+annotations.nginx.org/server-snippets: Forbidden: snippet specified but
+snippets feature is not enabled
+```
+
+The Ingress isn't just unannotated — it gets DROPPED ENTIRELY. The whole vhost disappears from the NGINX config. Browser hitting the host gets `TLS unrecognized name` (because the SNI matches no server block).
+
+This is the F5-NGINX chart's deliberate security default — snippets allow injecting arbitrary nginx config per-Ingress, which can be abused by anyone with namespace-Ingress-write privilege (e.g. injecting a `location` that redirects an internal service to an attacker domain). We accept the trade-off because every namespace in this cluster is admin-managed.
+
+#### Gotcha 9: Authentik Service maps port 80 → targetPort 9000
+
+The embedded Outpost listens on container port 9000. The `authentik-server` Service exposes it as:
+
+```yaml
+ports:
+- name: http
+  port: 80          # ← what NGINX should connect to
+  targetPort: 9000  # ← container port (do NOT use in proxy_pass)
+```
+
+`proxy_pass http://authentik-server.authentik.svc.cluster.local:9000/...` fails with `connect() failed (113: No route to host)`. The fix is to either drop the port (defaults to 80) or set it explicitly:
+
+```nginx
+proxy_pass http://authentik-server.authentik.svc.cluster.local/outpost.goauthentik.io;
+# or:
+proxy_pass http://authentik-server.authentik.svc.cluster.local:80/outpost.goauthentik.io;
+```
+
+(Pod-direct queries to port 9000 still work — this only bites the Service-DNS path.)
+
+#### Gotcha 10: `nats-monitor` Ingress is the actual name (not `nats`)
+
+For consistency with the URL (`nats.10.0.0.200.nip.io`), one would expect the Ingress to be named `nats`. It's actually `nats-monitor`. Don't fall for this when scripting `kubectl get ingress -n messaging`.
 
 ---
 
