@@ -599,9 +599,108 @@ proxy_pass http://authentik-server.authentik.svc.cluster.local:80/outpost.goauth
 
 For consistency with the URL (`nats.10.0.0.200.nip.io`), one would expect the Ingress to be named `nats`. It's actually `nats-monitor`. Don't fall for this when scripting `kubectl get ingress -n messaging`.
 
+### Stage 3-5 install gotchas (discovered 2026-06-20)
+
+#### Gotcha 11: Authentik auto-slug breaks Applications with capital letters or spaces
+
+Authentik's auto-slug converts spaces to hyphens AND treats internal capital letters as word boundaries. Discovered three times during Stages 4 + 5:
+
+| Application name | Auto-generated slug | Discovery URL that 404s |
+|---|---|---|
+| `MinIO` | `min-io` (capital `I` triggers split) | `/application/o/minio/...` (assumes the natural slug) |
+| `Open WebUI` | `open-web-ui` (space + capital `W` + capital `U`) | `/application/o/open-webui/...` |
+| `Harbor` | `harbor` (works by accident) | n/a — no split |
+
+The bug fires silently: Authentik returns 200 with the publish-discovery URL containing the auto-slug, but the consumer app (with a hand-crafted URL) gets 404. Then OIDC initialization loops forever with no clear root cause.
+
+**The rule: always manually set the slug at creation time.** Type the exact slug you want before clicking Finish. If you forget, fix it via:
+
+```bash
+# Bulk-find auto-slugged apps
+curl -sf --cacert ~/minicloud-ca.crt -H "Authorization: Bearer $(cat ~/.authentik-api-token)" \
+  https://auth.10.0.0.200.nip.io/api/v3/core/applications/ \
+  | jq -r '.results[] | select(.slug | contains("-")) | "\(.name) -> \(.slug)"'
+
+# Rename via API
+curl -sf --cacert ~/minicloud-ca.crt -H "Authorization: Bearer $(cat ~/.authentik-api-token)" \
+  -H "Content-Type: application/json" -X PATCH \
+  https://auth.10.0.0.200.nip.io/api/v3/core/applications/<old-slug>/ \
+  -d '{"slug":"<desired-slug>"}'
+```
+
+#### Gotcha 12: MinIO needs `SSL_CERT_FILE` env var for outbound HTTPS trust
+
+The `/certs/CAs/` mount path (documented in MinIO docs for "trusting additional CAs") is for **MinIO's OWN TLS server**, not for outbound TLS trust. Outbound HTTPS (to the Authentik OIDC discovery endpoint) uses Go's net/http stack, which reads from `SSL_CERT_FILE` / `SSL_CERT_DIR` env vars OR the platform default bundle.
+
+Symptom without the fix: `x509: certificate signed by unknown authority` retrying forever in MinIO logs; console + S3 API both stuck (never reach Ready).
+
+Fix:
+
+```yaml
+# In the systemd unit's docker run flags:
+-e SSL_CERT_FILE=/etc/ssl/certs/minicloud-ca.crt \
+-v /home/ktayl/minicloud-ca.crt:/etc/ssl/certs/minicloud-ca.crt:ro \
+```
+
+`SSL_CERT_FILE` instructs Go to use only that file for trust (replaces system bundle). For MinIO this is fine — its outbound HTTPS goes only to Authentik. For workloads that talk to multiple external HTTPS endpoints (only one of which is signed by our CA), use a merged bundle instead.
+
+#### Gotcha 13: Open WebUI OIDC initiation returns 200, not 302
+
+Unlike Grafana (`/login/generic_oauth` 302s server-side) or ArgoCD (`/api/dex/login` 302s server-side), Open WebUI's `/oauth/oidc/login` endpoint serves the SPA HTML and triggers the OAuth flow via JavaScript at button-click time. Don't try to verify Open WebUI's OIDC by `curl -I` on the login URL.
+
+**Real verification:** check `/api/config`:
+
+```bash
+$ curl -sf https://chat.10.0.0.200.nip.io/api/config | jq '.oauth'
+{
+  "providers": {
+    "oidc": "Authentik"
+  }
+}
+```
+
+If this reports the registered provider, OIDC is wired. Then the React app renders a "Continue with Authentik" button on the login page.
+
+#### Gotcha 14: ArgoCD `clientSecret` reference uses `$<secret-name>:<key>` syntax, not `$<key>`
+
+ArgoCD's `argocd-cm` `oidc.config` block supports a special `$<secret-name>:<key>` syntax for resolving the client secret from a k8s Secret. The Secret MUST have the label `app.kubernetes.io/part-of: argocd` for ArgoCD's controller to detect it.
+
+Wrong:
+```yaml
+clientSecret: $clientSecret    # no secret-name prefix — broken
+```
+
+Right:
+```yaml
+clientSecret: $argocd-oidc:clientSecret    # Secret 'argocd-oidc', key 'clientSecret'
+```
+
+Plus, when creating the Secret:
+
+```bash
+kubectl create secret generic argocd-oidc -n argocd \
+  --from-literal=clientSecret='<value>' --dry-run=client -o yaml \
+  | kubectl label -f - --local --dry-run=client -o yaml \
+    app.kubernetes.io/part-of=argocd | kubectl apply -f -
+```
+
+Without the `app.kubernetes.io/part-of=argocd` label, the `$<secret>:<key>` resolver silently fails — ArgoCD treats the literal string as the client secret.
+
+#### Gotcha 15: Harbor's `/c/oidc/login` is the callback, not the initiation
+
+Harbor 2.x: `/c/oidc/login` returns 404 for direct GETs — that's the OIDC callback URL (where Authentik redirects back to after auth). The login button is rendered on the regular login page at `/c/login` or `/`. Don't waste time debugging the 404; opening the login page in a browser is the actual verification.
+
 ---
 
-## Stage 3 — Tier A native OIDC: ArgoCD + Grafana + Backstage (target: ~1.5 hours)
+## Stage 3 — Native OIDC: ArgoCD + Grafana (target: ~1.5 hours) — ✅ Done 2026-06-20
+
+**Status:** ArgoCD + Grafana both wired to Authentik OIDC.
+
+- **ArgoCD** — login page now shows "Log in via Authentik". Local `admin` account preserved as emergency fallback. RBAC: `authentik Admins` group → `role:admin`, everyone else → `role:readonly` (via `policy.default`).
+- **Grafana** — login page shows "Sign in with Authentik" (PKCE flow). Local `admin` (~/.grafana-admin) preserved. `role_attribute_path` maps `authentik Admins` → `GrafanaAdmin`, everyone else → `Viewer`.
+- **Backstage SSO deferred to Phase 24** — the off-the-shelf image's UI bug (`NotImplementedError` on plugin.notifications.service) makes adding OIDC moot when the UI itself is broken. The fix lives in a future "Backstage Plugins (custom image)" phase.
+
+
 
 These three have the cleanest OIDC integration — straightforward chart-values changes.
 
@@ -699,7 +798,15 @@ The `bs_catalog` shell function continues to work without auth (guest token), so
 
 ---
 
-## Stage 4 — Tier A native OIDC: Harbor + MinIO + MAAS (target: ~2 hours)
+## Stage 4 — Native OIDC: Harbor + MinIO (target: ~2 hours) — ✅ Done 2026-06-20 (MAAS deferred)
+
+**Status:** Harbor + MinIO both wired to Authentik OIDC. MAAS deliberately deferred to a future sub-phase because of its off-cluster architecture (Authentik Outpost would need to be deployed on the controller, separately from the cluster's embedded Outpost).
+
+- **Harbor** — `auth_mode: oidc_auth` set via API (`PUT /api/v2.0/configurations`). Login page now shows "LOGIN VIA OIDC PROVIDER". `oidc_admin_group: "authentik Admins"` maps that Authentik group to Harbor admin. `oidc_auto_onboard: true` auto-provisions Harbor accounts for SSO users on first login.
+- **MinIO** — `MINIO_IDENTITY_OPENID_*` env vars on the systemd unit (controller-side, not cluster). CA-trust fix required: `SSL_CERT_FILE=/etc/ssl/certs/minicloud-ca.crt` env var + mount of `/home/ktayl/minicloud-ca.crt` into that path. Console at `http://100.88.123.8:9001` shows "Sign in with SSO".
+- **MAAS** — deferred. The plan is forward-auth via a separate Authentik Proxy Outpost container on the controller + NGINX reverse-proxy in front of port 5240. ~1-2 hour mini-phase.
+
+
 
 These three have OIDC support but it's fiddlier.
 
@@ -774,7 +881,15 @@ Probably worth tackling as its own sub-task on Day 2/3 rather than rushing it.
 
 ---
 
-## Stage 5 — Open WebUI (target: ~1 hour)
+## Stage 5 — Open WebUI (target: ~1 hour) — ✅ Done 2026-06-20
+
+**Status:** Open WebUI 0.6 native OIDC integration via env vars (`OPENID_PROVIDER_URL`, `OAUTH_CLIENT_ID`, `OAUTH_CLIENT_SECRET`, `OAUTH_PROVIDER_NAME=Authentik`, `OAUTH_SCOPES="openid email profile groups"`). Client credentials injected via `extraEnvFrom` referencing the `openwebui-oidc` Secret in the `ai` namespace.
+
+Group-based role mapping: `OAUTH_ADMIN_ROLES="authentik Admins"` + `OAUTH_ROLES_CLAIM=groups` means the same `authentik Admins` group used by ArgoCD/Grafana/Harbor also gets Open WebUI admin. First-signup-becomes-admin local fallback is preserved.
+
+**Verification gotcha:** Open WebUI's `/oauth/oidc/login` endpoint returns HTTP 200 (SPA HTML), NOT 302. Don't be fooled — the proof is `/api/config` reporting `{"providers": {"oidc": "Authentik"}}` and the React app rendering the "Continue with Authentik" button. The flow is JavaScript-triggered at button-click time.
+
+
 
 Open WebUI added native OIDC in v0.4. Set env vars in `open-webui-values.yaml`:
 
@@ -803,7 +918,64 @@ extraEnvVars:
 
 ---
 
-## Stage 6 — Cleanup + portfolio polish (target: ~1 hour)
+## Stage 6 — Cleanup + portfolio polish (target: ~1 hour) — ✅ Done 2026-06-20
+
+**Status:** Homer tiles refreshed with `SSO` tags on the 10 OIDC-or-forward-auth-gated apps + new "Identity" section with an Authentik tile. Backstage left as `live` (not `SSO`) — its OIDC integration is deferred to Phase 24's custom-image build. CLAUDE.md service table updated to reflect the SSO posture. Per-app local admin accounts (`~/.argocd-admin`, `~/.grafana-admin`, `~/.harbor-admin`, `~/.minio-admin`) are preserved as **emergency fallback only** — the day-to-day login path is Authentik for all of them.
+
+### Final SSO posture (13 apps)
+
+| Pattern | Count | Apps |
+|---|---|---|
+| **Native OIDC** (own login + group→role mapping) | 5 | ArgoCD, Grafana, Harbor, MinIO, Open WebUI |
+| **Forward-auth** (NGINX `auth_request` middleware → Authentik embedded Outpost) | 5 | Homer, podinfo, platform-demo, whoami, NATS monitoring |
+| **Deferred — custom image required** | 1 | Backstage (Phase 24) |
+| **Deferred — off-cluster Outpost required** | 1 | MAAS (future sub-phase) |
+| **Authentik itself** (the IdP) | 1 | auth.10.0.0.200.nip.io |
+
+11 of 13 = 85% of the platform on SSO. The remaining 2 are scoped deferrals, not hidden failures.
+
+### Credential hygiene
+
+Local admin accounts (Phase 7-19 era — `~/.<name>-admin` files mode 600) remain on the controller as the emergency-recovery path. These are NOT rotated in Stage 6 — they're intentionally preserved. Rotate only when:
+- Personal MFA authenticator phone dies and the user needs a non-Authentik path to log in
+- Authentik itself is rebuilt from scratch (the OIDC providers all get fresh client IDs/secrets at that point)
+
+Any future credentials shared in chat / screenshots / git commits should still be rotated promptly — but that's a session-end hygiene practice, not a Stage 6 deliverable.
+
+---
+
+## Acceptance — Phase 23 complete (2026-06-20)
+
+End-to-end verification from the controller:
+
+```bash
+# All 5 forward-auth apps redirect to Authentik
+for url in homer podinfo platform-demo whoami nats; do
+  curl -sI --cacert ~/minicloud-ca.crt "https://${url}.10.0.0.200.nip.io/" \
+    | grep -i "^location:"
+done
+# → all 5 → https://<host>/outpost.goauthentik.io/start?rd=/  ✓
+
+# All 5 OIDC apps publish discovery via Authentik
+for slug in argocd grafana harbor minio open-webui; do
+  curl -sIf --cacert ~/minicloud-ca.crt \
+    "https://auth.10.0.0.200.nip.io/application/o/${slug}/.well-known/openid-configuration" \
+    -o /dev/null -w "${slug}: %{http_code}\n"
+done
+# → all 200 ✓
+
+# Cluster-wide :latest audit still clean (no regression from helm upgrades)
+pin_audit
+# → empty ✓
+
+# Velero (which talks to MinIO over S3) still happy
+velero backup-location get
+# → PHASE: Available ✓
+```
+
+---
+
+
 
 ### 6.1 — Rotate admin secrets
 
