@@ -30,10 +30,10 @@ Security is not a single tool — it is layered. This platform implements defens
 │  Vault (dynamic credentials)  │  External Secrets Operator          │
 ├─────────────────────────────────────────────────────────────────────┤
 │  LAYER 2 — AUTHORIZATION                                            │
-│  Kubernetes RBAC  │  OPA policies  │  Keycloak roles                │
+│  Kubernetes RBAC  │  OPA policies  │  Authentik roles                │
 ├─────────────────────────────────────────────────────────────────────┤
 │  LAYER 1 — AUTHENTICATION                                           │
-│  Keycloak SSO / OIDC  │  Service accounts  │  mTLS (Cilium)         │
+│  Authentik SSO / OIDC  │  Service accounts  │  mTLS (Cilium)         │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -43,7 +43,7 @@ Security is not a single tool — it is layered. This platform implements defens
 
 | Component | Layer | What It Does |
 |---|---|---|
-| **Keycloak** | Identity | Single sign-on for all platform UIs; OIDC/OAuth2 provider |
+| **Authentik** | Identity | Single sign-on for all platform UIs; OIDC/OAuth2 + forward-auth provider (Phase 23 ✅) |
 | **OPA / Gatekeeper** | Policy | Admission controller — blocks non-compliant workloads at deploy time |
 | **Falco** | Runtime | Detects anomalous container behavior (e.g., shell in container, file read) |
 | **Cosign + SBOM** | Supply chain | Signs images; generates bill of materials; blocks unsigned images |
@@ -58,7 +58,7 @@ Security is not a single tool — it is layered. This platform implements defens
 ```text
 ATTACK                          STOPPED BY
 ──────────────────────────────────────────────────────────────
-Compromised admin credentials   Keycloak MFA + short-lived tokens
+Compromised admin credentials   Authentik MFA + short-lived tokens
 Privilege escalation in pod     OPA: no privileged containers
 Image with known CVEs           Trivy scan in CI (Phase 13)
 Unsigned / tampered image       Cosign policy in Gatekeeper
@@ -78,7 +78,7 @@ Each team owns the security of their namespace. Platform security team owns:
 
 | Area | Contact / Runbook |
 |---|---|
-| SSO / identity incidents | Platform team → Keycloak admin |
+| SSO / identity incidents | Platform team → Authentik admin (https://auth.10.0.0.200.nip.io) |
 | Active intrusion (Falco alert) | On-call → incident runbook |
 | CVE in production image | Dev team → patch + redeploy within SLA |
 | Compliance audit | Platform team → kube-bench report |
@@ -131,7 +131,7 @@ kubectl get pods -A -o json | jq '.items[] | select(.spec.containers[].resources
 ## Done When
 
 ```text
-✔ Keycloak SSO active for all platform UIs
+✔ Authentik SSO active — 11/13 apps on SSO (Phase 23 ✅); Backstage + MAAS deferred
 ✔ OPA Gatekeeper blocking privileged / no-resource-limit pods
 ✔ Falco alerting on shell-in-container and unexpected file access
 ✔ All production images signed with Cosign + SBOM attached
