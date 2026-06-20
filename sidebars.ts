@@ -70,6 +70,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'storage/longhorn',
         'storage/nfs',
+        'storage/minio',
       ],
     },
 
