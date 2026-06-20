@@ -63,7 +63,7 @@ Each phase builds directly on the previous one — nothing requires something th
 | **21** | Logs (Loki single-binary, Promtail DaemonSet, Grafana datasource) + Alertmanager 3-tier routing tree + in-cluster webhook receiver + custom `PodinfoAvailabilityLost` rule. End-to-end alert validated via Chaos Mesh kill-both-replicas → webhook receives FIRING JSON. **Jaeger / distributed tracing deferred** — no multi-service topology to trace. | Loki, Promtail, Alertmanager | ✅ Done |
 | **22** | eBPF networking — **migration runbook authored, execution deferred to fresh-cluster rebuild**. cilium CLI installed on controller; dry-run helm values captured. Senior scope-reduction call: 111 live pods + 22 phases of validated infrastructure on top of Flannel make hot CNI swap not worth it at our cluster scale. | Cilium, Hubble | ✅ Done |
 | **23** | Enterprise SSO — Authentik as IdP; 11/13 apps on SSO. 5 via native OIDC (ArgoCD, Grafana, Harbor, MinIO, Open WebUI), 5 via forward-auth Outpost (Homer, podinfo, platform-demo, whoami, NATS). Backstage + MAAS deferred. | Authentik, OIDC, forward-auth | ✅ Done |
-| **24** | Backstage custom image — replace off-the-shelf image with org-owned build; add GitHub, TechDocs, Kubernetes, and Cost Insights plugins; custom scaffolder templates; published to Harbor. | Backstage, crane, Harbor | 🔜 |
+| **24** | Backstage custom image — org-owned build (bcec03f); Authentik OIDC SSO; Kubernetes, ArgoCD, TechDocs, Grafana plugins; published to Harbor. | Backstage, crane, Harbor, Authentik | ✅ Done |
 | **—** | **Data Layer** | Kafka/Redpanda, ClickHouse, dbt, Superset, OpenMetadata | 🔜 |
 | **—** | **Security Layer** | Keycloak, OPA/Gatekeeper, Falco, Cosign+SBOM, kube-bench | 🔜 |
 

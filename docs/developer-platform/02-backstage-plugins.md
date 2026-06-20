@@ -566,3 +566,73 @@ Stage 8 ✔ Custom image in Harbor; cluster running it; values mirrored to ansib
 | **Per-Component annotation strategy** | The Backstage opinion: catalog-info.yaml IS the source-of-truth, every integration reads from it. Generalizes to GitHub Actions discovery, CI/CD attestations, SLO definitions. |
 | **Image immutability via git SHA tags** | Same discipline as Phase 13's platform-demo: every build produces an immutable, traceable artifact. |
 | **Honest deferrals** (Software Templates, GitHub Actions plugin, TechDocs in-cluster build) | Same pattern as Phase 11 (Crossplane), Phase 13 (GitLab), Phase 15 (Vault), Phase 16 (n8n), Phase 18 (plugins — exactly this phase's predecessor), Phase 19 (MLflow/Kubeflow), Phase 23 (LDAP/SCIM/PAM). Senior engineers ship the foundation first. |
+
+
+---
+
+## Execution gotchas (real, hit during Phase 24)
+
+### Gotcha 3: `yarn build-image` produces an ARM64 image on Apple Silicon
+
+`yarn build-image` calls `docker build` without a `--platform` flag. On a Mac (ARM64), the resulting image is `linux/arm64`. The k3s ThinkPads are `x86_64`. Deploying the ARM64 image causes an `exec format error` (exit code 255) in CrashLoopBackOff.
+
+**Fix:** set `DOCKER_DEFAULT_PLATFORM` before the build:
+```bash
+DOCKER_DEFAULT_PLATFORM=linux/amd64 yarn build-image --tag "backstage:<sha>-amd64"
+```
+
+Tag the image with `-amd64` suffix so it is distinguishable from any ARM64 artifact under the same SHA. Use a new tag (not overwrite the old one) to bypass kubelet `IfNotPresent` cache — if the same tag exists on the node, kubelet will not re-pull even if Harbor has new content.
+
+### Gotcha 4: `crane push` for Harbor, not `docker push`
+
+Docker Desktop on macOS uses a Linux VM that does not trust macOS System Keychain, so `docker push` to Harbor fails with `certificate signed by unknown authority` even after adding the minicloud CA via `~/.docker/certs.d/`.
+
+**Fix:** Use `crane` (Google container tool), which uses Go native TLS and respects the macOS System Keychain where the minicloud CA was already trusted:
+```bash
+docker save "backstage:<sha>-amd64" -o /tmp/backstage-amd64.tar
+crane push /tmp/backstage-amd64.tar "harbor.10.0.0.200.nip.io/library/backstage:<sha>-amd64"
+rm /tmp/backstage-amd64.tar
+```
+
+### Gotcha 5: `@k-phoen/backstage-plugin-grafana` requires `grafana.domain` in config schema
+
+The Grafana community plugin ships a config schema that marks `grafana.domain` as **required**. Even if the plugin is not actively registered in `App.tsx`, its JSON schema is compiled into the app bundle during `yarn build`. The `plugin-app-backend` validates the full schema at startup, causing this fatal error:
+
+```
+Config validation failed, Config must have required property 'grafana'
+```
+
+**Fix:** Add to `appConfig` in `backstage-values.yaml` (no rebuild needed — this is runtime config):
+```yaml
+grafana:
+  domain: https://grafana.10.0.0.200.nip.io
+```
+
+### Gotcha 6: `scope` option removed from OIDC provider in Backstage 1.52+
+
+The `@backstage/plugin-auth-backend-module-oidc-provider` in Backstage 1.52 removed the `scope` config key. Using it causes:
+
+```
+Failed to initialize oidc auth provider, The oidc provider no longer supports the "scope" configuration option. Please use the "additionalScopes" option instead.
+```
+
+**Fix:** Replace in `appConfig.auth.providers.oidc.production`:
+```yaml
+# Old (broken):
+scope: 'openid profile email'
+
+# New:
+additionalScopes: []  # openid, profile, email are included by default
+```
+
+---
+
+## Phase complete
+
+- **Image:** `harbor.10.0.0.200.nip.io/library/backstage:bcec03f-amd64`
+- **Built:** 2026-06-20 (linux/amd64 on Apple Silicon Mac with DOCKER_DEFAULT_PLATFORM override)
+- **Helm revision:** 11
+- **Health:** `readiness 200 OK`, `liveness 200 OK`
+- **Auth:** Authentik OIDC (guest mode removed)
+- **Plugins live:** Kubernetes, ArgoCD, TechDocs (local), Grafana
+- **Deferred:** TechDocs in-cluster builder (DinD), Software Templates
