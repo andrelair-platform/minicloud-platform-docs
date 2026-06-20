@@ -285,6 +285,22 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['networking/cilium'],
     },
+
+    // ── Phase 23 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 23 — SSO via Authentik ✅',
+      collapsed: true,
+      items: ['security-enterprise/02-sso-authentik'],
+    },
+
+    // ── Phase 24 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 24 — Backstage Custom Image',
+      collapsed: true,
+      items: ['developer-platform/02-backstage-plugins'],
+    },
   ],
 };
 
