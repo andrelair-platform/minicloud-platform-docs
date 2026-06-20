@@ -291,7 +291,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Phase 23 — SSO via Authentik ✅',
       collapsed: true,
-      items: ['security-enterprise/02-sso-authentik'],
+      items: ['security-enterprise/sso-authentik'],
     },
 
     // ── Phase 24 ────────────────────────────────────────────────────
@@ -299,7 +299,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Phase 24 — Backstage Custom Image',
       collapsed: true,
-      items: ['developer-platform/02-backstage-plugins'],
+      items: ['developer-platform/backstage-plugins'],
     },
   ],
 };
