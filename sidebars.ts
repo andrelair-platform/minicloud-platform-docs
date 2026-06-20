@@ -182,11 +182,10 @@ const sidebars: SidebarsConfig = {
     // ── Security Layer ───────────────────────────────────────────────
     {
       type: 'category',
-      label: '🔒 Security Layer (Keycloak → OPA → Falco → Cosign)',
+      label: '🔒 Security Layer (Authentik → OPA → Falco → Cosign)',
       collapsed: true,
       items: [
         'security-enterprise/security-overview',
-        'security-enterprise/keycloak',
         'security-enterprise/opa-gatekeeper',
         'security-enterprise/falco',
         'security-enterprise/cosign-sbom',
