@@ -144,10 +144,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Phase 13 — CI/CD',
       collapsed: true,
-      items: [
-        'platform-roadmap/phase-13-cicd',
-        'platform-roadmap/phase-8-containers',
-      ],
+      items: ['platform-roadmap/phase-13-cicd'],
     },
 
     // ── App Deployment Guide ─────────────────────────────────────────
@@ -219,7 +216,15 @@ const sidebars: SidebarsConfig = {
     // ── Phase 16 ────────────────────────────────────────────────────
     {
       type: 'category',
-      label: 'Phase 16 — Automation & Workflows',
+      label: 'Phase 16 — Harbor as Sovereign Registry ✅',
+      collapsed: true,
+      items: ['registry/harbor-proxy-cache'],
+    },
+
+    // ── Deferred: Automation & Workflows ────────────────────────────
+    {
+      type: 'category',
+      label: '🔜 Deferred — Automation & Workflows (n8n / Temporal / Airflow)',
       collapsed: true,
       items: [
         'automation/n8n',
@@ -244,10 +249,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Phase 18 — Developer Platform',
       collapsed: true,
-      items: [
-        'developer-platform/backstage',
-        'platform-roadmap/phase-10-ansible',
-      ],
+      items: ['developer-platform/backstage'],
     },
 
     // ── Phase 19 ────────────────────────────────────────────────────
@@ -273,9 +275,13 @@ const sidebars: SidebarsConfig = {
     // ── Phase 21 ────────────────────────────────────────────────────
     {
       type: 'category',
-      label: 'Phase 21 — Advanced Observability',
+      label: 'Phase 21 — Advanced Observability ✅',
       collapsed: true,
-      items: ['platform-roadmap/phase-11-observability'],
+      items: [
+        'observability/loki',
+        'observability/alertmanager',
+        'observability/jaeger',
+      ],
     },
 
     // ── Phase 22 ────────────────────────────────────────────────────
