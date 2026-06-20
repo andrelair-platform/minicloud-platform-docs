@@ -4,6 +4,11 @@ title: OPA / Gatekeeper (Policy as Code)
 sidebar_position: 3
 ---
 
+:::caution Not deployed on this cluster
+OPA / Gatekeeper has **not been deployed**. The Security Layer (OPA, Falco, Cosign) is planned but deferred — no namespace, no pods, no admission policies are active. See [`security-enterprise/security-overview`](./security-overview) for current status.
+:::
+
+
 # OPA / Gatekeeper — Policy as Code (Admission Control)
 
 OPA Gatekeeper is a Kubernetes admission controller that enforces policies before any workload is deployed. It intercepts every `kubectl apply` and rejects manifests that violate platform standards — privileged containers, missing resource limits, non-Harbor images, etc.

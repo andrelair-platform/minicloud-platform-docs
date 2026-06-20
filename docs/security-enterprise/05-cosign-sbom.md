@@ -4,6 +4,11 @@ title: Cosign + SBOM (Supply Chain Security)
 sidebar_position: 5
 ---
 
+:::caution Not deployed on this cluster
+Cosign image signing and SBOM enforcement have **not been deployed**. There is no Gatekeeper policy enforcing signatures. Harbor Trivy scanning (Phase 7) is the only active supply-chain control.
+:::
+
+
 # Cosign + SBOM — Supply Chain Security
 
 Supply chain attacks compromise software before it reaches your cluster — a malicious dependency, a tampered image, or a compromised registry. This layer signs every image with Cosign, generates a Software Bill of Materials (SBOM), and enforces that only signed images from your Harbor registry can be deployed.

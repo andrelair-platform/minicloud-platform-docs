@@ -4,6 +4,11 @@ title: Cloudflare Tunnel
 sidebar_position: 3
 ---
 
+:::caution Not deployed on this cluster
+Cloudflare Tunnel was planned as part of Phase 3 but was **not executed**. Remote access is provided exclusively by **Tailscale** (see [Tailscale](./tailscale)). This runbook is kept as a reference in case a public internet endpoint is needed in the future.
+:::
+
+
 # Cloudflare Tunnel — Browser Access Without a VPN
 
 Cloudflare Tunnel (`cloudflared`) runs on your MAAS controller and creates a secure outbound-only connection to Cloudflare's edge. Your services become reachable at real HTTPS URLs from any browser — no client install, no public IP, no port forwarding.

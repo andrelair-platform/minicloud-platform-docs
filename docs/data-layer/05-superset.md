@@ -4,6 +4,11 @@ title: Apache Superset (BI Dashboards)
 sidebar_position: 5
 ---
 
+:::caution Not yet deployed — planned for a future phase
+Apache Superset has **not been deployed** on this cluster. This is a design reference doc.
+:::
+
+
 # Apache Superset — Self-Hosted Business Intelligence
 
 Apache Superset is a modern data visualization platform that connects directly to ClickHouse, provides 40+ chart types, SQL Lab for ad-hoc queries, and row-level security. All dashboards are version-controlled and can be exported as JSON.

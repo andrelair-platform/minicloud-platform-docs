@@ -4,6 +4,11 @@ title: Kafka / Redpanda (Event Streaming)
 sidebar_position: 2
 ---
 
+:::caution Not yet deployed — planned for a future phase
+Kafka / Redpanda has **not been deployed** on this cluster. This is a design reference doc.
+:::
+
+
 # Kafka / Redpanda — Event Streaming Backbone
 
 Redpanda is a Kafka-compatible streaming platform written in C++ — no JVM, no ZooKeeper, 10x lower latency. It speaks the Kafka protocol natively, so every Kafka client, connector, and tool works without modification.

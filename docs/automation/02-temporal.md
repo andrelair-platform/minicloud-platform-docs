@@ -4,6 +4,11 @@ title: Phase 17 — Temporal
 sidebar_position: 2
 ---
 
+:::caution Deferred — not deployed on this cluster
+Temporal was the original Phase 16 automation plan. Phase 16 was **replaced by Harbor as Sovereign Registry**. This doc is kept as a planning reference.
+:::
+
+
 # Phase 17 — Temporal — Code-Based Workflow Orchestration
 
 Temporal is a workflow orchestration engine for developers. You write workflows in real code (Python, Go, TypeScript, Java) — Temporal handles retries, timeouts, state persistence, and failure recovery automatically. Think of it as a durable, distributed function runner.

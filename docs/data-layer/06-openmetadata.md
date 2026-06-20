@@ -4,6 +4,11 @@ title: OpenMetadata (Data Catalog)
 sidebar_position: 6
 ---
 
+:::caution Not yet deployed — planned for a future phase
+OpenMetadata has **not been deployed** on this cluster. This is a design reference doc.
+:::
+
+
 # OpenMetadata — Data Catalog, Lineage & Governance
 
 OpenMetadata is the unified data catalog that auto-discovers all data assets (ClickHouse tables, dbt models, Airflow pipelines, Kafka topics), builds an automatic lineage graph, tracks data quality, and provides a searchable catalog for the entire data team.

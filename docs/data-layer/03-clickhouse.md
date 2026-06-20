@@ -4,6 +4,11 @@ title: ClickHouse (Analytics Warehouse)
 sidebar_position: 3
 ---
 
+:::caution Not yet deployed — planned for a future phase
+ClickHouse has **not been deployed** on this cluster. This is a design reference doc.
+:::
+
+
 # ClickHouse — Columnar Analytics Warehouse
 
 ClickHouse is a column-oriented database built for real-time analytics. It can ingest millions of rows per second from Kafka, execute complex aggregations in milliseconds, and serves as the single source of truth for all analytical workloads.

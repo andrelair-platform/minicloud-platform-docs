@@ -4,6 +4,11 @@ title: Data Layer Overview
 sidebar_position: 1
 ---
 
+:::caution Not yet deployed — planned for a future phase
+The **entire Data Layer** (Kafka/Redpanda → ClickHouse → dbt → Superset → OpenMetadata) is planned but **has not been deployed** on this cluster. All pages in this section are design references.
+:::
+
+
 # Data Layer — Complete Enterprise Data Platform
 
 The data layer transforms raw events from your platform into actionable business intelligence. It covers the full chain: event ingestion → storage → transformation → orchestration → visualization → governance.

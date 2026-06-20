@@ -4,6 +4,11 @@ title: Compliance (kube-bench + Audit)
 sidebar_position: 6
 ---
 
+:::caution Not deployed on this cluster
+kube-bench has **not been run** as a standing deployment. The commands below are valid but have not been executed against this cluster. Run them manually to generate a CIS benchmark report.
+:::
+
+
 # Compliance — CIS Benchmarks, Audit Logs & Hardening
 
 Compliance is the proof layer: evidence that the cluster meets industry standards. This page covers CIS Kubernetes benchmark scanning with kube-bench, Kubernetes API audit logging, and a hardening checklist for k3s.

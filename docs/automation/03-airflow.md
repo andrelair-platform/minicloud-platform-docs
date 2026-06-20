@@ -4,6 +4,11 @@ title: Phase 17 — Apache Airflow
 sidebar_position: 3
 ---
 
+:::caution Deferred — not deployed on this cluster
+Airflow was the original Phase 16 automation plan. Phase 16 was **replaced by Harbor as Sovereign Registry**. This doc is kept as a planning reference.
+:::
+
+
 # Phase 17 — Apache Airflow — Data Pipeline Orchestration
 
 Apache Airflow is the standard tool for scheduling and orchestrating data pipelines. Workflows are defined as Python DAGs (Directed Acyclic Graphs) — each node is a task, edges define execution order and dependencies.

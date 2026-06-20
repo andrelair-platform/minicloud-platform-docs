@@ -4,6 +4,11 @@ title: Falco (Runtime Security)
 sidebar_position: 4
 ---
 
+:::caution Not deployed on this cluster
+Falco has **not been deployed**. Runtime security monitoring is part of the planned Security Layer but not yet executed on this cluster.
+:::
+
+
 # Falco — Runtime Security & Threat Detection
 
 Falco monitors every system call made by containers at runtime using eBPF. It detects threats that admission control misses: a container that was clean at deploy time but later spawns a shell, reads sensitive files, or makes unexpected network connections.

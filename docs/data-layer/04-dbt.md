@@ -4,6 +4,11 @@ title: dbt (Data Transformation)
 sidebar_position: 4
 ---
 
+:::caution Not yet deployed — planned for a future phase
+dbt has **not been deployed** on this cluster. This is a design reference doc.
+:::
+
+
 # dbt — SQL Transformation Layer
 
 dbt (data build tool) turns raw ClickHouse tables into clean, tested, documented data marts using version-controlled SQL. Every transformation is a SELECT statement — dbt handles the CREATE TABLE/VIEW, testing, and documentation automatically.
