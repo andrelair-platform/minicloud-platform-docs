@@ -8,7 +8,7 @@ sidebar_position: 4
 
 Building AI is straightforward. Securing it is not. The HDI Seguros AI platform handles confidential policy documents, claim records, financial data, and actuarial models — all of which are targets for a distinct set of attacks that do not exist in conventional software systems.
 
-This section covers five threat categories and the controls implemented against each.
+This section covers six threat categories and the controls implemented against each.
 
 ---
 
@@ -44,7 +44,7 @@ This section covers five threat categories and the controls implemented against 
 
 ---
 
-## The Five Controls Pages
+## The Six Controls Pages
 
 | Page | Threat | Primary risk |
 |---|---|---|
@@ -61,18 +61,18 @@ This section covers five threat categories and the controls implemented against 
 
 How each threat maps to department criticality:
 
-| Department | Hallucination | Bias | Prompt Injection | Data Poisoning | Extraction |
-|---|---|---|---|---|---|
-| Sinistres | CRITICAL | CRITICAL | CRITICAL | CRITICAL | HIGH |
-| Finance | CRITICAL | CRITICAL | HIGH | CRITICAL | HIGH |
-| Juridique | CRITICAL | CRITICAL | HIGH | CRITICAL | HIGH |
-| Souscription | HIGH | HIGH | HIGH | HIGH | HIGH |
-| Actuariat | HIGH | HIGH | MEDIUM | HIGH | MEDIUM |
-| Réassurance | HIGH | HIGH | MEDIUM | HIGH | MEDIUM |
-| Audit | HIGH | HIGH | MEDIUM | HIGH | LOW |
-| Commercial | MEDIUM | MEDIUM | MEDIUM | MEDIUM | LOW |
-| IT | LOW | LOW | MEDIUM | LOW | LOW |
-| RH | LOW | LOW | MEDIUM | LOW | LOW |
+| Department | Hallucination | Bias | Prompt Injection | Data Poisoning | Extraction | Membership Inference |
+|---|---|---|---|---|---|---|
+| Sinistres | CRITICAL | CRITICAL | CRITICAL | CRITICAL | HIGH | CRITICAL |
+| Finance | CRITICAL | CRITICAL | HIGH | CRITICAL | HIGH | HIGH |
+| Juridique | CRITICAL | CRITICAL | HIGH | CRITICAL | HIGH | HIGH |
+| Souscription | HIGH | HIGH | HIGH | HIGH | HIGH | HIGH |
+| Actuariat | HIGH | HIGH | MEDIUM | HIGH | MEDIUM | MEDIUM |
+| Réassurance | HIGH | HIGH | MEDIUM | HIGH | MEDIUM | MEDIUM |
+| Audit | HIGH | HIGH | MEDIUM | HIGH | LOW | MEDIUM |
+| Commercial | MEDIUM | MEDIUM | MEDIUM | MEDIUM | LOW | LOW |
+| IT | LOW | LOW | MEDIUM | LOW | LOW | LOW |
+| RH | LOW | LOW | MEDIUM | LOW | LOW | LOW |
 
 ---
 
@@ -88,9 +88,10 @@ User query (Open WebUI)
 │  PRE-CALL HOOKS (LiteLLM)                                 │
 │                                                           │
 │  EnumerationDetectionHook  ← model inversion              │
-│  PromptInjectionHook       ← direct injection + patterns  │
+│  PromptInjectionHook       ← direct injection + GDPR Art.15│
 │  PromptGuard sidecar       ← ML-based injection detection │
-│  RetrievalGroundingHook    ← hallucination (similarity)   │
+│  RetrievalGroundingHook    ← hallucination + identifier   │
+│  │                            stripping (membership inf.) │
 │  IngestionAuthHook         ← data poisoning (write ACL)   │
 │  DataSovereigntyHook       ← data sovereignty routing     │
 └───────────────────┬───────────────────────────────────────┘
@@ -204,4 +205,5 @@ All issues are tracked in [andrelair-platform/platform-backlog](https://github.c
 | EU AI Act Art. 14 (human oversight) | Human feedback loop, annotation queue, neutrality alert |
 | GDPR Art. 22 (no fully automated decisions) | Human oversight rate tracked in ACPR report |
 | Code pénal Art. 225-1 (anti-discrimination) | Counterfactual consistency ≥ 0.85 per protected attribute |
+| GDPR Art. 15 (right of access) | GDPR routing hook → HTTP 451 → DPO email; AI never answers membership questions |
 | ACPR inspection | Monthly bias audit PDF → MinIO `ai-audit/`, 7-year retention |
