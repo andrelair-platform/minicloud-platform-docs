@@ -317,6 +317,14 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['developer-platform/backstage-plugins'],
     },
+
+    // ── Phase 25 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 25 — Public Access & SSO Migration 🔄',
+      collapsed: true,
+      items: ['security-enterprise/phase25-public-access'],
+    },
   ],
 };
 

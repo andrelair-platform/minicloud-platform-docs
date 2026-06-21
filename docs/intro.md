@@ -64,8 +64,9 @@ Each phase builds directly on the previous one — nothing requires something th
 | **22** | eBPF networking — **migration runbook authored, execution deferred to fresh-cluster rebuild**. cilium CLI installed on controller; dry-run helm values captured. Senior scope-reduction call: 111 live pods + 22 phases of validated infrastructure on top of Flannel make hot CNI swap not worth it at our cluster scale. | Cilium, Hubble | ✅ Done |
 | **23** | Enterprise SSO — Authentik as IdP; 11/13 apps on SSO. 5 via native OIDC (ArgoCD, Grafana, Harbor, MinIO, Open WebUI), 5 via forward-auth Outpost (Homer, podinfo, platform-demo, whoami, NATS). Backstage + MAAS deferred. | Authentik, OIDC, forward-auth | ✅ Done |
 | **24** | Backstage custom image — org-owned build (bcec03f); Authentik OIDC SSO; Kubernetes, ArgoCD, TechDocs, Grafana plugins; published to Harbor. | Backstage, crane, Harbor, Authentik | ✅ Done |
+| **25** | Public access via Cloudflare Tunnel — `*.devandre.sbs` live on Cloudflare edge (no Tailscale needed). Authentik redirect URIs extended to public URLs. CoreDNS stub zone added. UFW host firewall on controller. **Pending:** OIDC issuer URL switch to `auth.devandre.sbs` once DNS propagates from Namecheap → Cloudflare NS. | Cloudflare Tunnel, cloudflared, UFW, CoreDNS | 🔄 In progress |
 | **—** | **Data Layer** | Kafka/Redpanda, ClickHouse, dbt, Superset, OpenMetadata | 🔜 |
-| **—** | **Security Layer** | Keycloak, OPA/Gatekeeper, Falco, Cosign+SBOM, kube-bench | 🔜 |
+| **—** | **Security Layer** | OPA/Gatekeeper, Falco, Cosign+SBOM, kube-bench | 🔜 |
 
 ---
 
@@ -84,7 +85,7 @@ Ansible       → infrastructure automation
 Terraform     → infrastructure as code
 Crossplane    → Kubernetes-native IaC
 ArgoCD        → GitOps
-GitLab        → CI/CD
+GitHub Actions→ CI/CD
 
 ── PLATFORM SERVICES ───────────────────────────────────────────────
 Velero        → backup & disaster recovery
@@ -114,11 +115,12 @@ Superset      → self-hosted BI dashboards
 OpenMetadata  → data catalog, lineage, governance
 
 ── SECURITY LAYER ──────────────────────────────────────────────────
-Keycloak      → SSO / OIDC identity provider
+Authentik     → SSO / OIDC identity provider (self-hosted)
 OPA/Gatekeeper→ admission control (policy as code)
 Falco         → runtime threat detection (eBPF)
 Cosign        → image signing + SBOM supply chain
 kube-bench    → CIS compliance scoring
+UFW           → host firewall on controller
 
 ── AI / ML ─────────────────────────────────────────────────────────
 Ollama        → local LLMs (Mistral, LLaMA 3)
@@ -136,7 +138,8 @@ Kubeflow      → ML pipelines + distributed training
 - Resolved complex networking issues (IPv6 conflicts, DHCP overlap, alias interfaces)
 - Deployed full Kubernetes platform: k3s, ArgoCD, Prometheus, Harbor, Vault
 - Built private AI platform with local LLM serving (Ollama) and ML pipelines (Kubeflow)
-- Implemented remote access via Tailscale VPN and Cloudflare Tunnel
+- Implemented remote access via Tailscale VPN and Cloudflare Tunnel (`*.devandre.sbs` on Cloudflare edge)
+- Hardened controller with UFW host firewall (blocked MAAS + Squid public IPv6 exposure)
 - Applied chaos engineering with Chaos Mesh to validate cluster resilience
-- Built end-to-end data platform: Kafka/Redpanda → ClickHouse → dbt → Superset with OpenMetadata governance
-- Implemented enterprise security: Keycloak SSO, OPA/Gatekeeper admission control, Falco runtime detection, Cosign supply chain signing
+- Deployed enterprise SSO via Authentik: OIDC for 5 apps, forward-auth for 5 apps, MFA enforced, one-toggle user deprovisioning across all services
+- Implemented GHAS: CodeQL SAST, Dependabot SCA, Secret Scanning + Push Protection across all org repos
