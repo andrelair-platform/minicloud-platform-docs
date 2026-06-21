@@ -364,6 +364,14 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['security-enterprise/cosign-sbom'],
     },
+
+    // ── Phase 56 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 56 — Multi-Environment Namespaces ✅',
+      collapsed: true,
+      items: ['developer-platform/multi-env-namespaces'],
+    },
   ],
 };
 
