@@ -263,6 +263,7 @@ const sidebars: SidebarsConfig = {
         'ai-ml/mlflow',
         'ai-ml/kubeflow',
         'ai-ml/hallucination-controls',
+        'ai-ml/bias-detection',
       ],
     },
 
