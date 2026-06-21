@@ -34,6 +34,9 @@ Security is not a single tool — it is layered. This platform implements defens
 ├─────────────────────────────────────────────────────────────────────┤
 │  LAYER 1 — AUTHENTICATION                                           │
 │  Authentik SSO / OIDC  │  Service accounts  │  mTLS (Cilium)         │
+├─────────────────────────────────────────────────────────────────────┤
+│  LAYER 0 — HOST PERIMETER ✅                                        │
+│  UFW (deny all inbound)  │  Tailscale mesh  │  Cloudflare Tunnel     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -43,6 +46,9 @@ Security is not a single tool — it is layered. This platform implements defens
 
 | Component | Layer | What It Does |
 |---|---|---|
+| **UFW** | Host perimeter | Default-deny firewall on controller; blocks MAAS/Squid from public internet ✅ |
+| **Cloudflare Tunnel** | Host perimeter | Public apps via Cloudflare — home IP never exposed to internet ✅ |
+| **Tailscale** | Host perimeter | WireGuard mesh VPN — all admin access encrypted and authenticated ✅ |
 | **Authentik** | Identity | Single sign-on for all platform UIs; OIDC/OAuth2 + forward-auth provider (Phase 23 ✅) |
 | **OPA / Gatekeeper** | Policy | Admission controller — blocks non-compliant workloads at deploy time |
 | **Falco** | Runtime | Detects anomalous container behavior (e.g., shell in container, file read) |
@@ -58,6 +64,9 @@ Security is not a single tool — it is layered. This platform implements defens
 ```text
 ATTACK                          STOPPED BY
 ──────────────────────────────────────────────────────────────
+Direct scan of home IP          Cloudflare Tunnel hides real IP for *.devandre.sbs
+MAAS/Squid exposed on IPv6      UFW default-deny: both ports now blocked
+Unauthenticated admin access    Tailscale: all admin paths require VPN membership
 Compromised admin credentials   Authentik MFA + short-lived tokens
 Privilege escalation in pod     OPA: no privileged containers
 Image with known CVEs           Trivy scan in CI (Phase 13)
@@ -131,7 +140,10 @@ kubectl get pods -A -o json | jq '.items[] | select(.spec.containers[].resources
 ## Done When
 
 ```text
-✔ Authentik SSO active — 11/13 apps on SSO (Phase 23 ✅); Backstage + MAAS deferred
+✔ UFW enabled on controller — MAAS and Squid blocked from public internet (2026-06-21 ✅)
+✔ Cloudflare Tunnel — home IP hidden for all *.devandre.sbs traffic (Phase 25 ✅)
+✔ Tailscale — all admin access via WireGuard mesh (Phase 3 ✅)
+✔ Authentik SSO active — apps on SSO (Phase 23 ✅); MAAS deferred
 ✔ OPA Gatekeeper blocking privileged / no-resource-limit pods
 ✔ Falco alerting on shell-in-container and unexpected file access
 ✔ All production images signed with Cosign + SBOM attached

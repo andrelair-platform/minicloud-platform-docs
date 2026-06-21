@@ -184,6 +184,7 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: [
         'security-enterprise/security-overview',
+        'security-enterprise/host-hardening',
         'security-enterprise/opa-gatekeeper',
         'security-enterprise/falco',
         'security-enterprise/cosign-sbom',
