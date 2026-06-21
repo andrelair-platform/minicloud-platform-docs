@@ -189,6 +189,7 @@ const sidebars: SidebarsConfig = {
         'security-enterprise/falco',
         'security-enterprise/cosign-sbom',
         'security-enterprise/compliance',
+        'security-enterprise/ghas',
       ],
     },
 
