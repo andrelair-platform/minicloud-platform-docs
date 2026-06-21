@@ -65,7 +65,7 @@ Each phase builds directly on the previous one — nothing requires something th
 | **23** | Enterprise SSO — Authentik as IdP; 11/13 apps on SSO. 5 via native OIDC (ArgoCD, Grafana, Harbor, MinIO, Open WebUI), 5 via forward-auth Outpost (Homer, podinfo, platform-demo, whoami, NATS). Backstage + MAAS deferred. | Authentik, OIDC, forward-auth | ✅ Done |
 | **24** | Backstage custom image — org-owned build (bcec03f); Authentik OIDC SSO; Kubernetes, ArgoCD, TechDocs, Grafana plugins; published to Harbor. | Backstage, crane, Harbor, Authentik | ✅ Done |
 | **25** | Public access via Cloudflare Tunnel — `*.devandre.sbs` live (10/10 apps, no Tailscale). Authentik OIDC issuers migrated to `auth.devandre.sbs`. Forward-auth extended to `devandre.sbs` cookie domain. `originServerName` per cloudflared rule to fix TLS SNI on IP origin. UFW host firewall on controller. All smoke tests green. | Cloudflare Tunnel, cloudflared, Authentik forward-auth, UFW | ✅ Done |
-| **26** | Secrets management — Vault with Raft integrated storage on Longhorn. KV v2 engine, Kubernetes auth, Agent Injector. Replaces controller credential files. | HashiCorp Vault, Raft, Vault Agent Injector | 🔄 In progress |
+| **26** | Secrets management — Vault 2.0.2 with Raft on Longhorn. KV v2 (5 platform credentials + demo secret). Kubernetes auth backend. Agent Injector verified on platform-demo (2/2 pods, /vault/secrets/config injected). ArgoCD proxy fix (MAAS Squid) as bonus fix. | HashiCorp Vault, Raft, Vault Agent Injector | ✅ Done |
 | **—** | **Data Layer** | Kafka/Redpanda, ClickHouse, dbt, Superset, OpenMetadata | 🔜 |
 | **—** | **Security Layer** | OPA/Gatekeeper, Falco, Cosign+SBOM, kube-bench | 🔜 |
 

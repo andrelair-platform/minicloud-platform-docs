@@ -302,9 +302,157 @@ kubectl exec -n vault vault-0 -- vault operator unseal "$KEY2"
 
 ---
 
-## Next Steps
+## KV v2 Secrets Engine
 
-- Enable KV v2 secrets engine and store platform admin credentials
-- Enable Kubernetes auth backend for pod-level authentication
-- Deploy Vault Agent Injector demo with `platform-demo`
-- Enable audit logging to stdout → Loki
+```bash
+TOKEN=$(cat ~/.vault-root-token | tr -d '\n')
+kubectl exec -n vault vault-0 -- sh -c "
+  export VAULT_TOKEN=$TOKEN
+  export VAULT_ADDR=http://127.0.0.1:8200
+  vault secrets enable -path=secret kv-v2
+"
+```
+
+Platform admin credentials stored under `secret/platform/`:
+
+```bash
+vault kv put secret/platform/argocd        password='...'
+vault kv put secret/platform/grafana        password='...'
+vault kv put secret/platform/harbor         password='...'
+vault kv put secret/platform/minio          password='...'
+vault kv put secret/platform/authentik      api_token='...' bootstrap_password='...'
+```
+
+Demo workload secret under `secret/platform-demo/`:
+
+```bash
+vault kv put secret/platform-demo/config \
+  api_key=demo-api-key-a3f8b2c1 \
+  environment=production \
+  log_level=info
+```
+
+---
+
+## Kubernetes Auth Backend
+
+```bash
+TOKEN=$(cat ~/.vault-root-token | tr -d '\n')
+kubectl exec -n vault vault-0 -- sh -c "
+  export VAULT_TOKEN=$TOKEN
+  export VAULT_ADDR=http://127.0.0.1:8200
+  vault auth enable kubernetes
+  vault write auth/kubernetes/config kubernetes_host=https://10.0.0.2:6443
+"
+```
+
+**Policy** (`/tmp/platform-demo-policy.hcl`):
+
+```hcl
+path "secret/data/platform-demo/*" {
+  capabilities = ["read"]
+}
+```
+
+```bash
+kubectl cp /tmp/platform-demo-policy.hcl vault/vault-0:/tmp/platform-demo-policy.hcl
+kubectl exec -n vault vault-0 -- sh -c "
+  export VAULT_TOKEN=$TOKEN
+  export VAULT_ADDR=http://127.0.0.1:8200
+  vault policy write platform-demo /tmp/platform-demo-policy.hcl
+  vault write auth/kubernetes/role/platform-demo \
+    bound_service_account_names=platform-demo \
+    bound_service_account_namespaces=gitops-demo \
+    policies=platform-demo \
+    ttl=1h
+"
+```
+
+---
+
+## Vault Agent Injector — platform-demo Demo
+
+The Vault Agent Injector runs as a mutating webhook. When a pod has `vault.hashicorp.com/agent-inject: "true"`, a `vault-agent` sidecar is automatically injected at admission time. The sidecar authenticates using the pod's ServiceAccount token, fetches the secret, and writes it to `/vault/secrets/`.
+
+`manifests/platform-demo/00-deployment.yaml` (in `minicloud-gitops`):
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: platform-demo
+  namespace: gitops-demo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: platform-demo
+  namespace: gitops-demo
+spec:
+  template:
+    metadata:
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "platform-demo"
+        vault.hashicorp.com/agent-inject-secret-config: "secret/data/platform-demo/config"
+        vault.hashicorp.com/agent-inject-template-config: |
+          {{- with secret "secret/data/platform-demo/config" -}}
+          API_KEY={{ .Data.data.api_key }}
+          ENVIRONMENT={{ .Data.data.environment }}
+          LOG_LEVEL={{ .Data.data.log_level }}
+          {{- end }}
+    spec:
+      serviceAccountName: platform-demo
+      # ... rest of spec
+```
+
+Verify injection:
+
+```bash
+# Pods show 2/2 (app container + vault-agent sidecar)
+kubectl get pods -n gitops-demo -l app=platform-demo
+
+# Read the injected secret from the sidecar container
+# (platform-demo is a scratch image — no shell in the app container)
+kubectl exec -n gitops-demo <pod> -c vault-agent -- cat /vault/secrets/config
+# API_KEY=demo-api-key-a3f8b2c1
+# ENVIRONMENT=production
+# LOG_LEVEL=info
+```
+
+---
+
+## ArgoCD Proxy Fix
+
+Cluster nodes route outbound HTTPS through the MAAS Squid proxy at `10.0.0.1:8000`. ArgoCD's repo-server needs this to reach GitHub:
+
+Add to `argocd-values.yaml`:
+
+```yaml
+repoServer:
+  env:
+    - name: HTTPS_PROXY
+      value: http://10.0.0.1:8000
+    - name: HTTP_PROXY
+      value: http://10.0.0.1:8000
+    - name: NO_PROXY
+      value: 10.0.0.0/8,127.0.0.1,localhost,.svc,.cluster.local
+```
+
+Then upgrade: `helm upgrade argo-cd argo/argo-cd -n argocd --values argocd-values.yaml --wait`
+
+---
+
+## Done When
+
+```text
+✔ vault-0 and vault-agent-injector both 1/1 Running
+✔ PVC data-vault-0 Bound on Longhorn (5Gi)
+✔ vault status: Initialized=true, Sealed=false, HA Mode=active
+✔ KV v2 engine at secret/: 5 platform credentials + platform-demo config stored
+✔ Kubernetes auth enabled, role platform-demo configured
+✔ platform-demo pods show 2/2 (vault-agent sidecar injected)
+✔ /vault/secrets/config readable inside platform-demo pods
+✔ ArgoCD sync working (Synced Healthy Succeeded) via Squid proxy
+✔ https://vault.devandre.sbs/v1/sys/health returns initialized=true
+```

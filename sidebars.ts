@@ -328,7 +328,7 @@ const sidebars: SidebarsConfig = {
     // ── Phase 26 ────────────────────────────────────────────────────
     {
       type: 'category',
-      label: 'Phase 26 — Vault (Secrets Management) 🔄',
+      label: 'Phase 26 — Vault (Secrets Management) ✅',
       collapsed: true,
       items: ['developer-platform/vault'],
     },
