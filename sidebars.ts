@@ -332,6 +332,14 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['developer-platform/vault'],
     },
+
+    // ── Phase 27 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 27 — OPA/Gatekeeper (Policy as Code) ✅',
+      collapsed: true,
+      items: ['security-enterprise/opa-gatekeeper'],
+    },
   ],
 };
 

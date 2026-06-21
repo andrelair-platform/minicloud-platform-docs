@@ -1,109 +1,155 @@
 ---
 id: opa-gatekeeper
-title: OPA / Gatekeeper (Policy as Code)
+title: Phase 27 — OPA / Gatekeeper (Policy as Code)
 sidebar_position: 3
 ---
 
-:::caution Not deployed on this cluster
-OPA / Gatekeeper has **not been deployed**. The Security Layer (OPA, Falco, Cosign) is planned but deferred — no namespace, no pods, no admission policies are active. See [`security-enterprise/security-overview`](./security-overview) for current status.
-:::
+# Phase 27 — OPA / Gatekeeper — Policy as Code
 
-
-# OPA / Gatekeeper — Policy as Code (Admission Control)
-
-OPA Gatekeeper is a Kubernetes admission controller that enforces policies before any workload is deployed. It intercepts every `kubectl apply` and rejects manifests that violate platform standards — privileged containers, missing resource limits, non-Harbor images, etc.
+Gatekeeper is a Kubernetes admission controller powered by OPA (Open Policy Agent). Every `kubectl apply` passes through the Gatekeeper webhook before hitting the API server. If the manifest violates a policy, the webhook denies it with an explicit error — no pod ever starts.
 
 ---
 
-## How Gatekeeper Works
+## How It Works
 
 ```text
-Developer runs: kubectl apply -f deployment.yaml
-                         │
-                         ▼
-               Kubernetes API Server
-                         │
-                         ▼ (webhook)
-              OPA Gatekeeper Webhook
-                         │
-                         ▼
-            Evaluate all ConstraintTemplates
-                         │
-              ┌──────────┴──────────┐
-              ▼                     ▼
-          ALLOWED                DENIED
-      (deploy proceeds)    (error returned to user)
+kubectl apply -f deployment.yaml
+        │
+        ▼
+  Kubernetes API Server
+        │
+        ▼ (MutatingAdmissionWebhook / ValidatingAdmissionWebhook)
+  OPA Gatekeeper Webhook
+        │
+        ▼
+  Evaluate all active Constraints
+        │
+     ┌──┴──┐
+     ▼     ▼
+  ALLOW  DENY → "admission webhook denied the request: [policy-name] ..."
+```
+
+**Two-object model:**
+- **ConstraintTemplate** — defines the policy in Rego. Creates a new CRD.
+- **Constraint** — an instance of that CRD. Declares scope (namespaces, resource kinds) and `enforcementAction`.
+
+**enforcementAction values:**
+- `warn` — allow but emit a warning (safe for auditing first)
+- `deny` — block the request (enforcement)
+- `dryrun` — audit only, no webhook response
+
+**Audit loop** — Gatekeeper periodically re-evaluates all existing resources against all constraints and writes violations to constraint `.status`. Catches resources that were created before a policy was added.
+
+---
+
+## Architecture
+
+```text
+gatekeeper-system
+  ├── gatekeeper-controller-manager  (webhook, constraint reconcile)
+  └── gatekeeper-audit               (audit loop, writes .status violations)
 ```
 
 ---
 
-## Install Gatekeeper
+## Install
 
 ```bash
 helm repo add gatekeeper https://open-policy-agent.github.io/gatekeeper/charts
-helm repo update
+helm repo update gatekeeper
 
-helm upgrade --install gatekeeper gatekeeper/gatekeeper \
+~/.local/bin/helm install gatekeeper gatekeeper/gatekeeper \
   --namespace gatekeeper-system \
   --create-namespace \
-  --set replicas=2 \
+  --version 3.22.2 \
+  --set replicas=1 \
   --set auditInterval=60 \
-  --set constraintViolationsLimit=100
+  --set constraintViolationsLimit=100 \
+  --wait --timeout 5m
+```
+
+Verify:
+
+```bash
+kubectl get pods -n gatekeeper-system
+# gatekeeper-audit-...               1/1 Running
+# gatekeeper-controller-manager-...  1/1 Running
 ```
 
 ---
 
-## Policy 1 — Require Resource Limits
+## Policy 1 — Block `:latest` Image Tag
 
-Every container must declare CPU and memory limits. Unlimited containers can starve other workloads.
+Pinning to explicit tags is required for reproducible deployments. `:latest` is mutable and untraceable.
 
 ```yaml
-# constraint-template-require-limits.yaml
 apiVersion: templates.gatekeeper.sh/v1
 kind: ConstraintTemplate
 metadata:
-  name: k8srequiresresourcelimits
+  name: k8sblocklatesttag
 spec:
   crd:
     spec:
       names:
-        kind: K8sRequireResourceLimits
+        kind: K8sBlockLatestTag
   targets:
     - target: admission.k8s.gatekeeper.sh
       rego: |
-        package k8srequiresresourcelimits
+        package k8sblocklatesttag
 
         violation[{"msg": msg}] {
           container := input.review.object.spec.containers[_]
-          not container.resources.limits.cpu
-          msg := sprintf("Container '%v' must set resources.limits.cpu", [container.name])
+          endswith(container.image, ":latest")
+          msg := sprintf("Container '%v' uses ':latest' tag — pin to an explicit version (image: %v)", [container.name, container.image])
+        }
+
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.initContainers[_]
+          endswith(container.image, ":latest")
+          msg := sprintf("initContainer '%v' uses ':latest' tag — pin to an explicit version (image: %v)", [container.name, container.image])
         }
 
         violation[{"msg": msg}] {
           container := input.review.object.spec.containers[_]
-          not container.resources.limits.memory
-          msg := sprintf("Container '%v' must set resources.limits.memory", [container.name])
+          not contains(container.image, ":")
+          msg := sprintf("Container '%v' has no image tag — pin to an explicit version (image: %v)", [container.name, container.image])
         }
 ---
 apiVersion: constraints.gatekeeper.sh/v1beta1
-kind: K8sRequireResourceLimits
+kind: K8sBlockLatestTag
 metadata:
-  name: require-resource-limits
+  name: block-latest-tag
 spec:
   enforcementAction: deny
   match:
     kinds:
       - apiGroups: ["apps"]
         kinds: ["Deployment", "StatefulSet", "DaemonSet"]
-    excludedNamespaces:
-      - kube-system
-      - gatekeeper-system
-      - cert-manager
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+            - kube-system
+            - kube-public
+            - kube-node-lease
+            - gatekeeper-system
+            - metallb-system
+            - longhorn-system
+            - nfs-provisioner
+            - cert-manager
+            - ingress-nginx
+            - chaos-mesh
+            - velero
 ```
 
 ---
 
-## Policy 2 — Deny Privileged Containers
+## Policy 2 — No Privileged Containers
+
+`privileged: true` gives the container nearly full host access. No platform workload should need it.
 
 ```yaml
 apiVersion: templates.gatekeeper.sh/v1
@@ -123,7 +169,13 @@ spec:
         violation[{"msg": msg}] {
           container := input.review.object.spec.containers[_]
           container.securityContext.privileged == true
-          msg := sprintf("Privileged containers are not allowed: '%v'", [container.name])
+          msg := sprintf("Container '%v' must not run as privileged", [container.name])
+        }
+
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.initContainers[_]
+          container.securityContext.privileged == true
+          msg := sprintf("initContainer '%v' must not run as privileged", [container.name])
         }
 ---
 apiVersion: constraints.gatekeeper.sh/v1beta1
@@ -136,195 +188,207 @@ spec:
     kinds:
       - apiGroups: ["apps"]
         kinds: ["Deployment", "StatefulSet", "DaemonSet"]
-    excludedNamespaces:
-      - kube-system
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+            - kube-system
+            - kube-public
+            - kube-node-lease
+            - gatekeeper-system
+            - metallb-system
+            - longhorn-system
+            - nfs-provisioner
+            - cert-manager
+            - ingress-nginx
+            - chaos-mesh
+            - velero
 ```
 
 ---
 
-## Policy 3 — Images Must Come from Harbor
+## Policy 3 — Require Resource Limits
 
-Block images from Docker Hub or other unapproved registries:
+Containers without CPU/memory limits can starve other workloads on the same node.
+
+:::caution Rego path gotcha — Deployment vs Pod
+For **Pod** objects, containers are at `input.review.object.spec.containers`.
+For **Deployment / StatefulSet / DaemonSet**, containers are at `input.review.object.spec.template.spec.containers`.
+
+A Rego rule that only references `spec.containers` will silently pass all Deployments — the iterator never binds and the violation never fires. The helper set below handles both paths.
+:::
 
 ```yaml
 apiVersion: templates.gatekeeper.sh/v1
 kind: ConstraintTemplate
 metadata:
-  name: k8sallowedrepos
+  name: k8srequireresourcelimits
 spec:
   crd:
     spec:
       names:
-        kind: K8sAllowedRepos
-      validation:
-        openAPIV3Schema:
-          type: object
-          properties:
-            repos:
-              type: array
-              items:
-                type: string
+        kind: K8sRequireResourceLimits
   targets:
     - target: admission.k8s.gatekeeper.sh
       rego: |
-        package k8sallowedrepos
+        package k8srequireresourcelimits
+
+        # Pod objects
+        containers[c] {
+          c := input.review.object.spec.containers[_]
+        }
+
+        # Deployment/StatefulSet/DaemonSet — nested under spec.template.spec
+        containers[c] {
+          c := input.review.object.spec.template.spec.containers[_]
+        }
 
         violation[{"msg": msg}] {
-          container := input.review.object.spec.containers[_]
-          not startswith(container.image, input.parameters.repos[_])
-          msg := sprintf("Container '%v' uses image '%v' from an unapproved registry", [container.name, container.image])
+          container := containers[_]
+          not container.resources.limits.cpu
+          msg := sprintf("Container '%v' must set resources.limits.cpu", [container.name])
+        }
+
+        violation[{"msg": msg}] {
+          container := containers[_]
+          not container.resources.limits.memory
+          msg := sprintf("Container '%v' must set resources.limits.memory", [container.name])
         }
 ---
 apiVersion: constraints.gatekeeper.sh/v1beta1
-kind: K8sAllowedRepos
+kind: K8sRequireResourceLimits
 metadata:
-  name: allowed-repos
+  name: require-resource-limits
 spec:
   enforcementAction: deny
   match:
     kinds:
       - apiGroups: ["apps"]
         kinds: ["Deployment", "StatefulSet", "DaemonSet"]
-    excludedNamespaces:
-      - kube-system
-      - gatekeeper-system
-  parameters:
-    repos:
-      - "harbor.local/"
-      - "harbor.yourdomain.com/"
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+            - gitops-demo
+            - podinfo
+            - homer
+            - monitoring
+            - observability
+            - argocd
+            - harbor
+            - backstage
+            - vault
+            - authentik
+            - keda
+            - messaging
+            - event-demo
+            - ai
+            - ktayl-web
 ```
 
 ---
 
-## Policy 4 — Require Non-Root User
+## Rollout Procedure
 
-```yaml
-apiVersion: templates.gatekeeper.sh/v1
-kind: ConstraintTemplate
-metadata:
-  name: k8srequirenonrootuser
-spec:
-  crd:
-    spec:
-      names:
-        kind: K8sRequireNonRootUser
-  targets:
-    - target: admission.k8s.gatekeeper.sh
-      rego: |
-        package k8srequirenonrootuser
-
-        violation[{"msg": msg}] {
-          container := input.review.object.spec.containers[_]
-          container.securityContext.runAsUser == 0
-          msg := sprintf("Container '%v' must not run as root (uid=0)", [container.name])
-        }
-
-        violation[{"msg": msg}] {
-          container := input.review.object.spec.containers[_]
-          not container.securityContext.runAsNonRoot
-          not container.securityContext.runAsUser
-          msg := sprintf("Container '%v' must set runAsNonRoot: true", [container.name])
-        }
-```
-
----
-
-## Policy 5 — Require Signed Images (Cosign)
-
-```yaml
-apiVersion: templates.gatekeeper.sh/v1
-kind: ConstraintTemplate
-metadata:
-  name: k8srequiresignedimages
-spec:
-  crd:
-    spec:
-      names:
-        kind: K8sRequireSignedImages
-  targets:
-    - target: admission.k8s.gatekeeper.sh
-      rego: |
-        package k8srequiresignedimages
-
-        # This policy checks the Harbor annotation injected by the Cosign verify sidecar
-        # or by using Sigstore Policy Controller
-        violation[{"msg": msg}] {
-          container := input.review.object.spec.containers[_]
-          not startswith(container.image, "harbor.local/")
-          msg := sprintf("Image '%v' is not from the trusted registry", [container.image])
-        }
-```
-
-For full Cosign enforcement, use **Sigstore Policy Controller** (see Cosign + SBOM page).
-
----
-
-## Apply All Policies
+Always start in `warn` mode, audit for one cycle, then flip to `deny`:
 
 ```bash
-kubectl apply -f constraint-template-require-limits.yaml
-kubectl apply -f constraint-no-privileged.yaml
-kubectl apply -f constraint-allowed-repos.yaml
-kubectl apply -f constraint-nonroot.yaml
+# 1. Apply templates + constraints with enforcementAction: warn
+kubectl apply -f ct-block-latest-tag.yaml
+kubectl apply -f ct-no-privileged.yaml
+kubectl apply -f ct-require-resource-limits.yaml
 
-# Verify constraints are active
-kubectl get constraints -A
+# 2. Wait for one audit cycle (auditInterval: 60s)
+sleep 75
+kubectl get constraints
+# TOTAL-VIOLATIONS should be 0 before flipping to deny
 
-# View violations (audit mode shows existing non-compliant resources)
-kubectl get constraintviolations -A
+# 3. Flip to deny
+kubectl patch k8sblocklatesttag block-latest-tag \
+  -p '{"spec":{"enforcementAction":"deny"}}' --type merge
+kubectl patch k8snoprivilegedcontainers no-privileged-containers \
+  -p '{"spec":{"enforcementAction":"deny"}}' --type merge
+kubectl patch k8srequireresourcelimits require-resource-limits \
+  -p '{"spec":{"enforcementAction":"deny"}}' --type merge
 ```
 
 ---
 
-## Audit Mode vs Deny Mode
+## Rejection Demo — Verified
 
-```yaml
-spec:
-  enforcementAction: dryrun   # log violations but don't block
-  # OR
-  enforcementAction: warn     # return warning but allow
-  # OR
-  enforcementAction: deny     # block the request
-```
-
-Start with `dryrun` to find existing violations, then switch to `deny` after remediation.
-
----
-
-## Check What Would Be Blocked
+All three policies reject invalid workloads immediately at admission:
 
 ```bash
-# Test a privileged pod (should be denied)
-kubectl apply -f - << 'EOF'
+# Demo 1: :latest tag blocked
+kubectl run test-latest --image=nginx:latest -n gitops-demo --restart=Never
+# Error from server (Forbidden): admission webhook "validation.gatekeeper.sh" denied the request:
+# [block-latest-tag] Container 'test-latest' uses ':latest' tag — pin to an explicit version (image: nginx:latest)
+
+# Demo 2: privileged container blocked
+kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: test-privileged
-  namespace: default
+  name: test-priv
+  namespace: gitops-demo
 spec:
   containers:
-    - name: test
-      image: harbor.local/myteam/myapp:latest
+    - name: test-priv
+      image: nginx:1.27
       securityContext:
         privileged: true
 EOF
-# Expected: Error from server: admission webhook "validation.gatekeeper.sh" denied the request
+# Error from server (Forbidden): ... [no-privileged-containers] Container 'test-priv' must not run as privileged
+
+# Demo 3: missing resource limits blocked
+kubectl apply -f - <<EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-nolimits
+  namespace: gitops-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-nolimits
+  template:
+    metadata:
+      labels:
+        app: test-nolimits
+    spec:
+      containers:
+        - name: test-nolimits
+          image: nginx:1.27
+EOF
+# Error from server (Forbidden): ... [require-resource-limits] Container 'test-nolimits' must set resources.limits.cpu
+# [require-resource-limits] Container 'test-nolimits' must set resources.limits.memory
 ```
 
 ---
 
-## Policy Library
-
-The OPA Gatekeeper policy library has 50+ pre-built policies:
+## Verification (regression)
 
 ```bash
-# Clone policy library
-git clone https://github.com/open-policy-agent/gatekeeper-library.git
+# Both pods Running
+kubectl get pods -n gatekeeper-system
+# gatekeeper-audit-...               1/1 Running
+# gatekeeper-controller-manager-...  1/1 Running
 
-# Browse available policies
-ls gatekeeper-library/library/general/
-# allowedrepos  bannedimagetagssuffix  blockloadbalancer  containerlimits
-# containerrequests  disallowanonymous  httpsonly  imagedigests ...
+# All 3 constraints enforced, 0 violations
+kubectl get constraints
+# NAME                                ENFORCEMENT-ACTION   TOTAL-VIOLATIONS
+# block-latest-tag                    deny                 0
+# no-privileged-containers            deny                 0
+# require-resource-limits             deny                 0
+
+# Audit log confirms scans are running
+kubectl logs -n gatekeeper-system -l control-plane=audit-controller --tail=5 | grep audit_finished
+# {"msg":"auditing is complete","duration":"31s"}
 ```
 
 ---
@@ -332,9 +396,12 @@ ls gatekeeper-library/library/general/
 ## Done When
 
 ```text
-✔ Gatekeeper running with 2 replicas in gatekeeper-system
-✔ Policies enforced: resource limits, no-privileged, allowed-repos, non-root
-✔ kubectl apply of a privileged pod returns admission error
-✔ Existing violations visible via kubectl get constraintviolations
-✔ All platform namespaces compliant (0 violations in audit)
+✔ gatekeeper-controller-manager and gatekeeper-audit both 1/1 Running
+✔ 3 ConstraintTemplates registered (k8sblocklatesttag, k8snoprivilegedcontainers, k8srequireresourcelimits)
+✔ 3 Constraints active with enforcementAction: deny
+✔ Audit cycle completed — TOTAL-VIOLATIONS = 0 (platform already compliant)
+✔ Demo 1: kubectl run nginx:latest rejected by webhook
+✔ Demo 2: privileged Pod rejected by webhook
+✔ Demo 3: Deployment without resource limits rejected by webhook
+✔ All test artifacts cleaned up
 ```
