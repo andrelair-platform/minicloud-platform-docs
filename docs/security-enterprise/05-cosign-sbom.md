@@ -88,10 +88,20 @@ Signing and SBOM generation happen **by digest**, not by tag. Digests are immuta
 
 ## Verify a Signature
 
-After the CI run completes, verify from any machine with cosign installed:
+After the CI run completes, the signature is in the Sigstore Rekor transparency log:
+
+```
+tlog entry created with index: 1900056177
+Pushing signature to: ghcr.io/andrelair-platform/platform-demo
+```
+
+Verify from any machine with cosign installed (requires `read:packages` on the GHCR token):
 
 ```bash
-# Verify the latest build
+# Authenticate cosign to ghcr.io
+echo $GHCR_PAT | cosign login ghcr.io --username AndreLiar --password-stdin
+
+# Verify the signed image
 cosign verify \
   --certificate-identity-regexp="https://github.com/andrelair-platform/platform-demo" \
   --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
@@ -105,17 +115,29 @@ cosign verify \
 #   - The code-signing certificate claims were validated
 #
 # [{"critical":{"identity":{"docker-reference":"ghcr.io/andrelair-platform/platform-demo"},
-#   "image":{"docker-manifest-digest":"sha256:..."},
+#   "image":{"docker-manifest-digest":"sha256:535cfe2434b13c1659187252039432b701dd4b83a9301b7a28624b9d5a10ee92"},
 #   "type":"cosign container image signature"},
 #   "optional":{"1.3.6.1.4.1.57264.1.1":"https://token.actions.githubusercontent.com",
 #   "1.3.6.1.4.1.57264.1.2":"push",
-#   "1.3.6.1.4.1.57264.1.3":"dc9b66b...",
+#   "1.3.6.1.4.1.57264.1.3":"dc9b66be821792b064597ad9d7c1845b5d2571aa",
 #   "1.3.6.1.4.1.57264.1.4":"CI",
 #   "1.3.6.1.4.1.57264.1.5":"andrelair-platform/platform-demo",
 #   "1.3.6.1.4.1.57264.1.6":"refs/heads/main"}}]
 ```
 
 `1.3.6.1.4.1.57264.1.*` are the Sigstore Fulcio OID extensions — they embed the GitHub Actions context (workflow, run, repo, ref) into the certificate.
+
+### Search Rekor transparency log directly
+
+The signature is in the public Rekor log regardless of registry visibility:
+
+```bash
+# Search by image digest (no registry auth needed)
+rekor-cli search --sha sha256:535cfe2434b13c1659187252039432b701dd4b83a9301b7a28624b9d5a10ee92
+
+# Or view the entry directly
+rekor-cli get --log-index 1900056177
+```
 
 ### Verify SBOM attachment
 
