@@ -262,6 +262,7 @@ const sidebars: SidebarsConfig = {
         'ai-ml/ollama',
         'ai-ml/mlflow',
         'ai-ml/kubeflow',
+        'ai-ml/hallucination-controls',
       ],
     },
 
