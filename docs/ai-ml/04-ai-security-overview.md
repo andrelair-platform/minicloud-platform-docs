@@ -35,6 +35,10 @@ This section covers five threat categories and the controls implemented against 
 │  THREAT 5 — MODEL INVERSION / EXTRACTION                            │
 │  Systematic querying reconstructs the full knowledge base            │
 │  → Enumeration detection · Response abstraction · LUKS encryption   │
+├─────────────────────────────────────────────────────────────────────┤
+│  THREAT 6 — MEMBERSHIP INFERENCE                                    │
+│  Single-query probing confirms whether a specific record is indexed  │
+│  → Identifier stripping · Neutral error message · GDPR Art. 15     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -49,6 +53,7 @@ This section covers five threat categories and the controls implemented against 
 | [Prompt Injection](prompt-injection) | Active attack | System prompt override, document-embedded instructions |
 | [Data Poisoning](data-poisoning) | Knowledge base integrity | Corrupt Qdrant documents that fool all quality metrics |
 | [Model Inversion](model-inversion) | Data extraction | Systematic enumeration of entire policy knowledge base |
+| [Membership Inference](membership-inference) | Record existence probing | Confirming whether a specific claim/policy/person is indexed |
 
 ---
 
@@ -166,6 +171,8 @@ All security events land in Langfuse. Filter by `event.name` to see any threat c
 | `enumeration-detected` | Model inversion | ERROR |
 | `enumeration-warning` | Model inversion | WARNING |
 | `verbatim-reproduction-detected` | Model inversion | WARNING |
+| `membership-probe-identifiers-stripped` | Membership inference | WARNING |
+| `gdpr-access-request-detected` | Membership inference | INFO |
 
 ---
 
@@ -182,6 +189,7 @@ All security events land in Langfuse. Filter by `event.name` to see any threat c
 | PromptGuard sidecar + injection hook + canary token | #46 | Planned |
 | Chunk provenance + collection ACL + integrity scan + feedback anomaly | #47 | Planned |
 | Enumeration detection + response abstraction + Qdrant LUKS | #48 | Planned |
+| Identifier stripping + neutral error message + GDPR Art. 15 routing | #49 | Planned |
 
 All issues are tracked in [andrelair-platform/platform-backlog](https://github.com/andrelair-platform/platform-backlog/issues).
 
