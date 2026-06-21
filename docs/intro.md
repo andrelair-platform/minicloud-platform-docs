@@ -69,8 +69,8 @@ Each phase builds directly on the previous one — nothing requires something th
 | **27** | Policy as code — OPA/Gatekeeper 3.22.2 admission controller. 3 enforced policies: block `:latest` tags, no privileged containers, require resource limits. Audit cycle confirmed 0 violations across all platform namespaces. All 3 rejection demos verified live. | OPA, Gatekeeper, Rego | ✅ Done |
 | **28** | Runtime threat detection — Falco 0.44.1 DaemonSet (3/3 nodes) via modern_ebpf driver (BPF CO-RE, kernel 6.8, no headers). 2 live detections: `Contact K8S API Server From Container` (Vault pod, MITRE T1565) + `Read sensitive file untrusted` (cat /etc/shadow). Two install gotchas: Squid proxy for falcoctl + inotify exhaustion on control-plane. | Falco, eBPF, BPF CO-RE | ✅ Done |
 | **29** | CIS Kubernetes Benchmark — kube-bench v0.9.4 scored against k3s-cis-1.8. Control-plane: 49 PASS / 6 FAIL / 55 WARN. All 6 FAILs are k3s false positives (kube-bench scans kubelet CLI args; k3s configures these through config file + auto-provisioned certs). Verified: anonymous-auth disabled (401), read-only-port closed. Gatekeeper + Vault already satisfy 4 of the WARN items. | kube-bench, CIS Benchmark | ✅ Done |
+| **30** | Supply chain security — Cosign keyless signing (GitHub OIDC → Sigstore Fulcio CA, no key management) + syft CycloneDX SBOM generation integrated into platform-demo GHA CI. Signatures and SBOM attached as OCI referrers on ghcr.io. Gatekeeper `K8sAllowedRegistries` policy (warn): 116 violations audited across Helm workloads; platform-demo compliant (Harbor proxy prefix). Full chain: GHAS → Cosign/SBOM → Harbor Trivy → Gatekeeper → Falco. | Cosign, syft, Sigstore, OCI referrers | ✅ Done |
 | **—** | **Data Layer** | Kafka/Redpanda, ClickHouse, dbt, Superset, OpenMetadata | 🔜 |
-| **—** | **Security Layer (remaining)** | Cosign+SBOM | 🔜 |
 
 ---
 
@@ -147,3 +147,4 @@ Kubeflow      → ML pipelines + distributed training
 - Applied chaos engineering with Chaos Mesh to validate cluster resilience
 - Deployed enterprise SSO via Authentik: OIDC for 5 apps, forward-auth for 5 apps, MFA enforced, one-toggle user deprovisioning across all services
 - Implemented GHAS: CodeQL SAST, Dependabot SCA, Secret Scanning + Push Protection across all org repos
+- Deployed Cosign keyless image signing + syft SBOM generation in CI (GitHub OIDC → Sigstore Fulcio, no long-lived key); 4th Gatekeeper policy enforces Harbor-only registry origin

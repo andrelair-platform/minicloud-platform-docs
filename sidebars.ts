@@ -356,6 +356,14 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['security-enterprise/kube-bench'],
     },
+
+    // ── Phase 30 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 30 — Cosign + SBOM (Supply Chain Security) ✅',
+      collapsed: true,
+      items: ['security-enterprise/cosign-sbom'],
+    },
   ],
 };
 
