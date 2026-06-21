@@ -340,6 +340,14 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['security-enterprise/opa-gatekeeper'],
     },
+
+    // ── Phase 28 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 28 — Falco (Runtime Threat Detection) ✅',
+      collapsed: true,
+      items: ['security-enterprise/falco'],
+    },
   ],
 };
 

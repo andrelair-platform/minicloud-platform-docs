@@ -67,8 +67,9 @@ Each phase builds directly on the previous one — nothing requires something th
 | **25** | Public access via Cloudflare Tunnel — `*.devandre.sbs` live (10/10 apps, no Tailscale). Authentik OIDC issuers migrated to `auth.devandre.sbs`. Forward-auth extended to `devandre.sbs` cookie domain. `originServerName` per cloudflared rule to fix TLS SNI on IP origin. UFW host firewall on controller. All smoke tests green. | Cloudflare Tunnel, cloudflared, Authentik forward-auth, UFW | ✅ Done |
 | **26** | Secrets management — Vault 2.0.2 with Raft on Longhorn. KV v2 (5 platform credentials + demo secret). Kubernetes auth backend. Agent Injector verified on platform-demo (2/2 pods, /vault/secrets/config injected). ArgoCD proxy fix (MAAS Squid) as bonus fix. | HashiCorp Vault, Raft, Vault Agent Injector | ✅ Done |
 | **27** | Policy as code — OPA/Gatekeeper 3.22.2 admission controller. 3 enforced policies: block `:latest` tags, no privileged containers, require resource limits. Audit cycle confirmed 0 violations across all platform namespaces. All 3 rejection demos verified live. | OPA, Gatekeeper, Rego | ✅ Done |
+| **28** | Runtime threat detection — Falco 0.44.1 DaemonSet (3/3 nodes) via modern_ebpf driver (BPF CO-RE, kernel 6.8, no headers). 2 live detections: `Contact K8S API Server From Container` (Vault pod, MITRE T1565) + `Read sensitive file untrusted` (cat /etc/shadow). Two install gotchas: Squid proxy for falcoctl + inotify exhaustion on control-plane. | Falco, eBPF, BPF CO-RE | ✅ Done |
 | **—** | **Data Layer** | Kafka/Redpanda, ClickHouse, dbt, Superset, OpenMetadata | 🔜 |
-| **—** | **Security Layer (remaining)** | Falco, Cosign+SBOM, kube-bench | 🔜 |
+| **—** | **Security Layer (remaining)** | Cosign+SBOM, kube-bench | 🔜 |
 
 ---
 
