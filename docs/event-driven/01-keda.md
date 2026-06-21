@@ -306,6 +306,95 @@ kubectl get scaledobject -n event-demo
 
 ---
 
+## Troubleshooting
+
+### keda-operator ImagePullBackOff (imagePullPolicy: Always)
+
+**Symptom:** `keda-operator` pod stuck in `ImagePullBackOff` for an extended period while the other two KEDA pods (`keda-admission-webhooks`, `keda-operator-metrics-apiserver`) run fine.
+
+**Root cause:** The Helm chart sets `imagePullPolicy: Always` on the operator container. With `Always`, Kubernetes must contact the registry on every pod start — even if the image is already cached locally. If the registry is unreachable (Harbor proxy DNS glitch, ghcr.io rate limit, network blip), the pod refuses to start regardless of local cache state.
+
+This is incorrect behaviour for a fixed version tag like `2.19.0`. The image content at a fixed tag never changes, so re-pulling on every start is pointless and creates a hard dependency on registry availability.
+
+```
+imagePullPolicy: Always  +  registry unreachable
+        │
+        ▼
+Pod refuses to start — even though image is in containerd cache
+        │
+        ▼
+ImagePullBackOff with exponential back-off (5s → 10s → 20s → 5m → 10m...)
+```
+
+**Diagnosis:**
+
+```bash
+# Confirm imagePullPolicy
+kubectl get deploy -n keda keda-operator \
+  -o jsonpath='{.spec.template.spec.containers[0].imagePullPolicy}'
+# → Always  (wrong for a versioned tag)
+
+# Find which node the pod is on
+kubectl get pod -n keda -l app=keda-operator -o wide
+
+# Check if image is in that node's containerd cache
+ssh <node> "sudo -n crictl images | grep keda"
+# If the image appears here, the pod COULD run — it's the pull policy blocking it
+
+# Check what the pull failure actually says
+kubectl describe pod -n keda keda-operator-<hash> | grep -A5 "Warning  Failed"
+```
+
+**Fix — two steps:**
+
+Step 1: Change `imagePullPolicy` to `IfNotPresent` (use cache if available):
+
+```bash
+kubectl patch deployment -n keda keda-operator \
+  -p '{"spec":{"template":{"spec":{"containers":[{"name":"keda-operator","imagePullPolicy":"IfNotPresent"}]}}}}'
+```
+
+Step 2: If the new pod lands on a node that doesn't have the image cached, copy it from the node that does:
+
+```bash
+# Export from the node that has it
+ssh set-hog "sudo -n ctr -n k8s.io images export /tmp/keda-2.19.0.tar ghcr.io/kedacore/keda:2.19.0"
+
+# Stream to all other nodes in parallel
+ssh set-hog "cat /tmp/keda-2.19.0.tar" | ssh fast-skunk "sudo -n ctr -n k8s.io images import -" &
+ssh set-hog "cat /tmp/keda-2.19.0.tar" | ssh fast-heron "sudo -n ctr -n k8s.io images import -" &
+wait
+
+# Delete stuck pods so deployment creates fresh ones against the local cache
+kubectl delete pod -n keda -l app=keda-operator
+```
+
+Step 3: Verify all three pods are Running:
+
+```bash
+kubectl get pods -n keda
+# keda-admission-webhooks-...         1/1  Running
+# keda-operator-...                   1/1  Running   ← was broken
+# keda-operator-metrics-apiserver-... 1/1  Running
+```
+
+**Why this is a Helm chart issue, not a cluster issue:**
+
+`imagePullPolicy: Always` is appropriate for `latest` or mutable tags where the image content can change without the tag changing. For immutable versioned tags (`2.19.0`), `IfNotPresent` is correct — if the image is cached, use it. The KEDA chart uses `Always` by default; this can be overridden in `keda-values.yaml`:
+
+```yaml
+# Add to keda-values.yaml to prevent this on reinstall
+image:
+  keda:
+    pullPolicy: IfNotPresent
+  metricsApiServer:
+    pullPolicy: IfNotPresent
+  webhooks:
+    pullPolicy: IfNotPresent
+```
+
+---
+
 ## Real-world skills demonstrated
 
 | Skill | Industry context |
