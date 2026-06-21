@@ -266,6 +266,7 @@ const sidebars: SidebarsConfig = {
         'ai-ml/bias-detection',
         'ai-ml/prompt-injection',
         'ai-ml/data-poisoning',
+        'ai-ml/model-inversion',
       ],
     },
 
