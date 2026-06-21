@@ -1,10 +1,10 @@
 ---
 id: host-hardening
-title: Host Firewall Hardening (UFW)
+title: Host Hardening (UFW + Lid Switch)
 sidebar_position: 7
 ---
 
-# Host Firewall Hardening — Controller Node
+# Host Hardening — All Cluster Nodes + Controller
 
 ## What Was Found
 
@@ -148,4 +148,85 @@ Everything that was accessible before UFW is still accessible after, as long as 
 
 ```bash
 ssh -t controller "sudo ufw status verbose"
+```
+
+---
+
+## Lid-Switch Hardening — All Four Machines
+
+All four ThinkPads run as always-on servers (AC power + Ethernet). By default Ubuntu 24.04 suspends on lid close. This was fixed on all machines.
+
+### Cluster nodes (set-hog, fast-skunk, fast-heron)
+
+Applied directly via `/etc/systemd/logind.conf` — the `ubuntu` user has passwordless sudo on k3s nodes:
+
+```bash
+for node in set-hog fast-skunk fast-heron; do
+  ssh $node "sudo sed -i \
+    's/#HandleLidSwitch=suspend/HandleLidSwitch=ignore/;
+     s/#HandleLidSwitchExternalPower=suspend/HandleLidSwitchExternalPower=ignore/' \
+    /etc/systemd/logind.conf && \
+    sudo systemctl restart systemd-logind && \
+    echo \$HOSTNAME done"
+done
+```
+
+Effective config on each node:
+```
+HandleLidSwitch=ignore
+HandleLidSwitchExternalPower=ignore
+HandleLidSwitchDocked=ignore   ← default
+```
+
+### Controller (ktayl-ThinkPad-X390)
+
+The controller's `ktayl` user requires a sudo password, so a **user-level systemd service using `systemd-inhibit`** is used instead — no root required:
+
+```bash
+mkdir -p ~/.config/systemd/user
+cat > ~/.config/systemd/user/inhibit-lid.service << 'EOF'
+[Unit]
+Description=Block lid-switch suspend (server always-on)
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/systemd-inhibit --what=handle-lid-switch --who=ktayl --why=server-always-on --mode=block /usr/bin/sleep infinity
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+EOF
+
+systemctl --user daemon-reload
+systemctl --user enable --now inhibit-lid.service
+```
+
+Verify the inhibitor is active:
+```bash
+systemd-inhibit --list | grep handle-lid-switch
+# ktayl  1000  ktayl  <PID>  systemd-inhibit  handle-lid-switch  server-always-on  block
+```
+
+The service starts automatically on login via `WantedBy=default.target` and restarts if it ever stops (`Restart=always`).
+
+### Why two different approaches
+
+| Node | Approach | Reason |
+|---|---|---|
+| set-hog, fast-skunk, fast-heron | Edit `/etc/systemd/logind.conf` | `ubuntu` user has `NOPASSWD` sudo — direct root config is cleanest |
+| controller | `systemd-inhibit` user service | `ktayl` requires sudo password — inhibitor achieves identical effect without root |
+
+Both approaches result in the lid close being fully ignored. Verified 2026-06-21 with all four lids closed simultaneously — all nodes remained `Ready` and all workloads kept running.
+
+### Operational check
+
+```bash
+# Confirm inhibitor is running on controller
+ssh controller "systemctl --user status inhibit-lid.service --no-pager"
+
+# Confirm logind config on cluster nodes
+for node in set-hog fast-skunk fast-heron; do
+  echo "$node:"; ssh $node "grep -v '^#' /etc/systemd/logind.conf | grep HandleLid"
+done
 ```
