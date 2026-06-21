@@ -348,6 +348,14 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['security-enterprise/falco'],
     },
+
+    // ── Phase 29 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 29 — kube-bench (CIS Benchmark) ✅',
+      collapsed: true,
+      items: ['security-enterprise/kube-bench'],
+    },
   ],
 };
 
