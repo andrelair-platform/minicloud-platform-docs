@@ -6,24 +6,26 @@ sidebar_position: 9
 
 # Phase 25 — Public Access & SSO Migration to devandre.sbs
 
-Phase 25 extends Phase 23's SSO to the public internet via Cloudflare Tunnel, making all platform apps reachable at real `*.devandre.sbs` URLs without Tailscale. It also hardens the controller with UFW and migrates OIDC issuers from nip.io to the public domain — the latter step is gated on DNS propagation.
+Phase 25 extends Phase 23's SSO to the public internet via Cloudflare Tunnel, making all platform apps reachable at real `*.devandre.sbs` URLs without Tailscale. It also hardens the controller with UFW and migrates OIDC issuers from nip.io to the public domain.
+
+**Phase status: ✅ Complete (2026-06-21)**
 
 ---
 
-## What Was Completed (2026-06-20 / 2026-06-21)
+## What Was Completed
 
 | Task | Status | Notes |
 |---|---|---|
 | Cloudflare Tunnel `minicloud` deployed | ✅ | Tunnel ID `bf5117ec-5986-47f0-a3ce-b96ab8854d21`; systemd on controller |
-| `*.devandre.sbs` routes all apps to NGINX Ingress at `10.0.0.200` | ✅ | Config in `~/.cloudflared/config.yml` |
-| All Ingresses updated with `devandre.sbs` host rules | ✅ | Each app has both `nip.io` and `devandre.sbs` hosts |
+| `*.devandre.sbs` routes all apps to NGINX Ingress at `10.0.0.200` | ✅ | Config in `~/.cloudflared/config.yml`; `originServerName` per rule |
+| All Ingresses updated with `devandre.sbs` host rules | ✅ | Each app has both `nip.io` and `devandre.sbs` hosts in `spec.rules` and `spec.tls` |
 | Authentik redirect URIs extended to public URLs | ✅ | All 6 OIDC providers updated with `https://app.devandre.sbs/...` callback URIs |
 | CoreDNS stub zone added (`devandre.sbs → 10.0.0.200`) | ✅ | Internal cluster traffic to `devandre.sbs` resolves locally, no Cloudflare round-trip |
-| `cloudflared httpHostHeader` rewrite removed | ✅ | Apps resolve correctly without forced Host override |
 | UFW host firewall installed on controller | ✅ | Blocks MAAS UI + Squid on public IPv6; Tailscale + cluster nodes unaffected |
-| **`devandre.sbs` Cloudflare NS propagation** | 🔄 | Namecheap → Cloudflare NS change in progress; DNS still on `registrar-servers.com` |
-| OIDC issuer URLs updated to `auth.devandre.sbs` | ⏳ | **Blocked on DNS propagation** |
-| Authentik outpost `authentik_host` updated | ⏳ | **Blocked on DNS propagation** |
+| Authentik outpost `authentik_host` updated | ✅ | Changed from `auth.10.0.0.200.nip.io` to `auth.devandre.sbs` |
+| Authentik forward-auth provider for `devandre.sbs` | ✅ | New provider pk=8 (`cookie_domain: devandre.sbs`) added to embedded outpost |
+| OIDC issuer URLs updated to `auth.devandre.sbs` | ✅ | ArgoCD, Grafana, Open WebUI, Backstage helm values updated + upgraded |
+| Smoke test 10/10 endpoints — all green | ✅ | All `*.devandre.sbs` return 200 or correct 302 to Authentik |
 
 ---
 
@@ -55,15 +57,163 @@ Browser (any network, no Tailscale needed)
 Cloudflare edge (anycast, HTTPS terminated here)
         │  QUIC / H2 outbound tunnel
         ▼
-cloudflared (systemd on controller, ktayl-ThinkPad-X390)
-        │
+cloudflared (controller, ktayl-ThinkPad-X390)
+        │  TLS SNI = <app>.10.0.0.200.nip.io (originServerName)
+        │  Host header = <app>.devandre.sbs  (passthrough)
         ▼
 NGINX Ingress Controller (10.0.0.200:443)
-  → TLS terminated (minicloud-ca cert, valid internally)
+  → TLS selected by SNI (uses nip.io cert, noTLSVerify=true bypasses check)
   → Routes by Host header to cluster services
+        │
+        ▼
+  forward-auth check → Authentik outpost (cookie_domain: devandre.sbs)
 ```
 
-The controller's `~/.cloudflared/config.yml` maps each `*.devandre.sbs` hostname to `https://10.0.0.200` with SNI matching the nip.io hostname. Cloudflare issues its own public TLS cert to the browser — users see a valid Cloudflare cert, never the internal CA.
+Cloudflare issues its own public TLS cert to the browser — users see a valid Cloudflare cert, never the internal CA.
+
+---
+
+## cloudflared Config (`~/.cloudflared/config.yml`)
+
+Each rule sets `originServerName` to the corresponding nip.io hostname. This is required because the service URL is an IP (`https://10.0.0.200`); without it NGINX rejects the TLS handshake with "unrecognized name" since no SNI is sent for an IP address.
+
+Harbor additionally needs `httpHostHeader` rewrite because Harbor's `externalURL` is still set to the nip.io hostname — it returns 404 for any other Host header.
+
+```yaml
+tunnel: bf5117ec-5986-47f0-a3ce-b96ab8854d21
+credentials-file: /home/ktayl/.cloudflared/bf5117ec-5986-47f0-a3ce-b96ab8854d21.json
+
+ingress:
+  - hostname: homer.devandre.sbs
+    service: https://10.0.0.200
+    originRequest:
+      noTLSVerify: true
+      originServerName: homer.10.0.0.200.nip.io
+
+  - hostname: demo.devandre.sbs
+    service: https://10.0.0.200
+    originRequest:
+      noTLSVerify: true
+      originServerName: platform-demo.10.0.0.200.nip.io
+
+  - hostname: grafana.devandre.sbs
+    service: https://10.0.0.200
+    originRequest:
+      noTLSVerify: true
+      originServerName: grafana.10.0.0.200.nip.io
+
+  - hostname: argocd.devandre.sbs
+    service: https://10.0.0.200
+    originRequest:
+      noTLSVerify: true
+      originServerName: argocd.10.0.0.200.nip.io
+
+  - hostname: harbor.devandre.sbs
+    service: https://10.0.0.200
+    originRequest:
+      noTLSVerify: true
+      originServerName: harbor.10.0.0.200.nip.io
+      httpHostHeader: harbor.10.0.0.200.nip.io
+
+  - hostname: backstage.devandre.sbs
+    service: https://10.0.0.200
+    originRequest:
+      noTLSVerify: true
+      originServerName: backstage.10.0.0.200.nip.io
+
+  - hostname: auth.devandre.sbs
+    service: https://10.0.0.200
+    originRequest:
+      noTLSVerify: true
+      originServerName: auth.10.0.0.200.nip.io
+
+  - hostname: chat.devandre.sbs
+    service: https://10.0.0.200
+    originRequest:
+      noTLSVerify: true
+      originServerName: chat.10.0.0.200.nip.io
+
+  - hostname: nats.devandre.sbs
+    service: https://10.0.0.200
+    originRequest:
+      noTLSVerify: true
+      originServerName: nats.10.0.0.200.nip.io
+
+  - hostname: ktayl.devandre.sbs
+    service: https://10.0.0.200
+    originRequest:
+      noTLSVerify: true
+      originServerName: ktayl.10.0.0.200.nip.io
+
+  - service: http_status:404
+```
+
+**Cloudflared restart note:** The cloudflared service runs under systemd (`/etc/systemd/system/cloudflared.service`). After editing `config.yml`, restart via:
+
+```bash
+sudo systemctl restart cloudflared
+```
+
+The `ktayl` user requires a password for sudo. If unavailable, start manually with:
+
+```bash
+pkill -f 'cloudflared tunnel'
+nohup ~/.local/bin/cloudflared tunnel --config ~/.cloudflared/config.yml run >> ~/.cloudflared/tunnel.log 2>&1 &
+```
+
+The systemd unit will restart it automatically on next controller reboot.
+
+---
+
+## Authentik Forward-Auth for devandre.sbs
+
+Authentik's `forward_domain` mode uses `cookie_domain` to decide which incoming hostnames the outpost handles. The existing provider (pk=1) had `cookie_domain: 10.0.0.200.nip.io` — the outpost returned 404 for all `*.devandre.sbs` requests.
+
+**Fix:** A second proxy provider was created via the Authentik API and added to the embedded outpost:
+
+| Provider | pk | mode | cookie_domain | external_host |
+|---|---|---|---|---|
+| `minicloud-forward-auth` | 1 | forward_domain | `10.0.0.200.nip.io` | `https://auth.10.0.0.200.nip.io` |
+| `minicloud-forward-auth-public` | 8 | forward_domain | `devandre.sbs` | `https://auth.devandre.sbs` |
+
+Both are assigned to the `authentik Embedded Outpost` (`pk: 93d11dbf-e7fe-4604-afb1-7269980a5b47`). The outpost now handles forward-auth for both `*.10.0.0.200.nip.io` (internal Tailscale access) and `*.devandre.sbs` (public Cloudflare Tunnel access) simultaneously.
+
+The app `minicloud-forward-auth-public` (slug: `minicloud-forward-auth-public`, pk: `1c6a0257-d290-429a-a72d-ea66cb907a7f`) is linked to provider pk=8.
+
+To recreate if needed:
+
+```bash
+TOKEN=8faRrP7cbqx4N2qmAD48iFuZbNdtFDy2EiP9AaL2emoqJNEovzImPy9y7Xpj
+
+# Create provider
+curl -s -X POST 'https://auth.10.0.0.200.nip.io/api/v3/providers/proxy/' \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  --cacert /home/ktayl/minicloud-ca.crt \
+  -d '{
+    "name": "minicloud-forward-auth-public",
+    "authorization_flow": "3cb61a3d-47ba-47ac-bf32-b270179bb735",
+    "invalidation_flow": "2c1cd937-5a93-4e36-b9df-96839a9e3e05",
+    "property_mappings": ["35c5c354-c9ce-4942-a919-43208923127f","06730f5f-cf59-4227-afe7-7fdf9dc113ba","d4967c11-acbe-4ae6-80c0-4b45c0fcf95b","677d145c-2abe-407e-9e5f-e425b65a8740","6e52eb60-9e8c-4684-be85-6cf79e894a01"],
+    "mode": "forward_domain",
+    "external_host": "https://auth.devandre.sbs",
+    "cookie_domain": "devandre.sbs",
+    "access_token_validity": "hours=24",
+    "refresh_token_validity": "days=30",
+    "intercept_header_auth": true,
+    "redirect_uris": [
+      {"matching_mode":"strict","url":"https://auth.devandre.sbs/outpost.goauthentik.io/callback?X-authentik-auth-callback=true","redirect_uri_type":"authorization"},
+      {"matching_mode":"strict","url":"https://auth.devandre.sbs?X-authentik-auth-callback=true","redirect_uri_type":"authorization"}
+    ]
+  }'
+
+# Add to outpost (replace 1 with new pk)
+curl -s -X PATCH 'https://auth.10.0.0.200.nip.io/api/v3/outposts/instances/93d11dbf-e7fe-4604-afb1-7269980a5b47/' \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  --cacert /home/ktayl/minicloud-ca.crt \
+  -d '{"providers": [1, 8]}'
+```
 
 ---
 
@@ -84,116 +234,33 @@ Anywhere          ALLOW IN   10.0.0.0/24   ← cluster nodes → MAAS/Squid
 
 ---
 
-## Pending Steps — Run After DNS Propagates
+## Smoke Test Results (2026-06-21)
 
-**Trigger:** `dig +short NS devandre.sbs @1.1.1.1` returns `apollo.ns.cloudflare.com`.
-
-Check propagation:
-```bash
-dig +short NS devandre.sbs @1.1.1.1
-# Expected when ready: apollo.ns.cloudflare.com.
-#                      nora.ns.cloudflare.com.
-```
-
-### Step 1 — Update Authentik outpost `authentik_host`
-
-The embedded outpost (forward-auth for Homer, podinfo, platform-demo, whoami, NATS) needs to know the Authentik public URL for redirect flows:
+Verified from Mac with Tailscale disabled (pure public internet):
 
 ```bash
-# Authentik UI → Admin → Outposts → embedded-outpost → Edit
-# Change: authentik_host = https://auth.10.0.0.200.nip.io
-# To:     authentik_host = https://auth.devandre.sbs
+for app in homer argocd grafana harbor backstage auth chat demo nats ktayl; do
+  d="${app}.devandre.sbs"
+  code=$(curl -sI "https://${d}" --max-time 10 | head -1 | awk '{print $2}')
+  printf "%-35s %s\n" "${d}" "${code}"
+done
 ```
 
-Or via API:
-```bash
-AUTHENTIK_TOKEN=$(cat ~/.authentik-api-token)
-OUTPOST_ID=$(curl -s https://auth.10.0.0.200.nip.io/api/v3/outposts/instances/ \
-  -H "Authorization: Bearer $AUTHENTIK_TOKEN" \
-  | jq -r '.results[] | select(.name == "authentik Embedded Outpost") | .pk')
-
-curl -s -X PATCH "https://auth.10.0.0.200.nip.io/api/v3/outposts/instances/${OUTPOST_ID}/" \
-  -H "Authorization: Bearer $AUTHENTIK_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"config": {"authentik_host": "https://auth.devandre.sbs"}}'
+Results:
+```
+homer.devandre.sbs                  302  ← Authentik forward-auth redirect
+argocd.devandre.sbs                 200  ← ArgoCD login page
+grafana.devandre.sbs                302  ← Authentik OIDC redirect
+harbor.devandre.sbs                 200  ← Harbor login page
+backstage.devandre.sbs              200  ← Backstage app
+auth.devandre.sbs                   302  ← Authentik itself (→ login)
+chat.devandre.sbs                   200  ← Open WebUI
+demo.devandre.sbs                   302  ← Authentik forward-auth redirect
+nats.devandre.sbs                   302  ← Authentik forward-auth redirect
+ktayl.devandre.sbs                  200  ← ktayl-solution (no auth, public site)
 ```
 
-### Step 2 — Update OIDC issuer URLs in Helm values
-
-Four apps have the OIDC issuer URL hardcoded in their Helm values on the controller. Update all four, then upgrade:
-
-**ArgoCD** (`/home/ktayl/minicloud-ktaylorganisation/ansible/helm-values/argocd-values.yaml`):
-```yaml
-# Change:
-server.config.oidc.config: |
-  issuer: https://auth.10.0.0.200.nip.io/application/o/argocd/
-# To:
-server.config.oidc.config: |
-  issuer: https://auth.devandre.sbs/application/o/argocd/
-```
-
-**Grafana** (grafana-values.yaml):
-```yaml
-# Change:
-auth.generic_oauth:
-  auth_url: https://auth.10.0.0.200.nip.io/application/o/authorize/
-  token_url: https://auth.10.0.0.200.nip.io/application/o/token/
-  api_url: https://auth.10.0.0.200.nip.io/application/o/userinfo/
-# To: replace all three with auth.devandre.sbs equivalent URLs
-```
-
-**Open WebUI** (open-webui-values.yaml):
-```yaml
-# Change all OAUTH_*_URL env vars from auth.10.0.0.200.nip.io to auth.devandre.sbs
-```
-
-**Backstage** (backstage-values.yaml):
-```yaml
-# Change under appConfig.auth.providers.oidc:
-metadataUrl: https://auth.10.0.0.200.nip.io/application/o/backstage/.well-known/openid-configuration
-# To: https://auth.devandre.sbs/application/o/backstage/.well-known/openid-configuration
-```
-
-**Apply all four:**
-```bash
-ssh controller "
-  helm upgrade argocd argo/argo-cd -n argocd \
-    --values /home/ktayl/minicloud-ktaylorganisation/ansible/helm-values/argocd-values.yaml --wait &
-  helm upgrade grafana grafana/grafana -n monitoring \
-    --values /home/ktayl/minicloud-ktaylorganisation/ansible/helm-values/grafana-values.yaml --wait &
-  helm upgrade open-webui open-webui/open-webui -n ai \
-    --values /home/ktayl/minicloud-ktaylorganisation/ansible/helm-values/open-webui-values.yaml --wait &
-  helm upgrade backstage backstage/backstage -n backstage \
-    --values /home/ktayl/minicloud-ktaylorganisation/ansible/helm-values/backstage-values.yaml --timeout 8m --wait &
-  wait
-"
-```
-
-### Step 3 — Smoke test
-
-```bash
-# From a browser (no Tailscale):
-# 1. Open https://argocd.devandre.sbs → click "Log in via Authentik"
-#    → redirects to auth.devandre.sbs → login → back to ArgoCD ✓
-# 2. Open https://grafana.devandre.sbs → "Sign in with Authentik" ✓
-# 3. Open https://chat.devandre.sbs → "Continue with Authentik" ✓
-# 4. Open https://homer.devandre.sbs → should load immediately (forward-auth) ✓
-
-# From Mac terminal (no Tailscale needed — public URL):
-/usr/bin/curl -sI https://homer.devandre.sbs | head -5
-# Expect: HTTP/2 200 or 302 (Authentik redirect if not logged in)
-
-/usr/bin/curl -sI https://argocd.devandre.sbs | head -5
-# Expect: HTTP/2 302 → location: https://auth.devandre.sbs/...
-```
-
----
-
-## Why the Order Matters
-
-OIDC issuer URLs must **not** be changed before DNS propagates on client browsers. If `auth.devandre.sbs` doesn't resolve on a user's browser, the OIDC redirect loop fails silently — the browser gets a `NXDOMAIN` after Authentik redirects to the public URL. The nip.io URLs remain valid indefinitely (they resolve `10.0.0.200` directly from the IP in the hostname), so there is no urgency to switch before DNS is confirmed live.
-
-Precedence rule: **internal users (Tailscale)** continue working on nip.io URLs until DNS is confirmed. Then switch. Both hostname sets remain on every Ingress permanently for redundancy.
+10/10 ✅
 
 ---
 
@@ -214,28 +281,28 @@ Set in the Cloudflare dashboard for `devandre.sbs`. All set to **Proxied** (oran
 | `nats` | CNAME | `tunnel.devandre.sbs` | via Tunnel route |
 | `ktayl` | CNAME | `tunnel.devandre.sbs` | via Tunnel route |
 
-Tunnel routes are managed via cloudflared:
-```bash
-ssh controller "~/.local/bin/cloudflared tunnel route dns minicloud <subdomain>.devandre.sbs"
-```
-
 ---
 
 ## Operational Checks
 
 ```bash
-# DNS propagation status
-dig +short NS devandre.sbs @1.1.1.1
-# Ready when: apollo.ns.cloudflare.com.
-
 # Tunnel health
-ssh controller "sudo systemctl status cloudflared"
 ssh controller "~/.local/bin/cloudflared tunnel info minicloud"
+ssh controller "tail -5 ~/.cloudflared/tunnel.log"
 
 # UFW status
 ssh -t controller "sudo ufw status verbose"
 
+# Authentik outpost providers
+curl -s https://auth.10.0.0.200.nip.io/api/v3/outposts/instances/93d11dbf-e7fe-4604-afb1-7269980a5b47/ \
+  -H 'Authorization: Bearer 8faRrP7cbqx4N2qmAD48iFuZbNdtFDy2EiP9AaL2emoqJNEovzImPy9y7Xpj' \
+  --cacert ~/minicloud-ca.crt | jq '.providers'
+# Expected: [1, 8]
+
 # Verify public access (no Tailscale)
-/usr/bin/curl -sI https://homer.devandre.sbs
-/usr/bin/curl -sI https://argocd.devandre.sbs
+for app in homer argocd grafana harbor backstage auth chat demo nats ktayl; do
+  d="${app}.devandre.sbs"
+  code=$(curl -sI "https://${d}" --max-time 10 | head -1 | awk '{print $2}')
+  printf "%-35s %s\n" "${d}" "${code}"
+done
 ```
