@@ -1,48 +1,12 @@
 ---
 id: vault
-title: Vault (Deferred)
+title: Phase 26 — Vault (Secrets Management)
 sidebar_position: 2
 ---
 
-# HashiCorp Vault — Production Secrets Management
+# Phase 26 — HashiCorp Vault — Secrets Management
 
-:::caution Status: Deferred to a future phase
-The original 22-phase plan called for **Vault** alongside cert-manager
-(Phase 15) and Backstage (Phase 18). It's been **deliberately deferred
-twice** — once during Phase 15 (where we shipped cert-manager only) and
-again during Phase 18 (where we shipped catalog-only Backstage).
-
-Reasons (consistent across both deferrals):
-
-1. **Single-control-plane SPOF.** Vault on a single-node k3s cluster
-   without HA introduces its own SPOF. The right time to introduce
-   Vault is when there's a real workload that needs dynamic credentials
-   AND we have HA control plane.
-2. **No current workload needs it.** We have ~6 admin passwords stored
-   in `~/.*-admin` files mode 600 on the controller. Vault is meant to
-   replace static secrets with dynamic ones (e.g., per-pod database
-   credentials that auto-expire). On this homelab, we have nothing
-   that needs that yet.
-3. **Same scope-reduction pattern as everything else.** Phase 11
-   deferred Crossplane. Phase 13 deferred GitLab. Phase 15 deferred
-   Vault + RBAC. Phase 16 deferred n8n/Temporal/Airflow. Doing one
-   heavy tool well > three shallow ones.
-
-The likely future home is **alongside an external-DB-credentials need**
-(e.g., when we install a real PostgreSQL workload that other apps need
-to connect to with rotating credentials), or **alongside Keycloak SSO**
-(when secret-management for OAuth client secrets becomes the right
-shape).
-
-This page is kept as conceptual reference. The implementation has not
-been done.
-:::
-
----
-
-## What Vault would solve
-
-Kubernetes Secrets are base64-encoded — not encrypted. Anyone with cluster access can read them. Vault is the industry-standard solution: secrets are encrypted at rest, access is audited, and credentials can be dynamically generated and automatically rotated.
+Vault replaces the `~/.xxx-admin` credential-file pattern on the controller with a proper secrets management layer: encrypted at rest, access audited, credentials injectable directly into pods via the Vault Agent Injector.
 
 ---
 
@@ -50,163 +14,297 @@ Kubernetes Secrets are base64-encoded — not encrypted. Anyone with cluster acc
 
 ```text
 ❌ Without Vault:
-   kubectl get secret my-db-password -o yaml
-   → password: base64decoded_plaintext   (anyone can read this)
+   ~/.argocd-admin, ~/.grafana-admin, ~/.harbor-admin ...
+   (mode 600 files on the controller — secure but unaudited, not rotatable)
+
+   kubectl get secret -o yaml
+   → data: base64(plaintext)   ← anyone with cluster access can read
 
 ✔ With Vault:
-   Secrets encrypted with AES-256
-   Access requires a valid token + policy
-   Every access is logged
-   Credentials auto-expire and rotate
+   Secrets encrypted at rest (AES-256-GCM via Raft)
+   Every read/write logged with who/when/from where
+   Pods receive secrets as injected files — no Kubernetes Secret needed
+   Credentials rotatable without redeploying apps
 ```
 
 ---
 
-## Key Features Used
+## Architecture
 
-| Feature | What It Does |
-|---|---|
-| **KV Secrets Engine** | Store and version arbitrary secrets |
-| **Dynamic Secrets** | Generate DB credentials on demand (auto-expire) |
-| **Kubernetes Auth** | Pods authenticate using their ServiceAccount token |
-| **Vault Agent Injector** | Automatically inject secrets into pods as files |
-| **Audit Logging** | Every secret access logged with who/when/from where |
+```text
+vault-0 (StatefulSet, 1 replica)
+  │  storage: Raft integrated (no external etcd)
+  │  PVC: data-vault-0 (5Gi, Longhorn)
+  │  TLS: disabled internally (handled by NGINX Ingress + minicloud CA)
+  │
+  ├── vault-agent-injector (Deployment)
+  │     Mutating webhook — patches pods with Vault Agent sidecar when
+  │     vault.hashicorp.com/agent-inject: "true" annotation present
+  │
+  └── NGINX Ingress
+        vault.10.0.0.200.nip.io  → port 8200
+        vault.devandre.sbs        → port 8200 (via Cloudflare Tunnel)
+```
 
 ---
 
-## Install Vault via Helm
+## Install
 
 ```bash
 helm repo add hashicorp https://helm.releases.hashicorp.com
+helm repo update hashicorp
 
 helm install vault hashicorp/vault \
   --namespace vault \
   --create-namespace \
-  --set "server.ha.enabled=false" \
-  --set "server.dataStorage.storageClass=longhorn"
+  --values /home/ktayl/minicloud-ktaylorganisation/ansible/helm-values/vault-values.yaml \
+  --wait --timeout 5m
+```
+
+`vault-values.yaml`:
+
+```yaml
+server:
+  ha:
+    enabled: false
+
+  standalone:
+    enabled: true
+    config: |
+      ui = true
+
+      listener "tcp" {
+        tls_disable = 1
+        address = "[::]:8200"
+        cluster_address = "[::]:8201"
+      }
+
+      storage "raft" {
+        path    = "/vault/data"
+        node_id = "vault-0"
+      }
+
+      service_registration "kubernetes" {}
+
+  dataStorage:
+    enabled: true
+    size: 5Gi
+    storageClass: longhorn
+    accessMode: ReadWriteOnce
+
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 250m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+
+injector:
+  enabled: true
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 50m
+    limits:
+      memory: 128Mi
+      cpu: 250m
+
+ui:
+  enabled: true
+  serviceType: ClusterIP
 ```
 
 ---
 
 ## Initialize and Unseal
 
+Run once after first install. The pod will show `0/1` until initialized and unsealed — the readiness probe queries `/v1/sys/health`.
+
 ```bash
 kubectl exec -n vault vault-0 -- vault operator init \
   -key-shares=3 \
-  -key-threshold=2
-
-# Save the 3 unseal keys and root token — store them safely offline
+  -key-threshold=2 \
+  -format=json
 ```
 
-Unseal (needed after every restart):
+Save all output immediately:
 
 ```bash
-kubectl exec -n vault vault-0 -- vault operator unseal <KEY_1>
-kubectl exec -n vault vault-0 -- vault operator unseal <KEY_2>
+# On controller — mode 600, never committed
+cat > ~/.vault-unseal-key-1 << 'EOF'
+<unseal_keys_hex[0]>
+EOF
+cat > ~/.vault-unseal-key-2 << 'EOF'
+<unseal_keys_hex[1]>
+EOF
+cat > ~/.vault-unseal-key-3 << 'EOF'
+<unseal_keys_hex[2]>
+EOF
+cat > ~/.vault-root-token << 'EOF'
+<root_token>
+EOF
+chmod 600 ~/.vault-unseal-key-* ~/.vault-root-token
 ```
+
+Unseal (needs 2 of 3 keys):
+
+```bash
+KEY1=$(cat ~/.vault-unseal-key-1 | tr -d '\n')
+KEY2=$(cat ~/.vault-unseal-key-2 | tr -d '\n')
+kubectl exec -n vault vault-0 -- vault operator unseal "$KEY1"
+kubectl exec -n vault vault-0 -- vault operator unseal "$KEY2"
+
+# Verify: Sealed = false, HA Mode = active
+kubectl exec -n vault vault-0 -- vault status
+```
+
+**Unseal is required after every pod restart.** Vault starts sealed — it cannot serve requests until unsealed with the threshold number of keys. This is by design: an attacker with access to the pod cannot read encrypted data without the keys.
 
 ---
 
-## Configure Kubernetes Auth
+## Ingress + TLS
 
 ```bash
-kubectl exec -n vault -it vault-0 -- /bin/sh
+# TLS cert from minicloud-ca
+cat <<EOF | kubectl apply -f -
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: vault-tls
+  namespace: vault
+spec:
+  secretName: vault-tls
+  dnsNames:
+    - vault.10.0.0.200.nip.io
+  duration: 2160h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: minicloud-ca
+    kind: ClusterIssuer
+    group: cert-manager.io
+EOF
 
-vault auth enable kubernetes
-
-vault write auth/kubernetes/config \
-  kubernetes_host="https://10.0.0.2:6443"
-
-exit
+# NGINX Ingress
+cat <<EOF | kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vault
+  namespace: vault
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: vault.10.0.0.200.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: vault
+                port:
+                  number: 8200
+    - host: vault.devandre.sbs
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: vault
+                port:
+                  number: 8200
+  tls:
+    - hosts:
+        - vault.10.0.0.200.nip.io
+      secretName: vault-tls
+    - hosts:
+        - vault.devandre.sbs
+      secretName: vault-tls
+EOF
 ```
 
----
-
-## Store a Secret
-
-```bash
-kubectl exec -n vault -it vault-0 -- /bin/sh
-
-vault secrets enable -path=secret kv-v2
-
-vault kv put secret/myapp/database \
-  username="appuser" \
-  password="$(openssl rand -base64 32)"
-
-vault kv get secret/myapp/database
-```
-
----
-
-## Inject Secrets into Pods Automatically
-
-Vault Agent Injector reads annotations on pods and injects secrets as files — no code changes needed:
+Cloudflare Tunnel (`~/.cloudflared/config.yml`) — add before the catch-all rule:
 
 ```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: my-app
-  annotations:
-    vault.hashicorp.com/agent-inject: "true"
-    vault.hashicorp.com/role: "my-app"
-    vault.hashicorp.com/agent-inject-secret-config: "secret/myapp/database"
-    vault.hashicorp.com/agent-inject-template-config: |
-      {{- with secret "secret/myapp/database" -}}
-      DB_USER={{ .Data.data.username }}
-      DB_PASS={{ .Data.data.password }}
-      {{- end }}
-spec:
-  containers:
-    - name: my-app
-      image: my-app:latest
+- hostname: vault.devandre.sbs
+  service: https://10.0.0.200
+  originRequest:
+    noTLSVerify: true
+    originServerName: vault.10.0.0.200.nip.io
 ```
 
-The secret is injected at `/vault/secrets/config` inside the container — readable as environment variables or a config file.
+```bash
+~/.local/bin/cloudflared tunnel route dns minicloud vault.devandre.sbs
+```
 
 ---
 
-## Dynamic Database Credentials
-
-Instead of storing a static DB password, Vault generates a unique credential per request that expires automatically:
+## Verification (regression)
 
 ```bash
-vault secrets enable database
+# Both pods Running
+kubectl get pods -n vault
+# vault-0                       1/1 Running
+# vault-agent-injector-...      1/1 Running
 
-vault write database/config/postgres \
-  plugin_name=postgresql-database-plugin \
-  allowed_roles="my-app" \
-  connection_url="postgresql://{{username}}:{{password}}@10.0.0.2:5432/mydb" \
-  username="vault" \
-  password="vaultpassword"
+# PVC bound on Longhorn
+kubectl get pvc -n vault
 
-vault write database/roles/my-app \
-  db_name=postgres \
-  creation_statements="CREATE ROLE '{{name}}' WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';" \
-  default_ttl="1h" \
-  max_ttl="24h"
+# Vault health
+kubectl exec -n vault vault-0 -- vault status
+# Initialized: true  Sealed: false  HA Mode: active
+
+# Public endpoint
+curl -s https://vault.devandre.sbs/v1/sys/health | python3 -c \
+  'import sys,json; d=json.load(sys.stdin); print("initialized:", d["initialized"], "sealed:", d["sealed"])'
 ```
-
-Every app gets its own temporary DB credential. When it expires, Vault generates a new one. Compromise of one credential is time-limited.
 
 ---
 
-## Access Vault UI
+## Unseal After Restart
+
+Every time `vault-0` pod restarts (node reboot, OOM kill, rolling update), Vault starts sealed. Unseal manually:
 
 ```bash
-kubectl port-forward -n vault svc/vault 8200:8200
+KEY1=$(ssh controller "cat ~/.vault-unseal-key-1 | tr -d '\n'")
+KEY2=$(ssh controller "cat ~/.vault-unseal-key-2 | tr -d '\n'")
+ssh controller "kubectl exec -n vault vault-0 -- vault operator unseal '$KEY1'"
+ssh controller "kubectl exec -n vault vault-0 -- vault operator unseal '$KEY2'"
 ```
 
-Open: `http://localhost:8200`
+Or run entirely on the controller:
+
+```bash
+KEY1=$(cat ~/.vault-unseal-key-1 | tr -d '\n')
+KEY2=$(cat ~/.vault-unseal-key-2 | tr -d '\n')
+kubectl exec -n vault vault-0 -- vault operator unseal "$KEY1"
+kubectl exec -n vault vault-0 -- vault operator unseal "$KEY2"
+```
 
 ---
 
 ## Done When
 
 ```text
-✔ Vault initialized and unsealed
-✔ Kubernetes auth configured
-✔ Secrets stored and retrievable
-✔ Pod receiving injected secret via annotation
-✔ Audit log capturing all access
+✔ vault-0 and vault-agent-injector both 1/1 Running
+✔ PVC data-vault-0 Bound on Longhorn (5Gi)
+✔ vault status: Initialized=true, Sealed=false, HA Mode=active
+✔ https://vault.10.0.0.200.nip.io/ui reachable (Tailscale)
+✔ https://vault.devandre.sbs/v1/sys/health returns initialized=true
+✔ Unseal keys saved at ~/.vault-unseal-key-{1,2,3} mode 600 on controller
+✔ Root token saved at ~/.vault-root-token mode 600 on controller
 ```
+
+---
+
+## Next Steps
+
+- Enable KV v2 secrets engine and store platform admin credentials
+- Enable Kubernetes auth backend for pod-level authentication
+- Deploy Vault Agent Injector demo with `platform-demo`
+- Enable audit logging to stdout → Loki

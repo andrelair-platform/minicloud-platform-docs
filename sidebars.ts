@@ -210,7 +210,6 @@ const sidebars: SidebarsConfig = {
       label: 'Phase 15 — Security',
       collapsed: true,
       items: [
-        'developer-platform/vault',
         'platform-roadmap/phase-15-cert-manager',
       ],
     },
@@ -324,6 +323,14 @@ const sidebars: SidebarsConfig = {
       label: 'Phase 25 — Public Access & SSO Migration ✅',
       collapsed: true,
       items: ['security-enterprise/phase25-public-access'],
+    },
+
+    // ── Phase 26 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 26 — Vault (Secrets Management) 🔄',
+      collapsed: true,
+      items: ['developer-platform/vault'],
     },
   ],
 };
