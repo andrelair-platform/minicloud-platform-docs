@@ -270,6 +270,7 @@ const sidebars: SidebarsConfig = {
         'ai-ml/data-poisoning',
         'ai-ml/model-inversion',
         'ai-ml/membership-inference',
+        'ai-ml/sampling-configuration',
       ],
     },
 
