@@ -372,6 +372,14 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['developer-platform/multi-env-namespaces'],
     },
+
+    // ── Phase 63 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 63 — Cluster Hardening ✅',
+      collapsed: true,
+      items: ['security-enterprise/cluster-hardening'],
+    },
   ],
 };
 
