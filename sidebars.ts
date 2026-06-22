@@ -373,6 +373,30 @@ const sidebars: SidebarsConfig = {
       items: ['developer-platform/multi-env-namespaces'],
     },
 
+    // ── Phase 57 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 57 — Nextcloud + Authentik SSO ✅',
+      collapsed: true,
+      items: ['developer-platform/nextcloud'],
+    },
+
+    // ── Phase 58 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 58 — Vault GitOps Migration ✅',
+      collapsed: true,
+      items: ['developer-platform/vault-gitops'],
+    },
+
+    // ── Phase 62 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 62 — IAM Hardening (OIDC + RBAC + MFA) ✅',
+      collapsed: true,
+      items: ['security-enterprise/iam-hardening'],
+    },
+
     // ── Phase 63 ────────────────────────────────────────────────────
     {
       type: 'category',
