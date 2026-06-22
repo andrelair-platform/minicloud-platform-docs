@@ -404,6 +404,14 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['security-enterprise/cluster-hardening'],
     },
+
+    // ── Phase 64 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 64 — Namespace Isolation ✅',
+      collapsed: true,
+      items: ['security-enterprise/namespace-isolation'],
+    },
   ],
 };
 
