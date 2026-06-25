@@ -46,8 +46,8 @@ pipelines; deferring them keeps the cluster usable for actual workloads.
                     │   │   inference engine       │  │
                     │   │   ~2.6 GiB RAM (model    │  │
                     │   │     hot in memory)       │  │
-                    │   │   10 GiB Longhorn PVC    │  │
-                    │   │   (model weights)        │  │
+                    │   │   10 GiB local-path PVC  │  │
+                    │   │   (model weights, NVMe)  │  │
                     │   │   port 11434 (cluster-   │  │
                     │   │     internal only)       │  │
                     │   └──────────────────────────┘  │
@@ -76,7 +76,7 @@ internal.
 | Model | **`llama3.2:3b`** (~2 GiB on disk + RAM) | Sweet spot for CPU on ThinkPads. Larger models (7B+) are 2-3x slower, marginal quality gain at this size. |
 | Inference TPS | **~13 tokens/sec** sustained on CPU | Measured in the cold-start test. Roughly 10 words/sec — twice the human reading speed. |
 | Ollama API exposure | **Cluster-internal only** (`http://ollama.ai.svc:11434`) | Unauthenticated LLM = abuse vector if exposed. Open WebUI is the gatekeeper. |
-| Ollama persistence | 10 GiB Longhorn PVC at `/root/.ollama` | Model survives pod restarts; room for a 7B follow-up if added later |
+| Ollama persistence | 10 GiB **local-path** PVC at `/root/.ollama` on fast-heron (Phase 66) | Model weights are static re-downloadable assets — local NVMe avoids Longhorn replication overhead. No HA: if fast-heron is down, re-pull on restart. |
 | Open WebUI install | Helm chart `open-webui/open-webui` v14.4.0 (app 0.9.4) | Mature chart with sane defaults |
 | Open WebUI database | SQLite on Longhorn (1 GiB) | Postgres is overkill for single-user demo. SQLite handles RAG embeddings + chat history + user accounts fine. |
 | Open WebUI auth | First-user-becomes-admin (Open WebUI default) | Acceptable: TLS Ingress is internal-only via private nip.io hostname |
@@ -135,9 +135,12 @@ resources:
   requests: { cpu: "1",   memory: 2Gi }
   limits:   { cpu: "4",   memory: 8Gi }
 
+nodeSelector:
+  kubernetes.io/hostname: fast-heron   # added Phase 66
+
 persistentVolume:
   enabled: true
-  storageClass: longhorn
+  storageClass: local-path   # changed from longhorn in Phase 66
   size: 10Gi
   accessModes: [ReadWriteOnce]
 ```
@@ -435,11 +438,78 @@ Empty output = cluster is fully pinned. Full incident story (including the more 
 
 ---
 
+## Phase 66 — Storage & Placement Update (2026-06-25, #64)
+
+After Phase 63 (cluster hardening) and Phase 65 (Vault KMS), a follow-up improvement pinned Ollama to `fast-heron` and migrated its PVC from Longhorn to `local-path`.
+
+### Rationale
+
+| Issue | Impact |
+|---|---|
+| Ollama scheduled on any node | Model weights (2 GiB) would need to be re-pulled if the pod landed on a node where Longhorn hadn't yet attached the volume, causing 90–120s attachment delays on first inference |
+| Longhorn replication for model weights | Model weights are static, re-downloadable assets — Longhorn's 3× replication wastes ~6 GiB of NVMe space and adds cross-node network traffic on every pod start |
+
+`local-path` gives zero-latency local NVMe reads. The tradeoff is no high-availability: if `fast-heron` goes down, Ollama is unavailable until the node comes back. This is acceptable for a demo AI workload — model weights can be re-pulled in ~30s from the Ollama registry.
+
+### What changed in `ollama-values.yaml`
+
+```diff
++nodeSelector:
++  kubernetes.io/hostname: fast-heron
++
+ persistentVolume:
+   enabled: true
+-  storageClass: longhorn
++  storageClass: local-path
+   size: 10Gi
+   accessModes:
+     - ReadWriteOnce
+```
+
+### Migration procedure
+
+```bash
+# 1. Copy updated values to controller (controller dir is not a git clone)
+scp ~/Developer/cloudplateform/minicloud-ansible/helm-values/ollama-values.yaml \
+  controller:/home/ktayl/minicloud-ktaylorganisation/ansible/helm-values/ollama-values.yaml
+
+# 2. Scale down so PVC can be deleted cleanly
+kubectl scale deployment ollama -n ai --replicas=0
+
+# 3. Delete old Longhorn PVC
+kubectl delete pvc ollama -n ai
+
+# 4. Upgrade — creates new local-path PVC
+helm upgrade ollama ollama/ollama --namespace ai \
+  --values /home/ktayl/minicloud-ktaylorganisation/ansible/helm-values/ollama-values.yaml
+
+# 5. Wait for pod ready then re-pull model
+kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=ollama -n ai --timeout=90s
+kubectl exec -n ai deployment/ollama -- ollama pull llama3.2:3b
+
+# 6. Verify
+kubectl get pvc ollama -n ai
+# NAME    STATUS  VOLUME                                   STORAGECLASS
+# ollama  Bound   pvc-a2c782db-9c2f-4d81-baf9-9bef03ec5d29  local-path
+kubectl get pod -n ai -l app.kubernetes.io/name=ollama -o wide
+# NODE: fast-heron
+kubectl exec -n ai deployment/ollama -- ollama list
+# llama3.2:3b  a80c4f17acd5  2.0 GB
+```
+
+### Key gotcha: controller values directory is not a git repo
+
+`/home/ktayl/minicloud-ktaylorganisation/ansible/helm-values/` is a standalone directory on the controller, **not** a git clone. Running `git pull` there returns `fatal: not a git repository`. Whenever `ollama-values.yaml` (or any Helm values file) is updated in `minicloud-ansible` on the Mac, the file must be **scp'd** to the controller before running `helm upgrade` — otherwise the upgrade uses the old file silently and applies the wrong values.
+
+---
+
 ## Done When
 
 ```text
 ✔ 2 pods Running in ai namespace (ollama + open-webui-0)
-✔ 2 PVCs Bound on Longhorn (10 GiB ollama, 1 GiB open-webui)
+✔ ollama PVC is local-path (not longhorn)
+✔ open-webui PVC is Longhorn (intentional — chat history is stateful)
+✔ Ollama pod scheduled on fast-heron (nodeSelector)
 ✔ ollama list shows llama3.2:3b loaded
 ✔ Cert + Ingress for chat.10.0.0.200.nip.io serves 200 over HTTPS
 ✔ Browser signup works; first prompt returns a coherent response
