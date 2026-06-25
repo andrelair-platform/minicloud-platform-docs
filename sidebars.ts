@@ -389,6 +389,14 @@ const sidebars: SidebarsConfig = {
       items: ['developer-platform/vault-gitops'],
     },
 
+    // ── Phase 65 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 65 — Vault Auto-Unseal (AWS KMS) ✅',
+      collapsed: true,
+      items: ['developer-platform/vault-kms-unseal'],
+    },
+
     // ── Phase 62 ────────────────────────────────────────────────────
     {
       type: 'category',
