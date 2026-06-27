@@ -51,8 +51,9 @@ done
 
 | Namespace | Rationale |
 |---|---|
-| `homer` | Single distro-less-safe container, UID 1000 |
+| `homer` | Single container, UID 1000 (lighttpd) |
 | `podinfo` | Designed to be PSA-compliant |
+| `ktayl-web` | Migrated to nginx:unprivileged (UID 101, port 8080) |
 | `collab-dev`, `collab-staging`, `collab-prod` | Placeholder workloads we control |
 | `insurance-dev`, `insurance-staging`, `insurance-prod` | Same |
 
@@ -68,7 +69,6 @@ done
 
 **NOT applied to:**
 - `gitops-demo` — vault-agent init containers are injected by the Vault mutating webhook and may not be PSA-restricted-compliant
-- `ktayl-web` — nginx image runs as root (see Known Gaps)
 - `metallb-system` — MetalLB speaker requires `privileged` mode; enforced as `privileged`
 
 ### New Gatekeeper Policies
@@ -123,7 +123,7 @@ When the field is absent from the manifest, `c.securityContext.allowPrivilegeEsc
 | `block-latest-tag` | deny | 0 ✓ |
 | `no-privileged-containers` | deny | 0 ✓ |
 | `no-privilege-escalation` | warn | 40 |
-| `require-non-root` | warn | 43 |
+| `require-non-root` | warn | 40 |
 | `require-resource-limits` | deny | 24 |
 
 The 40 `no-privilege-escalation` violations and 43 `require-non-root` violations are concentrated in third-party Helm charts (Harbor, Authentik, ArgoCD, NATS, kube-prometheus-stack). These are tracked but not blocked — see Known Gaps.
@@ -250,13 +250,37 @@ Partial — same as whoami: `allowPrivilegeEscalation: false` + `capabilities.dr
 
 ### ktayl-solution-web (`ktayl-web` namespace)
 
-Only `allowPrivilegeEscalation: false` applied. `capabilities.drop: [ALL]` was initially applied but caused a CrashLoopBackOff:
+Full PSA-restricted-compliant after migrating the base image to `nginxinc/nginx-unprivileged:1.27-alpine`:
 
-```
-chown("/var/cache/nginx/client_temp", 101) failed (1: Operation not permitted)
+```yaml
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 101        # nginx UID in unprivileged image
+    runAsGroup: 101
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
 ```
 
-Root cause: nginx init scripts call `chown()` which requires `CAP_CHOWN`. Dropping ALL capabilities removes it even for root UID 0. Reverted to `allowPrivilegeEscalation: false` only. See Known Gaps for the proper fix.
+**Why capabilities.drop:ALL previously crashed the standard nginx image:** nginx init scripts call `chown()` to set ownership on temp directories. This requires `CAP_CHOWN`. Dropping ALL capabilities removes it even for UID 0, causing `chown(...) failed (1: Operation not permitted)` on startup.
+
+**`nginx:unprivileged` solves this** by pre-creating those temp directories with the correct ownership (`nginx:nginx` = 101:101) at image build time, so no `chown()` is needed at container start. The server also moves to port 8080 (no `CAP_NET_BIND_SERVICE` required for ports > 1024).
+
+**Changes made:**
+- Dockerfile: `FROM nginxinc/nginx-unprivileged:1.27-alpine`, `EXPOSE 8080`
+- nginx.conf: `listen 8080`
+- Deployment: `containerPort: 8080` (port name `http` unchanged — Service `targetPort: http` resolves correctly)
+- No Service or Ingress changes needed (Service port 80 → named targetPort `http` → pod 8080)
+- PSA `enforce: restricted` label applied to `ktayl-web` namespace
+
+Verified: `uid=101(nginx) gid=101(nginx)`, HTTP 200, both replicas 1/1 Running.
+ktayl-solution-web commit: `bab775e` (source), `f61ff3c` (gitops)
 
 ### podinfo (`podinfo` namespace)
 
@@ -279,7 +303,6 @@ PSA `enforce: restricted` confirmed working (both replicas 1/1 Running).
 
 | Workload | Namespace | Gap | Remediation |
 |---|---|---|---|
-| ktayl-solution-web | `ktayl-web` | Runs as root; `capabilities.drop:ALL` breaks nginx chown | Rebuild image with `nginx:unprivileged` (UID 101); then apply full securityContext |
 | whoami | `gitops-demo` | Built `FROM scratch`, no USER → root UID 0 | Replace with a non-root whoami image or add `USER nonroot` to build |
 | echo-worker (nats-box) | `event-demo` | nats-box runs as root | Replace with custom non-root image or nats-box with USER directive |
 | Harbor, ArgoCD, Authentik, NATS, Grafana, kube-prometheus-stack | various | Third-party Helm charts run containers as root or need elevated caps | Upstream chart changes; track via Gatekeeper warn violations |
