@@ -6,7 +6,9 @@ sidebar_position: 12
 
 # Phase 64 — Namespace Isolation (NetworkPolicies + ResourceQuotas)
 
-Implemented 2026-06-22. Locked down lateral movement between Kubernetes namespaces by applying default-deny ingress NetworkPolicies on 7 platform namespaces, and added ResourceQuotas + LimitRanges on 8 namespaces to prevent any single workload from starving the platform.
+Implemented 2026-06-22, extended 2026-06-27. Locked down lateral movement between Kubernetes namespaces by applying default-deny ingress NetworkPolicies across **all 23 platform namespaces**, and added ResourceQuotas + LimitRanges on 8 namespaces to prevent any single workload from starving the platform.
+
+Extended coverage added 2026-06-27 (commit `1f4fa75`): 15 additional namespaces covered, Backstage PostgreSQL isolated to accept connections only from backstage app pods, and ai namespace restricted from outbound internet access.
 
 ---
 
@@ -14,7 +16,9 @@ Implemented 2026-06-22. Locked down lateral movement between Kubernetes namespac
 
 | Area | Before | After |
 |---|---|---|
-| Ingress to platform namespaces | Open — any pod can reach any pod | Default-deny with explicit allow rules |
+| Ingress to platform namespaces | Open — any pod can reach any pod | Default-deny with explicit allow rules (23 namespaces) |
+| Backstage PostgreSQL | Accessible to all namespace pods | Only backstage app pods on port 5432 |
+| ai namespace internet egress | Unrestricted | Default-deny egress + allow cluster-internal (10.0.0.0/8 only) |
 | Resource consumption | No limits — one namespace could exhaust all cluster CPU/memory | Per-namespace quota sized at ~10x actual usage |
 | Pod resource defaults | Many pods had no `resources:` spec | LimitRange injects defaults so all pods count against quota |
 
@@ -125,13 +129,34 @@ Kubelet image pulls originate from the node host (not a pod), so they appear as 
 
 ### backstage
 
+PostgreSQL is **explicitly isolated** — only backstage app pods can reach it on port 5432. This replaces the earlier broad `allow-same-namespace` rule.
+
 ```yaml
 policies:
   - default-deny-ingress
-  - allow-same-namespace        # backstage ↔ postgresql
-  - allow-ingress-nginx         # Backstage UI
+  - allow-ingress-nginx           # ingress-nginx → backstage app pods (port 7007)
+  - allow-postgres-from-backstage # backstage app pods → postgresql:5432 only
   - allow-monitoring-scrape
 ```
+
+The PostgreSQL podSelector targets `app.kubernetes.io/name=postgresql, instance=backstage`. No other namespace or pod can reach the database directly.
+
+### ai (Open WebUI + Ollama)
+
+The ai namespace has **both ingress and egress** restrictions. Egress is restricted to block internet access while allowing cluster-internal communication (model serving, DNS, kube-apiserver).
+
+```yaml
+policies:
+  - default-deny-ingress
+  - allow-same-namespace          # open-webui ↔ ollama
+  - allow-ingress-nginx           # Open WebUI browser access
+  - allow-monitoring-scrape
+  - default-deny-egress           # block all outbound by default
+  - allow-dns-egress              # kube-system:53 (DNS resolution)
+  - allow-cluster-internal-egress # ipBlock 10.0.0.0/8 (cluster IPs + node IPs)
+```
+
+Verification: `curl https://google.com` from open-webui-0 → exit code 7 (blocked). `curl http://ollama.ai.svc.cluster.local:11434/api/tags` → model list returned (allowed).
 
 ### observability
 
@@ -142,6 +167,28 @@ policies:
   - allow-monitoring-read-loki  # monitoring namespace → loki:3100 (Grafana datasource)
   - allow-monitoring-scrape     # Prometheus scrapes Loki and Promtail metrics
 ```
+
+### Extended namespaces (2026-06-27)
+
+| Namespace | Ingress allow rules | Special |
+|---|---|---|
+| cert-manager | same-namespace, apiserver-webhook (10.0.0.0/24), monitoring | Webhook called by kube-apiserver |
+| chaos-mesh | same-namespace, apiserver-and-nodes (10.0.0.0/24), ingress-nginx, monitoring | Dashboard + daemon webhook |
+| external-secrets | same-namespace, apiserver-webhook (10.0.0.0/24), monitoring | Webhook called by kube-apiserver |
+| falco | same-namespace, monitoring | No ingress exposed; runs as DaemonSet |
+| gatekeeper-system | same-namespace, apiserver-webhook (10.0.0.0/24), monitoring | Admission webhook from all node IPs |
+| gitops-demo | same-namespace, ingress-nginx, monitoring | platform-demo app namespace |
+| homer | same-namespace, ingress-nginx | Static dashboard |
+| ingress-nginx | same-namespace, http-https (0.0.0.0/0 → 80/443), cluster-nodes (10.0.0.0/24), monitoring | Must accept internet traffic |
+| keda | same-namespace, apiserver-webhook (10.0.0.0/24), monitoring | Admission + metrics-server webhook |
+| ktayl-web | same-namespace, ingress-nginx | Static Astro site |
+| messaging | same-namespace, ingress-nginx, cluster-clients (10.42.0.0/16 → 4222), monitoring | NATS pub/sub from pod CIDR |
+| nfs-provisioner | same-namespace, cluster-nodes (10.0.0.0/24) | Node NFS mounts |
+| nextcloud (existing) | same-namespace, ingress-nginx, monitoring | — |
+| podinfo | same-namespace, ingress-nginx, monitoring | Demo app |
+| velero | same-namespace, monitoring | No external ingress |
+
+**Webhook namespaces** (cert-manager, chaos-mesh, external-secrets, gatekeeper-system, keda): The `allow-apiserver-webhook` rule uses `ipBlock: 10.0.0.0/24` — kube-apiserver runs on the node (not a pod) and calls admission webhooks from the control-plane node IP. Without this rule, all admission requests fail and the entire cluster becomes inoperable.
 
 ---
 
@@ -198,14 +245,30 @@ minicloud-gitops/
     network-policies.yaml     ArgoCD App → manifests/network-policies
     quotas.yaml               ArgoCD App → manifests/quotas
   manifests/
-    network-policies/
-      argocd.yaml             multi-doc: 5 NetworkPolicy objects
-      vault.yaml              multi-doc: 5 NetworkPolicy objects
-      authentik.yaml          multi-doc: 5 NetworkPolicy objects
-      monitoring.yaml         multi-doc: 5 NetworkPolicy objects
-      harbor.yaml             multi-doc: 5 NetworkPolicy objects
-      backstage.yaml          multi-doc: 4 NetworkPolicy objects
-      observability.yaml      multi-doc: 4 NetworkPolicy objects
+    network-policies/         22 files, 98 NetworkPolicy objects total
+      argocd.yaml
+      authentik.yaml
+      backstage.yaml          PostgreSQL isolation: allow-postgres-from-backstage
+      cert-manager.yaml       Webhook allow from 10.0.0.0/24
+      chaos-mesh.yaml         Webhook + dashboard + daemon
+      external-secrets.yaml   Webhook allow from 10.0.0.0/24
+      falco.yaml
+      gatekeeper-system.yaml  Webhook allow from 10.0.0.0/24
+      gitops-demo.yaml
+      harbor.yaml
+      homer.yaml
+      ingress-nginx.yaml      Allows 0.0.0.0/0 on 80/443
+      keda.yaml               Webhook allow from 10.0.0.0/24
+      ktayl-web.yaml
+      messaging.yaml          NATS clients from pod CIDR
+      monitoring.yaml
+      nfs-provisioner.yaml
+      nextcloud.yaml
+      observability.yaml
+      ai.yaml                 Egress: deny internet, allow 10.0.0.0/8
+      podinfo.yaml
+      vault.yaml
+      velero.yaml
     quotas/
       argocd.yaml             ResourceQuota + LimitRange
       monitoring.yaml         ResourceQuota + LimitRange
@@ -255,12 +318,14 @@ The kube-prometheus-stack Helm chart sets generous memory limits (5568Mi total a
 
 Backstage's new backend system (Backstage ≥ 1.30) does not retry database connections after startup failures. If Backstage starts before its PostgreSQL pod is `Ready`, all plugins fail immediately and the process enters a permanent "started but not ready" state (liveness 200, readiness 503, readiness body: `Backend has not started yet`).
 
-The fix is a pod restart once PostgreSQL is available:
+Backstage's new backend system does not retry — the process enters a permanent `liveness:200, readiness:503` state (`Backend has not started yet`). `kubectl rollout restart` gets stuck because the old pod never becomes ready and Kubernetes won't kill it while serving liveness probes.
+
+**Correct fix:** force-delete the pod and let the controller recreate it with PostgreSQL already running:
 ```bash
-kubectl rollout restart deployment/backstage -n backstage
+kubectl delete pod -n backstage -l app.kubernetes.io/name=backstage --force --grace-period=0
 ```
 
-This is a known Backstage bootstrap ordering problem in environments where both the app and its database are created at the same time (e.g. after a node reboot or cluster restart).
+StatefulSet/Deployment recreates cleanly → 1/1 Ready in ~22s. This is a known Backstage ≥ 1.30 ordering problem in environments where app and database start simultaneously (e.g. after a node reboot).
 
 ---
 
