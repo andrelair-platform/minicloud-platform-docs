@@ -18,6 +18,83 @@ Additionally, 3 certificates had no explicit `duration` or `renewBefore` set, re
 
 ---
 
+## What cert-manager manages (and what it doesn't)
+
+This is the most common source of confusion when looking at TLS certificates on the platform.
+
+### Three types of TLS material in the cluster
+
+| Type | Count | Visible in Grafana dashboard | Managed by |
+|---|---|---|---|
+| **Certificate CRs** — cert-manager resources that declaratively request a TLS cert | 17 | Yes | cert-manager |
+| **`kubernetes.io/tls` Secrets without a Certificate CR** | 3 | No | k3s / Longhorn (self-managed) |
+| **`Opaque` Secrets** (e.g. `argocd-oidc`, `grafana-oidc`) | 40+ | No | ESO / manually created |
+
+The Grafana dashboard (ID 20842) and the PrometheusRule alerts **only cover Certificate CRs**. They do not see TLS Secrets that were created outside cert-manager.
+
+### The 17 cert-manager Certificates
+
+All 17 have a `cert-manager.io/issuer-name` annotation on their Secret and a corresponding `Certificate` CR. They are all signed by the internal `minicloud-ca` ClusterIssuer (except the root CA itself, which uses `selfsigned-bootstrap`).
+
+```bash
+kubectl get certificate -A
+# Returns exactly 17 — one Certificate CR per row
+```
+
+| Certificate | Namespace | Issuer | Expiry batch |
+|---|---|---|---|
+| argocd-tls | argocd | minicloud-ca | 2026-08-07 |
+| backstage-tls | backstage | minicloud-ca | 2026-08-07 |
+| chat-tls | ai | minicloud-ca | 2026-08-07 |
+| platform-demo-tls | gitops-demo | minicloud-ca | 2026-08-07 |
+| whoami-tls | gitops-demo | minicloud-ca | 2026-08-07 |
+| harbor-tls-cert | harbor | minicloud-ca | 2026-08-07 |
+| homer-tls | homer | minicloud-ca | 2026-08-07 |
+| nats-tls | messaging | minicloud-ca | 2026-08-07 |
+| grafana-tls | monitoring | minicloud-ca | 2026-08-07 |
+| podinfo-tls | podinfo | minicloud-ca | 2026-08-07 |
+| authentik-tls | authentik | minicloud-ca | 2026-09-15 |
+| ktayl-web-tls | ktayl-web | minicloud-ca | 2026-09-18 |
+| alertmanager-tls | monitoring | minicloud-ca | 2026-09-20 |
+| prometheus-tls | monitoring | minicloud-ca | 2026-09-20 |
+| nextcloud-tls | nextcloud | minicloud-ca | 2026-09-19 |
+| vault-tls | vault | minicloud-ca | 2026-09-19 |
+| minicloud-root-ca | cert-manager | selfsigned-bootstrap | 2036-05-06 |
+
+### The 3 TLS Secrets NOT managed by cert-manager
+
+These exist as `kubernetes.io/tls` Secrets but have **no Certificate CR** and **no `cert-manager.io/*` annotation**. They will never appear in the Grafana dashboard or trigger the PrometheusRule alerts.
+
+| Secret | Namespace | Managed by | Rotation |
+|---|---|---|---|
+| `k3s-serving` | `kube-system` | k3s control plane (`listener.cattle.io`) | Rotated automatically by k3s on each node restart or cert expiry. Covers the API server endpoint (`kubernetes.default.svc.cluster.local`, `set-hog`, `10.0.0.2`). |
+| `longhorn-webhook-ca` | `longhorn-system` | Longhorn operator | Internal CA for Longhorn's admission webhooks. Longhorn regenerates this on startup if expired. |
+| `longhorn-webhook-tls` | `longhorn-system` | Longhorn operator | Webhook TLS cert signed by `longhorn-webhook-ca`. Same lifecycle — Longhorn owns it. |
+
+**Why you don't need to worry about these three:** k3s and Longhorn each handle their own certificate lifecycle internally. They are not exposed via Ingress and are never sent to a browser. If either rotates a cert, the component that needs it (kubelet, admission controller) picks it up automatically with no human action.
+
+### How to tell if a TLS Secret is cert-manager-managed
+
+```bash
+# cert-manager-managed: has this annotation
+kubectl get secret <name> -n <ns> -o jsonpath='{.metadata.annotations.cert-manager\.io/issuer-name}'
+# → "minicloud-ca"  (or any non-empty value)
+
+# NOT cert-manager-managed: annotation is empty or absent
+kubectl get secret k3s-serving -n kube-system -o jsonpath='{.metadata.annotations.cert-manager\.io/issuer-name}'
+# → ""
+```
+
+Alternatively, check for a Certificate CR with a matching `spec.secretName`:
+
+```bash
+kubectl get certificate -A -o jsonpath='{range .items[*]}{.metadata.namespace}/{.spec.secretName}{"\n"}{end}' | sort
+```
+
+If your TLS Secret name does not appear in that list, cert-manager does not control it.
+
+---
+
 ## What Was Implemented
 
 ### ServiceMonitor
