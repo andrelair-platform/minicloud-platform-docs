@@ -389,6 +389,14 @@ const sidebars: SidebarsConfig = {
       items: ['developer-platform/vault-gitops'],
     },
 
+    // ── Phase 60 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 60 — Cert Observability ✅',
+      collapsed: true,
+      items: ['developer-platform/cert-observability'],
+    },
+
     // ── Phase 65 ────────────────────────────────────────────────────
     {
       type: 'category',
