@@ -436,6 +436,14 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['security-enterprise/namespace-isolation'],
     },
+
+    // ── Phase 67 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 67 — Pod Security Hardening ✅',
+      collapsed: true,
+      items: ['security-enterprise/pod-security'],
+    },
   ],
 };
 
