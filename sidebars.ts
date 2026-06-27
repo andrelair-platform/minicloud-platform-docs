@@ -405,6 +405,14 @@ const sidebars: SidebarsConfig = {
       items: ['developer-platform/vault-kms-unseal'],
     },
 
+    // ── Phase 59 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 59 — External Secrets Operator + Vault KV ✅',
+      collapsed: true,
+      items: ['developer-platform/eso-vault'],
+    },
+
     // ── Phase 62 ────────────────────────────────────────────────────
     {
       type: 'category',
