@@ -196,12 +196,14 @@ const sidebars: SidebarsConfig = {
     // ── Phase 14 ────────────────────────────────────────────────────
     {
       type: 'category',
-      label: 'Phase 14 — Backup & DR',
+      label: 'Phase 14 — Backup & DR ✅',
       collapsed: true,
       items: [
         'backup-dr/velero',
         'backup-dr/etcd-backup',
         'backup-dr/disk-management',
+        'backup-dr/database-backup',
+        'backup-dr/dr-runbook',
       ],
     },
 
