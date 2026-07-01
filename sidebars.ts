@@ -291,6 +291,7 @@ const sidebars: SidebarsConfig = {
         'observability/loki',
         'observability/alertmanager',
         'observability/jaeger',
+        'observability/falco-sidekick-polaris',
       ],
     },
 
