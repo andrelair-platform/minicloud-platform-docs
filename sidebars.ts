@@ -201,6 +201,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'backup-dr/velero',
         'backup-dr/etcd-backup',
+        'backup-dr/disk-management',
       ],
     },
 
@@ -443,6 +444,14 @@ const sidebars: SidebarsConfig = {
       label: 'Phase 67 — Pod Security Hardening ✅',
       collapsed: true,
       items: ['security-enterprise/pod-security'],
+    },
+
+    // ── Admission Control Hardening ─────────────────────────────────
+    {
+      type: 'category',
+      label: '🔒 Admission Control Hardening — 8/8 Policies ✅',
+      collapsed: true,
+      items: ['security-enterprise/admission-control'],
     },
   ],
 };
