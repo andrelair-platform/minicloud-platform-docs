@@ -210,10 +210,11 @@ const sidebars: SidebarsConfig = {
     // ── Phase 15 ────────────────────────────────────────────────────
     {
       type: 'category',
-      label: 'Phase 15 — Security',
+      label: 'Phase 15 — Security ✅',
       collapsed: true,
       items: [
         'platform-roadmap/phase-15-cert-manager',
+        'security-enterprise/ingress-edge-security',
       ],
     },
 
