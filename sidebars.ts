@@ -22,6 +22,7 @@ const sidebars: SidebarsConfig = {
         'phase-0-maas/cloud-init',
         'phase-0-maas/validation',
         'phase-0-maas/troubleshooting',
+        'phase-0-maas/add-node',
       ],
     },
 

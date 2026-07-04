@@ -20,19 +20,19 @@ sidebar_position: 2
                           |
                        🔌 Switch
                           |
-        ┌───────────────┬───────────────┬───────────────┐
-        ↓               ↓               ↓
-  🖥 set-hog      🖥 fast-skunk     🖥 fast-heron
-  10.0.0.2        10.0.0.4         10.0.0.7
+        ┌───────────────┬───────────────┬───────────────┬───────────────┐
+        ↓               ↓               ↓               ↓
+  🖥 set-hog      🖥 fast-skunk     🖥 fast-heron    🖥 star-kitten
+  10.0.0.2        10.0.0.4         10.0.0.7         10.0.0.8
 ```
 
 ---
 
-## MAAS Dashboard — 3 Machines Deployed
+## MAAS Dashboard — 4 Machines Deployed
 
 ![MAAS machines overview](/img/maas-machines-overview.png)
 
-All 3 machines show status **Deployed** with Ubuntu 24.04 LTS, each with 8 cores, ~15.9 GiB RAM, and 512 GB storage.
+All 4 machines show status **Deployed** with Ubuntu 24.04 LTS, each with 8 cores, ~15.9 GiB RAM, and 512 GB storage.
 
 ---
 
@@ -43,6 +43,7 @@ All 3 machines show status **Deployed** with Ubuntu 24.04 LTS, each with 8 cores
 | set-hog | 10.0.0.2 | Control Plane | ThinkPad T15 Gen 1 |
 | fast-skunk | 10.0.0.4 | Worker | ThinkPad T490 |
 | fast-heron | 10.0.0.7 | Worker | ThinkPad T490 |
+| star-kitten | 10.0.0.8 | Worker | ThinkPad T490 |
 
 ---
 

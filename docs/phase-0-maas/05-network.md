@@ -55,6 +55,7 @@ The controller uses a dedicated Ethernet uplink (`enp0s31f6`) for internet acces
 | set-hog | 10.0.0.2 | MAAS DHCP |
 | fast-skunk | 10.0.0.4 | MAAS DHCP |
 | fast-heron | 10.0.0.7 | MAAS DHCP |
+| star-kitten | 10.0.0.8 | MAAS DHCP |
 
 ---
 

@@ -6,9 +6,9 @@ sidebar_position: 4
 
 # Hardware Used
 
-## Cluster Nodes — 3x Lenovo ThinkPad
+## Cluster Nodes — 4x Lenovo ThinkPad
 
-All three nodes run on Lenovo ThinkPad laptops with identical specs:
+All four nodes run on Lenovo ThinkPad laptops with identical specs:
 
 ```text
 ✔ CPU: Intel Core i7 (8 cores)
@@ -70,13 +70,27 @@ All three nodes run on Lenovo ThinkPad laptops with identical specs:
 
 ---
 
+### star-kitten — 10.0.0.8
+
+| Field | Value |
+|---|---|
+| Model | Lenovo ThinkPad T490 |
+| CPU | Intel Core i7-8565U, 8 cores |
+| RAM | 15.9 GiB |
+| Storage | 512.1 GB |
+| NIC | Intel I219-V (enp0s31f6) |
+| MAAS system_id | dr3cnm |
+| Added | 2026-07-04 |
+
+---
+
 ## Total Cluster Capacity
 
-| Resource | Per Node | Total (3 nodes) |
+| Resource | Per Node | Total (4 nodes) |
 |---|---|---|
-| CPU Cores | 8 | 24 |
-| RAM | 15.9 GiB | ~47.7 GiB |
-| Storage | 512 GB | ~1.5 TB |
+| CPU Cores | 8 | 32 |
+| RAM | 15.9 GiB | ~63.6 GiB |
+| Storage | 512 GB | ~2.0 TB |
 
 ---
 
@@ -112,10 +126,10 @@ The cluster above (24 vCPU, ~48 GiB RAM, ~1.5 TB storage) maps to the following 
 
 | Resource | Value | Monthly Cost |
 |---|---|---|
-| Hardware (3x ThinkPad) | 24 cores / 47.7 GiB / 1.5 TB | ~$0 (already owned) |
-| Electricity (est. ~150W total) | 24/7 | ~$15–$25/mo |
-| **Total bare-metal** | | **~$15–$25/mo** |
+| Hardware (4x ThinkPad) | 32 cores / 63.6 GiB / 2.0 TB | ~$0 (already owned) |
+| Electricity (est. ~200W total) | 24/7 | ~$20–$30/mo |
+| **Total bare-metal** | | **~$20–$30/mo** |
 
 :::tip Cost advantage
-Running this infrastructure bare-metal saves approximately **$450–$550/month** compared to equivalent cloud instances. Over a year that is **$5,400–$6,600 in cloud spend avoided** — while giving you full hardware control and no vendor lock-in.
+Running this infrastructure bare-metal saves approximately **$600–$750/month** compared to equivalent cloud instances (4× m6i.2xlarge + EBS). Over a year that is **$7,200–$9,000 in cloud spend avoided** — while giving you full hardware control and no vendor lock-in.
 :::

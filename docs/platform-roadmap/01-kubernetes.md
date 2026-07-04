@@ -17,6 +17,7 @@ The cluster is the foundation of the entire platform. Everything else runs on to
 | set-hog | 10.0.0.2 | Control Plane |
 | fast-skunk | 10.0.0.4 | Worker |
 | fast-heron | 10.0.0.7 | Worker |
+| star-kitten | 10.0.0.8 | Worker |
 
 ---
 
@@ -80,15 +81,16 @@ NAME          STATUS   ROLES                  AGE
 set-hog       Ready    control-plane,master   X
 fast-skunk    Ready    <none>                 X
 fast-heron    Ready    <none>                 X
+star-kitten   Ready    <none>                 X
 ```
 
-All 3 nodes must show **Ready**.
+All 4 nodes must show **Ready**.
 
 ---
 
 ## Done When
 
 ```text
-✔ 3 nodes in Ready state
-✔ kubectl get nodes returns all 3
+✔ 4 nodes in Ready state
+✔ kubectl get nodes returns all 4
 ```

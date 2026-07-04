@@ -13,7 +13,7 @@ slug: /
 
 ## What This Project Is
 
-This documentation covers a complete bare-metal infrastructure built locally using **MAAS (Metal as a Service)**, provisioning a 3-node cluster ready for Kubernetes and production workloads.
+This documentation covers a complete bare-metal infrastructure built locally using **MAAS (Metal as a Service)**, provisioning a 4-node cluster ready for Kubernetes and production workloads.
 
 ```text
 Equivalent to: AWS EC2 + VPC + Auto Provisioning — but local.
@@ -28,6 +28,7 @@ Equivalent to: AWS EC2 + VPC + Auto Provisioning — but local.
 | set-hog | 10.0.0.2 | Control Plane | ThinkPad T15 Gen 1 |
 | fast-skunk | 10.0.0.4 | Worker | ThinkPad T490 |
 | fast-heron | 10.0.0.7 | Worker | ThinkPad T490 |
+| star-kitten | 10.0.0.8 | Worker | ThinkPad T490 |
 
 **MAAS Controller:** Ubuntu + dual NIC (WiFi → internet, Ethernet → 10.0.0.1)
 
@@ -39,7 +40,7 @@ Each phase builds directly on the previous one — nothing requires something th
 
 | Phase | Topic | Key Technology | Status |
 |---|---|---|---|
-| **0** | MAAS + 3-node provisioning | MAAS, PXE, cloud-init | ✅ Done |
+| **0** | MAAS + 4-node provisioning | MAAS, PXE, cloud-init | ✅ Done |
 | **1** | Kubernetes cluster | k3s | ✅ Done |
 | **2** | kubectl local access | kubeconfig | ✅ Done |
 | **3** | Remote access from anywhere | Tailscale, Cloudflare Tunnel, Homer | ✅ Done |
@@ -137,7 +138,7 @@ Kubeflow      → ML pipelines + distributed training
 
 ## CV / LinkedIn Summary
 
-- Designed and deployed a 3-node bare-metal infrastructure using MAAS
+- Designed and deployed a 4-node bare-metal infrastructure using MAAS
 - Implemented PXE-based automated OS provisioning via network boot (PXE)
 - Built isolated cluster network (10.0.0.0/24) with DHCP/DNS management
 - Resolved complex networking issues (IPv6 conflicts, DHCP overlap, alias interfaces)
