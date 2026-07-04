@@ -150,6 +150,5 @@ Vault path: `secret/platform/langfuse`
 
 ## Known Limitations
 
-- **No SSO**: Langfuse CE uses local accounts only. OIDC/SSO is a Langfuse Cloud/Enterprise feature. Use a shared admin account for the platform team.
 - **ClickHouse single-node**: No HA. A ClickHouse pod failure means traces are buffered in the event queue (MinIO) and replayed once ClickHouse recovers. No trace data is lost.
-- **Public sign-up disabled**: New users must be invited via the admin UI (Settings → Users → Invite).
+- **OIDC-only auth**: Local account creation is disabled. All users must exist in Authentik and be granted access via the Langfuse Authentik application's policy bindings. `kanmegnea@gmail.com` is pre-configured as admin via `AUTH_CUSTOM_ADMIN_EMAILS`.
