@@ -7,7 +7,8 @@ sidebar_label: AI Gateway
 # AI Gateway — LiteLLM + PostgreSQL
 
 **Phase complete:** 2026-07-04  
-**Issues closed:** #34 (LiteLLM proxy), #41 (inference optimization)
+**Issues closed:** #34 (LiteLLM proxy), #41 (inference optimization)  
+**GitOps:** `manifests/ai/` in minicloud-gitops — ArgoCD Application `litellm` Synced/Healthy
 
 ## Architecture
 
@@ -34,6 +35,7 @@ All components run in the `ai` namespace. LiteLLM is the single OpenAI-compatibl
 |---|---|---|
 | `phi3-financial` | ✓ (2.2 GB) | ✓ (2.2 GB) |
 | `llama3.2:3b` | ✓ (2.0 GB) | ✓ (2.0 GB) |
+| `llama3.2:1b` | ✓ (1.3 GB) | ✓ (1.3 GB) |
 | `phi3.5` | ✓ (2.2 GB) | ✓ (2.2 GB) |
 
 ## PostgreSQL databases
