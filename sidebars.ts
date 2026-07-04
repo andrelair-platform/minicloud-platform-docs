@@ -275,6 +275,7 @@ const sidebars: SidebarsConfig = {
         'ai-ml/model-inversion',
         'ai-ml/membership-inference',
         'ai-ml/sampling-configuration',
+        'ai-ml/ai-gateway',
       ],
     },
 
