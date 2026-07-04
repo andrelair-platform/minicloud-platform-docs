@@ -13,30 +13,62 @@ sidebar_label: AI Gateway
 ## Architecture
 
 ```
-Open WebUI → LiteLLM Gateway (4000) → least-busy router
-                                         ├── Ollama primary  (fast-heron,  port 11434)
-                                         └── Ollama secondary (star-kitten, port 11434)
+Open WebUI ──► LiteLLM Gateway (:4000)
+                     │
+                     ├── Ollama primary   (fast-heron,  :11434)  ← local-first
+                     ├── Ollama secondary (star-kitten, :11434)  ← local-first
+                     │
+                     ├── Groq             (llama-3.1-8b-instant) ← fallback when Ollama down
+                     ├── OpenAI           (gpt-4o, gpt-4o-mini)  ← premium/standard tiers
+                     └── Gemini           (gemini-2.5-flash)     ← premium/standard tiers
+
+LiteLLM ──► Valkey cache   (:6379)    ← exact-match prompt dedup, 10 min TTL
+LiteLLM ──► Langfuse       (:3000)    ← trace every call with token/cost/model metadata
 ```
 
-All components run in the `ai` namespace. LiteLLM is the single OpenAI-compatible endpoint — Open WebUI no longer talks to Ollama directly.
+All components in the `ai` namespace. LiteLLM is the single OpenAI-compatible endpoint — Open WebUI talks only to LiteLLM, never to Ollama directly.
 
 ## Components
 
 | Component | Image | Storage | Node |
 |---|---|---|---|
-| LiteLLM gateway | `harbor.10.0.0.200.nip.io/library/litellm:1.90.3-prisma-v3` | stateless | any |
+| LiteLLM gateway | `harbor.10.0.0.200.nip.io/library/litellm:1.90.3-guardrails-v1` | stateless | any |
 | PostgreSQL (ai) | `harbor.10.0.0.200.nip.io/library/postgresql:18.4.0` | Longhorn 5Gi | any |
 | Ollama primary | `ollama/ollama` | local-path 10Gi | fast-heron |
 | Ollama secondary | `ollama/ollama` | local-path 10Gi | star-kitten |
+| Valkey cache | `valkey/valkey:8.1-alpine` | local-path 1Gi | any |
 
 ## Models
 
-| Model | Primary | Secondary |
+| Model name | Backend | Tier access |
 |---|---|---|
-| `phi3-financial` | ✓ (2.2 GB) | ✓ (2.2 GB) |
-| `llama3.2:3b` | ✓ (2.0 GB) | ✓ (2.0 GB) |
-| `llama3.2:1b` | ✓ (1.3 GB) | ✓ (1.3 GB) |
-| `phi3.5` | ✓ (2.2 GB) | ✓ (2.2 GB) |
+| `phi3-financial` | Ollama (both) | premium, standard |
+| `llama3.2:3b` | Ollama (both) + Groq fallback | premium, standard |
+| `llama3.2:1b` | Ollama (both) + Groq fallback | all |
+| `groq-fallback` | `groq/llama-3.1-8b-instant` | automatic fallback only |
+| `gpt-4o` | `openai/gpt-4o` | premium |
+| `gpt-4o-mini` | `openai/gpt-4o-mini` | premium, standard |
+| `gemini-2.0-flash` | `gemini/gemini-2.5-flash` | premium, standard |
+| `gemini-1.5-pro` | `gemini/gemini-2.5-flash` | premium |
+
+`gemini-2.0-flash` and `gemini-1.5-pro` are model_name aliases kept for department key allowlist compatibility — both route to `gemini/gemini-2.5-flash` behind the scenes.
+
+## Routing strategy
+
+`router_settings.routing_strategy: least-busy` — LiteLLM picks the backend with the fewest in-flight requests.
+
+**Cloud fallback** — Groq activates only when both Ollama backends exhaust `num_retries: 2`:
+
+```yaml
+router_settings:
+  fallbacks:
+    - llama3.2:3b:
+        - groq-fallback
+    - llama3.2:1b:
+        - groq-fallback
+```
+
+`phi3-financial` has no cloud fallback — financial prompts must stay on-premise.
 
 ## PostgreSQL databases
 
@@ -45,7 +77,114 @@ All components run in the `ai` namespace. LiteLLM is the single OpenAI-compatibl
 | `openwebui` | `aiplatform` | Open WebUI session/user data |
 | `litellm` | `aiplatform` | LiteLLM virtual keys, spend tracking |
 
-Credentials managed by ESO ExternalSecret `ai-postgresql-secret` (Vault KV `secret/platform/ai-postgresql`).
+Credentials: ESO ExternalSecret `ai-postgresql-secret` ← Vault KV `secret/platform/ai-postgresql`.
+
+## Department virtual key tiers
+
+16 keys pre-provisioned (stored at `~/.litellm-department-keys` on controller, mode 600).
+
+| Tier | Departments | TPM | RPM | Allowed models |
+|---|---|---|---|---|
+| **premium** | IT, Data Analytics, Cybersecurity, Actuariat, Transformation | 200k | 500 | all |
+| **standard** | Finance, Audit, Reinsurance, Juridique, Souscription, Sinistres, Commercial | 100k | 200 | local + gpt-4o-mini + gemini-2.0-flash |
+| **basic** | Operations, RH, Services Généraux | 50k | 100 | llama3.2:1b only |
+
+Update a key's limits:
+
+```bash
+MASTER_KEY=$(kubectl get secret -n ai litellm-credentials -o jsonpath='{.data.master-key}' | base64 -d)
+kubectl port-forward -n ai svc/litellm 4000:4000 &
+
+curl -X POST http://localhost:4000/key/update \
+  -H "Authorization: Bearer $MASTER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "key": "sk-<dept-key>",
+    "tpm_limit": 200000,
+    "rpm_limit": 500,
+    "models": ["phi3-financial", "llama3.2:3b", "gpt-4o"],
+    "metadata": {"department": "direction-it", "tier": "premium"}
+  }'
+```
+
+To bulk-update all 15 keys: scp `/tmp/update_keys.py` (on controller) and run it with `kubectl port-forward` active.
+
+## Prompt caching (Valkey)
+
+Exact-match Redis cache. Identical prompts (same model + messages) return the cached response without hitting inference — typically 80ms vs 2500ms for a cold call.
+
+```yaml
+litellm_settings:
+  cache: true
+  cache_params:
+    type: redis
+    host: litellm-cache.ai.svc.cluster.local
+    port: 6379
+    ttl: 600      # 10 minutes
+    namespace: litellm
+```
+
+Check cache stats: `kubectl exec -n ai litellm-cache-0 -- valkey-cli info stats | grep hit`
+
+## Secret scanning guardrail
+
+`general_settings.detect_secrets_on_all_keys: true` — LiteLLM scans every prompt using the `detect-secrets` library before forwarding to inference. Prompts containing high-confidence credential patterns (real API keys, tokens, connection strings) are rejected with HTTP 400.
+
+The `detect-secrets` library is pre-installed in the base Wolfi venv (`/app/.venv`). Known-safe documentation example keys (e.g., AWS `AKIAIOSFODNN7EXAMPLE`) pass through — only high-entropy real credentials are blocked.
+
+## Langfuse tracing
+
+Every call produces a Langfuse trace with token counts, cost estimate, model used, department (from virtual key metadata), and latency.
+
+```yaml
+general_settings:
+  success_callback: ["langfuse"]
+  langfuse_host: "http://langfuse-web.langfuse.svc.cluster.local:3000"
+```
+
+LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY injected from ESO-synced `litellm-credentials` secret.
+
+## Cloud provider secrets
+
+API keys in Vault at `secret/platform/cloud-providers`:
+
+```bash
+VAULT_TOKEN=$(cat ~/.vault-root-token)
+kubectl exec -n vault vault-0 -- \
+  env VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN="$VAULT_TOKEN" \
+  vault kv get secret/platform/cloud-providers
+```
+
+ESO ExternalSecret `ai-postgresql-secret` (file `manifests/eso-platform-secrets/10-ai-postgresql.yaml`) syncs `groq-api-key`, `openai-api-key`, `gemini-api-key` into `ai/litellm-credentials`.
+
+NetworkPolicy `allow-litellm-cloud-egress` permits port 443 egress only from `app=litellm` pods — Ollama and Open WebUI remain internet-blocked.
+
+## Custom LiteLLM image (`1.90.3-guardrails-v1`)
+
+Three fixes over the upstream `ghcr.io/berriai/litellm-database` Wolfi OS base:
+
+| Fix | Reason |
+|---|---|
+| `chmod -R 755 /root/.cache/prisma-python` | Prisma `BINARY_PATHS` hardcodes root-owned paths; UID 1000 gets PermissionError before override env vars load |
+| `apk add --no-cache libatomic` | Node.js binary (used by Prisma CLI) needs `libatomic.so.1`, absent on newer nodes |
+| Install `google-generativeai>=0.8.0` via venv pip | Missing from base image; required for `gemini/` provider |
+
+Source: `~/Developer/cloudplateform/litellm-custom/Dockerfile`
+
+Rebuild:
+```bash
+cd ~/Developer/cloudplateform/litellm-custom
+DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --platform linux/amd64 \
+  -t "litellm:1.90.3-guardrails-v1-amd64" .
+docker save "litellm:1.90.3-guardrails-v1-amd64" -o /tmp/litellm.tar
+crane push /tmp/litellm.tar "harbor.10.0.0.200.nip.io/library/litellm:1.90.3-guardrails-v1"
+rm /tmp/litellm.tar
+```
+
+**Important Wolfi gotchas:**
+- Package manager is `apk` (not `apt`) — Wolfi is Alpine-compatible
+- No global `pip`/`pip3` — use `/app/.venv/bin/python -m ensurepip && /app/.venv/bin/python -m pip install`
+- `callbacks: ["detect_secrets"]` in `litellm_settings` is NOT a valid proxy callback in 1.90.3 — causes `ImportError`. Use `general_settings.detect_secrets_on_all_keys: true` instead
 
 ## Inference tuning (both Ollama instances)
 
@@ -60,118 +199,42 @@ OLLAMA_NUM_CTX: "4096"
 
 CPU governor set to `performance` on all 4 cluster nodes (persistent via `cpu-performance.service`).
 
-## Custom LiteLLM image
-
-The upstream `ghcr.io/berriai/litellm-database` image pre-downloads Prisma engine binaries to `/root/.cache/` (mode 700). The `prisma-client-py` 0.11.0 package's generated `BINARY_PATHS` dict hardcodes those paths — `Path.exists()` raises `PermissionError` for UID 1000 before any override env var can take effect.
-
-**Fix:** `chmod -R 755 /root /root/.cache /root/.cache/prisma-python` in the Dockerfile.
-
-Source at `~/Developer/cloudplateform/litellm-custom/Dockerfile`. Rebuild procedure:
-
-```bash
-cd ~/Developer/cloudplateform/litellm-custom
-DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build --platform linux/amd64 \
-  -t "litellm-prisma:<version>-amd64" .
-docker save "litellm-prisma:<version>-amd64" -o /tmp/litellm.tar
-crane push /tmp/litellm.tar "harbor.10.0.0.200.nip.io/library/litellm:<version>"
-rm /tmp/litellm.tar
-```
-
-When upgrading the base image, verify the new Prisma engine version hash hasn't changed; if it has, rebuild.
-
-## LiteLLM configuration
-
-Config at `minicloud-ansible/litellm-manifests.yaml` (applied directly, not GitOps-managed):
-
-```yaml
-model_list:
-  - model_name: phi3-financial
-    litellm_params:
-      model: ollama/phi3-financial
-      api_base: http://ollama.ai.svc.cluster.local:11434
-  - model_name: phi3-financial
-    litellm_params:
-      model: ollama/phi3-financial
-      api_base: http://ollama-secondary.ai.svc.cluster.local:11434
-  # llama3.2:3b similarly on both
-
-router_settings:
-  routing_strategy: least-busy
-  num_retries: 2
-  timeout: 120
-
-general_settings:
-  store_model_in_db: true
-```
-
-Apply changes:
-```bash
-scp ~/Developer/cloudplateform/minicloud-ansible/litellm-manifests.yaml controller:/tmp/
-ssh controller "kubectl apply -f /tmp/litellm-manifests.yaml"
-```
-
-## Virtual key management
-
-LiteLLM master key in `litellm-credentials` secret (ESO-synced from `secret/platform/litellm`).
-
-Create a department virtual key (example — IT department):
-
-```bash
-MASTER_KEY=$(kubectl get secret -n ai litellm-credentials \
-  -o jsonpath='{.data.master-key}' | base64 -d)
-
-kubectl port-forward -n ai svc/litellm 4000:4000 &
-
-curl -X POST http://localhost:4000/key/generate \
-  -H "Authorization: Bearer $MASTER_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "key_alias": "dept-it",
-    "team_id": "direction-it",
-    "rpm_limit": 60,
-    "tpm_limit": 100000,
-    "models": ["phi3-financial", "llama3.2:3b"]
-  }'
-```
-
-Keys persist in PostgreSQL `litellm` database — survive pod restarts.
-
 ## Health check
 
 ```bash
-# Via port-forward
 kubectl port-forward -n ai svc/litellm 4000:4000 &
+MASTER=$(kubectl get secret -n ai litellm-credentials -o jsonpath='{.data.master-key}' | base64 -d)
+
+# Health
 curl http://localhost:4000/health/readiness
 # Expected: {"status": "healthy", "db": "connected"}
 
 # Model list
-curl -H "Authorization: Bearer $MASTER_KEY" http://localhost:4000/v1/models
+curl -H "Authorization: Bearer $MASTER" http://localhost:4000/v1/models | python3 -m json.tool
+
+# Test local
+curl -H "Authorization: Bearer $MASTER" -H 'Content-Type: application/json' \
+  http://localhost:4000/v1/chat/completions \
+  -d '{"model":"llama3.2:1b","messages":[{"role":"user","content":"Reply OK"}],"max_tokens":5}'
+
+# Test Gemini
+curl -H "Authorization: Bearer $MASTER" -H 'Content-Type: application/json' \
+  http://localhost:4000/v1/chat/completions \
+  -d '{"model":"gemini-2.0-flash","messages":[{"role":"user","content":"Reply OK"}],"max_tokens":5}'
 ```
 
-## Adding models to secondary Ollama
+## Adding models to Ollama
 
 ```bash
 SECONDARY_POD=$(kubectl get pods -n ai -l app.kubernetes.io/instance=ollama-secondary \
   -o jsonpath='{.items[0].metadata.name}')
 
-# Pull base model (needs temp internet egress NetworkPolicy — see below)
-# Create custom model
-kubectl exec -n ai $SECONDARY_POD -- sh -c '
-  cat > /tmp/Modelfile << '"'"'EOF'"'"'
-FROM phi3.5
-SYSTEM """..."""
-PARAMETER temperature 0.1
-EOF
-  ollama create my-model -f /tmp/Modelfile
-'
-```
-
-Temp egress NetworkPolicy for model pulls:
-```yaml
+# Temp egress for model pull (delete after)
+kubectl apply -f - <<'EOF'
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: temp-allow-secondary-pull
+  name: temp-allow-ollama-pull
   namespace: ai
 spec:
   podSelector:
@@ -182,20 +245,22 @@ spec:
     - port: 443
   policyTypes:
   - Egress
+EOF
+
+# Pull via REST (avoids TTY requirement)
+kubectl port-forward -n ai pod/$SECONDARY_POD 11434:11434 &
+curl -X POST http://localhost:11434/api/pull -d '{"model":"phi3.5","stream":false}'
+
+kubectl delete networkpolicy temp-allow-ollama-pull -n ai
 ```
 
-Delete after pulling: `kubectl delete networkpolicy temp-allow-secondary-pull -n ai`
-
-## Secrets in Vault
+## All secrets in Vault
 
 ```bash
-# ai-postgresql-secret
-kubectl exec -n vault vault-0 -- sh -c "
-  VAULT_TOKEN=\$(cat /vault/data/root-token) VAULT_ADDR=http://127.0.0.1:8200 \
-  vault kv get secret/platform/ai-postgresql"
+VAULT_TOKEN=$(cat ~/.vault-root-token)
+VE() { kubectl exec -n vault vault-0 -- env VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN="$VAULT_TOKEN" vault kv get "$1"; }
 
-# litellm-credentials
-kubectl exec -n vault vault-0 -- sh -c "
-  VAULT_TOKEN=\$(cat /vault/data/root-token) VAULT_ADDR=http://127.0.0.1:8200 \
-  vault kv get secret/platform/litellm"
+VE secret/platform/ai-postgresql    # DB credentials
+VE secret/platform/litellm          # master key, Langfuse keys
+VE secret/platform/cloud-providers  # Groq, OpenAI, Gemini API keys
 ```
