@@ -56,37 +56,30 @@ general_settings:
   success_callback: ["langfuse"]
 ```
 
-## Initial Setup
+## Login — Authentik OIDC
 
-After first deployment, create an admin account and project via the UI:
+Public sign-up is disabled. Authentication is via Authentik SSO only.
 
-1. Open `https://langfuse.devandre.sbs` — click **Sign up**
-2. Create admin account (sign-up is disabled after first user; enable via `signUpDisabled: false` temporarily)
-3. Create project named **minicloud-platform**
-4. Go to **Settings → API Keys** → create a key pair
-5. Store keys in Vault:
+1. Open `https://langfuse.devandre.sbs`
+2. Click **Sign in with Authentik**
+3. Authenticate with `kanmegnea` + TOTP
+4. First login auto-creates the user in Langfuse. `kanmegnea@gmail.com` is pre-configured as admin via `AUTH_CUSTOM_ADMIN_EMAILS`.
 
-```bash
-VAULT_TOKEN=$(cat ~/.vault-root-token)
-kubectl exec -n vault vault-0 -- sh -c "
-VAULT_TOKEN=$VAULT_TOKEN VAULT_ADDR=http://127.0.0.1:8200 vault kv patch secret/platform/langfuse \
-  public-key='pk-lf-...' \
-  secret-key='sk-lf-...'
-"
-```
+Authentik application: slug `langfuse`, provider pk=11.
 
-6. Update LiteLLM ConfigMap in `minicloud-gitops/manifests/ai/00-litellm-configmap.yaml`:
+## Project & API Keys
 
-```yaml
-general_settings:
-  success_callback: ["langfuse"]
-environment_variables:
-  LANGFUSE_HOST: "http://langfuse.langfuse.svc.cluster.local:3000"
-  LANGFUSE_PUBLIC_KEY: "pk-lf-..."
-  LANGFUSE_SECRET_KEY: "sk-lf-..."
-```
+The `minicloud-platform` org and `ai-gateway` project are pre-provisioned via `LANGFUSE_INIT_*` env vars. API keys for LiteLLM integration:
+- Public key: stored in Vault at `platform/langfuse.project-public-key`
+- Secret key: stored in Vault at `platform/langfuse.project-secret-key`
 
-7. Commit and push — LiteLLM restarts via ArgoCD selfHeal.
+These are injected into LiteLLM as `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` env vars via the `litellm-credentials` Secret. Every LLM call through LiteLLM generates a trace automatically.
+
+To add a new project/API key pair:
+1. Log in to Langfuse → Settings → API Keys → create
+2. Store in Vault: `vault kv patch secret/platform/langfuse project-public-key='pk-lf-...' project-secret-key='sk-lf-...'`
+3. ESO will refresh `litellm-credentials` within 1h (or annotate to force)
+4. Restart LiteLLM: `kubectl rollout restart deployment -n ai litellm`
 
 ## What You Can See
 
