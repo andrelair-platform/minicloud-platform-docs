@@ -202,7 +202,28 @@ Keeping PXE first lets MAAS re-deploy or re-commission the node in future. MAAS 
 
 ---
 
-## Step 9 — Reboot Test
+## Step 9 — Disable Lid Suspend
+
+By default, Ubuntu suspends when the laptop lid is closed. Cluster nodes run with lids closed — this must be disabled.
+
+```bash
+ssh <NEW_NODE> "
+  sudo sed -i 's/#HandleLidSwitch=suspend/HandleLidSwitch=ignore/' /etc/systemd/logind.conf
+  sudo sed -i 's/#HandleLidSwitchExternalPower=suspend/HandleLidSwitchExternalPower=ignore/' /etc/systemd/logind.conf
+  sudo systemctl restart systemd-logind
+"
+```
+
+Verify:
+```bash
+ssh <NEW_NODE> "grep 'HandleLid' /etc/systemd/logind.conf"
+# HandleLidSwitch=ignore
+# HandleLidSwitchExternalPower=ignore
+```
+
+---
+
+## Step 10 — Reboot Test
 
 ```bash
 ssh star-kitten "sudo reboot"
@@ -227,4 +248,5 @@ ssh star-kitten "systemctl is-active k3s-agent"
 | Hardening | SSH config + UFW (same as other nodes) |
 | k3s agent | `curl get.k3s.io | K3S_URL=... K3S_TOKEN=... sh -` |
 | EFI boot order | `efibootmgr --create` Ubuntu entry + `--bootorder PXE,Ubuntu,NVMe` |
+| Lid suspend | `sed` `HandleLidSwitch=ignore` + `HandleLidSwitchExternalPower=ignore` in logind.conf |
 | Reboot test | Node rejoins cluster automatically in ~4 minutes |
