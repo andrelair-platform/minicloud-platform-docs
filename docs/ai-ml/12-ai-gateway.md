@@ -77,6 +77,8 @@ All components in the `ai` namespace. LiteLLM is the single OpenAI-compatible en
 
 `gemini-2.0-flash` and `gemini-1.5-pro` are model_name aliases kept for department key compatibility — both route to `gemini/gemini-2.5-flash` behind the scenes.
 
+**qwen3.5:4b thinking mode:** qwen3 generates reasoning tokens (think phase) before the answer. Set `max_tokens ≥ 500` — small values exhaust the token budget on reasoning, leaving `content` empty. For simple fast queries without thinking overhead, use `phi4-mini` or `llama3.2:1b`.
+
 **HuggingFace routing note:** `api-inference.huggingface.co` was retired in 2025. HF models use `https://router.huggingface.co/featherless-ai/v1` (OpenAI-compatible, free-tier provider). LiteLLM config uses `openai/` provider type with explicit `api_base` and `HUGGINGFACE_API_KEY`.
 
 ## Routing strategy
