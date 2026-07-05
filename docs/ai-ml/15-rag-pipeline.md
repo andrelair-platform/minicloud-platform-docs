@@ -51,7 +51,7 @@ User question (web search toggle ON)
 |---|---|---|
 | nomic-embed-text | 274 MB | 768-dim embedding model — best-in-class for CPU RAG |
 | postgresql-ai | pgvector 0.8.4 | Vector store — `ragdb` database on the existing pod |
-| Open WebUI | 0.9.4 | RAG orchestrator + web search frontend |
+| Open WebUI | 0.9.4 | RAG orchestrator + web search frontend (app data → PostgreSQL `openwebui` DB) |
 | LiteLLM | 1.90.3 | Exposes `nomic-embed-text` via `/v1/embeddings` for API users |
 | SearXNG | 2026.7.3 | Self-hosted meta-search engine — real-time internet results |
 
@@ -335,17 +335,19 @@ Open WebUI (in `ai` ns) gets its own internet egress policy (`allow-open-webui-i
 ### Configuration (open-webui-values.yaml)
 
 ```yaml
-- name: ENABLE_RAG_WEB_SEARCH
+- name: ENABLE_WEB_SEARCH
   value: "true"
-- name: RAG_WEB_SEARCH_ENGINE
+- name: WEB_SEARCH_ENGINE
   value: "searxng"
 - name: SEARXNG_QUERY_URL
   value: "http://searxng.searxng.svc.cluster.local:8080/search?q=<query>&format=json&language=auto"
-- name: RAG_WEB_SEARCH_RESULT_COUNT
+- name: WEB_SEARCH_RESULT_COUNT
   value: "5"
-- name: RAG_WEB_SEARCH_CONCURRENT_REQUESTS
+- name: WEB_SEARCH_CONCURRENT_REQUESTS
   value: "10"
 ```
+
+> **Gotcha:** Open WebUI config.py reads `ENABLE_WEB_SEARCH` and `WEB_SEARCH_ENGINE` — not the `ENABLE_RAG_*` prefixed variants. Using the wrong names silently has no effect (web search appears configured in the UI settings but does not actually activate).
 
 ### Deployment (GitOps)
 
