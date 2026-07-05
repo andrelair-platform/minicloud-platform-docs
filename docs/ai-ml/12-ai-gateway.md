@@ -44,11 +44,24 @@ All components in the `ai` namespace. LiteLLM is the single OpenAI-compatible en
 
 ## Models
 
+### Local models (data stays on-premise)
+
+| Model name | Size | Capability | Tier access |
+|---|---|---|---|
+| `phi3-financial` | 2.2 GB | Finance-domain text, restricted | premium, standard |
+| `qwen3.5:4b` | 3.4 GB | General text, native tool calling | premium, standard |
+| `phi4-mini` | 2.5 GB | Instruction following, technical | all |
+| `deepseek-r1:7b` | 4.7 GB | Reasoning — math, code, logic | premium |
+| `llama3.2:1b` | 1.3 GB | Ultra-fast, simple queries | all |
+| `moondream` | 1.7 GB | **Vision** — fast OCR, image description | premium, standard |
+| `llava-phi3` | 2.9 GB | **Vision** — detailed image analysis, document OCR | premium |
+
+`phi3-financial` and vision models (`moondream`, `llava-phi3`) have no cloud fallback — sensitive content stays on-premise.
+
+### Cloud models (premium and standard tiers)
+
 | Model name | Backend | Tier access |
 |---|---|---|
-| `phi3-financial` | Ollama (both) | premium, standard |
-| `llama3.2:3b` | Ollama (both) → Groq → DeepSeek | premium, standard |
-| `llama3.2:1b` | Ollama (both) → Groq → DeepSeek | all |
 | `groq-fallback` | `groq/llama-3.1-8b-instant` | automatic fallback only |
 | `deepseek-chat` | `deepseek/deepseek-chat` | automatic fallback + standard |
 | `mistral-large` | `mistral/mistral-large-latest` | premium |
@@ -82,7 +95,10 @@ router_settings:
   cooldown_time: 60
   allowed_fails: 3
   fallbacks:
-    - llama3.2:3b:
+    - qwen3.5:4b:
+        - groq-fallback
+        - deepseek-chat
+    - phi4-mini:
         - groq-fallback
         - deepseek-chat
     - llama3.2:1b:
@@ -109,9 +125,9 @@ Credentials: ESO ExternalSecret `ai-postgresql-secret` ← Vault KV `secret/plat
 
 | Tier | Departments | TPM | RPM | Budget / 30 d | Allowed models |
 |---|---|---|---|---|---|
-| **premium** | IT, Data Analytics, Actuariat, Transformation | 200k | 500 | **$100** | all 15 models |
-| **standard** | Cybersecurity, Audit, Finance, Reinsurance, Juridique, Souscription, Commercial | 100k | 200 | **$30** | local + groq + deepseek + mistral-small + gpt-4o-mini + gemini-2.0-flash + hf-qwen + hf-gemma |
-| **basic** | Sinistres, Operations, RH, Services Généraux | 50k | 100 | **$5** | phi3-financial only |
+| **premium** | IT, Data Analytics, Actuariat, Transformation | 200k | 500 | **$100** | all models (local + cloud + vision) |
+| **standard** | Cybersecurity, Audit, Finance, Reinsurance, Juridique, Souscription, Commercial | 100k | 200 | **$30** | phi3-financial, qwen3.5:4b, phi4-mini, llama3.2:1b, moondream + groq + deepseek + mistral-small + gpt-4o-mini + gemini-2.0-flash + hf-qwen + hf-gemma |
+| **basic** | Sinistres, Operations, RH, Services Généraux | 50k | 100 | **$5** | phi3-financial, phi4-mini, llama3.2:1b |
 
 `budget_duration: 30d` resets automatically. When `max_budget` is reached LiteLLM returns HTTP 429 (`BudgetExceededError`) for that key until the next reset.
 

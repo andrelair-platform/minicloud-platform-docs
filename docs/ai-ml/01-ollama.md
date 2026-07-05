@@ -73,8 +73,8 @@ internal.
 |---|---|---|
 | Ollama install | Helm chart `otwld/ollama` v1.56.0 (app 0.23.2) | Standard install, configurable via Helm values |
 | GPU | **None — CPU-only** | No NVIDIA GPUs on the ThinkPads. CPU works for 3B-7B models at usable speeds. |
-| Model | **`llama3.2:3b`** (~2 GiB on disk + RAM) | Sweet spot for CPU on ThinkPads. Larger models (7B+) are 2-3x slower, marginal quality gain at this size. |
-| Inference TPS | **~13 tokens/sec** sustained on CPU | Measured in the cold-start test. Roughly 10 words/sec — twice the human reading speed. |
+| Models | **qwen3.5:4b, phi4-mini, deepseek-r1:7b, moondream, llava-phi3, llama3.2:1b, phi3-financial** (upgraded 2026-07-05 from initial llama3.2:3b) | CPU-optimal 4–7B Q4_K_M range. Vision models (moondream, llava-phi3) added for OCR/image analysis. See [Inference Optimization](inference-optimization) for rationale. |
+| Inference TPS | **~10–35 tokens/sec** depending on model | llama3.2:1b: ~30 t/s · phi4-mini: ~15 t/s · qwen3.5:4b: ~12 t/s · deepseek-r1:7b: ~8 t/s |
 | Ollama API exposure | **Cluster-internal only** (`http://ollama.ai.svc:11434`) | Unauthenticated LLM = abuse vector if exposed. Open WebUI is the gatekeeper. |
 | Ollama persistence | 10 GiB **local-path** PVC at `/root/.ollama` on fast-heron (Phase 66) | Model weights are static re-downloadable assets — local NVMe avoids Longhorn replication overhead. No HA: if fast-heron is down, re-pull on restart. |
 | Open WebUI install | Helm chart `open-webui/open-webui` v14.4.0 (app 0.9.4) | Mature chart with sane defaults |

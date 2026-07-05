@@ -27,7 +27,7 @@ Applied to both Ollama instances (primary on fast-heron, secondary on star-kitte
 ```yaml
 OLLAMA_NUM_PARALLEL: "4"      # 4 concurrent requests (8 threads / 2 per worker)
 OLLAMA_NUM_THREADS: "6"       # leave 2 threads for k8s node agent + OS
-OLLAMA_MAX_LOADED_MODELS: "2" # keep llama3.2:3b + phi3-financial hot in RAM
+OLLAMA_MAX_LOADED_MODELS: "2" # keep 2 most-used models hot in RAM at once
 OLLAMA_FLASH_ATTENTION: "1"   # reduced memory bandwidth on CPU attention path
 OLLAMA_KV_CACHE_TYPE: "q8_0"  # 8-bit KV cache: half the memory of fp16
 OLLAMA_NUM_CTX: "4096"        # caps context — 4096 covers RAG TOP_K=5 @ 512t each
@@ -102,11 +102,16 @@ LiteLLM routes across both with `routing_strategy: least-busy` — requests alwa
 ### Models on each instance
 
 ```
-llama3.2:1b  (1.3 GB) — fast tier
-llama3.2:3b  (2.0 GB) — standard/quality tier
-phi3.5       (2.2 GB) — base for phi3-financial
-phi3-financial (2.2 GB) — financial domain model
+llama3.2:1b      (1.3 GB) — ultra-fast tier
+phi4-mini        (2.5 GB) — instruction following, Microsoft CPU-optimised
+phi3-financial   (2.2 GB) — financial domain specialist (local-only)
+qwen3.5:4b       (3.4 GB) — primary smart tier, native tool calling
+deepseek-r1:7b   (4.7 GB) — reasoning specialist (math, code, logic)
+moondream        (1.7 GB) — vision: fast OCR + image description
+llava-phi3       (2.9 GB) — vision: detailed image analysis + document OCR
 ```
+
+**Model selection rationale (CPU-only):** On an i7-8565U/10510U with ~9 GB RAM available to Ollama, the 4–7B Q4_K_M range (Ollama default quantization) delivers the best quality-per-second. Models above 8B (fp16) would require swapping and become unusable at interactive speeds. Vision models (moondream, llava-phi3) are kept separate from text models — they load a vision encoder that is not needed for text-only requests.
 
 Verify:
 
@@ -153,30 +158,75 @@ kubectl delete networkpolicy temp-allow-model-pull -n ai
 
 Virtual keys created in LiteLLM control which models each department can call:
 
-| Tier | Departments | Models | TPM limit |
-|---|---|---|---|
-| **High** | platform-admins, direction-it, direction-data-analytics | phi3-financial, llama3.2:3b, llama3.2:1b | 500K |
-| **Medium** | direction-cybersecurity, direction-transformation, direction-actuariat, direction-audit | phi3-financial, llama3.2:3b | 200K |
-| **Standard** | direction-sinistres, direction-operations, direction-finance, direction-reinsurance, direction-juridique, direction-souscription | phi3-financial, llama3.2:3b | 50K |
-| **Fast (1b)** | direction-commercial, direction-rh, direction-services-generaux | llama3.2:1b | 50K |
+| Tier | Departments | Local models | Cloud access | Budget/30d | TPM |
+|---|---|---|---|---|---|
+| **premium** | IT, Data Analytics, Actuariat, Transformation | all (incl. vision) | all cloud models | $100 | 200k |
+| **standard** | Cybersecurity, Audit, Finance, Reinsurance, Juridique, Souscription, Commercial | phi3-financial, qwen3.5:4b, phi4-mini, llama3.2:1b, moondream | groq + deepseek + mistral-small + gpt-4o-mini + gemini-2.0-flash + hf-* | $30 | 100k |
+| **basic** | Sinistres, Operations, RH, Services Généraux | phi3-financial, phi4-mini, llama3.2:1b | none | $5 | 50k |
 
-All 16 keys persist in the `litellm` PostgreSQL database. Keys are stored at `~/.litellm-department-keys` (mode 600) on the controller.
+All 15 keys persist in the `litellm` PostgreSQL database. Keys are stored at `~/.litellm-department-keys` (mode 600) on the controller.
 
 ### Verify a key's model restriction
 
 ```bash
-MASTER_KEY=$(kubectl get secret -n ai litellm-credentials \
-  -o jsonpath='{.data.master-key}' | base64 -d)
 kubectl port-forward -n ai svc/litellm 4000:4000 &
 
-# Attempt a model the key doesn't have access to — should return 403/401
-DEPT_KEY=$(grep direction-commercial ~/.litellm-department-keys | awk '{print $2}')
+# Attempt a model the key doesn't have access to — should return 403
+DEPT_KEY=$(grep direction-sinistres ~/.litellm-department-keys | awk '{print $2}')
 curl -X POST http://localhost:4000/v1/chat/completions \
   -H "Authorization: Bearer $DEPT_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"model":"llama3.2:3b","messages":[{"role":"user","content":"test"}]}'
-# Expected: 403 — model not allowed for this key
+  -d '{"model":"claude-sonnet","messages":[{"role":"user","content":"test"}]}'
+# Expected: 403 — model not in basic tier allowlist
 ```
+
+## Part 5 — Vision and multimodal capability
+
+Two vision-language models are deployed alongside the text models:
+
+| Model | Size | Best for |
+|---|---|---|
+| `moondream` | 1.7 GB | Fast image description, basic OCR, scene classification |
+| `llava-phi3` | 2.9 GB | Detailed document analysis, structured form extraction, complex OCR |
+
+### How to call a vision model
+
+Vision requests use the standard OpenAI image_url format through LiteLLM:
+
+```python
+import openai, base64
+
+client = openai.OpenAI(
+    base_url="http://localhost:4000",   # LiteLLM gateway
+    api_key="sk-direction-it-..."       # premium tier key — llava-phi3 access
+)
+
+# Base64-encode a local image
+with open("invoice.png", "rb") as f:
+    img_b64 = base64.b64encode(f.read()).decode()
+
+response = client.chat.completions.create(
+    model="llava-phi3",
+    messages=[{
+        "role": "user",
+        "content": [
+            {"type": "image_url",
+             "image_url": {"url": f"data:image/png;base64,{img_b64}"}},
+            {"type": "text",
+             "text": "Extract all text from this document as structured JSON."}
+        ]
+    }]
+)
+print(response.choices[0].message.content)
+```
+
+### Vision model limitations on CPU
+
+- Image encoding adds 2–5 seconds before token generation starts (no GPU encoder).
+- Maximum reliable image resolution: ~1024×1024 — larger images slow encoding significantly.
+- Multi-image requests are not recommended in CPU mode (memory pressure).
+- Neither model supports real-time video or streaming video frames.
+- moondream handles basic printed text well; llava-phi3 handles handwritten text and complex layouts better.
 
 ## What is NOT possible on CPU-only nodes
 
@@ -197,7 +247,11 @@ After applying Parts 1–3:
 
 | Scenario | Throughput |
 |---|---|
-| Single request (llama3.2:3b) | ~12–18 t/s |
 | Single request (llama3.2:1b) | ~25–35 t/s |
+| Single request (phi4-mini, 3.8B) | ~12–18 t/s |
+| Single request (qwen3.5:4b) | ~10–15 t/s |
+| Single request (deepseek-r1:7b) | ~6–10 t/s (includes think phase) |
+| Vision request (moondream) | ~5–8 t/s + image encode time |
+| Vision request (llava-phi3) | ~4–7 t/s + image encode time |
 | 4 concurrent requests | All 4 start immediately (no queuing until 5th) |
 | Cold start after governor set | CPU stays at 3.5–4.9 GHz under sustained load |
