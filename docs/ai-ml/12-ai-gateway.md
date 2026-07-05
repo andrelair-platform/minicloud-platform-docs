@@ -18,9 +18,13 @@ Open WebUI ──► LiteLLM Gateway (:4000)
                      ├── Ollama primary   (fast-heron,  :11434)  ← local-first
                      ├── Ollama secondary (star-kitten, :11434)  ← local-first
                      │
-                     ├── Groq             (llama-3.1-8b-instant) ← fallback when Ollama down
-                     ├── OpenAI           (gpt-4o, gpt-4o-mini)  ← premium/standard tiers
-                     └── Gemini           (gemini-2.5-flash)     ← premium/standard tiers
+                     ├── Groq             (llama-3.1-8b-instant) ← auto-fallback #1
+                     ├── DeepSeek         (deepseek-chat)        ← auto-fallback #2
+                     ├── Mistral          (large, small)         ← premium/standard
+                     ├── Anthropic        (claude-sonnet, haiku) ← premium
+                     ├── OpenAI           (gpt-4o, gpt-4o-mini)  ← premium/standard
+                     ├── Gemini           (gemini-2.5-flash)     ← premium/standard
+                     └── HuggingFace      (Qwen/Gemma via featherless-ai) ← standard
 
 LiteLLM ──► Valkey cache   (:6379)    ← exact-match prompt dedup, 10 min TTL
 LiteLLM ──► Langfuse       (:3000)    ← trace every call with token/cost/model metadata
@@ -43,29 +47,40 @@ All components in the `ai` namespace. LiteLLM is the single OpenAI-compatible en
 | Model name | Backend | Tier access |
 |---|---|---|
 | `phi3-financial` | Ollama (both) | premium, standard |
-| `llama3.2:3b` | Ollama (both) + Groq fallback | premium, standard |
-| `llama3.2:1b` | Ollama (both) + Groq fallback | all |
+| `llama3.2:3b` | Ollama (both) → Groq → DeepSeek | premium, standard |
+| `llama3.2:1b` | Ollama (both) → Groq → DeepSeek | all |
 | `groq-fallback` | `groq/llama-3.1-8b-instant` | automatic fallback only |
+| `deepseek-chat` | `deepseek/deepseek-chat` | automatic fallback + standard |
+| `mistral-large` | `mistral/mistral-large-latest` | premium |
+| `mistral-small` | `mistral/mistral-small-latest` | premium, standard |
+| `claude-sonnet` | `anthropic/claude-3-5-sonnet-20241022` | premium |
+| `claude-haiku` | `anthropic/claude-3-haiku-20240307` | premium |
 | `gpt-4o` | `openai/gpt-4o` | premium |
 | `gpt-4o-mini` | `openai/gpt-4o-mini` | premium, standard |
 | `gemini-2.0-flash` | `gemini/gemini-2.5-flash` | premium, standard |
 | `gemini-1.5-pro` | `gemini/gemini-2.5-flash` | premium |
+| `hf-qwen` | `Qwen/Qwen2.5-1.5B-Instruct` via featherless-ai | premium, standard |
+| `hf-gemma` | `google/gemma-2-2b-it` via featherless-ai | premium, standard |
 
-`gemini-2.0-flash` and `gemini-1.5-pro` are model_name aliases kept for department key allowlist compatibility — both route to `gemini/gemini-2.5-flash` behind the scenes.
+`gemini-2.0-flash` and `gemini-1.5-pro` are model_name aliases kept for department key compatibility — both route to `gemini/gemini-2.5-flash` behind the scenes.
+
+**HuggingFace routing note:** `api-inference.huggingface.co` was retired in 2025. HF models use `https://router.huggingface.co/featherless-ai/v1` (OpenAI-compatible, free-tier provider). LiteLLM config uses `openai/` provider type with explicit `api_base` and `HUGGINGFACE_API_KEY`.
 
 ## Routing strategy
 
 `router_settings.routing_strategy: least-busy` — LiteLLM picks the backend with the fewest in-flight requests.
 
-**Cloud fallback** — Groq activates only when both Ollama backends exhaust `num_retries: 2`:
+**Cloud fallback** — Groq then DeepSeek activate only when both Ollama backends exhaust `num_retries: 2`:
 
 ```yaml
 router_settings:
   fallbacks:
     - llama3.2:3b:
         - groq-fallback
+        - deepseek-chat
     - llama3.2:1b:
         - groq-fallback
+        - deepseek-chat
 ```
 
 `phi3-financial` has no cloud fallback — financial prompts must stay on-premise.
@@ -85,9 +100,9 @@ Credentials: ESO ExternalSecret `ai-postgresql-secret` ← Vault KV `secret/plat
 
 | Tier | Departments | TPM | RPM | Allowed models |
 |---|---|---|---|---|
-| **premium** | IT, Data Analytics, Cybersecurity, Actuariat, Transformation | 200k | 500 | all |
-| **standard** | Finance, Audit, Reinsurance, Juridique, Souscription, Sinistres, Commercial | 100k | 200 | local + gpt-4o-mini + gemini-2.0-flash |
-| **basic** | Operations, RH, Services Généraux | 50k | 100 | llama3.2:1b only |
+| **premium** | IT, Data Analytics, Actuariat, Transformation | 200k | 500 | all 15 models |
+| **standard** | Cybersecurity, Audit, Finance, Reinsurance, Juridique, Souscription, Commercial | 100k | 200 | local + groq + deepseek + mistral-small + gpt-4o-mini + gemini-2.0-flash + hf-qwen + hf-gemma |
+| **basic** | Sinistres, Operations, RH, Services Généraux | 50k | 100 | phi3-financial only |
 
 Update a key's limits:
 
@@ -155,7 +170,7 @@ kubectl exec -n vault vault-0 -- \
   vault kv get secret/platform/cloud-providers
 ```
 
-ESO ExternalSecret `ai-postgresql-secret` (file `manifests/eso-platform-secrets/10-ai-postgresql.yaml`) syncs `groq-api-key`, `openai-api-key`, `gemini-api-key` into `ai/litellm-credentials`.
+ESO ExternalSecret `litellm-credentials` (file `manifests/eso-platform-secrets/10-ai-postgresql.yaml`) syncs 7 cloud provider keys from `secret/platform/cloud-providers` into `ai/litellm-credentials`: `groq-api-key`, `openai-api-key`, `gemini-api-key`, `deepseek-api-key`, `mistral-api-key`, `anthropic-api-key`, `hf-token`.
 
 NetworkPolicy `allow-litellm-cloud-egress` permits port 443 egress only from `app=litellm` pods — Ollama and Open WebUI remain internet-blocked.
 
