@@ -141,11 +141,51 @@ litellm_settings:
 
 Check cache stats: `kubectl exec -n ai litellm-cache-0 -- valkey-cli info stats | grep hit`
 
-## Secret scanning guardrail
+## PII / DLP guardrail (Presidio)
+
+Microsoft Presidio runs as two in-cluster services (`presidio-analyzer` + `presidio-anonymizer`, both in the `ai` namespace, `mcr.microsoft.com/presidio-*:2.2.362`). LiteLLM's `pre_call` guardrail `presidio-pii-masking` intercepts every prompt before it reaches any model.
+
+**What it does:** Presidio analyzer detects PII entities (EMAIL_ADDRESS, PHONE_NUMBER, PERSON, CREDIT_CARD, IBAN_CODE, US_SSN, etc.) and the anonymizer replaces them with typed placeholders before the prompt is forwarded:
+
+```
+"Client jean.dupont@acme.com phone +33612345678 wants a quote"
+     ↓ Presidio pre-call guardrail
+"Client <EMAIL_ADDRESS> phone <PHONE_NUMBER> wants a quote"
+     ↓ sent to cloud model (GPT-4o, Claude, Gemini, etc.)
+```
+
+**Why this matters:** Local models (phi3-financial, llama3.2:3b/1b) keep data on-cluster. Cloud models (GPT-4o, Claude, Groq, DeepSeek, Mistral, HF) send the prompt to an external API — Presidio ensures the external API never receives raw PII. Covers llama3.2 cloud fallbacks too (if Ollama is down, PII is still anonymized before Groq receives it).
+
+**Fail mode:** `unreachable_fallback: fail_closed` — if Presidio is temporarily unavailable, requests block rather than bypassing the guardrail.
+
+```yaml
+guardrails:
+  - guardrail_name: "presidio-pii-masking"
+    litellm_params:
+      guardrail: presidio
+      mode: pre_call
+      output_parse_pii: true
+      presidio_analyzer_api_base: "http://presidio-analyzer.ai.svc.cluster.local:3000"
+      presidio_anonymizer_api_base: "http://presidio-anonymizer.ai.svc.cluster.local:3000"
+      default_on: true
+```
+
+Verify Presidio is active:
+```bash
+MASTER=$(kubectl get secret -n ai litellm-credentials -o jsonpath='{.data.master-key}' | base64 -d)
+kubectl port-forward -n ai svc/litellm 4000:4000 &
+curl -s -H "Authorization: Bearer $MASTER" http://localhost:4000/guardrails/list | python3 -m json.tool
+```
+
+**Presidio gotcha:** Both `presidio-analyzer` and `presidio-anonymizer` MCR images listen on port **3000** (gunicorn default) — not 3000/5001 as the Presidio docs suggest for local dev.
+
+## Secret scanning guardrail (detect-secrets)
 
 `general_settings.detect_secrets_on_all_keys: true` — LiteLLM scans every prompt using the `detect-secrets` library before forwarding to inference. Prompts containing high-confidence credential patterns (real API keys, tokens, connection strings) are rejected with HTTP 400.
 
 The `detect-secrets` library is pre-installed in the base Wolfi venv (`/app/.venv`). Known-safe documentation example keys (e.g., AWS `AKIAIOSFODNN7EXAMPLE`) pass through — only high-entropy real credentials are blocked.
+
+Both guardrails (`presidio-pii-masking` and `detect_secrets_on_all_keys`) run in sequence on every request.
 
 ## Langfuse tracing
 
