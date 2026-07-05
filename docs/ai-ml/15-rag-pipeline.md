@@ -65,6 +65,24 @@ User question (web search toggle ON)
 
 **Direct Ollama for embeddings (bypasses LiteLLM):** `RAG_EMBEDDING_ENGINE=ollama` + `RAG_OLLAMA_BASE_URL` points Open WebUI directly at `ollama.ai.svc:11434`. This keeps internal embedding calls out of LiteLLM's spend-tracking database — no phantom costs on the cost dashboard.
 
+## Scaling roadmap
+
+The embedding model and the vector store are **matched components** — you cannot improve one without also addressing the other, because they share the same bottleneck.
+
+**Current ceiling:** nomic-embed-text (CPU, 768-dim) + pgvector HNSW (single pod, 512 Mi RAM) → suitable for tens of thousands of chunks, sub-second search latency at demo scale.
+
+**Why switching embedding models alone changes nothing meaningful:** if you replaced nomic-embed-text with OpenAI ada-002 (1536-dim) without replacing pgvector, the HNSW graph would double in RAM, search latency would increase, and you'd still hit the pgvector ceiling before the embedding quality gap matters. You'd have added cost and external API dependency while the actual constraint — pgvector on a 512 Mi pod — remained unchanged.
+
+**The right upgrade path is a full stack replacement:**
+
+| Scale | Action |
+|---|---|
+| ~100k chunks (current) | Current stack is correctly matched — tune `HNSW ef_search` if needed |
+| ~1M chunks | Replace pgvector with a dedicated Qdrant or Weaviate pod with more RAM |
+| ~10M chunks | Managed vector DB (Pinecone, Weaviate Cloud) + OpenAI/Cohere embeddings |
+
+The lesson: **optimize the bottleneck, not adjacent components.** At demo scale, the current stack is the right choice. When document volume grows to the point where pgvector search latency degrades, replace both the vector store and the embedding model together.
+
 ## Implementation
 
 ### Step 1 — Create the database
