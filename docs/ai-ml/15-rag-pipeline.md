@@ -1,40 +1,48 @@
 ---
 id: rag-pipeline
-title: RAG Pipeline — pgvector + nomic-embed-text + Open WebUI
-sidebar_label: RAG Pipeline
+title: RAG Pipeline — pgvector + nomic-embed-text + SearXNG Web Search
+sidebar_label: RAG Pipeline & Web Search
 ---
 
-# RAG Pipeline — pgvector + nomic-embed-text + Open WebUI
+# RAG Pipeline — pgvector + nomic-embed-text + SearXNG Web Search
 
 **Implemented:** 2026-07-05  
 **Status:** Production
 
 Retrieval-Augmented Generation (RAG) enables Open WebUI to answer questions grounded in uploaded documents. Every component runs on-cluster — no external embedding API, no new services.
 
+## Knowledge sources
+
+Open WebUI provides two complementary grounding mechanisms that can be used independently or together:
+
+| Source | What it knows | Latency | Activation |
+|---|---|---|---|
+| **RAG (pgvector)** | Documents users have uploaded (PDFs, text, CSV) | ~10–50 ms | Paperclip icon → upload file |
+| **Web Search (SearXNG)** | Real-time internet — current events, latest docs, live data | ~1–3 s | Globe icon in toolbar |
+
 ## Architecture
 
+### RAG path (uploaded documents)
+
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                         Open WebUI (chat.devandre.sbs)               │
-│                                                                      │
-│  Upload document ──► Chunker ──────────────────────────────────────► │
-│                      (1500 tokens, 200 overlap)                       │
-│                             │                                        │
-│                             ▼                                        │
-│               nomic-embed-text via Ollama (768-dim)                  │
-│                             │                                        │
-│                             ▼                                        │
-│                pgvector HNSW index (document_chunk)                  │
-│                         ragdb on postgresql-ai                       │
-│                                                                      │
-│  User question ─────────────────────────────────────────────────────►│
-│       │                                                              │
-│       ▼                                                              │
-│  nomic-embed-text embeds query ──► pgvector cosine search (TOP_K=5)  │
-│       │                                                              │
-│       ▼                                                              │
-│  Top 5 chunks injected into LLM context ──► LLM answer              │
-└──────────────────────────────────────────────────────────────────────┘
+Upload document → Open WebUI chunker (1500 tokens, 200 overlap)
+    → nomic-embed-text via Ollama (768-dim vectors)
+    → pgvector HNSW index (ragdb on postgresql-ai)
+
+User question → nomic-embed-text embeds query
+    → pgvector cosine search (TOP_K=5)
+    → top 5 chunks injected into LLM context → LLM answer
+```
+
+### Web search path (real-time internet)
+
+```
+User question (web search toggle ON)
+    → Open WebUI → SearXNG /search?q=<query>&format=json
+    → SearXNG aggregates: Google + Bing + DuckDuckGo + Wikipedia
+    → top 5 results (title + URL + snippet)
+    → Open WebUI fetches full page content (via internet egress NP)
+    → results injected into LLM context → LLM answer with citations
 ```
 
 ## Components
@@ -43,8 +51,9 @@ Retrieval-Augmented Generation (RAG) enables Open WebUI to answer questions grou
 |---|---|---|
 | nomic-embed-text | 274 MB | 768-dim embedding model — best-in-class for CPU RAG |
 | postgresql-ai | pgvector 0.8.4 | Vector store — `ragdb` database on the existing pod |
-| Open WebUI | 0.9.4 | RAG orchestrator — chunking, embedding, retrieval, context injection |
+| Open WebUI | 0.9.4 | RAG orchestrator + web search frontend |
 | LiteLLM | 1.90.3 | Exposes `nomic-embed-text` via `/v1/embeddings` for API users |
+| SearXNG | 2026.7.3 | Self-hosted meta-search engine — real-time internet results |
 
 ## Why these choices
 
@@ -285,3 +294,109 @@ kubectl exec -n ai postgresql-ai-0 -- \
   env PGPASSWORD="$PG_SUPER" psql -U postgres -d ragdb \
   -c "CREATE EXTENSION IF NOT EXISTS vector; GRANT ALL ON SCHEMA public TO aiplatform;"
 ```
+
+---
+
+## Part 2 — Web Search (SearXNG)
+
+**Implemented:** 2026-07-05
+
+SearXNG is a self-hosted privacy-preserving meta-search engine. It queries Google, Bing, DuckDuckGo, and Wikipedia simultaneously and returns aggregated results without tracking users.
+
+### Why SearXNG over hosted search APIs
+
+| Option | Self-hosted | Cost | Rate limit | Privacy |
+|---|---|---|---|---|
+| **SearXNG** | ✅ | Free | None | On-cluster |
+| Brave Search | ❌ | $0 / 2k/mo | 2,000 req/mo | External |
+| Tavily | ❌ | $0 / 1k/mo | 1,000 req/mo | External |
+| DuckDuckGo | ❌ | Free | Unreliable | External |
+
+### Component
+
+| Resource | Namespace | Image | Service |
+|---|---|---|---|
+| `searxng` Deployment | `searxng` | `docker.io/searxng/searxng:2026.7.3-747cec4c2` | ClusterIP port 8080 |
+
+### NetworkPolicy design
+
+The `searxng` namespace has the tightest egress policy on the cluster:
+
+```
+default-deny-ingress + default-deny-egress
+    ↓
+allow-from-open-webui   — ingress from ai ns, port 8080 only
+allow-dns-egress        — UDP/TCP 53 to kube-system (CoreDNS)
+allow-internet-egress   — TCP 443/80 to 0.0.0.0/0 (only searxng pod)
+```
+
+Open WebUI (in `ai` ns) gets its own internet egress policy (`allow-open-webui-internet-egress`) to fetch full page content from result URLs.
+
+### Configuration (open-webui-values.yaml)
+
+```yaml
+- name: ENABLE_RAG_WEB_SEARCH
+  value: "true"
+- name: RAG_WEB_SEARCH_ENGINE
+  value: "searxng"
+- name: SEARXNG_QUERY_URL
+  value: "http://searxng.searxng.svc.cluster.local:8080/search?q=<query>&format=json&language=auto"
+- name: RAG_WEB_SEARCH_RESULT_COUNT
+  value: "5"
+- name: RAG_WEB_SEARCH_CONCURRENT_REQUESTS
+  value: "10"
+```
+
+### Deployment (GitOps)
+
+All resources in `minicloud-gitops/manifests/searxng/`. ArgoCD Application `searxng` auto-syncs.
+
+```bash
+# Check SearXNG status
+kubectl get pods -n searxng
+kubectl logs -n searxng -l app=searxng --tail=20
+
+# Verify it returns results
+kubectl port-forward -n searxng svc/searxng 8181:8080 &
+curl -s 'http://localhost:8181/search?q=kubernetes+latest&format=json' | \
+  python3 -c 'import sys,json; r=json.load(sys.stdin); print("results:", len(r.get("results",[])))'
+
+# Verify Open WebUI can reach it
+kubectl exec -n ai open-webui-0 -- python3 -c "
+import urllib.request, json
+r = json.loads(urllib.request.urlopen(
+    'http://searxng.searxng.svc.cluster.local:8080/search?q=test&format=json'
+).read())
+print('ok, results:', len(r.get('results',[])))
+"
+```
+
+### How to use web search in Open WebUI
+
+1. Go to `https://chat.devandre.sbs`
+2. Start a new chat
+3. Click the **globe icon** in the toolbar to enable web search
+4. Ask any question — Open WebUI queries SearXNG, retrieves real-time results, and injects them into the LLM context
+5. The answer will cite the sources
+
+**Example queries that benefit from web search:**
+- "What's new in Kubernetes 1.36?"
+- "Latest CVEs affecting containerd"
+- "Current EUR/USD exchange rate"
+- "Changelog for Helm 3.17"
+
+### gotcha: enableServiceLinks must be false
+
+Kubernetes automatically injects `SEARXNG_PORT=tcp://<cluster-ip>:8080` into all pods in the `searxng` namespace when a service named `searxng` exists. SearXNG uses `SEARXNG_PORT` as its listen port — the injected value is not a valid integer and crashes granian on startup.
+
+Fix: `enableServiceLinks: false` in the pod spec. This disables k8s service env var injection for the pod.
+
+### Scaling and replacement
+
+SearXNG is a stateless meta-search proxy — it holds no data. If you need more throughput, scale replicas:
+
+```bash
+kubectl scale deployment searxng -n searxng --replicas=3
+```
+
+The `allow-from-open-webui` NetworkPolicy uses a namespace selector, not a pod selector — all replicas receive traffic automatically.
