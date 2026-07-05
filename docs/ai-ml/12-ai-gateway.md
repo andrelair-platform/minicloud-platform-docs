@@ -6,7 +6,7 @@ sidebar_label: AI Gateway
 
 # AI Gateway — LiteLLM + PostgreSQL
 
-**Phase complete:** 2026-07-04  
+**Phase complete:** 2026-07-05  
 **Issues closed:** #34 (LiteLLM proxy), #41 (inference optimization)  
 **GitOps:** `manifests/ai/` in minicloud-gitops — ArgoCD Application `litellm` Synced/Healthy
 
@@ -74,6 +74,13 @@ All components in the `ai` namespace. LiteLLM is the single OpenAI-compatible en
 
 ```yaml
 router_settings:
+  routing_strategy: least-busy
+  num_retries: 2
+  timeout: 120
+  # Circuit breaker: after 3 consecutive failures a backend is marked
+  # degraded for 60 s — prevents a hung Ollama draining the retry budget.
+  cooldown_time: 60
+  allowed_fails: 3
   fallbacks:
     - llama3.2:3b:
         - groq-fallback
@@ -84,6 +91,8 @@ router_settings:
 ```
 
 `phi3-financial` has no cloud fallback — financial prompts must stay on-premise.
+
+**Circuit breaker behaviour:** if one Ollama node becomes slow or unresponsive, LiteLLM stops routing to it after 3 failures and retries on the other Ollama node (or the Groq/DeepSeek fallback for llama models) for 60 seconds. Without this, a hung backend absorbs retries from every incoming request until `timeout` fires.
 
 ## PostgreSQL databases
 
@@ -96,15 +105,17 @@ Credentials: ESO ExternalSecret `ai-postgresql-secret` ← Vault KV `secret/plat
 
 ## Department virtual key tiers
 
-16 keys pre-provisioned (stored at `~/.litellm-department-keys` on controller, mode 600).
+15 keys pre-provisioned (stored at `~/.litellm-department-keys` on controller, mode 600).
 
-| Tier | Departments | TPM | RPM | Allowed models |
-|---|---|---|---|---|
-| **premium** | IT, Data Analytics, Actuariat, Transformation | 200k | 500 | all 15 models |
-| **standard** | Cybersecurity, Audit, Finance, Reinsurance, Juridique, Souscription, Commercial | 100k | 200 | local + groq + deepseek + mistral-small + gpt-4o-mini + gemini-2.0-flash + hf-qwen + hf-gemma |
-| **basic** | Sinistres, Operations, RH, Services Généraux | 50k | 100 | phi3-financial only |
+| Tier | Departments | TPM | RPM | Budget / 30 d | Allowed models |
+|---|---|---|---|---|---|
+| **premium** | IT, Data Analytics, Actuariat, Transformation | 200k | 500 | **$100** | all 15 models |
+| **standard** | Cybersecurity, Audit, Finance, Reinsurance, Juridique, Souscription, Commercial | 100k | 200 | **$30** | local + groq + deepseek + mistral-small + gpt-4o-mini + gemini-2.0-flash + hf-qwen + hf-gemma |
+| **basic** | Sinistres, Operations, RH, Services Généraux | 50k | 100 | **$5** | phi3-financial only |
 
-Update a key's limits:
+`budget_duration: 30d` resets automatically. When `max_budget` is reached LiteLLM returns HTTP 429 (`BudgetExceededError`) for that key until the next reset.
+
+Update a key's rate limits or budget:
 
 ```bash
 MASTER_KEY=$(kubectl get secret -n ai litellm-credentials -o jsonpath='{.data.master-key}' | base64 -d)
@@ -117,12 +128,21 @@ curl -X POST http://localhost:4000/key/update \
     "key": "sk-<dept-key>",
     "tpm_limit": 200000,
     "rpm_limit": 500,
+    "max_budget": 100.0,
+    "budget_duration": "30d",
     "models": ["phi3-financial", "llama3.2:3b", "gpt-4o"],
     "metadata": {"department": "direction-it", "tier": "premium"}
   }'
 ```
 
-To bulk-update all 15 keys: scp `/tmp/update_keys.py` (on controller) and run it with `kubectl port-forward` active.
+**API field name gotcha:** the budget cap field is `max_budget` (not `budget_limit`) — the LiteLLM API docs sometimes show both names but only `max_budget` is persisted.
+
+Verify current spend and budget for all keys:
+
+```bash
+curl -s -H "Authorization: Bearer $MASTER_KEY" http://localhost:4000/key/list \
+  | python3 -m json.tool | grep -E 'key_alias|spend|max_budget'
+```
 
 ## Prompt caching (Valkey)
 
@@ -193,11 +213,67 @@ Every call produces a Langfuse trace with token counts, cost estimate, model use
 
 ```yaml
 general_settings:
-  success_callback: ["langfuse"]
+  success_callback: ["langfuse", "prometheus"]
+  failure_callback: ["prometheus"]
   langfuse_host: "http://langfuse-web.langfuse.svc.cluster.local:3000"
 ```
 
 LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY injected from ESO-synced `litellm-credentials` secret.
+
+**Prometheus note:** `success_callback: ["prometheus"]` is configured and the ServiceMonitor (`manifests/ai/06-litellm-servicemonitor.yaml`) is in git. However, LiteLLM 1.90.3's `PrometheusLogger._mount_metrics_endpoint()` registers the `/metrics` route via `app.mount()` after Starlette startup — the route does not take effect. Prometheus scraping from LiteLLM directly requires a future image rebuild. The Grafana cost dashboard below uses the PostgreSQL spend tables instead and is fully functional.
+
+## Cost dashboard (Grafana)
+
+Live at `https://grafana.10.0.0.200.nip.io/d/litellm-cost-dept/` (also available at `https://grafana.devandre.sbs/d/litellm-cost-dept/`).
+
+**Datasource:** `litellm-postgres` (PostgreSQL, UID `litellm-postgres`) — points directly at the `litellm` database in the `ai` namespace PostgreSQL pod. Provisioned via Grafana API; credentials NOT in git.
+
+```bash
+# Re-provision the datasource if the Grafana pod is replaced:
+MASTER=$(kubectl get secret -n ai litellm-credentials -o jsonpath='{.data.master-key}' | base64 -d)
+GRAFANA_PASS=$(ssh controller cat ~/.grafana-admin)
+curl -X POST -u "admin:$GRAFANA_PASS" https://grafana.10.0.0.200.nip.io/api/datasources \
+  --cacert ~/minicloud-ca.crt -H "Content-Type: application/json" -d '{
+    "name": "litellm-postgres",
+    "type": "postgres",
+    "url": "ai-postgresql.ai.svc.cluster.local:5432",
+    "user": "aiplatform",
+    "database": "litellm",
+    "uid": "litellm-postgres",
+    "secureJsonData": {"password": "<aiplatform-password>"},
+    "jsonData": {"sslmode": "disable"}
+  }'
+```
+
+The dashboard ConfigMap (`manifests/ai/07-litellm-grafana-dashboard.yaml`) is in the `monitoring` namespace with `grafana_dashboard: "1"` — the Grafana sidecar auto-loads it.
+
+**8 panels:**
+
+| # | Type | Query |
+|---|---|---|
+| 1 | Stat | Total spend last 24 h (USD) |
+| 2 | Stat | Total tokens last 24 h |
+| 3 | Stat | Requests last 24 h |
+| 4 | Stat | Active departments (30 d) |
+| 5 | Table | **Department budget utilisation** — spend, budget, used% (colour thresholds: green < 70%, yellow < 90%, red ≥ 90%) |
+| 6 | Bar gauge | Token usage by model last 30 d |
+| 7 | Table | Requests by model last 30 d |
+| 8 | Table | Recent requests (last 50) — audit trail with department column |
+
+Key SQL joins `LiteLLM_SpendLogs` (per-request records) with `LiteLLM_VerificationToken` (key metadata including `max_budget`) on `api_key = token`:
+
+```sql
+SELECT key_alias as "Department",
+       ROUND(spend::numeric, 6) as "Spend (USD)",
+       max_budget as "Budget (USD)",
+       budget_duration as "Period",
+       CASE WHEN max_budget > 0
+            THEN ROUND((spend / max_budget * 100)::numeric, 1)
+            ELSE 0 END as "Used %"
+FROM "LiteLLM_VerificationToken"
+WHERE key_alias LIKE 'direction-%'
+ORDER BY spend DESC
+```
 
 ## Cloud provider secrets
 
