@@ -186,26 +186,27 @@ Check cache stats: `kubectl exec -n ai litellm-cache-0 -- valkey-cli info stats 
 
 Microsoft Presidio runs as two in-cluster services (`presidio-analyzer` + `presidio-anonymizer`, both in the `ai` namespace, `mcr.microsoft.com/presidio-*:2.2.362`). LiteLLM's `pre_call` guardrail `presidio-pii-masking` intercepts every prompt before it reaches any model.
 
-**What it does:** Presidio analyzer detects PII entities (EMAIL_ADDRESS, PHONE_NUMBER, PERSON, CREDIT_CARD, IBAN_CODE, US_SSN, etc.) and the anonymizer replaces them with typed placeholders before the prompt is forwarded:
+**What it does:** Presidio analyzer detects PII entities in user prompts and the anonymizer replaces them with typed placeholders **before the prompt is forwarded to any cloud model**:
 
 ```
 "Client jean.dupont@acme.com phone +33612345678 wants a quote"
-     ↓ Presidio pre-call guardrail
+     ↓ Presidio pre_call guardrail (input only)
 "Client <EMAIL_ADDRESS> phone <PHONE_NUMBER> wants a quote"
      ↓ sent to cloud model (GPT-4o, Claude, Gemini, etc.)
 ```
 
-**Why this matters:** Local models (phi3-financial, llama3.2:3b/1b) keep data on-cluster. Cloud models (GPT-4o, Claude, Groq, DeepSeek, Mistral, HF) send the prompt to an external API — Presidio ensures the external API never receives raw PII. Covers llama3.2 cloud fallbacks too (if Ollama is down, PII is still anonymized before Groq receives it).
+**Why this matters:** Local models (phi3-financial, phi4-mini) keep data on-cluster. Cloud models (GPT-4o, Claude, Groq, DeepSeek, Mistral, HF) send the prompt to an external API — Presidio ensures the external API never receives raw PII. Covers models with cloud fallbacks too (if Ollama is down, PII is still anonymized before Groq receives it).
 
-**Fail mode:** `unreachable_fallback: fail_closed` — if Presidio is temporarily unavailable, requests block rather than bypassing the guardrail.
+**Scope: input only.** `output_parse_pii` is intentionally NOT set. Anonymizing LLM responses would replace country names, public figures and sports results with `<LOCATION>`/`<PERSON>` placeholders, making general-knowledge responses unreadable. The security goal is protecting user data sent *to* cloud providers — not transforming the model's *output*.
+
+**Fail mode:** `default_on: true` — guardrail is active on all requests by default.
 
 ```yaml
 guardrails:
   - guardrail_name: "presidio-pii-masking"
     litellm_params:
       guardrail: presidio
-      mode: pre_call
-      output_parse_pii: true
+      mode: pre_call          # input protection only — output_parse_pii NOT set
       presidio_analyzer_api_base: "http://presidio-analyzer.ai.svc.cluster.local:3000"
       presidio_anonymizer_api_base: "http://presidio-anonymizer.ai.svc.cluster.local:3000"
       default_on: true
@@ -219,6 +220,8 @@ curl -s -H "Authorization: Bearer $MASTER" http://localhost:4000/guardrails/list
 ```
 
 **Presidio gotcha:** Both `presidio-analyzer` and `presidio-anonymizer` MCR images listen on port **3000** (gunicorn default) — not 3000/5001 as the Presidio docs suggest for local dev.
+
+**output_parse_pii gotcha:** Setting `output_parse_pii: true` anonymizes the LLM's response text. Presidio treats country names ("France", "Cameroun"), historical figures and dates as LOCATION/PERSON/DATE_TIME entities. A sports question gets back "<LOCATION> a battu <LOCATION> <DATE_TIME>" — unreadable. Only set `output_parse_pii` if your use case specifically requires redacting model outputs (e.g., a system that echoes back user-submitted documents).
 
 ## Secret scanning guardrail (detect-secrets)
 

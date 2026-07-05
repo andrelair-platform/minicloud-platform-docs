@@ -393,6 +393,28 @@ Kubernetes automatically injects `SEARXNG_PORT=tcp://<cluster-ip>:8080` into all
 
 Fix: `enableServiceLinks: false` in the pod spec. This disables k8s service env var injection for the pod.
 
+### gotcha: use ENABLE_WEB_SEARCH, not ENABLE_RAG_WEB_SEARCH
+
+Open WebUI config.py reads `ENABLE_WEB_SEARCH` and `WEB_SEARCH_ENGINE`. The `ENABLE_RAG_*` prefixed variants do not exist and are silently ignored — the globe icon may appear in the UI but web search will not trigger.
+
+| Wrong (silent no-op) | Correct |
+|---|---|
+| `ENABLE_RAG_WEB_SEARCH=true` | `ENABLE_WEB_SEARCH=true` |
+| `RAG_WEB_SEARCH_ENGINE=searxng` | `WEB_SEARCH_ENGINE=searxng` |
+| `RAG_WEB_SEARCH_RESULT_COUNT=5` | `WEB_SEARCH_RESULT_COUNT=5` |
+| `RAG_WEB_SEARCH_CONCURRENT_REQUESTS=10` | `WEB_SEARCH_CONCURRENT_REQUESTS=10` |
+
+### gotcha: BYPASS_WEB_SEARCH_WEB_LOADER must be true
+
+By default, Open WebUI fetches the full HTML content of each search result URL to give the LLM richer context. Most news and sports sites (FIFA.com, BBC Sport, Le Monde, ESPN) block scraping — the content loader gets an empty response or a captcha page. With no content extracted, the LLM responds "Aucune source trouvée" even though SearXNG returned valid results.
+
+`BYPASS_WEB_SEARCH_WEB_LOADER=true` skips the content-fetching step and uses SearXNG's snippets directly (title + URL + excerpt). The snippets are sufficient for the LLM to answer factual questions like match results, news headlines and exchange rates.
+
+```yaml
+- name: BYPASS_WEB_SEARCH_WEB_LOADER
+  value: "true"
+```
+
 ### Scaling and replacement
 
 SearXNG is a stateless meta-search proxy — it holds no data. If you need more throughput, scale replicas:
