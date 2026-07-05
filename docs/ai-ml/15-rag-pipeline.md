@@ -83,6 +83,70 @@ The embedding model and the vector store are **matched components** — you cann
 
 The lesson: **optimize the bottleneck, not adjacent components.** At demo scale, the current stack is the right choice. When document volume grows to the point where pgvector search latency degrades, replace both the vector store and the embedding model together.
 
+## Document ingestion quality roadmap
+
+Compared to RAGFlow (the leading self-hosted enterprise RAG platform), three gaps exist in the current stack. All three are **additive improvements** on top of the existing deployment — no stack replacement required, because Open WebUI 0.9.4 already has native hooks for each.
+
+### Phase A — Re-ranking (cross-encoder)
+
+**The gap:** after HNSW cosine-distance search returns the top-K chunks, they are ranked by embedding similarity — which measures topic proximity, not answer quality. A chunk that mentions the query terms in passing ranks the same as one that directly answers the question.
+
+**What re-ranking adds:** a cross-encoder model reads the query and each candidate chunk together (not as independent vectors) and scores the pair holistically. Top-K after re-ranking is meaningfully better than top-K from cosine distance alone.
+
+**Implementation — Open WebUI already has the hooks:**
+
+```yaml
+# Add to open-webui-values.yaml extraEnvVars
+- name: RAG_RERANKING_ENGINE
+  value: "sentence_transformers"
+- name: RAG_RERANKING_MODEL
+  value: "cross-encoder/ms-marco-MiniLM-L-6-v2"   # 80 MB, CPU-friendly
+- name: RAG_TOP_K_RERANKER
+  value: "3"                                         # keep top 3 after reranking
+```
+
+The model downloads on first use and runs in-process inside the Open WebUI pod. No new Deployment or Service required. For a larger reranker (BGE-Reranker-v2-M3, 568 MB), use `RAG_EXTERNAL_RERANKER_URL` pointing to a dedicated pod to keep Open WebUI pod RAM under control.
+
+**When to implement:** when analysts report that RAG answers miss the point despite finding the right document — the chunk is present in top-K but not at position 1.
+
+---
+
+### Phase B — OCR & advanced document parsing (Docling)
+
+**The gap:** the current stack handles text-based PDFs only. Scanned insurance documents, contract images, and mixed-format files (PDF with embedded tables + scanned pages) produce empty or garbled chunks.
+
+**What Docling adds:** IBM Docling (open-source, self-hostable) converts scanned PDFs, images, and complex layouts into clean text before chunking. It handles tables, multi-column layouts, headers/footers, and embedded images with text — producing extraction quality close to commercial solutions.
+
+**Implementation — deploy Docling in the `ai` namespace:**
+
+```yaml
+# New Deployment: docling (ai namespace)
+image: ds4sd/docling-serve:latest
+resources:
+  requests: {cpu: "500m", memory: "1Gi"}
+  limits:   {cpu: "2",    memory: "2Gi"}
+ports:
+  - containerPort: 5001
+```
+
+```yaml
+# Add to open-webui-values.yaml extraEnvVars
+- name: CONTENT_EXTRACTION_ENGINE
+  value: "docling"
+- name: DOCLING_SERVER_URL
+  value: "http://docling.ai.svc.cluster.local:5001"
+```
+
+Open WebUI routes all document uploads through Docling before chunking. Text-based PDFs still work — Docling handles both. NetworkPolicy: allow `open-webui` → `docling` port 5001 (cluster-internal, no internet egress needed).
+
+**When to implement:** when users need to upload scanned contracts, insurance forms, or any non-text-layer PDF.
+
+---
+
+### Hybrid search note
+
+`ENABLE_RAG_HYBRID_SEARCH=true` is already set, and Open WebUI 0.9.4 includes `RAG_HYBRID_BM25_WEIGHT` (default 0.5) — a BM25 component exists. The gap vs RAGFlow is in index sophistication: RAGFlow maintains a dedicated BM25 index alongside the vector index and uses Reciprocal Rank Fusion (RRF) to combine scores. Open WebUI's hybrid mode is lighter-weight. For the current use case (structured financial documents + web search), the existing hybrid setting is adequate. A dedicated BM25 index becomes relevant when the knowledge base contains many short, keyword-specific documents where semantic embedding misses exact terminology matches.
+
 ## Implementation
 
 ### Step 1 — Create the database
