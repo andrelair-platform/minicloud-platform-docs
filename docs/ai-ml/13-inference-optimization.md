@@ -30,7 +30,7 @@ OLLAMA_NUM_THREADS: "6"       # leave 2 threads for k8s node agent + OS
 OLLAMA_MAX_LOADED_MODELS: "2" # keep 2 most-used models hot in RAM at once
 OLLAMA_FLASH_ATTENTION: "1"   # reduced memory bandwidth on CPU attention path
 OLLAMA_KV_CACHE_TYPE: "q8_0"  # 8-bit KV cache: half the memory of fp16
-OLLAMA_NUM_CTX: "4096"        # caps context — 4096 covers RAG TOP_K=5 @ 512t each
+OLLAMA_NUM_CTX: "8192"        # raised from 4096 — gives deepseek-r1:7b think phase room (500–1500 tokens)
 ```
 
 Config is in `minicloud-ansible/helm-values/ollama-values.yaml` and `ollama-secondary-values.yaml`.
@@ -227,6 +227,96 @@ print(response.choices[0].message.content)
 - Multi-image requests are not recommended in CPU mode (memory pressure).
 - Neither model supports real-time video or streaming video frames.
 - moondream handles basic printed text well; llava-phi3 handles handwritten text and complex layouts better.
+
+## Part 6 — RAG pipeline: pgvector + nomic-embed-text + Open WebUI
+
+Retrieval-Augmented Generation (RAG) allows Open WebUI to answer questions using uploaded documents. All components run on-cluster — no external embedding API needed.
+
+### Architecture
+
+```
+User uploads document → Open WebUI chunks text (1500 tokens, 200 overlap)
+    → nomic-embed-text (768-dim) via Ollama → pgvector HNSW index
+                                                      ↓
+User asks question → nomic-embed-text embeds query → pgvector cosine search (TOP_K=5)
+    → retrieved chunks injected into context → LLM generates answer
+```
+
+### Components
+
+| Component | Role | Config |
+|---|---|---|
+| nomic-embed-text (274 MB) | Embedding model — 768-dim vectors, best-in-class for CPU RAG | Pulled on both Ollama instances |
+| postgresql-ai | pgvector 0.8.4 host — `ragdb` database | Existing pod, new DB |
+| document_chunk table | HNSW index — m=16, ef_construction=64 | Created by Open WebUI on first start |
+| Open WebUI | RAG orchestrator — chunking, embedding, retrieval, context injection | REVISION: 20 |
+
+### Key configuration (open-webui-values.yaml)
+
+```yaml
+- name: VECTOR_DB
+  value: "pgvector"
+- name: PGVECTOR_DB_URL
+  value: "postgresql://aiplatform:<password>@postgresql-ai.ai.svc.cluster.local:5432/ragdb"
+- name: PGVECTOR_INITIALIZE_MAX_VECTOR_LENGTH
+  value: "768"
+- name: PGVECTOR_INDEX_METHOD
+  value: "hnsw"
+- name: PGVECTOR_HNSW_M
+  value: "16"
+- name: PGVECTOR_HNSW_EF_CONSTRUCTION
+  value: "64"
+- name: RAG_EMBEDDING_ENGINE
+  value: "ollama"
+- name: RAG_EMBEDDING_MODEL
+  value: "nomic-embed-text"
+- name: RAG_OLLAMA_BASE_URL
+  value: "http://ollama.ai.svc.cluster.local:11434"
+- name: CHUNK_SIZE
+  value: "1500"
+- name: CHUNK_OVERLAP
+  value: "200"
+- name: RAG_TOP_K
+  value: "5"
+- name: ENABLE_RAG_HYBRID_SEARCH
+  value: "true"
+```
+
+`RAG_EMBEDDING_ENGINE: ollama` bypasses LiteLLM for embeddings — avoids polluting cost/spend metrics with internal embedding calls.
+
+### Why HNSW instead of IVFFlat
+
+pgvector 0.8.4 was compiled with SIMD instructions not supported on the ThinkPad i7-10510U (SIGILL during IVFFlat K-means build). HNSW uses a different code path that builds incrementally and does not trigger the SIGILL. Set `PGVECTOR_INDEX_METHOD=hnsw` in the Open WebUI env.
+
+### How to use RAG in Open WebUI
+
+1. Log in at `https://chat.devandre.sbs`
+2. Start a new chat
+3. Click the paperclip icon → upload a PDF, text, or CSV
+4. Ask questions — Open WebUI retrieves the top 5 relevant chunks and injects them into the LLM context
+
+### Verify the embedding chain
+
+```bash
+# Direct Ollama embedding (what Open WebUI uses internally)
+kubectl port-forward -n ai svc/ollama 11434:11434 &
+curl -s -X POST http://localhost:11434/api/embeddings \
+  -d '{"model":"nomic-embed-text","prompt":"Kubernetes manages containers"}' | \
+  python3 -c 'import sys,json; e=json.load(sys.stdin)["embedding"]; print(f"dims={len(e)}, ok")'
+# Expected: dims=768, ok
+
+# Via LiteLLM (for external API users)
+curl -s -X POST http://localhost:4000/v1/embeddings \
+  -H "Authorization: Bearer <direction-it-key>" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"nomic-embed-text","input":"test"}' | \
+  python3 -c 'import sys,json; r=json.load(sys.stdin); print(f"dims={len(r[\"data\"][0][\"embedding\"])}")'
+# Expected: dims=768
+
+# pgvector table status
+kubectl exec -n ai postgresql-ai-0 -- psql postgresql://aiplatform:<pw>@localhost/ragdb \
+  -c "SELECT indexname, indexdef FROM pg_indexes WHERE tablename='document_chunk';"
+```
 
 ## What is NOT possible on CPU-only nodes
 

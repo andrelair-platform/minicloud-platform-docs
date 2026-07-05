@@ -277,6 +277,7 @@ const sidebars: SidebarsConfig = {
         'ai-ml/sampling-configuration',
         'ai-ml/ai-gateway',
         'ai-ml/inference-optimization',
+        'ai-ml/rag-pipeline',
         'ai-ml/langfuse',
       ],
     },
