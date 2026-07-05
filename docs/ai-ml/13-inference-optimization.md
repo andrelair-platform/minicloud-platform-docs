@@ -6,7 +6,7 @@ sidebar_label: Inference Optimization
 
 # Inference Optimization — CPU Tuning & Horizontal Scaling
 
-**Phase complete:** 2026-07-04  
+**Phase complete:** 2026-07-05  
 **Issue closed:** #41
 
 ## Hardware baseline
@@ -22,18 +22,23 @@ sidebar_label: Inference Optimization
 
 ## Part 1 — Ollama env var tuning
 
-Applied to both Ollama instances (primary on fast-heron, secondary on star-kitten):
+Applied to all three Ollama instances (primary on fast-heron, secondary on star-kitten, tertiary on fast-skunk):
 
 ```yaml
-OLLAMA_NUM_PARALLEL: "4"      # 4 concurrent requests (8 threads / 2 per worker)
+# Primary + secondary (7B model tier — full context)
+OLLAMA_NUM_PARALLEL: "6"      # 6 concurrent requests per instance (raised from 4 on 2026-07-05)
 OLLAMA_NUM_THREADS: "6"       # leave 2 threads for k8s node agent + OS
 OLLAMA_MAX_LOADED_MODELS: "2" # keep 2 most-used models hot in RAM at once
 OLLAMA_FLASH_ATTENTION: "1"   # reduced memory bandwidth on CPU attention path
 OLLAMA_KV_CACHE_TYPE: "q8_0"  # 8-bit KV cache: half the memory of fp16
 OLLAMA_NUM_CTX: "8192"        # raised from 4096 — gives deepseek-r1:7b think phase room (500–1500 tokens)
+
+# Tertiary (light-model tier — fast-skunk, no 7B models)
+OLLAMA_NUM_PARALLEL: "6"      # 6 concurrent requests
+OLLAMA_NUM_CTX: "4096"        # lower context — light conversational use, more parallel headroom
 ```
 
-Config is in `minicloud-ansible/helm-values/ollama-values.yaml` and `ollama-secondary-values.yaml`.
+Config is in `minicloud-ansible/helm-values/ollama-values.yaml`, `ollama-secondary-values.yaml`, and `ollama-tertiary-values.yaml`.
 
 ## Part 2 — CPU governor: performance mode
 
@@ -88,43 +93,63 @@ EOF
 systemctl daemon-reload && systemctl enable --now cpu-performance"
 ```
 
-## Part 3 — Horizontal scaling: dual Ollama
+## Part 3 — Horizontal scaling: three Ollama instances
 
-Two independent Ollama Deployments, each pinned to a dedicated node:
+Three independent Ollama Deployments, each pinned to a dedicated node (2026-07-05):
 
-| Instance | Node | Service | PVC |
-|---|---|---|---|
-| `ollama` | fast-heron | `ollama.ai.svc:11434` | local-path 10Gi |
-| `ollama-secondary` | star-kitten | `ollama-secondary.ai.svc:11434` | local-path 10Gi |
+| Instance | Node | Service | Models | PVC | NUM_CTX |
+|---|---|---|---|---|---|
+| `ollama` | fast-heron | `ollama.ai.svc:11434` | all 7 (incl. 7B + vision) | local-path 10Gi | 8192 |
+| `ollama-secondary` | star-kitten | `ollama-secondary.ai.svc:11434` | all 7 (incl. 7B + vision) | local-path 10Gi | 8192 |
+| `ollama-tertiary` | fast-skunk | `ollama-tertiary.ai.svc:11434` | light only (1B + 3.8B + embed) | local-path 10Gi | 4096 |
 
-LiteLLM routes across both with `routing_strategy: least-busy` — requests always go to the instance with fewer active inference threads.
+LiteLLM routes across all three with `routing_strategy: least-busy`. The tertiary adds 6 concurrent slots for light workloads without competing with 7B inference.
 
-### Models on each instance
+### Total concurrent capacity (2026-07-05)
+
+| What changed | Before | After |
+|---|---|---|
+| NUM_PARALLEL per instance | 4 | 6 |
+| Ollama instances | 2 | 3 |
+| Light-model slots (phi4-mini + llama3.2:1b) | 8 (4×2) | 18 (6×3) |
+| deepseek-r1:7b | 40+ s on CPU | 5–8 s via DeepSeek cloud API (fallback: local) |
+| Estimated concurrent users | ~20 | ~80–90 |
+
+### Models per instance
 
 ```
-llama3.2:1b      (1.3 GB) — ultra-fast tier
-phi4-mini        (2.5 GB) — instruction following, Microsoft CPU-optimised
-phi3-financial   (2.2 GB) — financial domain specialist (local-only)
-qwen3.5:4b       (3.4 GB) — primary smart tier, native tool calling
-deepseek-r1:7b   (4.7 GB) — reasoning specialist (math, code, logic)
-moondream        (1.7 GB) — vision: fast OCR + image description
-llava-phi3       (2.9 GB) — vision: detailed image analysis + document OCR
+Primary + Secondary (fast-heron, star-kitten):
+  llama3.2:1b      (1.3 GB) — ultra-fast tier
+  phi4-mini        (2.5 GB) — instruction following, Microsoft CPU-optimised
+  phi3-financial   (2.2 GB) — financial domain specialist (local-only)
+  qwen3.5:4b       (3.4 GB) — primary smart tier, native tool calling
+  deepseek-r1:7b   (4.7 GB) — reasoning specialist (local fallback only)
+  moondream        (1.7 GB) — vision: fast OCR + image description
+  llava-phi3       (2.9 GB) — vision: detailed image analysis + document OCR
+
+Tertiary (fast-skunk — light workloads only):
+  llama3.2:1b      (1.3 GB) — ultra-fast tier
+  phi4-mini        (2.5 GB) — instruction following
+  nomic-embed-text (0.3 GB) — 768-dim embedding for RAG
 ```
 
-**Model selection rationale (CPU-only):** On an i7-8565U/10510U with ~9 GB RAM available to Ollama, the 4–7B Q4_K_M range (Ollama default quantization) delivers the best quality-per-second. Models above 8B (fp16) would require swapping and become unusable at interactive speeds. Vision models (moondream, llava-phi3) are kept separate from text models — they load a vision encoder that is not needed for text-only requests.
+**deepseek-r1:7b cloud routing:** The reasoning model routes to DeepSeek cloud API (5–8 s) as first choice. If the cloud is unavailable (balance, outage), LiteLLM automatically falls back to `deepseek-r1:7b-local` on the primary/secondary Ollama instances. The `fallbacks` block in `router_settings` handles this automatically — no client-side changes needed.
 
-Verify:
+### Verify all three instances
 
 ```bash
 kubectl exec -n ai deploy/ollama -- ollama list
 kubectl exec -n ai deploy/ollama-secondary -- ollama list
+kubectl exec -n ai deploy/ollama-tertiary -- ollama list
 ```
 
-### Add a model to both instances
+### Add a model to all three instances
 
-Model pulls require a temporary egress NetworkPolicy (ai namespace has default-deny-egress):
+Model pulls require a temporary egress NetworkPolicy (ai namespace has default-deny-egress).  
+Use `podSelector: matchLabels: app.kubernetes.io/instance: <instance-name>` to target specific pods:
 
 ```bash
+# Apply per-instance temp egress
 kubectl apply -f - <<'EOF'
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -144,11 +169,11 @@ EOF
 # Pull via REST (avoid interactive TTY)
 kubectl port-forward -n ai deploy/ollama 11434:11434 &
 kubectl port-forward -n ai deploy/ollama-secondary 11435:11434 &
+kubectl port-forward -n ai deploy/ollama-tertiary 11436:11434 &
 
-curl -s -X POST http://localhost:11434/api/pull \
-  -d '{"model":"<model-name>","stream":false}'
-curl -s -X POST http://localhost:11435/api/pull \
-  -d '{"model":"<model-name>","stream":false}'
+curl -s -X POST http://localhost:11434/api/pull -d '{"model":"<model-name>","stream":false}'
+curl -s -X POST http://localhost:11435/api/pull -d '{"model":"<model-name>","stream":false}'
+curl -s -X POST http://localhost:11436/api/pull -d '{"model":"<model-name>","stream":false}'
 
 # Remove temp policy
 kubectl delete networkpolicy temp-allow-model-pull -n ai
@@ -343,5 +368,8 @@ After applying Parts 1–3:
 | Single request (deepseek-r1:7b) | ~6–10 t/s (includes think phase) |
 | Vision request (moondream) | ~5–8 t/s + image encode time |
 | Vision request (llava-phi3) | ~4–7 t/s + image encode time |
-| 4 concurrent requests | All 4 start immediately (no queuing until 5th) |
+| 4 concurrent requests (before 2026-07-05) | All 4 start immediately (no queuing until 5th) |
+| 6 concurrent requests per instance (after 2026-07-05) | All 6 start immediately (no queuing until 7th) |
+| deepseek-r1:7b via cloud API | 5–8 s (vs 40+ s on CPU) |
+| 18 concurrent light-model slots (3 instances × 6 parallel) | ~80–90 simultaneous users |
 | Cold start after governor set | CPU stays at 3.5–4.9 GHz under sustained load |
