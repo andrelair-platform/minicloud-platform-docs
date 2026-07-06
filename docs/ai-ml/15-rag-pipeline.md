@@ -161,14 +161,16 @@ Open WebUI calls `POST /v1/convert/file` and reads `response.document.md_content
 
 ---
 
-### Phase C — True hybrid search ✅ Live (2026-07-06)
+### Phase C — Hybrid search ✅ Live (2026-07-06)
 
-Open WebUI 0.9.4 with pgvector implements **native hybrid search** — not a lightweight approximation. When `ENABLE_RAG_HYBRID_SEARCH=true`, the pgvector client runs two independent queries against PostgreSQL and combines them with Reciprocal Rank Fusion:
+When `ENABLE_RAG_HYBRID_SEARCH=true`, Open WebUI fetches the entire collection from pgvector and runs two retrieval legs in Python, then merges with Reciprocal Rank Fusion:
 
-| Component | Implementation | Index |
+| Component | Implementation | Where it runs |
 |---|---|---|
-| **Vector search** | HNSW cosine similarity (`vector_cosine_ops`) | `idx_document_chunk_vector` (HNSW) |
-| **Full-text search** | `plainto_tsquery('simple') @@ to_tsvector('simple', text)` + `ts_rank_cd` | `idx_document_chunk_text_search` (GIN) ✅ |
+| **Vector search** | HNSW cosine similarity (`vector_cosine_ops`) | PostgreSQL (`idx_document_chunk_vector`) |
+| **BM25 keyword search** | `langchain_community.retrievers.BM25Retriever` (rank_bm25) | Python in-process |
+
+**Architecture note:** the BM25 leg is entirely in Python — `BM25Retriever` loads all document chunks from the collection into memory and scores them using the `rank_bm25` library. There is no native PostgreSQL FTS query in the hybrid path. The GIN index (`idx_document_chunk_text_search`) exists in the database but is not called by Open WebUI's hybrid search — it is retained as a foundation for a future native-FTS migration.
 
 **Deployed config (minicloud-ansible commit `7a2e75e`):**
 
@@ -177,17 +179,41 @@ Open WebUI 0.9.4 with pgvector implements **native hybrid search** — not a lig
 - name: ENABLE_RAG_HYBRID_SEARCH
   value: "true"
 - name: RAG_HYBRID_BM25_WEIGHT
-  value: "0.5"   # 50% FTS + 50% vector; raise for keyword-heavy corpora
+  value: "0.5"   # 50% BM25 + 50% vector; raise for keyword-heavy queries
 ```
-
-The GIN index was created manually on ragdb (`CREATE INDEX CONCURRENTLY`) — the pgvector `__init__` generates the DDL but it requires an explicit session commit that doesn't always fire on first start.
 
 **Weight tuning guide:**
 - `0.5` — balanced (default, good for mixed semantic + keyword queries)
 - `0.3` — lean toward vector (better for abstract questions: "what is our risk exposure?")
-- `0.7` — lean toward FTS (better for exact-term lookup: "article 42", "IBNR", specific policy numbers)
+- `0.7` — lean toward BM25 (better for exact-term lookup: "article 42", "IBNR", specific policy numbers)
 
-**Gap closure vs RAGFlow:** RAGFlow uses a standalone BM25 index (Elasticsearch/Typesense). Open WebUI uses PostgreSQL's built-in `ts_rank_cd` with a GIN index — same result-quality class, no extra service required.
+---
+
+### Phase D — French BM25 tokenizer ✅ Live (2026-07-06)
+
+**The problem:** `rank_bm25`'s default tokenizer is `str.split()` — whitespace only, no lowercasing, no stemming, no stop-word removal. French inflected forms are distinct tokens: "sinistres" ≠ "sinistre", "réassurance" ≠ "réassurer". A query for "sinistre" misses every chunk containing "sinistres".
+
+**The fix:** a `preprocess_func` injected into `BM25Retriever.from_texts` that applies NLTK's Snowball French stemmer and removes common French stop words (le, de, est, pour, dans, etc.).
+
+**How it is deployed:** an init container (`patch-bm25-french`) copies `utils.py` from the image filesystem, runs a patch script from a ConfigMap, and writes the result to an emptyDir. The main container mounts that file via `subPath`, shadowing the original. No custom image required — the patch re-applies on every pod restart.
+
+```
+minicloud-gitops/manifests/ai/09-bm25-french-patchscript.yaml   ← ConfigMap (patch script)
+minicloud-ansible/helm-values/open-webui-values.yaml             ← init container + volumes
+```
+
+**Verified stems (insurance vocabulary):**
+
+| Query token | Corpus token | Shared stem | Match? |
+|---|---|---|---|
+| sinistre | sinistres | `sinistr` | ✅ |
+| réassureur | réassurance | `réassur` | ✅ |
+| indemnité | indemnités | `indemnit` | ✅ |
+| rémunérer | rémunération | `rémuner` | ✅ |
+
+Stop words filtered from `"le contrat de réassurance est soumis aux conditions de la police"` → `['contrat', 'reassur', 'soum', 'condit', 'polic']`.
+
+**Limitation:** accent-insensitive matching requires the query to use the same accent form as the corpus. "remuneration" (no accent) and "rémunération" (with accent) produce different stems. This is a known limitation of the Snowball stemmer — the `unaccent` PostgreSQL extension would solve it for native FTS, but not for Python BM25. Workaround: ensure uploaded documents use proper French accents; LLM queries typically include accents via Authentik keyboard.
 
 ## Implementation
 
