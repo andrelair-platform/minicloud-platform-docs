@@ -1,12 +1,12 @@
 ---
 id: rag-pipeline
-title: RAG Pipeline — pgvector + nomic-embed-text + SearXNG Web Search
+title: RAG Pipeline — pgvector + bge-m3 + SearXNG Web Search
 sidebar_label: RAG Pipeline & Web Search
 ---
 
-# RAG Pipeline — pgvector + nomic-embed-text + SearXNG Web Search
+# RAG Pipeline — pgvector + bge-m3 + SearXNG Web Search
 
-**Implemented:** 2026-07-05 (RAG + web search + re-ranking), 2026-07-06 (Docling OCR)
+**Implemented:** 2026-07-05 (RAG + web search + re-ranking), 2026-07-06 (Docling OCR + French BM25 + bge-m3 1024-dim)
 **Status:** Production
 
 Retrieval-Augmented Generation (RAG) enables Open WebUI to answer questions grounded in uploaded documents. Every component runs on-cluster — no external embedding API, no new services.
@@ -26,12 +26,12 @@ Open WebUI provides two complementary grounding mechanisms that can be used inde
 
 ```
 Upload document → Open WebUI chunker (1500 tokens, 200 overlap)
-    → nomic-embed-text via Ollama (768-dim vectors)
+    → bge-m3 via Ollama (1024-dim vectors, 100+ languages)
     → pgvector HNSW index (ragdb on postgresql-ai)
 
-User question → nomic-embed-text embeds query
-    → pgvector cosine search (TOP_K=5)
-    → top 5 chunks injected into LLM context → LLM answer
+User question → bge-m3 embeds query (1024-dim)
+    → pgvector cosine search (TOP_K=8) + Python BM25Retriever (French stemmer)
+    → RRF merge → cross-encoder re-ranker → top 3 chunks → LLM answer
 ```
 
 ### Web search path (real-time internet)
@@ -49,15 +49,17 @@ User question (web search toggle ON)
 
 | Component | Version | Role |
 |---|---|---|
-| nomic-embed-text | 274 MB | 768-dim embedding model — best-in-class for CPU RAG |
+| bge-m3 | 1.2 GB | 1024-dim embedding model — 100+ languages, state-of-the-art multilingual retrieval |
 | postgresql-ai | pgvector 0.8.4 | Vector store — `ragdb` database on the existing pod |
 | Open WebUI | 0.9.4 | RAG orchestrator + web search frontend (app data → PostgreSQL `openwebui` DB) |
-| LiteLLM | 1.90.3 | Exposes `nomic-embed-text` via `/v1/embeddings` for API users |
+| LiteLLM | 1.90.3 | AI Gateway — chat completions only; embeddings bypass LiteLLM (direct Ollama) |
 | SearXNG | 2026.7.3 | Self-hosted meta-search engine — real-time internet results |
 
 ## Why these choices
 
-**nomic-embed-text over OpenAI ada-002:** 274 MB pulls in seconds; 768-dim vectors vs ada-002's 1536 cuts pgvector storage and search time in half; semantic quality is competitive on technical English text.
+**bge-m3 over nomic-embed-text:** BAAI/bge-m3 (1024-dim) outperforms nomic-embed-text on French insurance vocabulary — nomic is primarily English-trained and has weaker morphological coverage for inflected French forms ("indemnités", "réassureurs"). bge-m3 supports 100+ languages with consistent quality and produces richer semantic representations for domain-specific terms. The tradeoff is size (1.2 GB vs 274 MB) and slightly higher embedding latency; both are acceptable given inference latency (2–8 s) dominates end-to-end response time. The 1024-dim output requires `vector(1024)` in PostgreSQL — the ragdb schema was migrated when this switch was made.
+
+**bge-m3 over OpenAI ada-002:** No external API, no per-token cost, no data leaving the cluster.
 
 **pgvector (existing pod) over a new Weaviate/Qdrant:** No new services, no new PVCs. `postgresql-ai` already runs in the cluster; just adding a second database (`ragdb`) inside the same pod.
 
@@ -71,11 +73,11 @@ All values measured on the live cluster (2026-07-06) with 500 rows in `ragdb.doc
 
 | Operation | p50 latency | Notes |
 |---|---|---|
-| HNSW vector search | **0.31 ms** | `SET enable_seqscan=off` forces index path; planner prefers seqscan at <1k rows |
+| HNSW vector search | **0.31 ms** | `SET enable_seqscan=off` forces index path; planner prefers seqscan below 1k rows |
 | Sequential scan vector search | 1.29 ms | Planner-selected at 500 rows; faster than HNSW at this scale |
-| GIN FTS (BM25 leg of hybrid) | **2.71 ms** | Bitmap index scan on `idx_document_chunk_text_search` |
+| GIN FTS query (benchmark only) | **2.71 ms** | The GIN index exists but is **not queried** by Open WebUI's hybrid search — BM25 is Python in-process (see Phase C) |
 | INSERT + HNSW update | **6.8 ms/row** | Dominated by HNSW graph maintenance, not the INSERT itself |
-| nomic-embed-text embedding | **393 ms** | Network-dominated (port-forward); in-cluster latency is ~30–80 ms |
+| nomic-embed-text embedding (historical) | **393 ms** | Measured pre-bge-m3 migration; in-cluster latency was ~30–80 ms. bge-m3 latency not yet benchmarked (larger model, expect ~2–4× higher) |
 | Ollama inference | **2,000–8,000 ms** | Model-dependent; CPU-only; dominates end-to-end latency |
 
 **Key takeaway:** pgvector contributes less than 1% of total RAG latency. Ollama inference (2–8 s) is the bottleneck at every scale. Optimizing HNSW parameters or switching index types has no user-visible impact. The right levers for latency reduction are model size (phi4-mini vs deepseek-r1:7b) and cloud routing (DeepSeek API at 5–8 s vs local CPU at 40+ s).
@@ -215,6 +217,55 @@ Stop words filtered from `"le contrat de réassurance est soumis aux conditions 
 
 **Limitation:** accent-insensitive matching requires the query to use the same accent form as the corpus. "remuneration" (no accent) and "rémunération" (with accent) produce different stems. This is a known limitation of the Snowball stemmer — the `unaccent` PostgreSQL extension would solve it for native FTS, but not for Python BM25. Workaround: ensure uploaded documents use proper French accents; LLM queries typically include accents via Authentik keyboard.
 
+---
+
+### Phase E — bge-m3 1024-dim + wider retrieval net ✅ Live (2026-07-06)
+
+Three constraints addressed together:
+
+**Constraint 1 — cross-referenced clauses (chunk retrieval breadth):**
+Insurance contracts frequently reference other sections ("see section 12.3.a for the definition of indemnity"). With `RAG_TOP_K=5`, section 12.3.a might be the 7th-most-similar chunk by embedding distance and never be retrieved, so the re-ranker never sees it. Raising `RAG_TOP_K` to 8 casts a wider net — the re-ranker has 8 candidates to choose from and can promote the referenced section if it judges it relevant. The final context sent to the LLM is still capped at `RAG_TOP_K_RERANKER=3`.
+
+**Constraint 2 — multilingual embedding quality:**
+`nomic-embed-text` is primarily English-trained. French insurance vocabulary — "sinistres", "réassurance", "indemnités" — is represented in a weaker region of its embedding space, producing lower cosine similarity scores for semantically related French terms. `bge-m3` (BAAI, 1024-dim) is trained on 100+ languages with consistent quality and significantly better French morphological coverage. The larger embedding space (1024 vs 768 dims) also allows more nuanced semantic distinctions between legal concepts.
+
+**Constraint 3 — GIN FTS dictionary:**
+The GIN index `idx_document_chunk_text_search` used the `simple` dictionary, which strips stop words but does not stem. "indemnités" and "indemnité" were distinct tokens. Updated to `french` dictionary (PostgreSQL built-in French Snowball stemmer). This is future-proofing — the GIN index is not currently queried by Open WebUI's hybrid search path, but will be if a native FTS migration is undertaken.
+
+**Deployed config changes (minicloud-ansible commit `0696615`):**
+
+```yaml
+# open-webui-values.yaml — changed lines
+- name: RAG_EMBEDDING_MODEL
+  value: "bge-m3"                  # was: nomic-embed-text
+- name: RAG_TOP_K
+  value: "8"                       # was: 5
+- name: VECTOR_LENGTH
+  value: "1024"                    # was: 768
+- name: PGVECTOR_INITIALIZE_MAX_VECTOR_LENGTH
+  value: "1024"                    # was: 768
+```
+
+**ragdb schema migration (applied in-cluster):**
+
+```sql
+-- Run as aiplatform on ragdb
+TRUNCATE document_chunk;
+DROP INDEX idx_document_chunk_text_search;
+DROP INDEX idx_document_chunk_vector;
+ALTER TABLE document_chunk DROP COLUMN vector;
+ALTER TABLE document_chunk ADD COLUMN vector vector(1024);
+CREATE INDEX idx_document_chunk_vector
+  ON document_chunk USING hnsw (vector vector_cosine_ops)
+  WITH (m=16, ef_construction=64);
+CREATE INDEX idx_document_chunk_text_search
+  ON document_chunk USING GIN(to_tsvector('french', COALESCE(text, '')));
+```
+
+**Gotcha — `sentence_transformers` is not a valid `RAG_EMBEDDING_ENGINE` in Open WebUI 0.9.4.** The value `sentence_transformers` is only valid for `RAG_RERANKING_ENGINE`. Setting it as the embedding engine causes Open WebUI to crash at startup with `ValueError: Unknown embedding engine: sentence_transformers`. The only valid values for `RAG_EMBEDDING_ENGINE` are `ollama` and `openai`.
+
+**After this migration:** all previously uploaded documents were wiped from the vector store (existing 768-dim embeddings are geometrically incompatible with the 1024-dim space). Documents must be re-uploaded through the Open WebUI knowledge base interface to be re-embedded with bge-m3.
+
 ## Implementation
 
 ### Step 1 — Create the database
@@ -237,38 +288,56 @@ kubectl exec -n ai postgresql-ai-0 -- \
   "
 ```
 
-### Step 2 — Pull nomic-embed-text on both Ollama instances
+### Step 2 — Pull bge-m3 on both Ollama instances
 
 ```bash
-# Temporary egress NetworkPolicy (ai namespace has default-deny-egress)
+# Temporary egress NetworkPolicy for the Ollama pod (ai namespace has default-deny-egress)
 kubectl apply -f - <<'EOF'
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: temp-allow-model-pull
+  name: temp-allow-ollama-pull
   namespace: ai
 spec:
-  podSelector: {}
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ollama
+  policyTypes:
+    - Egress
   egress:
-  - ports: [{port: 443}, {port: 80}]
-  policyTypes: [Egress]
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except: [10.0.0.0/8, 192.168.0.0/16]
+      ports:
+        - port: 443
+          protocol: TCP
 EOF
 
-kubectl port-forward -n ai deploy/ollama 11434:11434 &
+kubectl port-forward -n ai svc/ollama 11434:11434 &
 PF1=$!
 sleep 3
 curl -s -X POST http://localhost:11434/api/pull \
-  -d '{"model":"nomic-embed-text","stream":false}'
+  -d '{"model":"bge-m3","stream":false}'
 kill $PF1
 
-kubectl port-forward -n ai deploy/ollama-secondary 11435:11434 &
+# Repeat for secondary (bge-m3 is 1.2 GB — allow enough timeout)
+kubectl port-forward -n ai svc/ollama-secondary 11435:11434 &
 PF2=$!
 sleep 3
 curl -s -X POST http://localhost:11435/api/pull \
-  -d '{"model":"nomic-embed-text","stream":false}'
+  -d '{"model":"bge-m3","stream":false}'
 kill $PF2
 
-kubectl delete networkpolicy temp-allow-model-pull -n ai
+kubectl delete networkpolicy temp-allow-ollama-pull -n ai
+
+# Verify dimension (should print dim=1024)
+kubectl port-forward -n ai svc/ollama 11434:11434 &
+sleep 2
+curl -s http://localhost:11434/api/embeddings \
+  -d '{"model":"bge-m3","prompt":"test"}' \
+  | python3 -c "import sys,json; e=json.load(sys.stdin)['embedding']; print(f'dim={len(e)}')"
+kill %1
 ```
 
 ### Step 3 — Update Open WebUI Helm values
@@ -281,8 +350,10 @@ Add to `open-webui-values.yaml` in the `extraEnvVars` section (before `SSL_CERT_
   value: "pgvector"
 - name: PGVECTOR_DB_URL
   value: "postgresql://aiplatform:$(PG_PASSWORD)@postgresql-ai.ai.svc.cluster.local:5432/ragdb"
+- name: VECTOR_LENGTH
+  value: "1024"
 - name: PGVECTOR_INITIALIZE_MAX_VECTOR_LENGTH
-  value: "768"
+  value: "1024"
 - name: PGVECTOR_INDEX_METHOD
   value: "hnsw"                  # requires custom no-AVX512 image — see pgvector SIGILL fix below
 - name: PGVECTOR_HNSW_M
@@ -292,7 +363,7 @@ Add to `open-webui-values.yaml` in the `extraEnvVars` section (before `SSL_CERT_
 - name: RAG_EMBEDDING_ENGINE
   value: "ollama"                # bypass LiteLLM — keep embeddings out of cost tracking
 - name: RAG_EMBEDDING_MODEL
-  value: "nomic-embed-text"
+  value: "bge-m3"                # 1024-dim, 100+ languages
 - name: RAG_OLLAMA_BASE_URL
   value: "http://ollama.ai.svc.cluster.local:11434"
 - name: CHUNK_SIZE
@@ -300,7 +371,7 @@ Add to `open-webui-values.yaml` in the `extraEnvVars` section (before `SSL_CERT_
 - name: CHUNK_OVERLAP
   value: "200"
 - name: RAG_TOP_K
-  value: "5"
+  value: "8"                     # wider retrieval net for cross-referenced clauses
 - name: ENABLE_RAG_HYBRID_SEARCH
   value: "true"
 ```
