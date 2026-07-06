@@ -55,11 +55,11 @@ All components in the `ai` namespace. LiteLLM is the single OpenAI-compatible en
 | `llama3.2:1b` | 1.3 GB | Ultra-fast, simple queries | all |
 | `moondream` | 1.7 GB | **Vision** — fast OCR, image description | premium, standard |
 | `llava-phi3` | 2.9 GB | **Vision** — detailed image analysis, document OCR | premium |
-| `nomic-embed-text` | 274 MB | **Embeddings** — 768-dim vectors for RAG pipelines | premium, standard |
+| `bge-m3` | 1.2 GB | **Embeddings** — 1024-dim vectors, 100+ languages, French RAG | premium, standard |
 
 `phi3-financial` and vision models (`moondream`, `llava-phi3`) have no cloud fallback — sensitive content stays on-premise.
 
-`nomic-embed-text` is available via `/v1/embeddings`. Open WebUI calls Ollama directly (bypassing LiteLLM) for RAG embeddings to avoid polluting cost tracking — see [RAG Pipeline](rag-pipeline).
+`bge-m3` is available via `/v1/embeddings`. Open WebUI calls Ollama directly (bypassing LiteLLM) for RAG embeddings to avoid polluting cost tracking — see [RAG Pipeline](rag-pipeline).
 
 ### Cloud models (premium and standard tiers)
 

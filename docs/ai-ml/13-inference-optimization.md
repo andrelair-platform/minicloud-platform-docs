@@ -130,7 +130,7 @@ Primary + Secondary (fast-heron, star-kitten):
 Tertiary (fast-skunk — light workloads only):
   llama3.2:1b      (1.3 GB) — ultra-fast tier
   phi4-mini        (2.5 GB) — instruction following
-  nomic-embed-text (0.3 GB) — 768-dim embedding for RAG
+  bge-m3           (1.2 GB) — 1024-dim embedding for RAG (100+ languages)
 ```
 
 **deepseek-r1:7b cloud routing:** The reasoning model routes to DeepSeek cloud API (5–8 s) as first choice. If the cloud is unavailable (balance, outage), LiteLLM automatically falls back to `deepseek-r1:7b-local` on the primary/secondary Ollama instances. The `fallbacks` block in `router_settings` handles this automatically — no client-side changes needed.
@@ -253,28 +253,28 @@ print(response.choices[0].message.content)
 - Neither model supports real-time video or streaming video frames.
 - moondream handles basic printed text well; llava-phi3 handles handwritten text and complex layouts better.
 
-## Part 6 — RAG pipeline: pgvector + nomic-embed-text + Open WebUI
+## Part 6 — RAG pipeline: pgvector + bge-m3 + Open WebUI
 
-Retrieval-Augmented Generation (RAG) allows Open WebUI to answer questions using uploaded documents. All components run on-cluster — no external embedding API needed.
+Retrieval-Augmented Generation (RAG) allows Open WebUI to answer questions using uploaded documents. All components run on-cluster — no external embedding API needed. For full detail see the [RAG Pipeline runbook](rag-pipeline).
 
 ### Architecture
 
 ```
 User uploads document → Open WebUI chunks text (1500 tokens, 200 overlap)
-    → nomic-embed-text (768-dim) via Ollama → pgvector HNSW index
-                                                      ↓
-User asks question → nomic-embed-text embeds query → pgvector cosine search (TOP_K=5)
-    → retrieved chunks injected into context → LLM generates answer
+    → bge-m3 (1024-dim) via Ollama → pgvector HNSW index
+                                              ↓
+User asks question → bge-m3 embeds query → pgvector cosine search (TOP_K=8)
+    + Python BM25Retriever (French stemmer) → RRF merge → re-ranker → top 3 → LLM
 ```
 
 ### Components
 
 | Component | Role | Config |
 |---|---|---|
-| nomic-embed-text (274 MB) | Embedding model — 768-dim vectors, best-in-class for CPU RAG | Pulled on both Ollama instances |
+| bge-m3 (1.2 GB) | Embedding model — 1024-dim, 100+ languages, strong French | Pulled on primary Ollama instance |
 | postgresql-ai | pgvector 0.8.4 host — `ragdb` database | Existing pod, new DB |
-| document_chunk table | HNSW index — m=16, ef_construction=64 | Created by Open WebUI on first start |
-| Open WebUI | RAG orchestrator — chunking, embedding, retrieval, context injection | REVISION: 20 |
+| document_chunk table | vector(1024) + HNSW index + GIN index (french dictionary) | Migrated from 768-dim 2026-07-06 |
+| Open WebUI | RAG orchestrator — chunking, embedding, retrieval, context injection | REVISION: latest |
 
 ### Key configuration (open-webui-values.yaml)
 
@@ -283,8 +283,10 @@ User asks question → nomic-embed-text embeds query → pgvector cosine search 
   value: "pgvector"
 - name: PGVECTOR_DB_URL
   value: "postgresql://aiplatform:<password>@postgresql-ai.ai.svc.cluster.local:5432/ragdb"
+- name: VECTOR_LENGTH
+  value: "1024"
 - name: PGVECTOR_INITIALIZE_MAX_VECTOR_LENGTH
-  value: "768"
+  value: "1024"
 - name: PGVECTOR_INDEX_METHOD
   value: "hnsw"
 - name: PGVECTOR_HNSW_M
@@ -294,7 +296,7 @@ User asks question → nomic-embed-text embeds query → pgvector cosine search 
 - name: RAG_EMBEDDING_ENGINE
   value: "ollama"
 - name: RAG_EMBEDDING_MODEL
-  value: "nomic-embed-text"
+  value: "bge-m3"
 - name: RAG_OLLAMA_BASE_URL
   value: "http://ollama.ai.svc.cluster.local:11434"
 - name: CHUNK_SIZE
@@ -302,7 +304,7 @@ User asks question → nomic-embed-text embeds query → pgvector cosine search 
 - name: CHUNK_OVERLAP
   value: "200"
 - name: RAG_TOP_K
-  value: "5"
+  value: "8"
 - name: ENABLE_RAG_HYBRID_SEARCH
   value: "true"
 ```
@@ -326,15 +328,16 @@ pgvector 0.8.4 was compiled with SIMD instructions not supported on the ThinkPad
 # Direct Ollama embedding (what Open WebUI uses internally)
 kubectl port-forward -n ai svc/ollama 11434:11434 &
 curl -s -X POST http://localhost:11434/api/embeddings \
-  -d '{"model":"nomic-embed-text","prompt":"Kubernetes manages containers"}' | \
+  -d '{"model":"bge-m3","prompt":"Kubernetes manages containers"}' | \
   python3 -c 'import sys,json; e=json.load(sys.stdin)["embedding"]; print(f"dims={len(e)}, ok")'
-# Expected: dims=768, ok
+# Expected: dims=1024, ok
+kill %1
 
 # Via LiteLLM (for external API users)
 curl -s -X POST http://localhost:4000/v1/embeddings \
   -H "Authorization: Bearer <direction-it-key>" \
   -H "Content-Type: application/json" \
-  -d '{"model":"nomic-embed-text","input":"test"}' | \
+  -d '{"model":"bge-m3","input":"test"}' | \
   python3 -c 'import sys,json; r=json.load(sys.stdin); print(f"dims={len(r[\"data\"][0][\"embedding\"])}")'
 # Expected: dims=768
 

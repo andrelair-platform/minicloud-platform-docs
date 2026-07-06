@@ -88,9 +88,9 @@ HNSW is auto-selected by PostgreSQL's cost model at ~1,000+ rows. Below that thr
 
 The embedding model and the vector store are **matched components** — you cannot improve one without also addressing the other, because they share the same bottleneck.
 
-**Current ceiling:** nomic-embed-text (CPU, 768-dim) + pgvector HNSW (single pod, 512 Mi RAM) → suitable for tens of thousands of chunks, sub-second search latency at demo scale.
+**Current ceiling:** bge-m3 (CPU, 1024-dim) + pgvector HNSW (single pod, 512 Mi RAM) → suitable for tens of thousands of chunks, sub-second search latency at demo scale.
 
-**Why switching embedding models alone changes nothing meaningful:** if you replaced nomic-embed-text with OpenAI ada-002 (1536-dim) without replacing pgvector, the HNSW graph would double in RAM, search latency would increase, and you'd still hit the pgvector ceiling before the embedding quality gap matters. You'd have added cost and external API dependency while the actual constraint — pgvector on a 512 Mi pod — remained unchanged.
+**Why switching embedding models alone changes nothing meaningful:** if you replaced bge-m3 with OpenAI ada-002 (1536-dim) without replacing pgvector, the HNSW graph would grow in RAM, search latency would increase, and you'd still hit the pgvector ceiling before the embedding quality gap matters. You'd have added cost and external API dependency while the actual constraint — pgvector on a 512 Mi pod — remained unchanged.
 
 **The right upgrade path is a full stack replacement:**
 
@@ -388,18 +388,18 @@ ssh controller "helm upgrade open-webui open-webui/open-webui \
 
 Open WebUI creates the `document_chunk` table and HNSW index automatically on first start.
 
-### Step 4 — Add nomic-embed-text to LiteLLM ConfigMap
+### Step 4 — Add bge-m3 to LiteLLM ConfigMap
 
 Add to `manifests/ai/00-litellm-configmap.yaml`:
 
 ```yaml
-- model_name: nomic-embed-text
+- model_name: bge-m3
   litellm_params:
-    model: ollama/nomic-embed-text
+    model: ollama/bge-m3
     api_base: http://ollama.ai.svc.cluster.local:11434
-- model_name: nomic-embed-text
+- model_name: bge-m3
   litellm_params:
-    model: ollama/nomic-embed-text
+    model: ollama/bge-m3
     api_base: http://ollama-secondary.ai.svc.cluster.local:11434
 ```
 
@@ -410,8 +410,8 @@ DB_URL=$(kubectl get secret -n ai litellm-credentials \
   -o jsonpath='{.data.database-url}' | base64 -d)
 kubectl exec -n ai postgresql-ai-0 -- psql "$DB_URL" -c "
   UPDATE \"LiteLLM_VerificationToken\"
-  SET models = array_append(models, 'nomic-embed-text')
-  WHERE 'nomic-embed-text' != ALL(models)
+  SET models = array_append(models, 'bge-m3')
+  WHERE 'bge-m3' != ALL(models)
     AND key_alias NOT IN ('direction-operations','direction-rh','direction-services-generaux','direction-sinistres');
 "
 ```
@@ -427,23 +427,24 @@ kubectl rollout restart deployment/litellm -n ai
 ### Embedding chain
 
 ```bash
-# 1. nomic-embed-text via Ollama (direct)
+# 1. bge-m3 via Ollama (direct) — Open WebUI uses this path
 kubectl port-forward -n ai svc/ollama 11434:11434 &
 curl -s -X POST http://localhost:11434/api/embeddings \
-  -d '{"model":"nomic-embed-text","prompt":"test sentence"}' | \
+  -d '{"model":"bge-m3","prompt":"test sentence"}' | \
   python3 -c 'import sys,json; e=json.load(sys.stdin)["embedding"]; print(f"dims={len(e)}")'
-# Expected: dims=768
+# Expected: dims=1024
+kill %1
 
-# 2. nomic-embed-text via LiteLLM (API users)
+# 2. bge-m3 via LiteLLM (API users)
 MASTER=$(kubectl get secret -n ai litellm-credentials \
   -o jsonpath='{.data.master-key}' | base64 -d)
 kubectl port-forward -n ai svc/litellm 4000:4000 &
 curl -s -X POST http://localhost:4000/v1/embeddings \
   -H "Authorization: Bearer $MASTER" \
   -H "Content-Type: application/json" \
-  -d '{"model":"nomic-embed-text","input":"test"}' | \
+  -d '{"model":"bge-m3","input":"test"}' | \
   python3 -c 'import sys,json; r=json.load(sys.stdin); print(f"dims={len(r[\"data\"][0][\"embedding\"])}")'
-# Expected: dims=768
+# Expected: dims=1024
 ```
 
 ### pgvector table
@@ -454,7 +455,7 @@ PG_PASS=$(kubectl get secret -n ai ai-postgresql-secret \
 kubectl exec -n ai postgresql-ai-0 -- \
   env PGPASSWORD="$PG_PASS" psql -U aiplatform -d ragdb \
   -c "\d document_chunk"
-# Expected: vector(768) column with hnsw index idx_document_chunk_vector
+# Expected: vector(1024) column, HNSW index, GIN index with 'french' dictionary
 ```
 
 ### End-to-end RAG test
