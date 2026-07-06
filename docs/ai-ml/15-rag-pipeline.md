@@ -6,7 +6,7 @@ sidebar_label: RAG Pipeline & Web Search
 
 # RAG Pipeline — pgvector + nomic-embed-text + SearXNG Web Search
 
-**Implemented:** 2026-07-05  
+**Implemented:** 2026-07-05 (RAG + web search + re-ranking), 2026-07-06 (Docling OCR)
 **Status:** Production
 
 Retrieval-Augmented Generation (RAG) enables Open WebUI to answer questions grounded in uploaded documents. Every component runs on-cluster — no external embedding API, no new services.
@@ -87,16 +87,16 @@ The lesson: **optimize the bottleneck, not adjacent components.** At demo scale,
 
 Compared to RAGFlow (the leading self-hosted enterprise RAG platform), three gaps exist in the current stack. All three are **additive improvements** on top of the existing deployment — no stack replacement required, because Open WebUI 0.9.4 already has native hooks for each.
 
-### Phase A — Re-ranking (cross-encoder)
+### Phase A — Re-ranking (cross-encoder) ✅ Live (2026-07-05)
 
 **The gap:** after HNSW cosine-distance search returns the top-K chunks, they are ranked by embedding similarity — which measures topic proximity, not answer quality. A chunk that mentions the query terms in passing ranks the same as one that directly answers the question.
 
 **What re-ranking adds:** a cross-encoder model reads the query and each candidate chunk together (not as independent vectors) and scores the pair holistically. Top-K after re-ranking is meaningfully better than top-K from cosine distance alone.
 
-**Implementation — Open WebUI already has the hooks:**
+**Deployed config (minicloud-ansible commit `2fc03f7`):**
 
 ```yaml
-# Add to open-webui-values.yaml extraEnvVars
+# open-webui-values.yaml extraEnvVars
 - name: RAG_RERANKING_ENGINE
   value: "sentence_transformers"
 - name: RAG_RERANKING_MODEL
@@ -105,41 +105,42 @@ Compared to RAGFlow (the leading self-hosted enterprise RAG platform), three gap
   value: "3"                                         # keep top 3 after reranking
 ```
 
-The model downloads on first use and runs in-process inside the Open WebUI pod. No new Deployment or Service required. For a larger reranker (BGE-Reranker-v2-M3, 568 MB), use `RAG_EXTERNAL_RERANKER_URL` pointing to a dedicated pod to keep Open WebUI pod RAM under control.
-
-**When to implement:** when analysts report that RAG answers miss the point despite finding the right document — the chunk is present in top-K but not at position 1.
+The model runs in-process inside the Open WebUI pod. No new Deployment or Service. Smoke test: "Paraguay 0-1 France FIFA World Cup 2026" scored `5.587`; irrelevant "History of football in South America" scored `-11.295` — correct ordering confirmed. For a larger reranker (BGE-Reranker-v2-M3, 568 MB), use `RAG_EXTERNAL_RERANKER_URL` pointing to a dedicated pod to keep Open WebUI pod RAM under control.
 
 ---
 
-### Phase B — OCR & advanced document parsing (Docling)
+### Phase B — OCR & advanced document parsing (Docling) ✅ Live (2026-07-06)
 
 **The gap:** the current stack handles text-based PDFs only. Scanned insurance documents, contract images, and mixed-format files (PDF with embedded tables + scanned pages) produce empty or garbled chunks.
 
 **What Docling adds:** IBM Docling (open-source, self-hostable) converts scanned PDFs, images, and complex layouts into clean text before chunking. It handles tables, multi-column layouts, headers/footers, and embedded images with text — producing extraction quality close to commercial solutions.
 
-**Implementation — deploy Docling in the `ai` namespace:**
+**Deployed config:**
+
+- `manifests/ai/08-docling.yaml` (minicloud-gitops commit `116d5e4`) — Deployment + Service in the `ai` namespace
+- `open-webui-values.yaml` (minicloud-ansible commit `d8a4bf6`) — `CONTENT_EXTRACTION_ENGINE=docling` + `DOCLING_SERVER_URL`
 
 ```yaml
-# New Deployment: docling (ai namespace)
-image: ds4sd/docling-serve:latest
+# 08-docling.yaml (key fields)
+image: ghcr.io/docling-project/docling-serve-cpu:v1.26.0   # CPU-only, 4.4 GB, models bundled
 resources:
-  requests: {cpu: "500m", memory: "1Gi"}
-  limits:   {cpu: "2",    memory: "2Gi"}
-ports:
-  - containerPort: 5001
+  requests: {cpu: 200m, memory: 1500Mi}
+  limits:   {cpu: 2000m, memory: 3Gi}
+readinessProbe: GET /ready   initialDelaySeconds: 30
+livenessProbe:  GET /health  initialDelaySeconds: 120
 ```
 
 ```yaml
-# Add to open-webui-values.yaml extraEnvVars
+# open-webui-values.yaml extraEnvVars
 - name: CONTENT_EXTRACTION_ENGINE
   value: "docling"
 - name: DOCLING_SERVER_URL
   value: "http://docling.ai.svc.cluster.local:5001"
 ```
 
-Open WebUI routes all document uploads through Docling before chunking. Text-based PDFs still work — Docling handles both. NetworkPolicy: allow `open-webui` → `docling` port 5001 (cluster-internal, no internet egress needed).
+Open WebUI calls `POST /v1/convert/file` and reads `response.document.md_content`. Text-based PDFs still work — Docling handles both. NetworkPolicy: `allow-same-namespace` in the `ai` namespace already covers Open WebUI → docling port 5001 (cluster-internal, no internet egress needed).
 
-**When to implement:** when users need to upload scanned contracts, insurance forms, or any non-text-layer PDF.
+**Gotcha — image size:** `docling-serve-cpu:v1.26.0` is 4.4 GB (AMD64). First pull on a node takes 10–20 minutes. Models are bundled, so no runtime downloads occur after that. Use the CPU-only variant (`-cpu` suffix); the base image is 8.7 GB (includes GPU libs for no reason on CPU-only nodes).
 
 ---
 
