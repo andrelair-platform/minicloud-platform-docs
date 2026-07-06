@@ -260,10 +260,10 @@ Retrieval-Augmented Generation (RAG) allows Open WebUI to answer questions using
 ### Architecture
 
 ```
-User uploads document → Open WebUI chunks text (1500 tokens, 200 overlap)
+User uploads document → Open WebUI chunks text (500 chars, 100 overlap)
     → bge-m3 (1024-dim) via Ollama → pgvector HNSW index
                                               ↓
-User asks question → bge-m3 embeds query → pgvector cosine search (TOP_K=8)
+User asks question → bge-m3 embeds query → pgvector cosine search (TOP_K=10)
     + Python BM25Retriever (French stemmer) → RRF merge → re-ranker → top 3 → LLM
 ```
 
@@ -300,11 +300,11 @@ User asks question → bge-m3 embeds query → pgvector cosine search (TOP_K=8)
 - name: RAG_OLLAMA_BASE_URL
   value: "http://ollama.ai.svc.cluster.local:11434"
 - name: CHUNK_SIZE
-  value: "1500"
+  value: "500"
 - name: CHUNK_OVERLAP
-  value: "200"
+  value: "100"
 - name: RAG_TOP_K
-  value: "8"
+  value: "10"
 - name: ENABLE_RAG_HYBRID_SEARCH
   value: "true"
 ```

@@ -221,7 +221,7 @@ curl -s -H "Authorization: Bearer $MASTER" http://localhost:4000/guardrails/list
 
 **Presidio gotcha:** Both `presidio-analyzer` and `presidio-anonymizer` MCR images listen on port **3000** (gunicorn default) — not 3000/5001 as the Presidio docs suggest for local dev.
 
-**output_parse_pii gotcha:** Setting `output_parse_pii: true` anonymizes the LLM's response text. Presidio treats country names ("France", "Cameroun"), historical figures and dates as LOCATION/PERSON/DATE_TIME entities. A sports question gets back "<LOCATION> a battu <LOCATION> <DATE_TIME>" — unreadable. Only set `output_parse_pii` if your use case specifically requires redacting model outputs (e.g., a system that echoes back user-submitted documents).
+**output_parse_pii gotcha:** Setting `output_parse_pii: true` anonymizes the LLM's response text. Presidio treats country names ("France", "Cameroun"), historical figures and dates as LOCATION/PERSON/DATE_TIME entities. A sports question gets back `"<LOCATION> a battu <LOCATION> <DATE_TIME>"` — unreadable. Only set `output_parse_pii` if your use case specifically requires redacting model outputs (e.g., a system that echoes back user-submitted documents).
 
 ## Secret scanning guardrail (detect-secrets)
 

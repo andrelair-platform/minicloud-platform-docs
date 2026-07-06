@@ -6,7 +6,7 @@ sidebar_label: RAG Pipeline & Web Search
 
 # RAG Pipeline — pgvector + bge-m3 + SearXNG Web Search
 
-**Implemented:** 2026-07-05 (RAG + web search + re-ranking), 2026-07-06 (Docling OCR + French BM25 + bge-m3 1024-dim)
+**Implemented:** 2026-07-05 (RAG + web search + re-ranking), 2026-07-06 (Docling OCR + French BM25 + bge-m3 1024-dim), 2026-07-07 (smaller chunks + structure-aware ingestion pipeline)
 **Status:** Production
 
 Retrieval-Augmented Generation (RAG) enables Open WebUI to answer questions grounded in uploaded documents. Every component runs on-cluster — no external embedding API, no new services.
@@ -25,13 +25,24 @@ Open WebUI provides two complementary grounding mechanisms that can be used inde
 ### RAG path (uploaded documents)
 
 ```
-Upload document → Open WebUI chunker (1500 tokens, 200 overlap)
+Upload document → Open WebUI chunker (500 chars, 100 overlap)
     → bge-m3 via Ollama (1024-dim vectors, 100+ languages)
     → pgvector HNSW index (ragdb on postgresql-ai)
 
 User question → bge-m3 embeds query (1024-dim)
-    → pgvector cosine search (TOP_K=8) + Python BM25Retriever (French stemmer)
+    → pgvector cosine search (TOP_K=10) + Python BM25Retriever (French stemmer)
     → RRF merge → cross-encoder re-ranker → top 3 chunks → LLM answer
+```
+
+**Alternative: structure-aware path (rag-ingest.py)**
+
+```
+Local document (PDF/DOCX/XLSX/PPTX/HTML/MD)
+    → file type router: PDF → Docling, Office → MarkItDown, text → direct
+    → French insurance heading parser (Article/Annexe/Chapitre/Section regex)
+    → structural chunks + rich metadata (document_type, article, section, source)
+    → bge-m3 embedding via Ollama → ragdb.document_chunk INSERT
+    → Open WebUI hybrid search queries the chunks automatically
 ```
 
 ### Web search path (real-time internet)
@@ -221,6 +232,8 @@ Stop words filtered from `"le contrat de réassurance est soumis aux conditions 
 
 ### Phase E — bge-m3 1024-dim + wider retrieval net ✅ Live (2026-07-06)
 
+
+
 Three constraints addressed together:
 
 **Constraint 1 — cross-referenced clauses (chunk retrieval breadth):**
@@ -265,6 +278,90 @@ CREATE INDEX idx_document_chunk_text_search
 **Gotcha — `sentence_transformers` is not a valid `RAG_EMBEDDING_ENGINE` in Open WebUI 0.9.4.** The value `sentence_transformers` is only valid for `RAG_RERANKING_ENGINE`. Setting it as the embedding engine causes Open WebUI to crash at startup with `ValueError: Unknown embedding engine: sentence_transformers`. The only valid values for `RAG_EMBEDDING_ENGINE` are `ollama` and `openai`.
 
 **After this migration:** all previously uploaded documents were wiped from the vector store (existing 768-dim embeddings are geometrically incompatible with the 1024-dim space). Documents must be re-uploaded through the Open WebUI knowledge base interface to be re-embedded with bge-m3.
+
+---
+
+### Phase F — Smaller chunks + structure-aware ingestion ✅ Live (2026-07-07)
+
+Two complementary improvements to document ingestion quality, deployed as minicloud-ansible commit `b9b71e9`.
+
+#### Phase F.1 — Reduced chunk size (Open WebUI built-in chunker)
+
+**The problem:** the previous CHUNK_SIZE=1500 (chars) tends to merge multiple insurance clauses into one chunk. Cosine similarity then retrieves the right clause bundle but dilutes the re-ranker's precision — the LLM sees paragraphs containing the answer mixed with unrelated clauses from the same section.
+
+**The fix:** CHUNK_SIZE=500, CHUNK_OVERLAP=100, RAG_TOP_K=10. Smaller chunks isolate individual clauses; the wider retrieval net (10 instead of 8) compensates by giving the re-ranker more candidates. `RAG_TOP_K_RERANKER=3` still caps final LLM context.
+
+```yaml
+# open-webui-values.yaml — Phase F.1 changes
+- name: CHUNK_SIZE
+  value: "500"          # was: 1500
+- name: CHUNK_OVERLAP
+  value: "100"          # was: 200
+- name: RAG_TOP_K
+  value: "10"           # was: 8
+```
+
+**Trade-off:** more vectors in ragdb (roughly 3× the chunk count for the same document corpus). HNSW graph grows proportionally but search latency is unaffected at demo scale (below 1k rows uses sequential scan; HNSW auto-selected above that).
+
+#### Phase F.2 — Structure-aware ingestion pipeline (rag-ingest.py)
+
+**The problem:** Open WebUI's built-in chunker is `RecursiveCharacterTextSplitter` — it splits on `\n\n → \n → . → space` before hard character count. It is structure-blind: an "Article 12.3 — Exclusions" heading and its body may be split across chunks, losing the structural context that makes metadata-filtered retrieval possible.
+
+**The solution:** `scripts/rag-ingest.py` (minicloud-ansible commit `b9b71e9`) — a standalone Python script that:
+
+1. **Routes by file type** — PDF → Docling HTTP API, Office formats → MarkItDown (local), plain text/MD → direct read
+2. **Splits at structural boundaries** — French insurance heading regex (`Article|Annexe|Chapitre|Section|Garantie|Disposition`), with a 2,000-char fallback paragraph split for large sections
+3. **Attaches rich metadata** — `document_type`, `article` (extracted reference), `section` (full heading), `source` (document name)
+4. **Embeds via bge-m3** — POST to Ollama `/api/embeddings` for each chunk
+5. **Inserts directly into ragdb** — `document_chunk` table with `ON CONFLICT DO NOTHING`
+
+**File type routing:**
+
+| Format | Converter | Why |
+|---|---|---|
+| `.pdf` | Docling HTTP (5001) | Layout analysis, multi-column, scanned OCR — Docling excels at PDFs |
+| `.docx`, `.doc`, `.pptx`, `.ppt`, `.xlsx`, `.xls`, `.html` | MarkItDown (local) | Native format parsing — Word styles, Excel tables, PowerPoint slides, HTML structure |
+| `.txt`, `.md` | Direct read | No conversion needed |
+
+**Metadata example:**
+
+```json
+{
+  "document_type": "policy",
+  "article": "Article 12",
+  "section": "Article 12 — Exclusions de garantie",
+  "source": "Contrat RC Pro 2026",
+  "doc_type": "policy"
+}
+```
+
+**Usage:**
+
+```bash
+# Prerequisites: port-forwards active, PG_PASS exported
+kubectl port-forward -n ai svc/docling    5001:5001 &
+kubectl port-forward -n ai svc/ollama     11434:11434 &
+kubectl port-forward -n ai postgresql-ai-0 5432:5432 &
+
+PG_PASS=$(kubectl get secret -n ai ai-postgresql-secret \
+  -o jsonpath='{.data.password}' | base64 -d)
+
+pip install requests psycopg2-binary markitdown
+
+# Get the Knowledge Base UUID from Open WebUI:
+# Workspace → Knowledge → New Knowledge Base → copy UUID from browser URL
+
+python3 ~/Developer/cloudplateform/minicloud-ansible/scripts/rag-ingest.py \
+  --file contrat_rc_pro.pdf \
+  --collection <open-webui-kb-uuid> \
+  --doc-type policy \
+  --source "Contrat RC Pro 2026" \
+  --pg-pass "$PG_PASS"
+```
+
+**The chunks inserted by rag-ingest.py are immediately queryable by Open WebUI hybrid search** — Open WebUI queries `ragdb.document_chunk` by `collection_name`, so chunks from the script appear alongside those uploaded via the UI in the same Knowledge Base.
+
+---
 
 ## Implementation
 
@@ -367,11 +464,11 @@ Add to `open-webui-values.yaml` in the `extraEnvVars` section (before `SSL_CERT_
 - name: RAG_OLLAMA_BASE_URL
   value: "http://ollama.ai.svc.cluster.local:11434"
 - name: CHUNK_SIZE
-  value: "1500"
+  value: "500"
 - name: CHUNK_OVERLAP
-  value: "200"
+  value: "100"
 - name: RAG_TOP_K
-  value: "8"                     # wider retrieval net for cross-referenced clauses
+  value: "10"                    # wider retrieval net; re-ranker filters to TOP_K_RERANKER=3
 - name: ENABLE_RAG_HYBRID_SEARCH
   value: "true"
 ```
@@ -470,7 +567,11 @@ kubectl exec -n ai postgresql-ai-0 -- \
 
 ### Adding more documents to the knowledge base
 
-Upload via Open WebUI UI → the embedding happens automatically. For bulk ingestion via API:
+**Option A — Open WebUI UI (simple, structure-blind):** paperclip icon → upload file. Open WebUI uses `RecursiveCharacterTextSplitter` at CHUNK_SIZE=500 and embeds with bge-m3.
+
+**Option B — rag-ingest.py (recommended for structured insurance documents):** splits at Article/Section boundaries, attaches metadata, inserts directly into ragdb. See Phase F.2 above.
+
+For direct embedding via LiteLLM API:
 
 ```python
 import openai
@@ -480,12 +581,11 @@ client = openai.OpenAI(
     api_key="sk-direction-it-..."
 )
 
-# Get embeddings for a text chunk
 response = client.embeddings.create(
-    model="nomic-embed-text",
+    model="bge-m3",
     input="Your document text here"
 )
-vector = response.data[0].embedding  # 768-dim float list
+vector = response.data[0].embedding  # 1024-dim float list
 # INSERT INTO ragdb.document_chunk (id, vector, collection_name, text, vmetadata) VALUES (...)
 ```
 
