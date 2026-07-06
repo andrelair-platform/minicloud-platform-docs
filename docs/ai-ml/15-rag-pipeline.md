@@ -144,9 +144,33 @@ Open WebUI calls `POST /v1/convert/file` and reads `response.document.md_content
 
 ---
 
-### Hybrid search note
+### Phase C — True hybrid search ✅ Live (2026-07-06)
 
-`ENABLE_RAG_HYBRID_SEARCH=true` is already set, and Open WebUI 0.9.4 includes `RAG_HYBRID_BM25_WEIGHT` (default 0.5) — a BM25 component exists. The gap vs RAGFlow is in index sophistication: RAGFlow maintains a dedicated BM25 index alongside the vector index and uses Reciprocal Rank Fusion (RRF) to combine scores. Open WebUI's hybrid mode is lighter-weight. For the current use case (structured financial documents + web search), the existing hybrid setting is adequate. A dedicated BM25 index becomes relevant when the knowledge base contains many short, keyword-specific documents where semantic embedding misses exact terminology matches.
+Open WebUI 0.9.4 with pgvector implements **native hybrid search** — not a lightweight approximation. When `ENABLE_RAG_HYBRID_SEARCH=true`, the pgvector client runs two independent queries against PostgreSQL and combines them with Reciprocal Rank Fusion:
+
+| Component | Implementation | Index |
+|---|---|---|
+| **Vector search** | HNSW cosine similarity (`vector_cosine_ops`) | `idx_document_chunk_vector` (HNSW) |
+| **Full-text search** | `plainto_tsquery('simple') @@ to_tsvector('simple', text)` + `ts_rank_cd` | `idx_document_chunk_text_search` (GIN) ✅ |
+
+**Deployed config (minicloud-ansible commit `<see below>`):**
+
+```yaml
+# open-webui-values.yaml extraEnvVars
+- name: ENABLE_RAG_HYBRID_SEARCH
+  value: "true"
+- name: RAG_HYBRID_BM25_WEIGHT
+  value: "0.5"   # 50% FTS + 50% vector; raise for keyword-heavy corpora
+```
+
+The GIN index was created manually on ragdb (`CREATE INDEX CONCURRENTLY`) — the pgvector `__init__` generates the DDL but it requires an explicit session commit that doesn't always fire on first start.
+
+**Weight tuning guide:**
+- `0.5` — balanced (default, good for mixed semantic + keyword queries)
+- `0.3` — lean toward vector (better for abstract questions: "what is our risk exposure?")
+- `0.7` — lean toward FTS (better for exact-term lookup: "article 42", "IBNR", specific policy numbers)
+
+**Gap closure vs RAGFlow:** RAGFlow uses a standalone BM25 index (Elasticsearch/Typesense). Open WebUI uses PostgreSQL's built-in `ts_rank_cd` with a GIN index — same result-quality class, no extra service required.
 
 ## Implementation
 
