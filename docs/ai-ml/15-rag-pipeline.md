@@ -17,7 +17,7 @@ Open WebUI provides two complementary grounding mechanisms that can be used inde
 
 | Source | What it knows | Latency | Activation |
 |---|---|---|---|
-| **RAG (pgvector)** | Documents users have uploaded (PDFs, text, CSV) | ~10–50 ms | Paperclip icon → upload file |
+| **RAG (pgvector)** | Documents users have uploaded (PDFs, text, CSV) | 0.3–7 ms (pgvector) + 2–8 s (inference) | Paperclip icon → upload file |
 | **Web Search (SearXNG)** | Real-time internet — current events, latest docs, live data | ~1–3 s | Globe icon in toolbar |
 
 ## Architecture
@@ -61,9 +61,26 @@ User question (web search toggle ON)
 
 **pgvector (existing pod) over a new Weaviate/Qdrant:** No new services, no new PVCs. `postgresql-ai` already runs in the cluster; just adding a second database (`ragdb`) inside the same pod.
 
-**HNSW over IVFFlat:** pgvector 0.8.4 on the ThinkPad i7-10510U triggers SIGILL (Illegal Instruction) during IVFFlat K-means — the binary uses SIMD instructions not available on this CPU generation. HNSW builds incrementally without SIMD K-means. `PGVECTOR_INDEX_METHOD=hnsw` overrides Open WebUI's default.
+**HNSW, with a custom pgvector build:** pgvector 0.8.4 in the upstream Bitnami image contains AVX-512 EVEX-encoded instructions in its HNSW and IVFFlat index-update routines. All four cluster CPUs (i7-8565U and i7-10510U) lack AVX-512 — every INSERT that triggers an HNSW or IVFFlat graph update terminates the PostgreSQL backend with SIGILL (signal 4, Illegal Instruction). The fix is a custom pgvector build compiled with `-mno-avx512f -mno-avx512bw -mno-avx512vl -mno-avx512dq`, keeping the AVX2/SSE4 code paths intact. The new image (`harbor.../postgresql:18.4.0-noavx512`) is maintained in `minicloud-ansible/docker/postgresql-noavx512/`. Sequential-scan vector distance queries and GIN FTS are unaffected — only the index maintenance code path contained the AVX-512 instructions.
 
 **Direct Ollama for embeddings (bypasses LiteLLM):** `RAG_EMBEDDING_ENGINE=ollama` + `RAG_OLLAMA_BASE_URL` points Open WebUI directly at `ollama.ai.svc:11434`. This keeps internal embedding calls out of LiteLLM's spend-tracking database — no phantom costs on the cost dashboard.
+
+## Measured latency profile
+
+All values measured on the live cluster (2026-07-06) with 500 rows in `ragdb.document_chunk`.
+
+| Operation | p50 latency | Notes |
+|---|---|---|
+| HNSW vector search | **0.31 ms** | `SET enable_seqscan=off` forces index path; planner prefers seqscan at <1k rows |
+| Sequential scan vector search | 1.29 ms | Planner-selected at 500 rows; faster than HNSW at this scale |
+| GIN FTS (BM25 leg of hybrid) | **2.71 ms** | Bitmap index scan on `idx_document_chunk_text_search` |
+| INSERT + HNSW update | **6.8 ms/row** | Dominated by HNSW graph maintenance, not the INSERT itself |
+| nomic-embed-text embedding | **393 ms** | Network-dominated (port-forward); in-cluster latency is ~30–80 ms |
+| Ollama inference | **2,000–8,000 ms** | Model-dependent; CPU-only; dominates end-to-end latency |
+
+**Key takeaway:** pgvector contributes less than 1% of total RAG latency. Ollama inference (2–8 s) is the bottleneck at every scale. Optimizing HNSW parameters or switching index types has no user-visible impact. The right levers for latency reduction are model size (phi4-mini vs deepseek-r1:7b) and cloud routing (DeepSeek API at 5–8 s vs local CPU at 40+ s).
+
+HNSW is auto-selected by PostgreSQL's cost model at ~1,000+ rows. Below that threshold the planner uses sequential scan, which is faster at small table sizes and produces identical quality — the planner is correct. To force HNSW for benchmarking, run `SET enable_seqscan=off` in the session.
 
 ## Scaling roadmap
 
@@ -153,7 +170,7 @@ Open WebUI 0.9.4 with pgvector implements **native hybrid search** — not a lig
 | **Vector search** | HNSW cosine similarity (`vector_cosine_ops`) | `idx_document_chunk_vector` (HNSW) |
 | **Full-text search** | `plainto_tsquery('simple') @@ to_tsvector('simple', text)` + `ts_rank_cd` | `idx_document_chunk_text_search` (GIN) ✅ |
 
-**Deployed config (minicloud-ansible commit `<see below>`):**
+**Deployed config (minicloud-ansible commit `7a2e75e`):**
 
 ```yaml
 # open-webui-values.yaml extraEnvVars
@@ -241,7 +258,7 @@ Add to `open-webui-values.yaml` in the `extraEnvVars` section (before `SSL_CERT_
 - name: PGVECTOR_INITIALIZE_MAX_VECTOR_LENGTH
   value: "768"
 - name: PGVECTOR_INDEX_METHOD
-  value: "hnsw"                  # IVFFlat triggers SIGILL on i7-10510U
+  value: "hnsw"                  # requires custom no-AVX512 image — see pgvector SIGILL fix below
 - name: PGVECTOR_HNSW_M
   value: "16"
 - name: PGVECTOR_HNSW_EF_CONSTRUCTION
@@ -374,10 +391,45 @@ vector = response.data[0].embedding  # 768-dim float list
 # INSERT INTO ragdb.document_chunk (id, vector, collection_name, text, vmetadata) VALUES (...)
 ```
 
-### If Open WebUI crashes on startup with SIGILL
+### pgvector AVX-512 SIGILL fix (critical for ThinkPad i7-8565U / i7-10510U)
 
-This means pgvector tried to create an IVFFlat index. Drop the table and ensure `PGVECTOR_INDEX_METHOD=hnsw` is set:
+**Symptom:** PostgreSQL backend processes terminate with `signal 4: Illegal Instruction` whenever a document INSERT triggers HNSW or IVFFlat index maintenance. Open WebUI shows "server closed the connection unexpectedly". RAG document uploads fail silently.
 
+**Root cause:** pgvector 0.8.4 in the upstream Bitnami postgresql image contains EVEX-encoded AVX-512 instructions in `vector.so` (in the HNSW graph traversal and IVFFlat K-means code paths). All four cluster CPUs (i7-8565U Whiskey Lake, i7-10510U Comet Lake) lack AVX-512 support. Sequential-scan vector distance queries are not affected — only index maintenance triggers the SIGILL.
+
+**Diagnosis:**
+```bash
+# Confirm SIGILL in PostgreSQL pod logs
+kubectl logs -n ai postgresql-ai-0 | grep -i "signal 4\|Illegal instruction\|terminated by signal"
+# Expected: "client backend (PID ...) was terminated by signal 4: Illegal instruction"
+```
+
+**Fix — custom pgvector build:**
+
+The fix is a custom Docker image that rebuilds `vector.so` from pgvector 0.8.4 source with AVX-512 disabled:
+
+```bash
+# Dockerfile at: minicloud-ansible/docker/postgresql-noavx512/Dockerfile
+# Build and push (on controller):
+docker build -t harbor.10.0.0.200.nip.io/library/postgresql:18.4.0-noavx512 \
+  /home/ktayl/docker-builds/pgvector/
+docker save harbor.10.0.0.200.nip.io/library/postgresql:18.4.0-noavx512 \
+  -o /tmp/pgvec-noavx512.tar
+crane push --insecure /tmp/pgvec-noavx512.tar \
+  harbor.10.0.0.200.nip.io/library/postgresql:18.4.0-noavx512
+```
+
+Key Dockerfile excerpt:
+```dockerfile
+RUN cd /tmp/pgvector-0.8.4 && \
+    make OPTFLAGS="-mno-avx512f -mno-avx512bw -mno-avx512vl -mno-avx512dq" \
+         PG_CONFIG=/opt/bitnami/postgresql/bin/pg_config && \
+    cp vector.so /tmp/vector-nosimd.so
+```
+
+The deployed image is `harbor.10.0.0.200.nip.io/library/postgresql:18.4.0-noavx512` (set in `postgresql-ai-values.yaml`, minicloud-ansible commit `9f2c2ab`). This image is required — any upgrade to a newer Bitnami postgresql image must be tested for AVX-512 usage before deploying.
+
+**After rebuilding image, if the HNSW index was corrupted during a failed INSERT session:**
 ```bash
 PG_PASS=$(kubectl get secret -n ai ai-postgresql-secret \
   -o jsonpath='{.data.password}' | base64 -d)
@@ -388,8 +440,8 @@ kubectl exec -n ai postgresql-ai-0 -- \
   env PGPASSWORD="$PG_PASS" psql -U aiplatform -d ragdb \
   -c "DROP TABLE IF EXISTS document_chunk;"
 
-# Verify env var is set in helm values, then:
 kubectl scale statefulset open-webui -n ai --replicas=1
+# Open WebUI recreates the table and HNSW index cleanly on startup
 ```
 
 ### If pgvector extension is missing after a DB rebuild
