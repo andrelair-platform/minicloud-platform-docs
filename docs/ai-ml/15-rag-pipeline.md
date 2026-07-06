@@ -6,7 +6,7 @@ sidebar_label: RAG Pipeline & Web Search
 
 # RAG Pipeline — pgvector + bge-m3 + SearXNG Web Search
 
-**Implemented:** 2026-07-05 (RAG + web search + re-ranking), 2026-07-06 (Docling OCR + French BM25 + bge-m3 1024-dim), 2026-07-07 (smaller chunks + structure-aware ingestion pipeline)
+**Implemented:** 2026-07-05 (RAG + web search + re-ranking), 2026-07-06 (Docling OCR + French BM25 + bge-m3 1024-dim), 2026-07-07 (smaller chunks + markitdown-proxy + rag-ingest cluster services)
 **Status:** Production
 
 Retrieval-Augmented Generation (RAG) enables Open WebUI to answer questions grounded in uploaded documents. Every component runs on-cluster — no external embedding API, no new services.
@@ -24,25 +24,27 @@ Open WebUI provides two complementary grounding mechanisms that can be used inde
 
 ### RAG path (uploaded documents)
 
-```
-Upload document → Open WebUI chunker (500 chars, 100 overlap)
-    → bge-m3 via Ollama (1024-dim vectors, 100+ languages)
-    → pgvector HNSW index (ragdb on postgresql-ai)
-
-User question → bge-m3 embeds query (1024-dim)
-    → pgvector cosine search (TOP_K=10) + Python BM25Retriever (French stemmer)
-    → RRF merge → cross-encoder re-ranker → top 3 chunks → LLM answer
-```
-
-**Alternative: structure-aware path (rag-ingest.py)**
+Two ingestion paths feed the same retrieval pipeline:
 
 ```
-Local document (PDF/DOCX/XLSX/PPTX/HTML/MD)
-    → file type router: PDF → Docling, Office → MarkItDown, text → direct
-    → French insurance heading parser (Article/Annexe/Chapitre/Section regex)
-    → structural chunks + rich metadata (document_type, article, section, source)
-    → bge-m3 embedding via Ollama → ragdb.document_chunk INSERT
-    → Open WebUI hybrid search queries the chunks automatically
+Path 1 — Open WebUI paperclip upload:
+  File upload → markitdown-proxy:8000
+      → PDF/image → Docling (OCR + layout)
+      → DOCX/XLSX/PPTX/HTML → MarkItDown (structure-aware)
+      → Open WebUI chunker (500 chars, 100 overlap)
+      → bge-m3 via Ollama (1024-dim) → pgvector HNSW (ragdb)
+
+Path 2 — rag-ingest cluster service (POST /ingest):
+  File POST → rag-ingest:8001
+      → markitdown-proxy:8000 (same conversion routing)
+      → French heading parser (Article/Annexe/Chapitre/Section)
+      → structural chunks + metadata (document_type, article, section, source)
+      → bge-m3 via Ollama (1024-dim) → ragdb.document_chunk INSERT
+
+Retrieval (both paths feed the same index):
+  User question → bge-m3 embeds query (1024-dim)
+      → pgvector cosine search (TOP_K=10) + Python BM25Retriever (French stemmer)
+      → RRF merge → cross-encoder re-ranker → top 3 chunks → LLM answer
 ```
 
 ### Web search path (real-time internet)
@@ -58,10 +60,13 @@ User question (web search toggle ON)
 
 ## Components
 
-| Component | Version | Role |
+| Component | Image / Version | Role |
 |---|---|---|
-| bge-m3 | 1.2 GB | 1024-dim embedding model — 100+ languages, state-of-the-art multilingual retrieval |
-| postgresql-ai | pgvector 0.8.4 | Vector store — `ragdb` database on the existing pod |
+| bge-m3 | 1.2 GB (Ollama) | 1024-dim embedding model — 100+ languages, state-of-the-art multilingual retrieval |
+| postgresql-ai | pgvector 0.8.4 (noavx512) | Vector store — `ragdb` database on the existing pod |
+| markitdown-proxy | `harbor.../markitdown-proxy:fd8b5f7` | Docling-compatible HTTP proxy — routes PDF→Docling, Office/HTML→MarkItDown |
+| rag-ingest | `harbor.../rag-ingest:58e9bc1` | Cluster-native ingestion service — `POST /ingest` → structure chunker → bge-m3 → ragdb |
+| Docling | docling-serve-cpu:v1.26.0 | PDF OCR + layout conversion (called by markitdown-proxy) |
 | Open WebUI | 0.9.4 | RAG orchestrator + web search frontend (app data → PostgreSQL `openwebui` DB) |
 | LiteLLM | 1.90.3 | AI Gateway — chat completions only; embeddings bypass LiteLLM (direct Ollama) |
 | SearXNG | 2026.7.3 | Self-hosted meta-search engine — real-time internet results |
@@ -359,7 +364,89 @@ python3 ~/Developer/cloudplateform/minicloud-ansible/scripts/rag-ingest.py \
   --pg-pass "$PG_PASS"
 ```
 
-**The chunks inserted by rag-ingest.py are immediately queryable by Open WebUI hybrid search** — Open WebUI queries `ragdb.document_chunk` by `collection_name`, so chunks from the script appear alongside those uploaded via the UI in the same Knowledge Base.
+---
+
+### Phase G — markitdown-proxy + rag-ingest cluster services ✅ Live (2026-07-07)
+
+**The problem with Phase F.2 (rag-ingest.py on the Mac):** the CLI script required local `markitdown` and `psycopg2` installs, three active port-forwards, and a Mac with Python. It was not repeatable from any other machine and had duplicate routing logic vs the paperclip path.
+
+**Phase G replaces it with two always-on cluster services:**
+
+#### markitdown-proxy — unified document converter
+
+A FastAPI service that mimics the Docling API (`POST /v1/convert/file`) so Open WebUI needs no config changes — it still uses `CONTENT_EXTRACTION_ENGINE=docling` but `DOCLING_SERVER_URL` now points at the proxy:
+
+```
+Client → markitdown-proxy:8000/v1/convert/file
+    .pdf / images  → proxied to Docling:5001 (OCR + layout)
+    .docx .xlsx
+    .pptx .html    → converted locally via MarkItDown (mammoth, openpyxl, python-pptx)
+    .txt .md       → converted locally via MarkItDown
+    → {"document": {"md_content": "..."}}
+```
+
+Both the paperclip path (Open WebUI → proxy) and the ingest service (rag-ingest → proxy) use this same converter. One conversion implementation, two callers.
+
+**Image:** `harbor.10.0.0.200.nip.io/library/markitdown-proxy:fd8b5f7-amd64` (~300 MB)  
+**Source:** `minicloud-ansible/docker/markitdown-proxy/`  
+**Config:** `DOCLING_URL=http://docling.ai.svc.cluster.local:5001`
+
+#### rag-ingest — structure-aware ingestion service
+
+A FastAPI service that ingests a document into ragdb with full structural metadata:
+
+```
+POST /ingest
+  file        — multipart upload (PDF/DOCX/XLSX/PPTX/HTML/MD/TXT)
+  collection  — Open WebUI Knowledge Base UUID
+  source      — document name ("Contrat RC Pro 2026")
+  doc_type    — policy | endorsement | annexe | regulatory | tariff | internal
+
+Response:
+  {"status": "ok", "chunks_stored": 42, "collection": "...", "metadata_sample": {...}}
+```
+
+Pipeline inside the pod (all in-cluster, no port-forwards):
+1. Send file to `markitdown-proxy` → markdown
+2. Split at French heading boundaries (Article/Annexe/Chapitre/Section regex)
+3. Fallback paragraph split for sections exceeding 2,000 chars
+4. Attach metadata: `document_type`, `article` (extracted), `section`, `source`
+5. Embed each chunk via `ollama.ai.svc:11434` with bge-m3
+6. INSERT into `ragdb.document_chunk` via `postgresql-ai.ai.svc:5432`
+
+**Image:** `harbor.10.0.0.200.nip.io/library/rag-ingest:58e9bc1-amd64` (~100 MB)  
+**Source:** `minicloud-ansible/docker/rag-ingest/`  
+**Dependencies (injected via env):** `PROXY_URL`, `OLLAMA_URL`, `PG_HOST`, `PG_PASSWORD` (from `ai-postgresql-secret`)
+
+**NetworkPolicy:** both services are in the `ai` namespace and covered by the existing `allow-same-namespace` ingress/egress policy — no new NetworkPolicy rules needed.
+
+#### How to ingest a document
+
+```bash
+# One-time port-forward (only needed for external access from Mac)
+kubectl port-forward -n ai svc/rag-ingest 8001:8001 &
+
+# Get your Knowledge Base UUID from Open WebUI:
+# Workspace → Knowledge → New Knowledge Base → copy UUID from browser URL
+
+curl -X POST http://localhost:8001/ingest \
+  -F "file=@contrat_rc_pro.pdf" \
+  -F "collection=<open-webui-kb-uuid>" \
+  -F "doc_type=policy" \
+  -F "source=Contrat RC Pro 2026"
+```
+
+The inserted chunks are immediately queryable from Open WebUI — the hybrid search queries `ragdb.document_chunk` by `collection_name`, so chunks appear alongside those uploaded via the paperclip.
+
+**From another pod inside the cluster** (no port-forward):
+
+```bash
+curl -X POST http://rag-ingest.ai.svc.cluster.local:8001/ingest \
+  -F "file=@/data/contrat.pdf" \
+  -F "collection=<uuid>" \
+  -F "doc_type=policy" \
+  -F "source=Contrat RC Pro 2026"
+```
 
 ---
 
@@ -567,9 +654,9 @@ kubectl exec -n ai postgresql-ai-0 -- \
 
 ### Adding more documents to the knowledge base
 
-**Option A — Open WebUI UI (simple, structure-blind):** paperclip icon → upload file. Open WebUI uses `RecursiveCharacterTextSplitter` at CHUNK_SIZE=500 and embeds with bge-m3.
+**Option A — Open WebUI paperclip (simple):** upload via UI. Open WebUI sends the file to markitdown-proxy, chunks at 500 chars, embeds with bge-m3. No metadata attached.
 
-**Option B — rag-ingest.py (recommended for structured insurance documents):** splits at Article/Section boundaries, attaches metadata, inserts directly into ragdb. See Phase F.2 above.
+**Option B — rag-ingest service (recommended for structured insurance documents):** `POST /ingest` with the file and metadata. Splits at Article/Section boundaries, attaches `document_type`/`article`/`section`/`source`, inserts directly into ragdb. See Phase G above.
 
 For direct embedding via LiteLLM API:
 
