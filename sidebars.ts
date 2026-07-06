@@ -278,6 +278,7 @@ const sidebars: SidebarsConfig = {
         'ai-ml/ai-gateway',
         'ai-ml/inference-optimization',
         'ai-ml/rag-pipeline',
+        'ai-ml/rag-internals',
         'ai-ml/langfuse',
       ],
     },
