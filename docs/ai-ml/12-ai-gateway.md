@@ -24,7 +24,8 @@ Open WebUI ──► LiteLLM Gateway (:4000)
                      ├── Anthropic        (claude-sonnet, haiku) ← premium
                      ├── OpenAI           (gpt-4o, gpt-4o-mini)  ← premium/standard
                      ├── Gemini           (gemini-2.5-flash)     ← premium/standard
-                     └── HuggingFace      (Qwen/Gemma via featherless-ai) ← standard
+                     ├── HuggingFace      (Qwen/Gemma via featherless-ai) ← standard
+                     └── NVIDIA NIM       (nemotron-70b, llama-8b, deepseek-r1) ← premium/standard
 
 LiteLLM ──► Valkey cache   (:6379)    ← exact-match prompt dedup, 10 min TTL
 LiteLLM ──► Langfuse       (:3000)    ← trace every call with token/cost/model metadata
@@ -77,12 +78,17 @@ All components in the `ai` namespace. LiteLLM is the single OpenAI-compatible en
 | `gemini-1.5-pro` | `gemini/gemini-2.5-flash` | premium |
 | `hf-qwen` | `Qwen/Qwen2.5-1.5B-Instruct` via featherless-ai | premium, standard |
 | `hf-gemma` | `google/gemma-2-2b-it` via featherless-ai | premium, standard |
+| `nvidia-nemotron-70b` | `nvidia/llama-3.1-nemotron-70b-instruct` via NVIDIA NIM | premium |
+| `nvidia-llama-8b` | `meta/llama-3.1-8b-instruct` via NVIDIA NIM | premium, standard |
+| `nvidia-deepseek-r1` | `deepseek-ai/deepseek-r1` via NVIDIA NIM | premium, standard |
 
 `gemini-2.0-flash` and `gemini-1.5-pro` are model_name aliases kept for department key compatibility — both route to `gemini/gemini-2.5-flash` behind the scenes.
 
 **qwen3.5:4b thinking mode:** qwen3 generates reasoning tokens (think phase) before the answer. Set `max_tokens ≥ 500` — small values exhaust the token budget on reasoning, leaving `content` empty. For simple fast queries without thinking overhead, use `phi4-mini` or `llama3.2:1b`.
 
 **HuggingFace routing note:** `api-inference.huggingface.co` was retired in 2025. HF models use `https://router.huggingface.co/featherless-ai/v1` (OpenAI-compatible, free-tier provider). LiteLLM config uses `openai/` provider type with explicit `api_base` and `HUGGINGFACE_API_KEY`.
+
+**NVIDIA NIM routing note:** NVIDIA's inference API at `https://integrate.api.nvidia.com/v1` is OpenAI-compatible. LiteLLM uses the `openai/` provider type with explicit `api_base` and `NVIDIA_API_KEY`. Model IDs use the full `org/model-name` format (e.g. `openai/nvidia/llama-3.1-nemotron-70b-instruct`). Key registered at `build.nvidia.com`, stored in Vault at `secret/platform/cloud-providers` as `nvidia-api-key`, added 2026-07-07.
 
 ## Routing strategy
 
@@ -310,7 +316,7 @@ kubectl exec -n vault vault-0 -- \
   vault kv get secret/platform/cloud-providers
 ```
 
-ESO ExternalSecret `litellm-credentials` (file `manifests/eso-platform-secrets/10-ai-postgresql.yaml`) syncs 7 cloud provider keys from `secret/platform/cloud-providers` into `ai/litellm-credentials`: `groq-api-key`, `openai-api-key`, `gemini-api-key`, `deepseek-api-key`, `mistral-api-key`, `anthropic-api-key`, `hf-token`.
+ESO ExternalSecret `litellm-credentials` (file `manifests/eso-platform-secrets/10-ai-postgresql.yaml`) syncs 8 cloud provider keys from `secret/platform/cloud-providers` into `ai/litellm-credentials`: `groq-api-key`, `openai-api-key`, `gemini-api-key`, `deepseek-api-key`, `mistral-api-key`, `anthropic-api-key`, `hf-token`, `nvidia-api-key`.
 
 NetworkPolicy `allow-litellm-cloud-egress` permits port 443 egress only from `app=litellm` pods — Ollama and Open WebUI remain internet-blocked.
 
@@ -417,5 +423,5 @@ VE() { kubectl exec -n vault vault-0 -- env VAULT_ADDR=http://127.0.0.1:8200 VAU
 
 VE secret/platform/ai-postgresql    # DB credentials
 VE secret/platform/litellm          # master key, Langfuse keys
-VE secret/platform/cloud-providers  # Groq, OpenAI, Gemini API keys
+VE secret/platform/cloud-providers  # Groq, OpenAI, Gemini, DeepSeek, Mistral, Anthropic, HuggingFace, NVIDIA API keys
 ```
