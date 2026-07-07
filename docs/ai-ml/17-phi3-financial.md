@@ -170,6 +170,68 @@ Langfuse (running at `https://langfuse.devandre.sbs`) is the natural home for ex
 
 ---
 
+## Context window
+
+### The three numbers
+
+| Layer | Value | What it controls |
+|---|---|---|
+| phi3.5 native architecture | 128K tokens | Maximum the base model weights can physically support (RoPE position embeddings) |
+| `OLLAMA_NUM_CTX` on primary + secondary | **4096 tokens** | Context window allocated at runtime — shared by system prompt + history + response |
+| `num_predict` in Modelfile | 1024 tokens | Maximum output tokens per response |
+
+phi3-financial operates with a **4096-token context window** in the current deployment. The 128K native capability is unused.
+
+### How the 4096-token budget is spent
+
+Every call draws from a single shared pool:
+
+```
+┌─────────────────────────────────────────────── 4096 tokens ───┐
+│ System prompt        │ Conversation history  │ Response        │
+│ ~70 tokens           │ input tokens          │ up to 1024      │
+│ (Modelfile SYSTEM)   │ (user messages)       │ (num_predict)   │
+└────────────────────────────────────────────────────────────────┘
+```
+
+For a single-turn call (the eval suite, a one-shot question), ~3900 tokens remain after the system prompt — far more than any financial explanation needs.
+
+For a multi-turn conversation, each prior exchange consumes 200–500 tokens. After roughly 6–8 turns the context fills. Ollama silently truncates the oldest messages and the model loses memory of the conversation start.
+
+### Why 128K isn't used: the KV cache cost
+
+The 128K capability must be **allocated** as a KV cache (Key-Value cache) at inference time. The KV cache stores attention states for every token in the context:
+
+```
+KV cache size ≈ num_ctx × num_layers × num_heads × head_dim × 2 (K+V) × dtype_bytes
+```
+
+| `OLLAMA_NUM_CTX` | KV cache per slot | Concurrent slots on fast-heron | Typical use case |
+|---|---|---|---|
+| 2048 (Ollama default) | ~100 MB | many | Short Q&A |
+| **4096 (current)** | **~200 MB** | **several** | **Financial assistant, short docs** |
+| 8192 | ~400 MB | fewer | Longer documents, contract review |
+| 32768 | ~1.6 GB | 1–2 | Full insurance policy in context |
+| 131072 (128K, max) | ~6.4 GB | 0–1 | Impractical on CPU cluster |
+
+fast-heron (i7-10510U, ~16 GB RAM shared with OS + k3s + other pods) cannot spare 6.4 GB per inference slot. At 4096 tokens the cluster handles several concurrent requests without memory pressure.
+
+On CPU, a wider context also means slower first-token latency — more context = more attention computation per forward pass.
+
+### When the 4096 limit matters
+
+**It does not matter for the current use case.** The eval sends independent single-turn calls. Open WebUI users asking one financial question at a time have ~3900 tokens of headroom, more than any financial explanation needs.
+
+**It would matter for:**
+
+- **Multi-turn advisor sessions** — conversation history accumulates; the model forgets the session start after ~6–8 exchanges
+- **Document Q&A** — pasting a balance sheet or annual report directly into the prompt (a typical 10-K excerpt is 5K–20K tokens)
+- **Long retrieved contexts** — RAG pipelines injecting many chunks simultaneously
+
+**The architectural answer already deployed:** the RAG pipeline (bge-m3 embeddings + pgvector + hybrid BM25/vector search) retrieves the 3–5 most relevant paragraphs and injects only those. That keeps context usage well within 4096 tokens while still grounding answers in large document corpora — no context window expansion needed.
+
+---
+
 ## Skills demonstrated
 
 | Skill | Industry context |
