@@ -17,10 +17,10 @@ This page describes the enterprise-grade GitOps strategy in use on the minicloud
 
 | Concern | Internal Services | Third-Party Charts |
 |---|---|---|
-| Source of truth | `minicloud-gitops/services/<name>/` | `minicloud-ansible/helm-values/<name>-values.yaml` |
+| Source of truth | `minicloud-gitops/services/<name>/` | `minicloud-gitops/helm-values/<name>-values.yaml` |
 | Diff tool | Kustomize overlays | Helm values |
 | Env promotion | Image tag bump per overlay | Single values file, chart version pin |
-| CI integration | `kustomize edit set image` in dev overlay | Manual `helm upgrade` |
+| CI integration | `kustomize edit set image` in dev overlay | Edit values → commit → ArgoCD auto-syncs |
 | Blast radius | Dev auto-syncs; staging/prod require PR | Helm controls rollout |
 
 ---
@@ -118,17 +118,42 @@ service repos       = code only (Containerfile, source, CI workflow)
 When you need to change a Helm value for Vault: edit `minicloud-gitops/helm-values/vault-values.yaml`,
 commit, push. ArgoCD picks up the change within 3 minutes. You never touch minicloud-ansible.
 
-### ArgoCD-managed vs direct helm upgrade
+### All platform tools are ArgoCD-managed
 
-Not all platform tools are yet migrated to ArgoCD. The `helm-values/README.md` tracks status:
+Every Helm release on the platform is managed by an ArgoCD Application that uses the
+multi-source pattern: upstream chart + values file from `minicloud-gitops/helm-values/`.
 
-| Status | Tools | How to update |
+| Tool | ArgoCD App | Values file |
 |---|---|---|
-| **ArgoCD-managed** | vault, nextcloud, langfuse, polaris | Edit values → commit → auto-sync |
-| **Direct helm upgrade** | kube-prometheus-stack, nginx-ingress, ollama, open-webui, authentik, falco, nats, postgresql-ai, velero, backstage, argocd | Edit values → commit → scp to controller → `helm upgrade` |
+| ArgoCD itself | `argo-cd` | `argocd-values.yaml` |
+| Authentik | `authentik` | `authentik-values.yaml` |
+| Backstage | `backstage` | `backstage-values.yaml` |
+| cert-manager | `cert-manager` | `cert-manager-values.yaml` |
+| Chaos Mesh | `chaos-mesh` | `chaos-mesh-values.yaml` |
+| Falco | `falco` | `falco-values.yaml` |
+| Gatekeeper | `gatekeeper` | `gatekeeper-values.yaml` |
+| Harbor | `harbor` | `harbor-values.yaml` |
+| KEDA | `keda` | `keda-values.yaml` |
+| kube-prometheus-stack | `kube-prometheus-stack` | `kube-prometheus-stack-values.yaml` |
+| Langfuse | `langfuse` | `langfuse-values.yaml` |
+| Loki | `loki` | `loki-values.yaml` |
+| NATS | `nats` | `nats-values.yaml` |
+| Nextcloud | `nextcloud` | `nextcloud-values.yaml` |
+| NFS provisioner | `nfs-provisioner` | `nfs-provisioner-values.yaml` |
+| NGINX Ingress | `nginx-ingress` | `nginx-ingress-values.yaml` |
+| Ollama (primary) | `ollama` | `ollama-values.yaml` |
+| Ollama (secondary) | `ollama-secondary` | `ollama-secondary-values.yaml` |
+| Ollama (tertiary) | `ollama-tertiary` | `ollama-tertiary-values.yaml` |
+| Open WebUI | `open-webui` | `open-webui-values.yaml` |
+| Podinfo | `podinfo` | `podinfo-values.yaml` |
+| Polaris | `polaris` | `polaris-values.yaml` |
+| PostgreSQL AI | `postgresql-ai` | `postgresql-ai-values.yaml` |
+| Promtail | `promtail` | `promtail-values.yaml` |
+| Vault | `vault` | `vault-values.yaml` |
+| Velero | `velero` | `velero-values.yaml` |
 
-For direct-upgrade tools, always commit the values change to `minicloud-gitops/helm-values/`
-**before** running `helm upgrade` — the git history is the source of truth even when the deploy is manual.
+To change any configuration: edit the values file in `minicloud-gitops/helm-values/`, commit,
+push. ArgoCD picks it up within 3 minutes. No `helm upgrade` commands, no SSH to controller.
 
 ---
 
