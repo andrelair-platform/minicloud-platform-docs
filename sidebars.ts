@@ -400,6 +400,14 @@ const sidebars: SidebarsConfig = {
       items: ['developer-platform/vault-gitops'],
     },
 
+    // ── GitOps Workflow ─────────────────────────────────────────────
+    {
+      type: 'category',
+      label: '🔁 GitOps Workflow — Service Onboarding & Promotion',
+      collapsed: true,
+      items: ['developer-platform/gitops-workflow'],
+    },
+
     // ── Phase 60 ────────────────────────────────────────────────────
     {
       type: 'category',
