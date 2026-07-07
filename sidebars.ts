@@ -519,6 +519,14 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['developer-platform/custom-images'],
     },
+
+    // ── Branch Strategy & CI/CD ──────────────────────────────────────
+    {
+      type: 'category',
+      label: '🌿 Branch Strategy & CI/CD Flow — dev → staging → main',
+      collapsed: true,
+      items: ['developer-platform/branch-strategy-cicd'],
+    },
   ],
 };
 
