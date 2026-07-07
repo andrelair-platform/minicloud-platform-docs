@@ -503,6 +503,14 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['developer-platform/helm-vs-kustomize'],
     },
+
+    // ── Backstage + Helm/Kustomize ───────────────────────────────────
+    {
+      type: 'category',
+      label: '🎭 Backstage — Helm vs Kustomize Integration',
+      collapsed: true,
+      items: ['developer-platform/backstage-helm-kustomize'],
+    },
   ],
 };
 
