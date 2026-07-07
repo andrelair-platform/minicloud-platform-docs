@@ -280,6 +280,7 @@ const sidebars: SidebarsConfig = {
         'ai-ml/rag-pipeline',
         'ai-ml/rag-internals',
         'ai-ml/langfuse',
+        'ai-ml/phi3-financial',
       ],
     },
 
