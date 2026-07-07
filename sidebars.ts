@@ -479,6 +479,22 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['developer-platform/helm-argocd-migration'],
     },
+
+    // ── KEDA Cron Scale-to-Zero ──────────────────────────────────────
+    {
+      type: 'category',
+      label: '⏱ KEDA Cron Scale-to-Zero — Dev Environments ✅',
+      collapsed: true,
+      items: ['developer-platform/keda-cron-scale-to-zero'],
+    },
+
+    // ── GitOps Directory Patterns ────────────────────────────────────
+    {
+      type: 'category',
+      label: '📁 GitOps Directory Patterns — Design Decisions',
+      collapsed: true,
+      items: ['developer-platform/gitops-directory-patterns'],
+    },
   ],
 };
 
