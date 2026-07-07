@@ -495,6 +495,14 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['developer-platform/gitops-directory-patterns'],
     },
+
+    // ── Helm vs Kustomize ────────────────────────────────────────────
+    {
+      type: 'category',
+      label: '⚖️ Helm vs Kustomize — When to Use Which',
+      collapsed: true,
+      items: ['developer-platform/helm-vs-kustomize'],
+    },
   ],
 };
 
