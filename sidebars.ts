@@ -511,6 +511,14 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['developer-platform/backstage-helm-kustomize'],
     },
+
+    // ── Custom Images ────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: '🔧 Custom-Built Images — Inventory & Upgrade Guide',
+      collapsed: true,
+      items: ['developer-platform/custom-images'],
+    },
   ],
 };
 
