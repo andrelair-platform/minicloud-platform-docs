@@ -471,6 +471,14 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['security-enterprise/admission-control'],
     },
+
+    // ── Full Helm→ArgoCD Migration ───────────────────────────────────
+    {
+      type: 'category',
+      label: '🚀 Full Helm→ArgoCD Migration — 54/54 Apps ✅',
+      collapsed: true,
+      items: ['developer-platform/helm-argocd-migration'],
+    },
   ],
 };
 
