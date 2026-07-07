@@ -527,6 +527,14 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['developer-platform/branch-strategy-cicd'],
     },
+
+    // ── RBAC Audit ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: '🔑 RBAC Audit — SA vs Human Identity Separation',
+      collapsed: true,
+      items: ['security-enterprise/rbac-audit'],
+    },
   ],
 };
 
