@@ -125,80 +125,48 @@ The model is accessible through Open WebUI at `https://chat.devandre.sbs` — se
 
 ---
 
-## Prompt versioning — current state and production gap
+## Prompt versioning and CI/CD gate
 
-### What we have
+The Modelfile is stored in `andrelair-platform/hackathon_ynov` under `ollama_server/Modelfile`. Every change to the system prompt or inference parameters goes through a git commit — `git log` gives the full prompt history.
 
-The Modelfile is stored in `andrelair-platform/hackathon_ynov` under `ollama_server/Modelfile`. Every change to the system prompt or inference parameters goes through a git commit, which gives basic versioning — you can `git log` the prompt's history and `git checkout` any prior version.
+### Automated eval gate (live)
 
-When the prompt changes, re-deployment is one command:
-
-```bash
-ollama create phi3-financial -f Modelfile   # bakes new prompt into named model
-# old version is replaced; Ollama has no built-in rollback
-```
-
-### The gap vs. production PromptOps
-
-In a production AI engineering team, prompt changes go through a pipeline equivalent to code changes. What we are missing:
-
-**1. Prompt registry**
-
-Tools like LangSmith, W&B Prompts, or Pezzo act as GitHub specifically for prompts — each version gets a semantic tag (`phi3-financial-system:v2.1.4`), and the application fetches by version at runtime rather than having the prompt baked into the model artifact. This enables:
-- A/B testing two prompt versions against live traffic
-- Instant rollback without redeploying the model
-- Pairing: prompt version `v2.1.4` was validated against model `phi3.5:3.8.4`
-
-**2. Eval suite (automated regression testing)**
-
-The 8/8 manual quality tests above are run by hand after every change. A production eval suite would automate this:
-
-```python
-# Conceptual — not implemented on minicloud
-from langfuse import Langfuse
-
-suite = [
-    {"input": "Give me a chocolate cake recipe", "expected_behaviour": "refuse"},
-    {"input": "What is a P/E ratio?",            "expected_behaviour": "answer"},
-    {"input": "Explain yield curve inversion",   "expected_behaviour": "answer"},
-    # ... 500 historical queries including known jailbreak attempts
-]
-
-for case in suite:
-    response = model.generate(system_prompt=PROMPT_CANDIDATE, user=case["input"])
-    score = evaluator.check(response, case["expected_behaviour"])
-    langfuse.log(prompt_version="v2.2.0-candidate", score=score)
-
-# Block deployment if pass rate < 95%
-```
-
-**3. Prompt CI/CD**
-
-A full Prompt CI/CD pipeline would look like this:
+A GitHub Actions workflow runs the 8-case eval suite automatically on every push or PR that touches `ollama_server/Modelfile` or `scripts/eval.py`. The merge is blocked if any test fails.
 
 ```
 Developer edits Modelfile (system prompt)
     │
-    ▼
-PR opened → eval suite runs against 500 historical queries
-    │         including known jailbreak attempts and edge cases
+    ▼ push / PR to main
+GitHub Actions (ubuntu-latest)
     │
-    ├─ PASS (≥95%) → prompt tagged v2.2.0 → ollama create → deployed
-    └─ FAIL        → PR blocked, regression report generated
+    ├─ Tailscale: runner joins Tailnet → reaches internal LiteLLM directly
+    ├─ Trust minicloud CA: certifi bundle extended
+    ├─ python scripts/eval.py
+    │     calls phi3-financial × 8, scores responses, logs to Langfuse
+    │
+    ├─ PASS (8/8, 100%) → merge allowed
+    └─ FAIL             → merge BLOCKED, artifact uploaded
 ```
 
-This prevents the "whack-a-mole" problem: patching one jailbreak that accidentally breaks legitimate financial queries would fail the eval suite before reaching production.
+When the prompt changes, re-deployment is one command after the gate passes:
 
-### Why this is not implemented on minicloud
+```bash
+ollama create phi3-financial -f Modelfile
+```
 
-| Reason | Detail |
+See the full pipeline runbook: [Prompt Eval CI/CD](./phi3-financial-eval-cicd)
+
+### What a production PromptOps stack would add
+
+The current gate covers functional correctness (keyword-based scoring). A production-scale system would extend it with:
+
+| Gap | Production solution |
 |---|---|
-| **No eval dataset** | Building a representative dataset of 500+ financial queries (including adversarial probes) requires real domain usage data we don't have |
-| **Single model, single engineer** | Prompt CI/CD pays off when multiple people modify prompts across multiple models; at one operator, git history is sufficient |
-| **Demo scope** | The 8 manual quality tests cover the acceptance criteria for the hackathon use case |
-| **Langfuse is deployed** | Langfuse (already running at `https://langfuse.devandre.sbs`) is the natural home for LLM evals — the infrastructure is there if an eval suite is built |
+| **Prompt registry** | LangSmith / W&B Prompts — each version gets a semantic tag (`v2.1.4`); app fetches by version at runtime, enabling A/B testing and instant rollback without redeployment |
+| **Larger eval dataset** | 500+ historical queries including adversarial probes and known jailbreak patterns — requires real domain usage data |
+| **LLM judge** | GPT-4 or Claude scoring responses for tone, completeness, and confidence calibration — richer signal than keyword matching |
 
-The gap is a deliberate scope choice, not an oversight. Implementing a proper eval suite is tracked as a future enhancement and would be the natural next step if `phi3-financial` were promoted to handle real user traffic.
+Langfuse (running at `https://langfuse.devandre.sbs`) is the natural home for expanded evals — the tracing infrastructure is already wired in.
 
 ---
 
@@ -211,3 +179,5 @@ The gap is a deliberate scope choice, not an oversight. Implementing a proper ev
 | **Understanding fine-tuning limits** | Knowing when NOT to fine-tune (no proprietary data, no GPU, demo scope) is as important as knowing when to. The LoRA path was evaluated and rejected for sound reasons. |
 | **Domain restriction by persona** | Persona-based restriction generalises better than block-lists — a real enterprise AI governance pattern |
 | **8/8 quality test pass** | Structured evaluation before declaring a model production-ready, including adversarial off-topic probes |
+| **Prompt CI/CD gate** | GHA pipeline blocks merges on prompt regression — same discipline as code tests applied to LLM behaviour |
+| **Tailscale for private CI access** | GHA runner joins Tailnet via ephemeral key to reach private cluster, preserving public security posture |
