@@ -87,22 +87,70 @@ All three are in the `minicloud-platform` AppProject — no wildcard destination
 
 ## Combo 2 — Helm + ArgoCD (third-party charts)
 
-Third-party Helm charts (Vault, ESO, Langfuse, NGINX, etc.) are deployed via ArgoCD multi-source apps:
+Third-party Helm charts are deployed via ArgoCD multi-source apps. Both the upstream chart
+and the values file are in version-controlled, auditable locations.
 
 ```yaml
 sources:
   - repoURL: https://helm.releases.hashicorp.com
     chart: vault
-    targetRevision: "0.*"
+    targetRevision: "0.33.0"
     helm:
       valueFiles:
-        - $values/ansible/helm-values/vault-values.yaml
-  - repoURL: https://github.com/andrelair-platform/minicloud-ansible.git
+        - $values/helm-values/vault-values.yaml
+  - repoURL: https://github.com/andrelair-platform/minicloud-gitops.git
     targetRevision: main
     ref: values
 ```
 
-Values files live in `minicloud-ansible/helm-values/` (not a git repo on the controller — always `scp` updated files before `helm upgrade`). Version pinning is done via `targetRevision` in the ArgoCD Application.
+Values files live in `minicloud-gitops/helm-values/` — the same repo that manages all deployment
+config. Edit a values file, commit, and ArgoCD syncs automatically. Version pinning is done via
+`targetRevision` in the ArgoCD Application.
+
+### Repository role separation (the rule)
+
+```
+minicloud-ansible   = cluster bootstrap only (MAAS, k3s install, OS config)
+minicloud-gitops    = ALL desired application state (manifests, values, overlays)
+service repos       = code only (Containerfile, source, CI workflow)
+```
+
+When you need to change a Helm value for Vault: edit `minicloud-gitops/helm-values/vault-values.yaml`,
+commit, push. ArgoCD picks up the change within 3 minutes. You never touch minicloud-ansible.
+
+### ArgoCD-managed vs direct helm upgrade
+
+Not all platform tools are yet migrated to ArgoCD. The `helm-values/README.md` tracks status:
+
+| Status | Tools | How to update |
+|---|---|---|
+| **ArgoCD-managed** | vault, nextcloud, langfuse, polaris | Edit values → commit → auto-sync |
+| **Direct helm upgrade** | kube-prometheus-stack, nginx-ingress, ollama, open-webui, authentik, falco, nats, postgresql-ai, velero, backstage, argocd | Edit values → commit → scp to controller → `helm upgrade` |
+
+For direct-upgrade tools, always commit the values change to `minicloud-gitops/helm-values/`
+**before** running `helm upgrade` — the git history is the source of truth even when the deploy is manual.
+
+---
+
+## The base neutrality rule
+
+The `base/` directory must be 100% environment-neutral. It must never contain:
+
+| Forbidden in base | Why | Where it belongs |
+|---|---|---|
+| `namespace:` field | Namespace is environment-specific | `overlays/<env>/kustomization.yaml` namespace field |
+| `ingress.yaml` / `certificate.yaml` | Only prod gets a public URL | `overlays/prod/` only |
+| Environment-specific resource limits | dev and prod have different sizing | `overlays/<env>/patch-resources.yaml` |
+| Moving image tag | CI only updates dev | `overlays/dev/kustomization.yaml` images block |
+| Environment variables with env-specific values | Different DBs, URLs per env | `overlays/<env>/patch-env.yaml` |
+
+**The test:** run `kustomize build services/<service>/base` — the output should deploy identically
+to any namespace without modification. If it references a specific hostname, secret name, or resource
+size, it belongs in an overlay patch.
+
+**Why this matters:** if the base has environment-specific config, all overlays inherit it. A prod
+URL leaking into dev, a prod DB URL in staging, or production resource limits running in dev all
+stem from the same mistake: config that belongs in an overlay ended up in base.
 
 ---
 
