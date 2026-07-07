@@ -125,6 +125,83 @@ The model is accessible through Open WebUI at `https://chat.devandre.sbs` — se
 
 ---
 
+## Prompt versioning — current state and production gap
+
+### What we have
+
+The Modelfile is stored in `andrelair-platform/hackathon_ynov` under `ollama_server/Modelfile`. Every change to the system prompt or inference parameters goes through a git commit, which gives basic versioning — you can `git log` the prompt's history and `git checkout` any prior version.
+
+When the prompt changes, re-deployment is one command:
+
+```bash
+ollama create phi3-financial -f Modelfile   # bakes new prompt into named model
+# old version is replaced; Ollama has no built-in rollback
+```
+
+### The gap vs. production PromptOps
+
+In a production AI engineering team, prompt changes go through a pipeline equivalent to code changes. What we are missing:
+
+**1. Prompt registry**
+
+Tools like LangSmith, W&B Prompts, or Pezzo act as GitHub specifically for prompts — each version gets a semantic tag (`phi3-financial-system:v2.1.4`), and the application fetches by version at runtime rather than having the prompt baked into the model artifact. This enables:
+- A/B testing two prompt versions against live traffic
+- Instant rollback without redeploying the model
+- Pairing: prompt version `v2.1.4` was validated against model `phi3.5:3.8.4`
+
+**2. Eval suite (automated regression testing)**
+
+The 8/8 manual quality tests above are run by hand after every change. A production eval suite would automate this:
+
+```python
+# Conceptual — not implemented on minicloud
+from langfuse import Langfuse
+
+suite = [
+    {"input": "Give me a chocolate cake recipe", "expected_behaviour": "refuse"},
+    {"input": "What is a P/E ratio?",            "expected_behaviour": "answer"},
+    {"input": "Explain yield curve inversion",   "expected_behaviour": "answer"},
+    # ... 500 historical queries including known jailbreak attempts
+]
+
+for case in suite:
+    response = model.generate(system_prompt=PROMPT_CANDIDATE, user=case["input"])
+    score = evaluator.check(response, case["expected_behaviour"])
+    langfuse.log(prompt_version="v2.2.0-candidate", score=score)
+
+# Block deployment if pass rate < 95%
+```
+
+**3. Prompt CI/CD**
+
+A full Prompt CI/CD pipeline would look like this:
+
+```
+Developer edits Modelfile (system prompt)
+    │
+    ▼
+PR opened → eval suite runs against 500 historical queries
+    │         including known jailbreak attempts and edge cases
+    │
+    ├─ PASS (≥95%) → prompt tagged v2.2.0 → ollama create → deployed
+    └─ FAIL        → PR blocked, regression report generated
+```
+
+This prevents the "whack-a-mole" problem: patching one jailbreak that accidentally breaks legitimate financial queries would fail the eval suite before reaching production.
+
+### Why this is not implemented on minicloud
+
+| Reason | Detail |
+|---|---|
+| **No eval dataset** | Building a representative dataset of 500+ financial queries (including adversarial probes) requires real domain usage data we don't have |
+| **Single model, single engineer** | Prompt CI/CD pays off when multiple people modify prompts across multiple models; at one operator, git history is sufficient |
+| **Demo scope** | The 8 manual quality tests cover the acceptance criteria for the hackathon use case |
+| **Langfuse is deployed** | Langfuse (already running at `https://langfuse.devandre.sbs`) is the natural home for LLM evals — the infrastructure is there if an eval suite is built |
+
+The gap is a deliberate scope choice, not an oversight. Implementing a proper eval suite is tracked as a future enhancement and would be the natural next step if `phi3-financial` were promoted to handle real user traffic.
+
+---
+
 ## Skills demonstrated
 
 | Skill | Industry context |
