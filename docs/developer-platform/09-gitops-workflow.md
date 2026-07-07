@@ -180,7 +180,44 @@ If the pod stays in `Init:0/1`, delete it to force a retry — the Vault auth ca
 | Task | Command |
 |---|---|
 | Force ArgoCD re-poll | `kubectl annotate app -n argocd <app> argocd.argoproj.io/refresh=normal` |
-| Manually sync staging | ArgoCD UI → platform-demo-staging → Sync |
+| Manually sync staging | `kubectl patch application platform-demo-staging -n argocd --type merge -p '{"operation":{"initiatedBy":{"username":"kubectl"},"sync":{"revision":"HEAD","syncOptions":["ServerSideApply=true","CreateNamespace=true"]}}}'` |
+| Manually sync prod | Same pattern with `platform-demo` |
 | Verify kustomize output | `kustomize build services/platform-demo/overlays/dev` |
 | Check what ArgoCD would change | ArgoCD UI → App Diff |
 | Roll back dev | Bump `newTag` in overlays/dev back to prior SHA, push |
+
+---
+
+## Known Gotchas & Fixes
+
+### ArgoCD "resource belongs to multiple apps" conflict
+
+**Symptom:** An app stays `OutOfSync` with the condition `Secret/X is part of applications argocd/app-a and app-b`.
+
+**Root cause:** Two ArgoCD Applications both track the same cluster resource. Common case: a Helm chart natively renders a Secret, and an ESO ExternalSecret creates a secret with the same name (`creationPolicy: Owner` adds an ownerReference but the Helm labels remain, so ArgoCD sees dual ownership).
+
+**Fix:** Identify which app is the authoritative owner of the resource. If the Helm chart creates the resource natively, remove the ESO ExternalSecret so Helm solely owns it. If ESO is authoritative, configure the Helm chart to reference an existing secret (`existingSecret: <name>`) so the Helm chart no longer renders it.
+
+**Example fixed (nextcloud-db, 2026-07-07):**
+- The Nextcloud Helm chart's postgresql subchart renders `Secret/nextcloud-db` natively
+- `manifests/eso-platform-secrets/05-nextcloud-db.yaml` was creating the same secret from a Vault placeholder (`platform/nextcloud-db: db-password=changeme`)
+- Fix: deleted `05-nextcloud-db.yaml`; ESO pruned the ExternalSecret; Kubernetes GC deleted the Secret (ownerReference cascade); Helm's `selfHeal` re-created it as the sole owner → `nextcloud` app `Synced`
+
+### Staging/prod namespace created on first sync
+
+When you add a new overlay that targets a namespace that doesn't exist yet, ArgoCD shows `OutOfSync + Missing`. This is expected. Trigger the first sync via:
+
+```bash
+kubectl patch application <app-name> -n argocd --type merge -p \
+  '{"operation":{"initiatedBy":{"username":"kubectl"},"sync":{"revision":"HEAD","syncOptions":["ServerSideApply=true","CreateNamespace=true","ServerSideDiff=true"]}}}'
+```
+
+`CreateNamespace=true` in syncOptions ensures the namespace is created automatically.
+
+### Vault Init:0/1 after new namespace added
+
+When you extend a Vault Kubernetes auth role to a new namespace, existing pods in that namespace don't automatically retry. Delete the stuck pod to force a fresh Vault auth attempt:
+
+```bash
+kubectl delete pod -n <new-namespace> -l app=<service> --force --grace-period=0
+```
