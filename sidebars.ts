@@ -531,6 +531,14 @@ const sidebars: SidebarsConfig = {
       items: ['developer-platform/branch-strategy-cicd'],
     },
 
+    // ── Dependency Auditability ───────────────────────────────────────
+    {
+      type: 'category',
+      label: '🔍 Dependency Auditability — Version Pinning & Renovate',
+      collapsed: true,
+      items: ['developer-platform/dependency-auditability'],
+    },
+
     // ── RBAC Audit ────────────────────────────────────────────────────
     {
       type: 'category',
