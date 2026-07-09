@@ -316,6 +316,46 @@ Low `context_precision` (0.10) and `context_recall` (0.40) are expected: Ragas L
 
 ---
 
+## Known limitations
+
+### 1. LVMH BM25 language mismatch (structural)
+
+The LVMH 2023 Annual Report is published in English. Open WebUI users type queries in French. BM25 hybrid search computes word overlap between the query tokens and the document tokens — a French query against an English document produces **zero BM25 signal**. The hybrid score degrades to pure vector search for LVMH questions.
+
+Vector search (text-embedding-3-small) handles cross-lingual retrieval partially — it maps French and English financial terminology into a shared embedding space — but it is less precise than in-language retrieval. This is why:
+- `HIT_RATE_THRESHOLD` is 0.60, not 0.80 (LVMH queries are more likely to miss)
+- The two LVMH eval queries were changed to English to give the BM25 leg meaningful overlap
+- A French user asking "Quel est le chiffre d'affaires de LVMH ?" in production will get weaker retrieval than a user asking in English
+
+**What this is NOT:** a bug. It is a structural consequence of storing an English document in a system optimised for French text. The fix is to either (a) store a French translation of the LVMH document alongside the English original, or (b) use a cross-lingual re-ranker (e.g. `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1`) instead of the current English-only `ms-marco-MiniLM-L-6-v2`.
+
+---
+
+### 2. Eval dataset is 10 questions — not statistically robust
+
+The CI gate runs 5 of those 10 questions in fast mode. With n=5, a single retrieval failure or success shifts `hit_rate` by 0.20. The dataset is **hand-curated** around known high-value facts (CET1 ratios, capital totals, LVMH revenue) — it does not sample the full document space. A question about an obscure Basel III Pillar 3 disclosure or a specific LVMH wine subsidiary would not be covered.
+
+**Consequence:** the CI gate can pass while real user queries fail on uncovered content areas. It is a regression detector for the questions it knows about, not a general quality guarantee.
+
+**The path to statistical robustness:** expand to 50+ questions generated with `EVAL_MODE=generate-dataset` (Ragas `generate_testset` on the full 911-chunk corpus, GPT-4o as the synthesiser). The reuse pattern in this runbook supports this — only `eval_dataset.json` changes. A 50-question full-mode run takes ~4 min with gpt-4o-mini generation.
+
+---
+
+### 3. The CI gate does not catch hallucinations on unseen questions
+
+The eval checks whether the model's answers to 10 known questions are grounded in the retrieved context (`faithfulness`) and whether the right chunks are retrieved (`hit_rate`). It does **not** check:
+
+- Whether the model fabricates plausible-sounding but incorrect financial figures on a question it has never seen
+- Whether a new document uploaded to the knowledge base is correctly indexed and retrievable
+- Whether BM25 stemming failures cause misses on morphologically complex French words outside the test set
+- Whether the cross-encoder reranker demotes a correct chunk below `TOP_K_RERANKER` when retrieval returns many similar chunks
+
+**Consequence:** a model that scores faithfulness=0.80 on 10 questions can still hallucinate confidently on question 11. The `online_faithfulness` CronJob (5% of production traces) partially mitigates this by scoring real user queries — but it only fires retroactively and does not block the response.
+
+**The correct mental model:** the CI gate is a **regression alarm**, not a correctness certificate. It fires when a known-good configuration degrades. It does not certify that the pipeline is correct for all possible financial questions.
+
+---
+
 ## Langfuse scores
 
 After each eval run, scores appear in **Langfuse → Scores** tab on the corresponding `phi3-financial` traces:
