@@ -283,6 +283,7 @@ const sidebars: SidebarsConfig = {
         'ai-ml/phi3-financial',
         'ai-ml/phi3-financial-eval-cicd',
         'ai-ml/domain-specialization-framework',
+        'ai-ml/rag-eval-pipeline',
       ],
     },
 
