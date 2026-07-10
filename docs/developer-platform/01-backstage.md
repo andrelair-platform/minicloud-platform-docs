@@ -587,6 +587,284 @@ NotAllowedError: The guest provider cannot be used outside of a development envi
 
 ---
 
+## Phase 24 — Custom Image + Authentik OIDC SSO (2026-07-10)
+
+Phase 18 ran the off-the-shelf Backstage image with guest auth. Phase 24 replaced both:
+
+- **Custom image** built from `andrelair-platform/minicloud-backstage` — TypeScript monorepo compiled on CI, pushed to Harbor, cosign-signed, auto-bumped via GPG-signed gitops commit.
+- **Authentik OIDC** — replaces guest auth. User signs in via the platform's central SSO; identity is resolved against a real catalog User entity.
+
+---
+
+### Authentik provider setup
+
+In Authentik: **Applications → Providers → Create → OAuth2/OpenID Connect Provider**
+
+| Field | Value |
+|---|---|
+| Name | `backstage` |
+| Client type | Confidential |
+| Client ID | (auto-generated) |
+| Client Secret | (auto-generated) |
+| Grant types | **Authorization Code + Refresh Token** ← mandatory, defaults to empty |
+| Signing Key | `authentik Self-signed Certificate` |
+| Property Mappings | Select all OpenID mappings |
+| Redirect URIs | `https://backstage.devandre.sbs/api/auth/oidc/handler/frame` |
+| Sub mode | Based on hashed User ID |
+
+:::danger Grant types — the most commonly missed field
+The Authentik provider form defaults `grant_types` to an **empty list** when accessed via the API. If you create the provider via API (as Terraform/IaC tools do), authorization_code is never enabled. Symptom in Backstage logs: `invalid_request (The request is otherwise malformed)`. Fix: open the provider in Authentik UI → edit → enable **Authorization Code** + **Refresh Token**.
+:::
+
+**Authorization flow:** use `default-provider-authorization-implicit-consent` (NOT explicit-consent). Explicit-consent rejects `prompt=none` — Backstage's silent token refresh uses `prompt=none` and will always fail with `login_required` on explicit-consent flows.
+
+---
+
+### Backstage Helm values — OIDC config
+
+Key additions in `minicloud-gitops/helm-values/backstage-values.yaml`:
+
+```yaml
+backstage:
+  appConfig:
+    app:
+      baseUrl: https://backstage.devandre.sbs
+      extensions:
+        - page:catalog:
+            config:
+              path: /        # ← catalog page at root; see "Root route" gotcha below
+    backend:
+      baseUrl: https://backstage.devandre.sbs
+      cors:
+        origin: https://backstage.devandre.sbs
+    auth:
+      environment: production
+      providers:
+        oidc:
+          production:
+            metadataUrl: https://auth.devandre.sbs/application/o/backstage/.well-known/openid-configuration
+            clientId: ${AUTH_OIDC_CLIENT_ID}
+            clientSecret: ${AUTH_OIDC_CLIENT_SECRET}
+            callbackUrl: https://backstage.devandre.sbs/api/auth/oidc/handler/frame
+            additionalScopes: []
+            signIn:
+              resolvers:
+                - resolver: emailMatchingUserEntityProfileEmail
+                - resolver: emailLocalPartMatchingUserEntityName
+    catalog:
+      rules:
+        - allow: [Component, System, API, Resource, Location, User, Group]
+      locations:
+        - type: url
+          target: https://raw.githubusercontent.com/andrelair-platform/minicloud-gitops/main/catalog-info.yaml
+        # ... (one entry per repo)
+```
+
+---
+
+### Frontend auth module (auth.tsx)
+
+The new Backstage frontend system (`@backstage/frontend-defaults`) requires an explicit `ApiBlueprint` for the OIDC provider. Guest auth is removed entirely.
+
+```typescript
+// packages/app/src/modules/auth.tsx
+import { createFrontendModule } from '@backstage/frontend-plugin-api';
+import {
+  ApiBlueprint, createApiRef, configApiRef,
+  discoveryApiRef, oauthRequestApiRef,
+} from '@backstage/frontend-plugin-api';
+import { SignInPageBlueprint } from '@backstage/plugin-app-react';
+import { OAuth2 } from '@backstage/core-app-api';
+import { SignInPage } from '@backstage/core-components';
+
+export const oidcAuthApiRef = createApiRef<...>({ id: 'auth.oidc' });
+
+export const authModule = createFrontendModule({
+  pluginId: 'app',
+  extensions: [
+    ApiBlueprint.make({
+      name: 'oidc',
+      params: defineParams => defineParams({
+        api: oidcAuthApiRef,
+        deps: { configApi: configApiRef, discoveryApi: discoveryApiRef, oauthRequestApi: oauthRequestApiRef },
+        factory: ({ configApi, discoveryApi, oauthRequestApi }) =>
+          OAuth2.create({
+            configApi,          // ← required in new system; omitting causes 404 on /api/config
+            discoveryApi, oauthRequestApi,
+            environment: 'production',
+            provider: { id: 'oidc', title: 'Authentik', icon: () => null },
+            defaultScopes: ['openid', 'email', 'profile'],
+          }),
+      }),
+    }),
+    SignInPageBlueprint.make({
+      params: {
+        loader: async () => (props: any) => (
+          <SignInPage {...props} providers={[{
+            id: 'oidc-auth-provider',
+            title: 'Login with Authentik',
+            message: 'Sign in using your Authentik SSO account',
+            apiRef: oidcAuthApiRef,
+          }]} />
+          // ← 'guest' removed: causes 404 on /api/auth/guest/refresh in production
+        ),
+      },
+    }),
+  ],
+});
+```
+
+---
+
+### Catalog User + Group entities
+
+The sign-in resolver (`emailMatchingUserEntityProfileEmail`) looks for a `User` entity with matching email in the catalog. The catalog must have the User entity before login can complete.
+
+Add to `minicloud-gitops/catalog-info.yaml`:
+
+```yaml
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: andrelair-platform
+  annotations:
+    backstage.io/source-location: url:https://github.com/andrelair-platform/minicloud-gitops
+spec:
+  type: team
+  profile:
+    displayName: andrelair-platform
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: kanmegnea
+  annotations:
+    backstage.io/source-location: url:https://github.com/andrelair-platform/minicloud-gitops
+spec:
+  profile:
+    displayName: AndreLair
+    email: kanmegnea@gmail.com
+  memberOf:
+    - andrelair-platform
+```
+
+Also add `User` and `Group` to `catalog.rules.allow` in the Helm values — without this, these kinds are silently rejected even if the entity is present in the source file.
+
+---
+
+### OIDC debug chain — 6 errors fixed in sequence
+
+#### Error 1: `invalid_request (The request is otherwise malformed)`
+
+**Cause:** Authentik provider `grant_types: []` — authorization_code was never enabled.  
+**Symptom in Authentik logs:** `"Invalid grant_type for provider", "grant_type": "authorization_code"`  
+**Fix:** Edit provider in Authentik UI → enable Authorization Code + Refresh Token.
+
+#### Error 2: `Failed to sign-in, unable to resolve user identity`
+
+**Cause:** No `User` entity in the catalog with matching email.  
+**Fix:** Add `User` entity to `catalog-info.yaml` AND add `User, Group` to `catalog.rules.allow`.
+
+#### Error 3: `404` on `/api/auth/guest/refresh`
+
+**Cause:** `'guest'` provider left in `SignInPage.providers` array; the production Backstage image doesn't register the guest endpoint.  
+**Fix:** Remove `'guest'` from the providers array.
+
+#### Error 4: `login_required` on every Sign In attempt
+
+**Root cause:** `metadataUrl` pointed at `auth.10.0.0.200.nip.io`. The OIDC discovery document's `authorization_endpoint` therefore used that hostname. The login popup opened at `auth.10.0.0.200.nip.io`. The user's Authentik session cookie was scoped to `auth.devandre.sbs` (different hostname). Browser didn't send the cookie → no active session → Authentik rejected `prompt=none` → `login_required`.
+
+**Fix:** Change `metadataUrl` to `https://auth.devandre.sbs/application/o/backstage/.well-known/openid-configuration`. The discovery document then returns `authorization_endpoint: auth.devandre.sbs/...` — matching the hostname where the user's session cookie lives.
+
+**Key insight:** the domain in `metadataUrl` must be the SAME domain where users authenticate in their browser. Backstage uses the OIDC discovery document to determine where to send the popup.
+
+#### Error 5: `Page Not Found` after successful login
+
+**Cause:** `app-config.yaml` (baked into the image) contains `app.extensions.page:catalog.config.path: /`. But the Backstage pod only loads the Helm-injected ConfigMap at runtime — the base config is NOT loaded. Without the extension config, the catalog page is at `/catalog`, not `/`. After login, the main window was at `https://backstage.devandre.sbs/` with no route registered there → "Page Not Found".
+
+**Fix:** Add the extension config explicitly to the Helm values `appConfig`:
+```yaml
+app:
+  extensions:
+    - page:catalog:
+        config:
+          path: /
+```
+
+**Key insight:** in the new Backstage frontend system, the pod only loads the configs listed in the startup `--config` args. The base `app-config.yaml` is NOT auto-loaded in production unless explicitly included. Any runtime-critical config from the base file must be duplicated in the Helm values.
+
+Confirmed by the pod's startup log:
+```
+Loading config from MergedConfigSource{
+  FileConfigSource{path="/app/app-config.session.yaml"},
+  FileConfigSource{path="/app/app-config-from-configmap.yaml"},
+  EnvConfigSource{count=1}
+}
+```
+
+#### Error 6: `catalog returns 0 entities` (false alarm)
+
+**Symptom:** Backend access log showed `GET /api/catalog/entities... 200 0` — the "0" looked like an empty response body.
+
+**Reality:** Backstage 3.x catalog API uses `Transfer-Encoding: chunked` (no fixed `Content-Length` header). The HTTP access logger records `0` when no Content-Length header is present. The catalog had **36 entities** in PostgreSQL the whole time, confirmed by:
+
+```bash
+PGPASS=$(kubectl get secret -n backstage backstage-postgres-secret \
+  -o jsonpath='{.data.password}' | base64 -d)
+kubectl exec -n backstage backstage-postgresql-0 -- bash -c \
+  "PGPASSWORD='$PGPASS' psql -U bn_backstage -d backstage_plugin_catalog \
+  -c 'SELECT entity_ref FROM final_entities ORDER BY entity_ref;'"
+```
+
+The token issuance was also confirmed in the backend logs:
+```json
+{"message":"Issuing token for user:default/kanmegnea, with entities user:default/kanmegnea,group:default/andrelair-platform","plugin":"auth"}
+```
+
+---
+
+### Verification
+
+```bash
+# Pod running
+kubectl get pod -n backstage -l app.kubernetes.io/name=backstage
+
+# Catalog entity count (36 expected)
+PGPASS=$(kubectl get secret -n backstage backstage-postgres-secret \
+  -o jsonpath='{.data.password}' | base64 -d)
+kubectl exec -n backstage backstage-postgresql-0 -- bash -c \
+  "PGPASSWORD='$PGPASS' psql -U bn_backstage -d backstage_plugin_catalog \
+  -c 'SELECT COUNT(*) FROM final_entities;'"
+
+# User entity present
+kubectl exec -n backstage backstage-postgresql-0 -- bash -c \
+  "PGPASSWORD='$PGPASS' psql -U bn_backstage -d backstage_plugin_catalog \
+  -c \"SELECT entity_ref FROM final_entities WHERE entity_ref LIKE 'user:%' OR entity_ref LIKE 'group:%';\""
+```
+
+**Manual login test:**
+1. Navigate to `https://backstage.devandre.sbs`
+2. Click **SIGN IN**
+3. Authenticate via Authentik (kanmegnea + TOTP)
+4. Expect: catalog page at `/` showing all 14 Components + System + Group + User
+
+---
+
+### Catalog refresh — how it actually works
+
+The catalog does NOT log individual location fetches. The processing loop runs via internal PostgreSQL state (`refresh_state` table). Scheduled tasks visible in logs:
+
+| Task | Cadence | Purpose |
+|---|---|---|
+| `catalog_orphan_cleanup` | 30s | Removes entities with no provider claiming them |
+| `search_index_software_catalog` | 10m | Updates search index from catalog |
+
+The entity processing loop (reading GitHub URLs, processing YAML) runs asynchronously via the `refresh_state` Knex queue — it is NOT logged as a `Registered scheduled task`. Entities persist in PostgreSQL across pod restarts.
+
+---
+
 ## Real-world skills demonstrated
 
 | Skill | Industry context |
