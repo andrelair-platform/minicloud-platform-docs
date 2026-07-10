@@ -29,6 +29,30 @@ Homer is a lightweight static dashboard that runs as a pod in your k3s cluster. 
 
 ---
 
+## Homer vs Authentik Library — What's the Difference?
+
+Both provide a list of platform services, but they serve completely different purposes:
+
+| | Authentik Library | Homer |
+|---|---|---|
+| **Purpose** | SSO portal — only apps wired to Authentik | Navigation dashboard — every service on the platform |
+| **Entry criteria** | Must have an Authentik Application configured (OIDC or forward-auth) | Manual ConfigMap entry |
+| **Auth** | Clicking launches an SSO login flow | Dumb link — no auth, just navigates |
+| **Audience** | "Log into app X via Authentik" | "Where is app X?" |
+
+**Authentik shows what it _protects_. Homer shows what _exists_.**
+
+This means:
+- Services accessible only via Tailscale (MAAS, Prometheus, Alertmanager, MinIO) appear in Homer but **not** in Authentik — they don't need SSO because they're network-isolated.
+- Authentik itself appears in Homer, but not in its own library (a portal can't protect itself).
+- A new service must be added to **both** independently: one Authentik Application for SSO, one Homer ConfigMap entry for navigation.
+
+:::tip Keep them in sync
+When you deploy a new service, add it to Homer's ConfigMap at the same time. It's easy to forget — the platform works fine without it, but Homer becomes stale.
+:::
+
+---
+
 ## Deploy Homer in k3s
 
 ### Create the namespace and config
@@ -294,23 +318,26 @@ kubectl get app homer -n argocd -w
 # Watch for: Synced → OutOfSync → Synced → Progressing → Healthy
 ```
 
-### Current tile inventory (as of 2026-06-15)
+### Current tile inventory (config-checksum v17, 2026-07-10)
 
-The dashboard is organized into four sections. **Latest changes**: added MinIO tile under DevOps; replaced the GitLab placeholder with a GitHub tile pointing at the `andrelair-platform` organization.
+The dashboard is organized into five sections:
 
-| Section | Tiles |
-|---|---|
-| **Infrastructure** | MAAS, set-hog, fast-skunk, fast-heron (link to MAAS machine page) |
-| **Observability** | Grafana (live), Prometheus + Alertmanager (internal — port-forward) |
-| **DevOps** | ArgoCD, **GitHub** (was: GitLab), Harbor, **MinIO** (new) |
-| **Apps** | podinfo, whoami, platform-demo, NATS, Backstage, Chat (Open WebUI) |
+| Section | Tiles | Notes |
+|---|---|---|
+| **Infrastructure** | MAAS, set-hog, fast-skunk, fast-heron, star-kitten | All 4 worker nodes + control plane |
+| **Observability** | Grafana, Prometheus, Alertmanager, Polaris | Prometheus/Alertmanager/Polaris: internal tag (Tailscale only) |
+| **Identity** | Authentik, Vaultwarden | Both public via Cloudflare Tunnel |
+| **DevOps** | ArgoCD, GitHub, Harbor, MinIO | MinIO: internal (controller Tailscale IP) |
+| **Apps** | platform-demo, Backstage, Chat, LiteLLM Admin, Langfuse, NATS, Nextcloud, Vault, ktayl-solution, podinfo, whoami | podinfo/whoami: internal |
 
 **Notes on tile design decisions:**
 
-- **GitHub tile** uses `fab fa-github` (Font Awesome Brands) and points at `https://github.com/orgs/andrelair-platform/repositories`. The earlier "GitLab — soon" placeholder was removed during the same edit because Phase 13 chose GitHub Actions over self-hosted GitLab.
-- **MinIO tile** uses `fas fa-database` and points at `http://100.88.123.8:9001` (the controller's Tailscale IP — see the [Velero/MinIO doc](../backup-dr/01-velero.md#4a-accessing-the-minio-console-from-outside-the-controller) for why this URL and not `http://10.0.0.1:9001`).
-- **All `*.10.0.0.200.nip.io` tiles** route through the cluster Ingress (Phase 6 NGINX + Phase 15 TLS). Mac access works because Tailscale's subnet-route advertisement makes `10.0.0.0/24` reachable.
-- **Prometheus and Alertmanager are deliberately tagged `internal`** with `url: '#'` — these are cluster-internal services (`ClusterIP`), reachable only via `kubectl port-forward`. Exposing them via Ingress would be a security regression.
+- **star-kitten** added as 4th worker node (10.0.0.8) — same MAAS machine page URL as the others.
+- **Polaris** (`polaris.10.0.0.200.nip.io`) is internal-only — the dashboard blocks during its ~60s audit cycle; access via Tailscale between cycles.
+- **MinIO tile** points at `http://100.88.123.8:9001` (controller's Tailscale IP) — MinIO runs as a Docker container on the controller, not in the k3s cluster.
+- **All `*.10.0.0.200.nip.io` tiles** route through the cluster NGINX Ingress. Mac access works because Tailscale's subnet-route advertisement makes `10.0.0.0/24` reachable.
+- **Prometheus and Alertmanager** are tagged `internal` — protected by Authentik forward-auth on their nip.io Ingress. Direct port-forward not needed.
+- **Chat subtitle** reflects the full AI Gateway: 7 Ollama models, RAG (bge-m3 + pgvector), SearXNG web search, LiteLLM multi-provider routing.
 
 ---
 
