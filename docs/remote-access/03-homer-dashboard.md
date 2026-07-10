@@ -53,6 +53,46 @@ When you deploy a new service, add it to Homer's ConfigMap at the same time. It'
 
 ---
 
+## Homer vs Backstage Catalog — What's the Difference?
+
+Both show a list of platform services. The question they answer is completely different.
+
+| | Homer | Backstage Catalog |
+|---|---|---|
+| **The question it answers** | "I need to get to X right now" | "What IS X, who owns it, how does it work?" |
+| **Auth required** | No — loads instantly, no login | Yes — Authentik OIDC login |
+| **Audience** | Anyone: ops, management demo, incident response | Engineers: developers, platform team |
+| **What it shows** | Big tiles, one click to any URL | Owner, GitHub repo, ArgoCD sync state, pod status, Grafana links, API specs |
+| **Resilience** | Works even if Authentik is down (static HTML) | Requires Authentik + PostgreSQL + k8s |
+| **Speed** | Instant (static, no API calls) | Loads dynamically from catalog DB |
+| **Entry method** | Manual ConfigMap tile | `catalog-info.yaml` committed to each repo |
+
+**Decision table — which one to open:**
+
+| Scenario | Tool |
+|---|---|
+| Open Grafana quickly during an incident | **Homer** |
+| Find which team owns the `rag-ingest` service | **Backstage** |
+| Demo the platform to a manager (no SSO setup) | **Homer** |
+| Onboard a new engineer who needs to understand what runs here | **Backstage** |
+| Authentik is down, you need ArgoCD immediately | **Homer** |
+| Find the GitHub repo for a given service | **Backstage** |
+| Check if a deployment is healthy across all environments | **Backstage** (Kubernetes plugin) |
+| Share a quick link to the Chat interface | **Homer** |
+
+**Analogy:** Homer is your browser bookmarks bar. Backstage is your internal Wikipedia + ops dashboard rolled into one, per service.
+
+Homer is not redundant — it is intentionally simpler and more resilient. Backstage going down does not affect Homer at all. Homer losing a tile does not affect Backstage. They serve different audiences and different cognitive modes (navigate fast vs understand deeply).
+
+:::info Both must be updated when a new service is deployed
+- **Homer**: add a tile to `manifests/homer/01-configmap.yaml` + bump the `config-checksum` annotation
+- **Backstage**: add a `catalog-info.yaml` to the service repo and register it as a catalog location in `backstage-values.yaml`
+
+These are independent. A service can be in Homer only (no catalog metadata), in Backstage only (no tile), or in both. Aim for both.
+:::
+
+---
+
 ## Deploy Homer in k3s
 
 ### Create the namespace and config
