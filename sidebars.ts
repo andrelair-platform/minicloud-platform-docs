@@ -532,6 +532,14 @@ const sidebars: SidebarsConfig = {
       items: ['developer-platform/branch-strategy-cicd'],
     },
 
+    // ── CI Registry Migration ─────────────────────────────────────────
+    {
+      type: 'category',
+      label: '🚢 CI Registry Migration — Tailscale + Harbor Direct',
+      collapsed: true,
+      items: ['developer-platform/ci-registry-migration'],
+    },
+
     // ── Dependency Auditability ───────────────────────────────────────
     {
       type: 'category',
