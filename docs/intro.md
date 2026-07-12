@@ -164,6 +164,7 @@ OpenMetadata  → data catalog, lineage, governance
 ## CV / LinkedIn Summary
 
 - Designed and deployed a 5-node bare-metal Kubernetes platform (4× Lenovo ThinkPad + 1× MacBook Pro 2012, 36 cores / 68 GiB RAM / 2.3 TB) using MAAS (Metal as a Service), PXE provisioning for ThinkPads, and USB install for Apple hardware incompatible with standard PXE
+- Achieved **~$15,000–$17,000 / year in cloud cost avoidance** by running equivalent capacity on owned hardware at ~$20–35/mo electricity, versus $1,300–$1,430/mo for compute-optimized cloud equivalents (AWS 9× c6i.xlarge / Azure F32s_v2 + F4s_v2 / GCP N2 Custom 36 vCPU — On-Demand pricing, US regions)
 - Implemented full GitOps delivery pipeline: ArgoCD app-of-apps, GitHub Actions CI/CD, Cosign keyless image signing, CycloneDX SBOM, GPG-signed commits, and branch protection on critical repos
 - Built enterprise AI gateway (LiteLLM 1.90.3) routing across 7 cloud providers and 2 local Ollama nodes — with cloud fallback chain, circuit breaker (3 failures → 60 s cooldown), 3-tier department budget governance ($5/$30/$100 / 30 d), Valkey prompt cache, and Grafana cost dashboard backed by PostgreSQL SQL
 - Deployed PII/DLP and credential guardrails: Microsoft Presidio anonymizes prompts before any cloud API receives them; detect_secrets blocks credential leakage at inference time
