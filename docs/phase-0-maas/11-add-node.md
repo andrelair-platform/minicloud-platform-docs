@@ -223,15 +223,59 @@ ssh <NEW_NODE> "grep 'HandleLid' /etc/systemd/logind.conf"
 
 ---
 
-## Step 10 — Reboot Test
+## Step 10 — Auto Power-On After Power Failure (ThinkPad only)
+
+ThinkPad BIOS has an `OnByAcAttach` attribute that controls whether the machine powers on automatically when AC power is restored after an outage. This is critical for a headless cluster — without it, all nodes stay off after a power cut and need manual intervention.
+
+**Set via ThinkLMI kernel interface** (no BIOS reboot required):
 
 ```bash
-ssh star-kitten "sudo reboot"
+# Check current value
+ssh <NEW_NODE> "sudo cat /sys/class/firmware-attributes/thinklmi/attributes/OnByAcAttach/current_value"
+
+# Enable (if no BIOS admin password is set)
+ssh <NEW_NODE> "sudo bash -c 'echo Enable > /sys/class/firmware-attributes/thinklmi/attributes/OnByAcAttach/current_value'"
+```
+
+:::caution BIOS supervisor password
+If the node has a BIOS admin password set (`sudo cat .../authentication/Admin/is_enabled` returns `1`), you must authenticate first. Note the file is `current_password` (not `current_passwd`):
+
+```bash
+ssh <NEW_NODE> "
+  sudo bash -c 'echo <BIOS_PASSWORD> > /sys/class/firmware-attributes/thinklmi/authentication/Admin/current_password'
+  sudo bash -c 'echo Enable > /sys/class/firmware-attributes/thinklmi/attributes/OnByAcAttach/current_value'
+  sudo bash -c 'echo \"\" > /sys/class/firmware-attributes/thinklmi/authentication/Admin/current_password'
+"
+```
+:::
+
+The setting takes effect immediately — no reboot needed. Verify all cluster nodes:
+
+```bash
+for ip in 10.0.0.2 10.0.0.4 10.0.0.7 10.0.0.8; do
+  val=$(ssh controller "ssh ubuntu@$ip sudo cat /sys/class/firmware-attributes/thinklmi/attributes/OnByAcAttach/current_value 2>/dev/null")
+  name=$(ssh controller "ssh ubuntu@$ip hostname 2>/dev/null")
+  echo "$name ($ip): $val"
+done
+```
+
+Expected output: all nodes showing `Enable`.
+
+:::note swift-mac limitation
+Apple MacBook hardware (swift-mac) has an SMC hardware limitation — it **cannot** auto power-on after a power failure regardless of OS or firmware settings. This is a known Apple hardware constraint with no software workaround.
+:::
+
+---
+
+## Step 11 — Reboot Test
+
+```bash
+ssh <NEW_NODE> "sudo reboot"
 
 # Wait ~4 minutes, then verify node rejoined
-kubectl get node star-kitten
+kubectl get node <NEW_NODE>
 # Ready
-ssh star-kitten "systemctl is-active k3s-agent"
+ssh <NEW_NODE> "systemctl is-active k3s-agent"
 # active
 ```
 
@@ -397,5 +441,6 @@ kubectl get nodes -o wide
 | Hardening | SSH config + UFW (same as other nodes) |
 | k3s agent | `curl get.k3s.io | K3S_URL=... K3S_TOKEN=... sh -` |
 | EFI boot order | `efibootmgr --create` Ubuntu entry + `--bootorder PXE,Ubuntu,NVMe` |
-| Lid suspend | `sed` `HandleLidSwitch=ignore` + `HandleLidSwitchExternalPower=ignore` in logind.conf |
+| Lid suspend | `HandleLidSwitch=ignore` + `HandleLidSwitchExternalPower=ignore` in logind.conf |
+| Auto power-on | `echo Enable > .../OnByAcAttach/current_value` via ThinkLMI (ThinkPads only) |
 | Reboot test | Node rejoins cluster automatically in ~4 minutes |
