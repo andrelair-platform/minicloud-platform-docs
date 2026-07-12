@@ -145,40 +145,60 @@ CPU limits exceed physical cores intentionally — this is standard Kubernetes o
 
 ## Equivalent Cloud Cost Comparison
 
-The cluster (36 vCPU, ~68 GiB RAM, ~2.3 TB storage) maps to the following on major cloud providers:
+The cluster resource profile (36 vCPU / ~68 GiB RAM) averages **~1.9 GiB RAM per vCPU** — this places it in the **Compute-Optimized** tier, not General Purpose. Prices below use **On-Demand (Pay-As-You-Go)** rates in US regions over a 730-hour month. These are the absolute ceiling; committed-use discounts are discussed below.
 
-### AWS
+### AWS — 9× `c6i.xlarge`
 
-| Instance | vCPU | RAM | Storage | Monthly Cost (est.) |
-|---|---|---|---|---|
-| `m6i.2xlarge` × 4 | 8 each / 32 total | 32 GiB each / ~128 GiB total | EBS separately | ~$470–$600/mo |
-| Equivalent EBS (2.3 TB gp3) | — | — | 2.3 TB | ~$185/mo |
-| **Total AWS** | | | | **~$655–$785/mo** |
+9 instances gives exactly 36 vCPUs and 72 GiB RAM (c6i compute-optimized family, 2 GiB/vCPU ratio).
 
-### Azure
+| Resource | Detail | Unit Cost | Monthly Cost |
+|---|---|---|---|
+| Compute | 9 × `c6i.xlarge` (36 vCPUs, 72 GiB RAM) | $0.17 / hr each | $1,116.90 |
+| Storage | GP3 SSD (2,300 GB) | $0.08 / GB-mo | $184.00 |
+| **Total AWS** | | | **~$1,300.90 / mo** |
 
-| Instance | vCPU | RAM | Storage | Monthly Cost (est.) |
-|---|---|---|---|---|
-| `Standard_D8s_v5` × 4 | 8 each / 32 total | 32 GiB each / ~128 GiB total | Managed disk separately | ~$510–$640/mo |
-| Equivalent Managed Disk (2.3 TB P30) | — | — | 2.3 TB | ~$155/mo |
-| **Total Azure** | | | | **~$665–$795/mo** |
+### Azure — `F32s_v2` + `F4s_v2`
 
-### GCP
+One `Standard_F32s_v2` (32 vCPU, 64 GiB) + one `Standard_F4s_v2` (4 vCPU, 8 GiB) = exactly 36 vCPU, 72 GiB.
 
-| Instance | vCPU | RAM | Storage | Monthly Cost (est.) |
-|---|---|---|---|---|
-| `n2-standard-8` × 4 | 8 each / 32 total | 32 GiB each / ~128 GiB total | Persistent disk separately | ~$480–$615/mo |
-| Equivalent Persistent Disk (2.3 TB SSD) | — | — | 2.3 TB | ~$230/mo |
-| **Total GCP** | | | | **~$710–$845/mo** |
+| Resource | Detail | Unit Cost | Monthly Cost |
+|---|---|---|---|
+| Compute | `F32s_v2` + `F4s_v2` (36 vCPUs, 72 GiB RAM) | $1.353 + $0.354 / hr | $1,246.11 |
+| Storage | Premium SSD v2 (2,300 GB) | ~$0.08 / GB-mo | $184.00 |
+| **Total Azure** | | | **~$1,430.11 / mo** |
 
-### Your Bare-Metal Setup
+### GCP — N2 Custom (36 vCPU, 68 GiB)
+
+GCP Custom Machine Types allow exact sizing — no over-provisioning required.
+
+| Resource | Detail | Unit Cost | Monthly Cost |
+|---|---|---|---|
+| Compute | N2 Custom (36 vCPUs, 68 GiB RAM) | Per vCPU + GB pricing | ~$1,150.00 |
+| Storage | Balanced Persistent Disk (2,300 GB) | $0.10 / GB-mo | $230.00 |
+| **Total GCP** | | | **~$1,380.00 / mo** |
+
+### Bare-Metal (this setup)
 
 | Resource | Value | Monthly Cost |
 |---|---|---|
 | Hardware (4× ThinkPad + MacBook Pro 2012) | 36 cores / ~68 GiB / ~2.3 TB | ~$0 (already owned) |
-| Electricity (est. ~225 W total, 24/7) | 5× laptops at idle/load | ~$20–$35/mo |
-| **Total bare-metal** | | **~$20–$35/mo** |
+| Electricity (~225 W total, 24/7) | 5× laptops at idle/load | ~$20–$35 / mo |
+| **Total bare-metal** | | **~$20–$35 / mo** |
 
 :::tip Cost advantage
-Running this infrastructure bare-metal saves approximately **$630–$810/month** compared to equivalent cloud instances. Over a year that is **$7,560–$9,720 in cloud spend avoided** — while giving you full hardware control, no egress fees, and no vendor lock-in.
+Running bare-metal saves **~$1,265–$1,410 per month** versus the cheapest equivalent cloud option (AWS ~$1,301/mo). Over a year that is **$15,180–$16,920 in cloud spend avoided** — with full hardware control and zero egress fees.
 :::
+
+### How to cut cloud costs by 30–70 %
+
+The On-Demand prices above are the absolute ceiling. If this cluster ran in the cloud continuously, several strategies would apply:
+
+| Strategy | Saving | Notes |
+|---|---|---|
+| **1-year commitment** (AWS Savings Plans / Azure Reserved / GCP CUD) | 30–55 % off compute | Locks in price; break-even in ~6 months |
+| **3-year commitment** | up to 60–65 % off compute | Best for stable baseline workloads |
+| **GCP Sustained Use Discount** | up to 20 % automatic | Applied by GCP with no upfront contract when instances run >25 % of the month |
+| **Right-size to actual usage** | variable | Current utilisation: 17 / 36 cores, 537 GB / 2.3 TB — a smaller cluster would cut the base bill by ~40 % |
+| **Spot / Preemptible for batch** | 60–90 % off | Only for fault-tolerant workloads (AI inference jobs, RAG pipelines) |
+
+Even with a 1-year commitment at 40 % off, the cheapest cloud option (AWS) would cost **~$780 / mo** — still 22× more expensive than running the same workload bare-metal.
