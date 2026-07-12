@@ -105,50 +105,80 @@ Apple hardware uses a proprietary NetBoot protocol incompatible with standard PX
 
 ## Total Cluster Capacity
 
-| Resource | Per Node (ThinkPad) | swift-mac | Total (5 nodes) |
+Figures from `kubectl` node capacity (live, 2026-07-12):
+
+| Resource | set-hog | fast-heron | fast-skunk | star-kitten | swift-mac | **Total** |
+|---|---|---|---|---|---|---|
+| CPU cores | 8 | 8 | 8 | 8 | 4 | **36** |
+| RAM (usable) | 15.6 GiB | 15.6 GiB | 15.6 GiB | 15.6 GiB | 7.8 GiB | **~70 GiB** |
+| Disk (usable) | 468 GB | 468 GB | 468 GB | 468 GB | 437 GB | **~2.3 TB** |
+| Max pods | 110 | 110 | 110 | 110 | 110 | **550** |
+
+---
+
+## Live Resource Utilization
+
+Measured 2026-07-12 with 162 running pods across 57 ArgoCD apps:
+
+| Node | RAM used / total | RAM free | Disk used / total | Disk free |
+|---|---|---|---|---|
+| set-hog | 8.4 GiB / 15 GiB | 6.9 GiB | 137 GB / 468 GB | 308 GB (69%) |
+| fast-heron | 6.5 GiB / 15 GiB | 8.8 GiB | 150 GB / 468 GB | 295 GB (66%) |
+| fast-skunk | 4.5 GiB / 15 GiB | 10 GiB | 91 GB / 468 GB | 354 GB (79%) |
+| star-kitten | 6.3 GiB / 15 GiB | 9.0 GiB | 143 GB / 468 GB | 302 GB (67%) |
+| swift-mac | 1.2 GiB / 7.7 GiB | 6.1 GiB | 16 GB / 437 GB | 403 GB (96%) |
+| **Cluster total** | **~27 GiB / ~68 GiB** | **~41 GiB free** | **~537 GB / ~2.3 TB** | **~1.66 TB free** |
+
+CPU allocation (requests/limits across all pods):
+
+| Node | CPU requested | CPU limit | Cores |
 |---|---|---|---|
-| CPU Cores | 8 | 4 (2C/4T) | 36 |
-| RAM | 15.9 GiB | 8 GiB | ~71.6 GiB |
-| Storage | 512 GB | 480 GB | ~2.5 TB |
+| fast-heron | 4.7 / 8 (59%) | 15.0 (187% — overcommit) | 8 |
+| fast-skunk | 3.4 / 8 (43%) | 17.0 (211% — overcommit) | 8 |
+| set-hog | 3.7 / 8 (46%) | 15.1 (188% — overcommit) | 8 |
+| star-kitten | 4.2 / 8 (51%) | 13.7 (171% — overcommit) | 8 |
+| swift-mac | 0.9 / 4 (23%) | 3.7 (91%) | 4 |
+
+CPU limits exceed physical cores intentionally — this is standard Kubernetes overcommit. Limits are only enforced under CPU pressure; actual utilization stays well below capacity.
 
 ---
 
 ## Equivalent Cloud Cost Comparison
 
-The cluster above (24 vCPU, ~48 GiB RAM, ~1.5 TB storage) maps to the following on major cloud providers:
+The cluster (36 vCPU, ~68 GiB RAM, ~2.3 TB storage) maps to the following on major cloud providers:
 
 ### AWS
 
 | Instance | vCPU | RAM | Storage | Monthly Cost (est.) |
 |---|---|---|---|---|
-| `m6i.2xlarge` x3 | 8 each / 24 total | 32 GiB each / ~96 GiB total | EBS separately | ~$350–$450/mo |
-| Equivalent EBS (1.5 TB gp3) | — | — | 1.5 TB | ~$120/mo |
-| **Total AWS** | | | | **~$470–$570/mo** |
+| `m6i.2xlarge` × 4 | 8 each / 32 total | 32 GiB each / ~128 GiB total | EBS separately | ~$470–$600/mo |
+| Equivalent EBS (2.3 TB gp3) | — | — | 2.3 TB | ~$185/mo |
+| **Total AWS** | | | | **~$655–$785/mo** |
 
 ### Azure
 
 | Instance | vCPU | RAM | Storage | Monthly Cost (est.) |
 |---|---|---|---|---|
-| `Standard_D8s_v5` x3 | 8 each / 24 total | 32 GiB each / ~96 GiB total | Managed disk separately | ~$380–$480/mo |
-| Equivalent Managed Disk (1.5 TB P30) | — | — | 1.5 TB | ~$100/mo |
-| **Total Azure** | | | | **~$480–$580/mo** |
+| `Standard_D8s_v5` × 4 | 8 each / 32 total | 32 GiB each / ~128 GiB total | Managed disk separately | ~$510–$640/mo |
+| Equivalent Managed Disk (2.3 TB P30) | — | — | 2.3 TB | ~$155/mo |
+| **Total Azure** | | | | **~$665–$795/mo** |
 
 ### GCP
 
 | Instance | vCPU | RAM | Storage | Monthly Cost (est.) |
 |---|---|---|---|---|
-| `n2-standard-8` x3 | 8 each / 24 total | 32 GiB each / ~96 GiB total | Persistent disk separately | ~$360–$460/mo |
-| Equivalent Persistent Disk (1.5 TB SSD) | — | — | 1.5 TB | ~$150/mo |
-| **Total GCP** | | | | **~$510–$610/mo** |
+| `n2-standard-8` × 4 | 8 each / 32 total | 32 GiB each / ~128 GiB total | Persistent disk separately | ~$480–$615/mo |
+| Equivalent Persistent Disk (2.3 TB SSD) | — | — | 2.3 TB | ~$230/mo |
+| **Total GCP** | | | | **~$710–$845/mo** |
 
 ### Your Bare-Metal Setup
 
 | Resource | Value | Monthly Cost |
 |---|---|---|
-| Hardware (4x ThinkPad + MacBook Pro 2012) | 36 cores / 71.6 GiB / 2.5 TB | ~$0 (already owned) |
-| Electricity (est. ~225W total) | 24/7 | ~$20–$35/mo |
+| Hardware (4× ThinkPad + MacBook Pro 2012) | 36 cores / ~68 GiB / ~2.3 TB | ~$0 (already owned) |
+| Electricity (est. ~225 W total, 24/7) | 5× laptops at idle/load | ~$20–$35/mo |
 | **Total bare-metal** | | **~$20–$35/mo** |
 
 :::tip Cost advantage
-Running this infrastructure bare-metal saves approximately **$600–$750/month** compared to equivalent cloud instances. Over a year that is **$7,200–$9,000 in cloud spend avoided** — while giving you full hardware control and no vendor lock-in.
+Running this infrastructure bare-metal saves approximately **$630–$810/month** compared to equivalent cloud instances. Over a year that is **$7,560–$9,720 in cloud spend avoided** — while giving you full hardware control, no egress fees, and no vendor lock-in.
 :::

@@ -41,7 +41,7 @@ Each phase builds directly on the previous one — nothing requires something th
 
 | Phase | Topic | Key Technology | Status |
 |---|---|---|---|
-| **0** | MAAS + 4-node provisioning | MAAS, PXE, cloud-init | ✅ Done |
+| **0** | MAAS + bare-metal provisioning (4× ThinkPad via PXE + 1× MacBook Pro via USB) | MAAS, PXE, cloud-init | ✅ Done |
 | **1** | Kubernetes cluster | k3s | ✅ Done |
 | **2** | kubectl local access | kubeconfig | ✅ Done |
 | **3** | Remote access from anywhere | Tailscale, Cloudflare Tunnel, Homer | ✅ Done |
@@ -163,17 +163,17 @@ OpenMetadata  → data catalog, lineage, governance
 
 ## CV / LinkedIn Summary
 
-- Designed and deployed a 4-node bare-metal Kubernetes platform on ThinkPad hardware using MAAS (Metal as a Service), PXE provisioning, and k3s
+- Designed and deployed a 5-node bare-metal Kubernetes platform (4× Lenovo ThinkPad + 1× MacBook Pro 2012, 36 cores / 68 GiB RAM / 2.3 TB) using MAAS (Metal as a Service), PXE provisioning for ThinkPads, and USB install for Apple hardware incompatible with standard PXE
 - Implemented full GitOps delivery pipeline: ArgoCD app-of-apps, GitHub Actions CI/CD, Cosign keyless image signing, CycloneDX SBOM, GPG-signed commits, and branch protection on critical repos
 - Built enterprise AI gateway (LiteLLM 1.90.3) routing across 7 cloud providers and 2 local Ollama nodes — with cloud fallback chain, circuit breaker (3 failures → 60 s cooldown), 3-tier department budget governance ($5/$30/$100 / 30 d), Valkey prompt cache, and Grafana cost dashboard backed by PostgreSQL SQL
 - Deployed PII/DLP and credential guardrails: Microsoft Presidio anonymizes prompts before any cloud API receives them; detect_secrets blocks credential leakage at inference time
 - Implemented Langfuse LLM observability (ClickHouse + Valkey + PostgreSQL) tracing every AI Gateway call with token counts, cost, model, and department metadata
 - Enforced 9 OPA/Gatekeeper admission control policies in deny mode with 0 violations: no-root containers, no-privileged pods, approved registry only, resource limits required, TLS-only ingress, no LoadBalancer in dev, no hostPath, no latest tag, no privilege escalation
-- Applied defence-in-depth: default-deny NetworkPolicy on all 23 namespaces, PSA enforce:restricted on 8 namespaces, AES-CBC-256 secrets encryption at rest, k3s audit logs, SSH hardening + UFW default-deny on all 4 cluster nodes, HSTS globally, rate limiting, and Authentik forward-auth on internal dashboards
+- Applied defence-in-depth: default-deny NetworkPolicy on all 23 namespaces, PSA enforce:restricted on 8 namespaces, AES-CBC-256 secrets encryption at rest, k3s audit logs, SSH hardening + UFW default-deny on all 5 cluster nodes, HSTS globally, rate limiting, and Authentik forward-auth on internal dashboards
 - Achieved zero-touch Vault auto-unseal via AWS KMS (scoped IAM policy, seal migration verified — pod deletion → 1/1 Ready in ~30 s with no human input)
 - Deployed External Secrets Operator with Vault KV v2 backend (9 ExternalSecrets — all platform credentials pulled from Vault; no plaintext secrets in git)
 - Implemented full backup & DR: Velero + MinIO (daily cluster backup), nightly DB dumps (pg_dump → MinIO), Vault raft snapshots, PrometheusRule alerts (VeleroBackupFailed, MinioDiskFull), and validated restore test
 - Built Authentik-based department RBAC: 16 groups, 16 demo personas with group-based policy bindings across ArgoCD, Grafana, Harbor, Open WebUI, and Nextcloud; MFA enforced on all accounts
-- Established full platform health suite: 42-check regression script (cluster, security, observability, AI Gateway, backups) — Regression check #19: **42 PASS / 0 FAIL / 0 WARN**
+- Established full platform health suite: regression check script covering cluster, security, observability, AI Gateway, and backups — Regression check #37: **20 PASS / 0 FAIL / 3 WARN** (all warns are known drift)
 - Implemented remote access via Tailscale VPN and Cloudflare Tunnel (`*.devandre.sbs` public edge, no Tailscale required)
 - Applied chaos engineering with Chaos Mesh: PodChaos (0 ms downtime under 5 simultaneous kills), NetworkChaos (200 ms latency injection + clean recovery), StressChaos (contained cgroup OOM)
