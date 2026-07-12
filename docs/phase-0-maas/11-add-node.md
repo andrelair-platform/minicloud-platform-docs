@@ -237,6 +237,155 @@ ssh star-kitten "systemctl is-active k3s-agent"
 
 ---
 
+## Apple Hardware / Non-MAAS Path
+
+Apple EFI uses a proprietary **NetBoot** protocol that is incompatible with standard PXE. MAAS cannot commission Apple hardware via the normal PXE flow. Use this alternate procedure for any Mac joining the cluster.
+
+Completed 2026-07-12 for **swift-mac** (MacBook Pro 13" Mid 2012, 10.0.0.10).
+
+---
+
+### Step A — Flash Ubuntu to USB
+
+From the controller (saves downloading on the Mac):
+
+```bash
+# ISO is already cached at /tmp/ubuntu-22.04-server.iso (2.1 GB)
+# Identify the USB stick after plugging it in:
+lsblk -o NAME,SIZE,TYPE,VENDOR,MODEL | grep -v loop
+
+# Flash (replace sdX with actual device):
+sudo dd if=/tmp/ubuntu-22.04-server.iso of=/dev/sdX bs=4M status=progress oflag=sync
+```
+
+---
+
+### Step B — Boot from USB on the Mac
+
+1. Plug USB into the Mac, connect ethernet to the cluster switch
+2. Power on while holding **⌥ Option** key
+3. Select **EFI Boot** (orange icon) from the boot picker
+
+:::caution N-key does not work
+Holding `N` at boot triggers Apple's proprietary **NetBoot** (not PXE). MAAS never receives a PXE request from it. Always use the `Option` boot picker instead.
+:::
+
+---
+
+### Step C — Install Ubuntu Server
+
+Follow the Subiquity installer screens:
+- Language: **English**
+- Type: **Ubuntu Server**
+- Network: configure static IP (e.g. `10.0.0.10/24`, gateway `10.0.0.1`)
+- Storage: **Use entire disk** (wipe macOS)
+- SSH: **Install OpenSSH server** ✓
+- Packages: none needed
+
+When install completes, remove USB when prompted and let it reboot.
+
+:::tip cloud-init network leak
+Ubuntu 22.04 cloud-init may pick up the home router's DHCP on the same interface, adding a stray `192.168.1.x` address. Fix after first boot:
+```bash
+echo "network: {config: disabled}" | sudo tee /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+sudo ip addr del 192.168.1.x/24 dev enp1s0f0
+```
+:::
+
+---
+
+### Step D — SSH Access & Passwordless Sudo
+
+From the controller:
+
+```bash
+# Push controller key (uses password temporarily)
+sshpass -p '<password>' ssh-copy-id -o StrictHostKeyChecking=no <user>@<NODE_IP>
+
+# Enable passwordless sudo
+ssh <user>@<NODE_IP> "echo '<password>' | sudo -S tee /etc/sudoers.d/<user>-nopasswd <<< '<user> ALL=(ALL) NOPASSWD:ALL'"
+```
+
+Add SSH alias to `~/.ssh/config` on the Mac:
+```text
+Host swift-mac
+  HostName 10.0.0.10
+  User andre
+  ProxyJump controller
+```
+
+---
+
+### Step E — Full Node Setup (single script)
+
+```bash
+# Run on the new node via SSH
+sudo hostnamectl set-hostname swift-mac
+
+# Static IP (netplan)
+sudo tee /etc/netplan/00-installer-config.yaml << 'EOF'
+network:
+  version: 2
+  ethernets:
+    enp1s0f0:
+      dhcp4: false
+      addresses: [10.0.0.10/24]
+      routes:
+        - to: default
+          via: 10.0.0.1
+      nameservers:
+        addresses: [10.0.0.1, 8.8.8.8]
+EOF
+sudo netplan apply
+
+# Disable swap (k3s requirement)
+sudo swapoff -a && sudo sed -i '/swap/d' /etc/fstab
+
+# Extend LVM to full disk
+sudo lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
+sudo resize2fs /dev/ubuntu-vg/ubuntu-lv
+
+# Disable lid-close suspend
+sudo sed -i 's/#HandleLidSwitch=suspend/HandleLidSwitch=ignore/' /etc/systemd/logind.conf
+sudo sed -i 's/#HandleLidSwitchExternalPower=suspend/HandleLidSwitchExternalPower=ignore/' /etc/systemd/logind.conf
+sudo systemctl restart systemd-logind
+
+# Join k3s cluster
+TOKEN=$(ssh ubuntu@10.0.0.2 "sudo cat /var/lib/rancher/k3s/server/node-token")
+curl -sfL https://get.k3s.io | K3S_URL=https://10.0.0.2:6443 K3S_TOKEN=$TOKEN sh -s - agent
+```
+
+---
+
+### Step F — MAAS IP Reservation
+
+Since 10.0.0.10 falls inside the MAAS dynamic range (`10.0.0.11–10.0.0.100` after this change), reserve it:
+
+```bash
+# Shrink dynamic range to free 10.0.0.10
+maas admin iprange update 1 start_ip=10.0.0.11 end_ip=10.0.0.100
+
+# Create MAAS device and assign static IP
+maas admin devices create mac_addresses=<MAC> hostname=swift-mac
+IFACE_ID=$(maas admin interfaces read <system_id> | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
+maas admin interface link-subnet <system_id> $IFACE_ID mode=STATIC subnet=10.0.0.0/24 ip_address=10.0.0.10
+```
+
+---
+
+### Step G — Label and Verify
+
+```bash
+kubectl label node swift-mac node-role.kubernetes.io/worker=worker \
+  kubernetes.io/arch=amd64 \
+  node.longhorn.io/create-default-disk=true
+
+kubectl get nodes -o wide
+# swift-mac   Ready   worker   Xm   v1.36.2+k3s1   10.0.0.10
+```
+
+---
+
 ## Summary
 
 | Step | Command / Action |

@@ -13,7 +13,7 @@ slug: /
 
 ## What This Project Is
 
-This documentation covers a complete bare-metal infrastructure built locally using **MAAS (Metal as a Service)**, provisioning a 4-node cluster ready for Kubernetes and production workloads.
+This documentation covers a complete bare-metal infrastructure built locally using **MAAS (Metal as a Service)**, provisioning a 5-node cluster ready for Kubernetes and production workloads.
 
 ```text
 Equivalent to: AWS EC2 + VPC + Auto Provisioning — but local.
@@ -29,6 +29,7 @@ Equivalent to: AWS EC2 + VPC + Auto Provisioning — but local.
 | fast-skunk | 10.0.0.4 | Worker | ThinkPad T490 |
 | fast-heron | 10.0.0.7 | Worker | ThinkPad T490 |
 | star-kitten | 10.0.0.8 | Worker | ThinkPad T490 |
+| swift-mac | 10.0.0.10 | Worker | MacBook Pro 13" 2012 |
 
 **MAAS Controller:** Ubuntu + dual NIC (WiFi → internet, Ethernet → 10.0.0.1)
 

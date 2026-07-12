@@ -6,7 +6,7 @@ sidebar_position: 4
 
 # Hardware Used
 
-## Cluster Nodes — 4x Lenovo ThinkPad
+## Cluster Nodes — 4x Lenovo ThinkPad + 1x MacBook Pro
 
 All four nodes run on Lenovo ThinkPad laptops with identical specs:
 
@@ -84,13 +84,32 @@ All four nodes run on Lenovo ThinkPad laptops with identical specs:
 
 ---
 
+### swift-mac — 10.0.0.10
+
+| Field | Value |
+|---|---|
+| Model | Apple MacBook Pro 13-inch Mid 2012 |
+| CPU | Intel Core i5-3210M (Ivy Bridge), 2 cores / 4 threads |
+| RAM | 8 GiB DDR3 1600 MHz |
+| Storage | 480 GB SSD |
+| NIC | Broadcom BCM57765 (built-in RJ45, `enp1s0f0`) |
+| Serial | C02JL20WDTY4 |
+| OS | Ubuntu 22.04.5 LTS (manual USB install — Apple EFI incompatible with MAAS PXE) |
+| Added | 2026-07-12 |
+
+:::note Non-MAAS install
+Apple hardware uses a proprietary NetBoot protocol incompatible with standard PXE/MAAS. swift-mac was provisioned via USB installer. See [Adding a Non-MAAS Node](add-node#apple-hardware--non-maas-path) for the full procedure.
+:::
+
+---
+
 ## Total Cluster Capacity
 
-| Resource | Per Node | Total (4 nodes) |
-|---|---|---|
-| CPU Cores | 8 | 32 |
-| RAM | 15.9 GiB | ~63.6 GiB |
-| Storage | 512 GB | ~2.0 TB |
+| Resource | Per Node (ThinkPad) | swift-mac | Total (5 nodes) |
+|---|---|---|---|
+| CPU Cores | 8 | 4 (2C/4T) | 36 |
+| RAM | 15.9 GiB | 8 GiB | ~71.6 GiB |
+| Storage | 512 GB | 480 GB | ~2.5 TB |
 
 ---
 
@@ -126,10 +145,10 @@ The cluster above (24 vCPU, ~48 GiB RAM, ~1.5 TB storage) maps to the following 
 
 | Resource | Value | Monthly Cost |
 |---|---|---|
-| Hardware (4x ThinkPad) | 32 cores / 63.6 GiB / 2.0 TB | ~$0 (already owned) |
-| Electricity (est. ~200W total) | 24/7 | ~$20–$30/mo |
-| **Total bare-metal** | | **~$20–$30/mo** |
+| Hardware (4x ThinkPad + MacBook Pro 2012) | 36 cores / 71.6 GiB / 2.5 TB | ~$0 (already owned) |
+| Electricity (est. ~225W total) | 24/7 | ~$20–$35/mo |
+| **Total bare-metal** | | **~$20–$35/mo** |
 
 :::tip Cost advantage
-Running this infrastructure bare-metal saves approximately **$600–$750/month** compared to equivalent cloud instances (4× m6i.2xlarge + EBS). Over a year that is **$7,200–$9,000 in cloud spend avoided** — while giving you full hardware control and no vendor lock-in.
+Running this infrastructure bare-metal saves approximately **$600–$750/month** compared to equivalent cloud instances. Over a year that is **$7,200–$9,000 in cloud spend avoided** — while giving you full hardware control and no vendor lock-in.
 :::
