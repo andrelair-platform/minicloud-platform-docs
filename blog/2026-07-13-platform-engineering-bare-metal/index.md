@@ -1,10 +1,7 @@
 ---
 slug: platform-engineering-bare-metal-kubernetes
 title: "Platform Engineering on a Budget: Running Production Kubernetes on 5 ThinkPads"
-authors:
-  - name: Andre Kanmegne
-    title: Software Engineer & Cloud Architect
-    url: https://www.devandre.sbs
+authors: [andre]
 description: >
   How I built a production-grade Kubernetes platform on five bare-metal ThinkPad laptops —
   with MAAS provisioning, GitOps, SSO, observability, and AI services — and what I learned
@@ -18,7 +15,7 @@ Most cloud platforms hide the infrastructure from you. MAAS provisioning, PXE bo
 
 This project started from a simple question: **what does it actually take to build a production-grade Kubernetes platform from scratch?**
 
-<!-- truncate -->
+{/* truncate */}
 
 ## The Setup
 
