@@ -43,7 +43,12 @@ const config: Config = {
           sidebarPath: './sidebars.ts',
           routeBasePath: '/',
         },
-        blog: false,
+        blog: {
+          showReadingTime: true,
+          blogSidebarTitle: 'Recent Posts',
+          blogSidebarCount: 'ALL',
+          postsPerPage: 10,
+        },
         theme: {
           customCss: './src/css/custom.css',
         },
@@ -69,6 +74,11 @@ const config: Config = {
           sidebarId: 'tutorialSidebar',
           position: 'left',
           label: 'Documentation',
+        },
+        {
+          to: '/blog',
+          label: 'Blog',
+          position: 'left',
         },
       ],
     },
