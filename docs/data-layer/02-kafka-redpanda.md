@@ -265,7 +265,7 @@ metadata:
   name: redpanda-console
   namespace: data-platform
   annotations:
-    nginx.ingress.kubernetes.io/auth-url: "https://keycloak.yourdomain.com/auth"
+    nginx.ingress.kubernetes.io/auth-url: "https://auth.devandre.sbs/outpost.goauthentik.io/auth/nginx"
 spec:
   ingressClassName: nginx
   rules:

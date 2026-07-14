@@ -97,7 +97,7 @@ Same scope-reduction pattern as every prior phase:
 | **GPU support** | Hardware constraint (no NVIDIA on ThinkPads) | If/when a GPU node joins the cluster |
 | **External API exposure for Ollama** | Security: unauthenticated LLM = abuse vector | Future "API gateway + auth" phase if a legitimate external consumer arrives |
 | **Multiple models loaded simultaneously** | RAM budget says one model at a time | Pull on demand |
-| **SSO for Open WebUI** | First-user-admin works for single-operator | Future Keycloak phase |
+| **SSO for Open WebUI** | First-user-admin works for single-operator | Authentik SSO deployed (Phase 23) |
 
 ---
 

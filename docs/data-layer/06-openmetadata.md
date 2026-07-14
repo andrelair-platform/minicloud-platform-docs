@@ -46,8 +46,8 @@ openmetadata:
     authentication:
       provider: "custom-oidc"
       publicKeyUrls:
-        - "https://keycloak.yourdomain.com/realms/platform/protocol/openid-connect/certs"
-      authority: "https://keycloak.yourdomain.com/realms/platform"
+        - "https://auth.devandre.sbs/application/o/openmetadata/jwks/"
+      authority: "https://auth.devandre.sbs/application/o/openmetadata/"
       clientId: "openmetadata"
       callbackUrl: "https://catalog.yourdomain.com/callback"
 
@@ -306,7 +306,7 @@ These tags feed into OPA policies that restrict direct SELECT access to PII colu
 
 ```text
 ✔ OpenMetadata running at catalog.yourdomain.com
-✔ Keycloak SSO login working
+✔ Authentik SSO login working
 ✔ ClickHouse, Kafka, dbt, Airflow all ingested
 ✔ Full lineage visible: Kafka → ClickHouse → dbt → Superset
 ✔ Data quality tests passing for mart_orders

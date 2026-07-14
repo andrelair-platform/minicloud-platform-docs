@@ -81,7 +81,7 @@ see 200 ms of latency on its eth0, applied by the kernel.
 
 | Component | Why deferred | Future home |
 |---|---|---|
-| **Public Ingress for the dashboard** | Kill switch — never expose publicly without strong auth | When Keycloak SSO + RBAC gating land in a future security phase |
+| **Public Ingress for the dashboard** | Kill switch — never expose publicly without strong auth | Authentik SSO deployed (Phase 23) — gate dashboard with Authentik proxy when exposing publicly |
 | **NodeChaos** (full node shutdown) | Single control-plane cluster. Killing set-hog kills the cluster. NodeChaos against worker nodes is OK but adds blast-radius risk for the portfolio demo. | If/when an HA control plane phase lands |
 | **Automated GameDays via cron** | "Chaos while you sleep" on a single-operator portfolio = bad. The discipline is "I press the button when I'm watching." | When a real on-call rotation exists |
 | **Chaos against ArgoCD / Harbor / cert-manager** | These are cluster-control-plane workloads. Killing them mid-experiment can leave the cluster in a bad state and recovery requires bypassing GitOps. | Out of scope until HA control plane |

@@ -68,7 +68,7 @@ The data layer transforms raw events from your platform into actionable business
 | **ClickHouse** | Columnar analytics warehouse | 100-1000x faster than Postgres for analytics; native Kubernetes support |
 | **dbt** | SQL transformation layer | Version-controlled, tested SQL; model dependency DAGs |
 | **Apache Airflow** | Pipeline orchestration | Already in Phase 16; reused for data pipeline scheduling |
-| **Apache Superset** | Self-hosted BI & dashboards | 40+ chart types; OIDC login via Keycloak |
+| **Apache Superset** | Self-hosted BI & dashboards | 40+ chart types; OIDC login via Authentik |
 | **OpenMetadata** | Data catalog, lineage, quality | Unified governance; auto-discovers ClickHouse, dbt, Airflow |
 
 ---

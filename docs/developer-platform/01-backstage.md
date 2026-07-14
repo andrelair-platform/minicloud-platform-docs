@@ -65,7 +65,7 @@ Components (one per repo in `andrelair-platform`).
 | Install method | Helm chart `backstage/backstage` v2.7.0 | Standard install path; bundles Postgres subchart |
 | Image | **Off-the-shelf `ghcr.io/backstage/backstage:1.51.2`** (pulled through Harbor `ghcr` proxy cache, **pinned 2026-06-15** — see "Image tag pinning" section) | Avoids 3+ hours of Node.js scaffold + Docker build for marginal portfolio gain. Custom build deferred. |
 | Database | **PostgreSQL** (bitnami subchart, standalone), 1 GiB on Longhorn | SQLite is documented as "for development only"; Postgres is the right shape for portfolio even at this scale |
-| Authentication | **Guest auth** (no SSO) with `dangerouslyAllowOutsideDevelopment: true` | GitHub OAuth requires GitHub App + browser setup; SSO requires Keycloak (future phase). Guest gets us to "logged in" instantly. |
+| Authentication | **Guest auth** (no SSO) with `dangerouslyAllowOutsideDevelopment: true` | GitHub OAuth requires GitHub App + browser setup; SSO via Authentik deployed in Phase 24. Guest gets us to "logged in" instantly. |
 | Plugins | **Catalog-only** (chart's default — no Kubernetes/ArgoCD/Grafana plugins) | Each plugin requires custom-build with its node module. Deferred. |
 | Catalog source | **5 `catalog-info.yaml` files**, one per repo, fetched via `raw.githubusercontent.com` URLs | Avoids needing a GitHub integration token (anonymous reads of public raw URLs work) |
 | Hostname | `backstage.10.0.0.200.nip.io` via NGINX Ingress + cert-manager TLS | Same single-IP host-routing pattern |
@@ -81,7 +81,7 @@ Same scope-reduction pattern as Phase 11 (Crossplane), Phase 13
 | Component | Reason | Future home |
 |---|---|---|
 | **Custom Backstage image build** | 3+ hours of Node.js scaffold + Docker build for marginal gain over off-the-shelf | Future "Backstage Plugins" phase, when we wire Kubernetes/ArgoCD/Grafana plugins |
-| **GitHub OAuth / SSO** | Requires GitHub App + Keycloak as backbone | Future phase pairing with Keycloak |
+| **GitHub OAuth / SSO** | Requires GitHub App | Authentik OIDC deployed in Phase 24 — GitHub App integration deferred |
 | **Kubernetes / ArgoCD / Grafana plugins** | Each requires the custom-build pipeline; the off-the-shelf image doesn't include them | Future "Backstage Plugins" phase |
 | **Software Templates ("Golden Paths")** | Most valuable feature, needs scaffolder backend + template repos. ~6 hours focused work. | Dedicated future phase, after SSO |
 | **Vault** | Same reasons as Phase 15 — single-control-plane SPOF, no current workload needs dynamic creds | Future phase pairing with external-DB-credentials need |

@@ -321,7 +321,7 @@ Track posture over time. Target state:
 | RBAC least privilege | ✅ | Namespace owners |
 | Network policies in place | ✅ | Cilium |
 | Secrets in Vault (not Secrets) | ✅ | Platform |
-| MFA for admins | ✅ | Keycloak |
+| MFA for admins | ✅ | Authentik |
 | kube-bench score ≥ 80% | Target | Platform |
 | Falco active on all nodes | ✅ | Security |
 | SBOM for all prod images | ✅ | CI/CD pipeline |

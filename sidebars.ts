@@ -173,7 +173,6 @@ const sidebars: SidebarsConfig = {
         'data-layer/kafka-redpanda',
         'data-layer/clickhouse',
         'data-layer/dbt',
-        'data-layer/superset',
         'data-layer/openmetadata',
       ],
     },

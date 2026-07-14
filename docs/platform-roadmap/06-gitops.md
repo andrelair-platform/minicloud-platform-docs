@@ -66,7 +66,7 @@ UI at `http://argocd.10.0.0.200.nip.io`, login `admin` /
 | Apps left helm-managed | ingress-nginx, MetalLB, Harbor, kube-prometheus-stack, podinfo | Critical-path or stateful; migrating them deserves its own phase. Phase 9's HPA test rig stays intact. |
 | Pattern | **App-of-Apps** | Industry standard; one root Application bootstraps the whole platform |
 | Sync policy | `automated: prune+selfHeal=true, syncOptions=[CreateNamespace, ServerSideApply]` | Real GitOps — drift gets corrected automatically. ServerSideApply tracks ownership cleanly during adoption. |
-| Auth | Built-in admin from auto-generated `argocd-initial-admin-secret`, dumped to `~/.argocd-admin` | Same out-of-band pattern as Harbor / Grafana. Keycloak SSO comes in Phase 15. |
+| Auth | Built-in admin from auto-generated `argocd-initial-admin-secret`, dumped to `~/.argocd-admin` | Same out-of-band pattern as Harbor / Grafana. Authentik SSO deployed in Phase 23. |
 | UI access | `argocd.10.0.0.200.nip.io` via existing NGINX Ingress (HTTP, `server.insecure=true`) | Matches Homer / Harbor / Grafana / podinfo pattern. TLS in Phase 15. |
 | GitOps repo | New public **`andrelair-platform/minicloud-gitops`** | Public is fine — no secrets in this repo. Anything sensitive lives in `~/.*` files on the controller. |
 | Repo location | Separate repo (not a monorepo) | Each repo has one purpose, clean ArgoCD path, independent CI |
@@ -139,7 +139,7 @@ applicationSet:
     requests: { cpu: 25m, memory: 64Mi }
     limits:   { cpu: 250m, memory: 256Mi }
 
-# Keep things lean — Phase 15 will add Keycloak SSO; Phase 21 will add notifications.
+# Keep things lean — Authentik SSO added in Phase 23; Phase 21 added notifications.
 dex:
   enabled: false
 notifications:

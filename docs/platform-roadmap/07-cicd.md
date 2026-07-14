@@ -46,7 +46,7 @@ Git+CI host. We **deliberately deferred that** for two reasons:
    Actions runs free CI on public repos. Adding a second Git host adds
    sync burden and provides nothing GitHub doesn't already do better.
 2. **GitLab CE costs ~6 GiB RAM + 30 GiB disk on a 48 GiB cluster.** That's
-   real headroom for upcoming phases (Vault, Keycloak, data layer).
+   real headroom for upcoming phases (Vault, Authentik SSO, data layer).
 
 The senior architectural call: *self-host services that benefit from being
 on-prem (registry, monitoring, identity), use SaaS for services where
