@@ -20,7 +20,7 @@ Phase 58 (2026-07-14): OnlyOffice DocumentServer 8.3.3 added — in-browser edit
 | PostgreSQL | Bitnami (Longhorn PVC) | Dedicated DB for Nextcloud |
 | Redis | Bitnami | Session cache + file-locking |
 | Authentik provider | pk=9 | OIDC, explicit-consent flow |
-| OnlyOffice DocumentServer | 8.3.3 | In-browser document editing |
+| OnlyOffice DocumentServer | 8.3.3 | Custom image: `minicloud-onlyoffice` |
 | onlyoffice Nextcloud app | 10.1.2 | Nextcloud ↔ OnlyOffice bridge |
 
 **URLs:**
@@ -232,10 +232,32 @@ kubectl annotate externalsecret nextcloud-secrets -n nextcloud \
   force-sync=$(date +%s) --overwrite
 ```
 
+### Custom Image — minicloud-onlyoffice
+
+The stock `onlyoffice/documentserver` image does not trust the minicloud self-signed CA. Node.js (which runs `ds:docservice` and `ds:converter` inside the container) maintains its own certificate bundle and ignores the OS trust store. Without the CA, HTTPS requests to `cloud.devandre.sbs` fail TLS verification and the editor shows "Download failed" when trying to fetch documents.
+
+The fix is a custom image that extends the upstream and bakes in the CA:
+
+```dockerfile
+FROM onlyoffice/documentserver:8.3.3
+
+USER root
+
+COPY certs/minicloud-ca.crt /usr/local/share/ca-certificates/minicloud-ca.crt
+RUN update-ca-certificates
+
+# Node.js ignores the OS trust store — set explicitly for ds:docservice + ds:converter
+ENV NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/minicloud-ca.crt
+```
+
+Source: [andrelair-platform/minicloud-onlyoffice](https://github.com/andrelair-platform/minicloud-onlyoffice)  
+CI pushes to: `harbor.10.0.0.200.nip.io/library/onlyoffice:<sha>-amd64`  
+GitOps update: CI bumps the image tag in `manifests/nextcloud/10-onlyoffice.yaml` on every push to `main`.
+
 ### OnlyOffice Deployment Specifics
 
 ```yaml
-image: onlyoffice/documentserver:8.3.3
+image: harbor.10.0.0.200.nip.io/library/onlyoffice:<sha>-amd64  # managed by CI
 env:
   - JWT_ENABLED: "true"
   - JWT_HEADER: "AuthorizationJwt"    # non-standard header avoids conflicts
@@ -320,9 +342,14 @@ The `originServerName` must match the TLS certificate on the NGINX Ingress (`onl
 | Explicit consent required | Token not issued | Use `default-provider-authorization-explicit-consent` flow |
 | Cloudflare Tunnel TLS SNI | `originServerName` must match nip.io cert | Set `originServerName: cloud.10.0.0.200.nip.io` in cloudflared config |
 | ESO key not in secret | `onlyoffice` pod `CreateContainerConfigError` | `kubectl annotate externalsecret ... force-sync=$(date +%s) --overwrite` |
-| `bitnami/kubectl:1.31` not found | Config Job `ImagePullBackOff` | Use `bitnami/kubectl:latest` — minor-only tags may not exist |
+| `bitnami/kubectl` no version tags | Config Job `ImagePullBackOff` | `bitnami/kubectl` only publishes `:latest` on Docker Hub — use `alpine/k8s:1.36.1` instead |
+| Gatekeeper `block-latest-tag` | Job pod blocked by admission webhook | Never use `:latest`; `alpine/k8s` has explicit version tags matching the cluster |
 | OnlyOffice slow start | Readiness probe fails for 45-60s | `initialDelaySeconds: 60` on probes is required |
 | JWT header conflict | OnlyOffice rejects requests with 401 | Use `JWT_HEADER: AuthorizationJwt` (not `Authorization`) to avoid collision with Nginx auth headers |
+| `nginx.org/proxy-buffer-size: 16k` | NGINX reload fails: `proxy_busy_buffers_size` error | Remove this annotation — with default `proxy_buffers`, 16k buffer exceeds the limit; NGINX never loads the TLS cert |
+| `tls: unrecognized name` from cloudflared | 502 on public URL even though nip.io works | NGINX reload failure (above) means the Ingress TLS block was never applied — fix the annotation first |
+| "Download failed" in editor | OnlyOffice can't fetch the document | Stock image doesn't trust minicloud-ca; use the `minicloud-onlyoffice` custom image with `NODE_EXTRA_CA_CERTS` set |
+| `devandre.sbs` hostname not in Ingress | 502 from Cloudflare | Both nip.io and devandre.sbs hostnames must be in Ingress `rules` and `tls`; cert SAN must cover both |
 
 ---
 
