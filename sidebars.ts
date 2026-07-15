@@ -491,6 +491,30 @@ const sidebars: SidebarsConfig = {
       items: ['developer-platform/backstage-software-templates'],
     },
 
+    // ── Phase 71 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 71 — TechDocs ✅',
+      collapsed: true,
+      items: ['developer-platform/techdocs'],
+    },
+
+    // ── Phase 73 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 73 — Argo Rollouts (Canary Deployments) ✅',
+      collapsed: true,
+      items: ['developer-platform/argo-rollouts'],
+    },
+
+    // ── Phase 74 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 74 — VPA Auto Mode ✅',
+      collapsed: true,
+      items: ['developer-platform/vpa-auto'],
+    },
+
     // ── Admission Control Hardening ─────────────────────────────────
     {
       type: 'category',

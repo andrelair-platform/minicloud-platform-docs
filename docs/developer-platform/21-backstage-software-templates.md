@@ -38,10 +38,10 @@ Developer fills Backstage form
   (scaffolder plugin — already in the backend)
           │
           ├─ 1. fetch:template  ──► render service skeleton
-          │                         (Containerfile, main.go, ci.yml, catalog-info.yaml)
+          │                         (Containerfile, main.go, ci.yml, mkdocs.yml, catalog-info.yaml)
           │
           ├─ 2. fetch:template  ──► render gitops skeleton
-          │                         (Kustomize base+overlays, ArgoCD app)
+          │                         (Kustomize base+overlays, ArgoCD app, VPA object)
           │
           ├─ 3. publish:github  ──► create repo + push to main
           │
@@ -50,10 +50,13 @@ Developer fills Backstage form
           ├─ 5. publish:github:pull-request ──► PR on minicloud-gitops
           │                                     adds services/<name>/ + apps/<name>-dev.yaml
           │
-          └─ 6. catalog:register ──► auto-register in Backstage
+          ├─ 6. vault:policy:create  ──► Vault policy + seed secrets + K8s auth role
+          │                              (custom backend action, runs server-side)
+          │
+          └─ 7. catalog:register ──► auto-register in Backstage
 ```
 
-The GitHub token used for steps 3–5 is stored in Vault at `secret/platform/backstage` (key: `github-token`) and mounted as the `backstage-github-secret` Kubernetes Secret in the `backstage` namespace.
+The GitHub token (steps 3–5) is stored in Vault at `secret/platform/backstage` (key: `github-token`) and mounted as the `backstage-github-secret` Secret in the `backstage` namespace. The Vault provisioning token (step 6) is stored at `secret/platform/backstage` (key: `vault-scaffolder-token`) and mounted as `backstage-vault-secret`.
 
 ---
 
@@ -233,9 +236,9 @@ The scaffolder runs 6 steps. When complete, the output panel shows:
 
 ## Post-Scaffold Manual Steps
 
-After merging the GitOps PR two steps remain manual:
+After merging the GitOps PR one step remains manual:
 
-### 1. Add namespace to AppProject
+### Add namespace to AppProject
 
 Edit `manifests/argocd-project/00-project.yaml` and add the new namespace to the destinations list:
 
@@ -246,20 +249,7 @@ destinations:
     server: https://kubernetes.default.svc
 ```
 
-### 2. Create Vault policy and seed secrets
-
-```bash
-# On the controller, authenticated against Vault:
-vault policy write my-api - <<EOF
-path "secret/data/platform/my-api/*" { capabilities = ["read"] }
-EOF
-
-vault kv put secret/platform/my-api/config \
-  environment=dev \
-  log_level=info
-```
-
-Then create the ExternalSecret or bind the Vault role to the service's ServiceAccount (matching the existing pattern from platform-demo or minicloud-plane).
+That's it — Vault policy, initial secrets, and the Kubernetes auth role are all created automatically by the `vault:policy:create` scaffolder action (step 6).
 
 ---
 
@@ -271,13 +261,107 @@ Any repo set up before the OAuth migration will have the same gap — audit your
 
 ---
 
-## What's Next
+## Phase 70b — Custom Image Template
 
-Phase 70 delivered the `go-service` template. Two follow-up templates are planned:
+Phase 70b added a second template: **`custom-image`**. It targets services that wrap an existing upstream image (like `minicloud-open-webui` wrapping `ghcr.io/open-webui/open-webui:latest`) — where there are no Kustomize overlays, just a Helm values file that pins the image tag.
 
-| Phase | Template | For |
-|---|---|---|
-| 70b | `custom-image` | Services that wrap an upstream image (like open-webui, onlyoffice) — helm-values sed bump instead of Kustomize overlays |
-| 70c | Vault policy step | Add a `vault:write` (or equivalent) step to auto-create the Vault policy inside the template, removing manual step 2 entirely |
+The template lives at `minicloud-backstage/templates/custom-image/`.
 
-For 70c, the scaffolder would need a Vault token with policy-write permissions, stored as a separate Backstage secret.
+### What it produces
+
+| Artifact | Notes |
+|---|---|
+| GitHub repo with `Containerfile` | Extends upstream image; injects minicloud CA cert via `ARG CA_CERT` (never committed) |
+| `catalog-info.yaml` | Component entity with `kubernetes-id`, `argocd/app-name`, TechDocs ref |
+| `mkdocs.yml` + `docs/` | TechDocs documentation scaffold |
+| `ci.yml` | Canonical golden path — same as go-service but image bump uses `sed` on a Helm values file |
+| `manifests/<name>/00-deployment.yaml` in minicloud-gitops | Plain Deployment (not Kustomize) via GitOps PR |
+| Vault policy + initial secrets | Created automatically (same vault:policy:create step) |
+
+### Parameters
+
+| Parameter | What it controls |
+|---|---|
+| `name` | Kebab-case slug → repo name, image name, Harbor path |
+| `description` | Shown in catalog and GitHub repo |
+| `upstreamImage` | e.g. `ghcr.io/open-webui/open-webui:latest` |
+| `gitopsFile` | Path in minicloud-gitops to the file that holds the image tag (e.g. `helm-values/open-webui-values.yaml`) |
+| `owner` | Backstage entity ref |
+
+### Key implementation decision — Nunjucks at top level, `{% raw %}` for the rest
+
+The custom-image CI workflow has a different challenge from go-service. The go-service uses `${{ github.event.repository.name }}` as a GHA runtime expression, so the whole CI file can be wrapped in `{% raw %}`. For custom-image, the service name IS known at scaffold time (`${{ values.name }}`), but `gitopsFile` also needs to be injected at scaffold time.
+
+The solution: only the `env:` block at the top of `ci.yml` uses Nunjucks expressions. Everything else is inside `{% raw %}...{% endraw %}`. The `bump-gitops` job reads from bash env vars (`$GITOPS_FILE`, `$IMAGE_NAME`) — not GHA `${{ }}` expressions — so there's no conflict inside the `{% raw %}` block.
+
+```yaml
+# Top of ci.yml — Nunjucks resolves these at scaffold time:
+env:
+  REGISTRY: harbor.10.0.0.200.nip.io
+  IMAGE_NAME: library/${{ values.name }}
+  GITOPS_FILE: "${{ values.gitopsFile }}"
+
+{% raw %}
+jobs:
+  bump-gitops:
+    steps:
+      - run: |
+          # bash env vars from the workflow-level env: block above
+          sed -i "s|${REGISTRY}/${IMAGE_NAME}:.*|${REGISTRY}/${IMAGE_NAME}:${NEW_TAG}|" "$GITOPS_FILE"
+{% endraw %}
+```
+
+---
+
+## Phase 70c — `vault:policy:create` Backend Action
+
+Phase 70c implemented the `vault:policy:create` custom scaffolder action, eliminating the only remaining manual step after a template run.
+
+### What it provisions
+
+When the scaffolder runs step 6 (`vault:policy:create`), it performs three Vault API calls server-side from within the Backstage pod:
+
+1. **Creates a read-only policy** at `sys/policy/<name>`:
+   ```hcl
+   path "secret/data/platform/<name>/*" { capabilities = ["read"] }
+   path "secret/metadata/platform/<name>/*" { capabilities = ["list"] }
+   ```
+
+2. **Seeds initial KV secrets** at `secret/data/platform/<name>/config` with `environment: dev` and `log_level: info` so the service starts without a 404 on first Vault Agent inject.
+
+3. **Creates a Kubernetes auth role** at `auth/kubernetes/role/<name>` bound to the service's three namespaces (`<name>-dev`, `<name>-staging`, `<name>-prod`) with the new policy and 1h TTL.
+
+### Setup
+
+The action uses two environment variables:
+- `VAULT_ADDR: https://vault.10.0.0.200.nip.io` — set as an `extraEnvVar` in `backstage-values.yaml`
+- `VAULT_SCAFFOLDER_TOKEN` — from the `backstage-vault-secret` k8s Secret
+
+The Vault token has the `scaffolder-provisioner` policy, which grants:
+- `create/update` on `secret/data/platform/*` (seed secrets)
+- `create/update/read` on `sys/policy/*` (create service policies)
+- `create/update/read` on `auth/kubernetes/role/*` (create K8s auth roles)
+
+```bash
+# How the token was created (controller):
+vault token create \
+  -policy=scaffolder-provisioner \
+  -ttl=0 \
+  -period=720h \
+  -display-name=backstage-scaffolder
+```
+
+The token is stored in Vault at `secret/platform/backstage.vault-scaffolder-token` and in the cluster as:
+
+```bash
+kubectl create secret generic backstage-vault-secret -n backstage \
+  --from-literal=vault-scaffolder-token=<TOKEN>
+```
+
+### Source
+
+`minicloud-backstage/packages/backend/src/actions/vault.ts` — registered via `createBackendModule` and the `scaffolderActionsExtensionPoint`. Added to `packages/backend/src/index.ts` as:
+
+```typescript
+backend.add(import('./actions/vault'));
+```
