@@ -18,8 +18,9 @@ Argo Rollouts replaces Kubernetes `Deployment` objects with a `Rollout` CRD that
 | `manifests/argocd-project/00-project.yaml` | Added `argo-rollouts` namespace to destinations |
 | `gatekeeper-policies/` (8 files) | Added `argo-rollouts` to namespaceSelector NotIn exclusion lists |
 | `services/platform-demo/base/deployment.yaml` | Converted `Deployment` → `Rollout` (canary strategy) |
-| `services/platform-demo/base/analysis-template.yaml` | New `AnalysisTemplate` using Prometheus success rate |
+| `services/platform-demo/base/analysis-template.yaml` | New `AnalysisTemplate` using Prometheus success rate (`count: 5`) |
 | `services/platform-demo/base/kustomization.yaml` | Added `analysis-template.yaml` to resources |
+| `services/platform-demo/overlays/dev/` + `overlays/staging/` | Switched to JSON 6902 patches with `target:` (CRD atomic list fix) |
 | `apps/platform-demo-dev.yaml` + `platform-demo-staging.yaml` | Added `SkipDryRunOnMissingResource`, updated `ignoreDifferences` group |
 
 ---
@@ -152,6 +153,87 @@ syncOptions:
 Kubernetes does not accept a resource change from `apps/v1 Deployment` to `argoproj.io/v1alpha1 Rollout` via `kubectl apply` — the group/kind mismatch causes a conflict. ArgoCD handles this correctly via `prune: true`: on the next sync it deletes the old Deployment and creates the Rollout.
 
 **The cluster experiences a brief downtime** during this transition (old Deployment pods deleted, new Rollout pods starting). For platform-demo this is acceptable (dev/staging only, no prod overlay). For any service with a prod overlay, plan a maintenance window.
+
+---
+
+## Gotcha — Kustomize strategic merge patches strip fields on Rollout CRDs
+
+When using `patches:` with a strategic merge patch file against a `Rollout` object, kustomize treats the `containers` list as **atomic** (no `x-kubernetes-list-map-keys` markers in the CRD schema). This means the patch entry **replaces the entire container** instead of merging into it — stripping `image`, `ports`, `readinessProbe`, `livenessProbe`, and `securityContext`.
+
+**Symptom:** Pod creation fails with `admission webhook denied: must not use or retain the NET_RAW capability` because `capabilities.drop: [ALL]` was stripped.
+
+**Fix:** Use JSON 6902 patches (`op: replace`) with a `target:` in `kustomization.yaml` to surgically replace only the fields that differ between overlays:
+
+```yaml
+# overlays/dev/kustomization.yaml
+patches:
+  - path: patch-resources.yaml
+    target:
+      group: argoproj.io
+      version: v1alpha1
+      kind: Rollout
+      name: platform-demo
+```
+
+```yaml
+# overlays/dev/patch-resources.yaml (JSON 6902 format)
+- op: replace
+  path: /spec/replicas
+  value: 1
+- op: replace
+  path: /spec/template/spec/containers/0/resources
+  value:
+    requests: {cpu: 10m, memory: 16Mi}
+    limits:   {cpu: 100m, memory: 64Mi}
+```
+
+This only modifies the two specified paths and leaves all other container fields intact. Apply this pattern to any CRD that has list fields — not just Rollouts.
+
+---
+
+## Gotcha — AnalysisTemplate metrics must have a finite `count`
+
+When an `AnalysisTemplate` is referenced from an inline canary step, every metric must include `count:`. Without it, the Argo Rollouts controller rejects the Rollout spec with:
+
+```
+spec.strategy.canary.steps[N].analysis.templates: Invalid value: "http-success-rate":
+AnalysisTemplate http-success-rate has metric success-rate which runs indefinitely.
+Invalid value for count: <nil>
+```
+
+**Fix:** Add `count:` alongside `interval:`:
+
+```yaml
+metrics:
+  - name: success-rate
+    count: 5          # run exactly 5 times (5 × 30s = 2.5 min of analysis)
+    interval: 30s
+    successCondition: result[0] >= 0.95
+    failureLimit: 3
+```
+
+`count` is not required for background analysis (where the metric runs for the duration of the rollout), but it is required for step-level analysis references.
+
+---
+
+## Gotcha — Stale stableRS from a broken initial deploy
+
+If the Rollout's first deploy fails (e.g. due to either of the above issues), the broken ReplicaSet gets recorded as `stableRS`. On the next sync with a fixed spec, the controller creates a new canary RS but tries to hold 50% traffic on the broken stable RS — which Gatekeeper blocks. The rollout stalls at step 0 indefinitely.
+
+**Symptom:** `kubectl get rollout` shows `Progressing step=0 waiting for all steps to complete` with no pods running from the stable RS.
+
+**Fix:** Delete the broken stable RS manually. The controller immediately promotes the healthy canary RS to stable:
+
+```bash
+# Identify the stuck stableRS
+kubectl get rollout platform-demo -n platform-demo-dev \
+  -o jsonpath='{.status.stableRS}'
+
+# Delete it — controller promotes the canary within seconds
+kubectl delete rs platform-demo-<staleHash> -n platform-demo-dev
+```
+
+This situation only arises on the very first deploy after a migration. Subsequent rollouts start from a healthy stable baseline and this scenario cannot recur.
 
 ---
 
