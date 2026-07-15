@@ -467,6 +467,22 @@ const sidebars: SidebarsConfig = {
       items: ['security-enterprise/pod-security'],
     },
 
+    // ── Phase 68 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 68 — Plane CE (Project Tracker) ✅',
+      collapsed: true,
+      items: ['developer-platform/plane-ce'],
+    },
+
+    // ── Phase 69 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 69 — minicloud-plane (Level 4 Integration + Backstage) ✅',
+      collapsed: true,
+      items: ['developer-platform/minicloud-plane'],
+    },
+
     // ── Admission Control Hardening ─────────────────────────────────
     {
       type: 'category',
