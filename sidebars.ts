@@ -483,6 +483,14 @@ const sidebars: SidebarsConfig = {
       items: ['developer-platform/minicloud-plane'],
     },
 
+    // ── Phase 70 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 70 — Backstage Software Templates (Golden Path) ✅',
+      collapsed: true,
+      items: ['developer-platform/backstage-software-templates'],
+    },
+
     // ── Admission Control Hardening ─────────────────────────────────
     {
       type: 'category',
