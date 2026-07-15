@@ -51,6 +51,22 @@ When `updateMode: "Auto"`:
 Enabling Auto on a running Deployment triggers an immediate eviction of pods whose requests are far from the recommendation. Plan for a 10–30 second restart on each affected service. For `langfuse-web`, this is desirable — it was OOMKilling and will come back with adequate memory.
 :::
 
+## Gotcha — VPA Auto + short startup probes
+
+When VPA Auto evicts a pod and it restarts, the Admission Controller applies the recommendation at pod creation. If the recommendation is very low (e.g. `15m CPU` for Backstage based on steady-state usage) and the service has a slow startup, a tight startup probe window causes a restart loop:
+
+```
+VPA evicts pod → new pod starts with 15m CPU → Node.js takes 90s to start
+→ startup probe (failureThreshold:3, periodSeconds:10 = 30s window) expires
+→ kubelet kills pod → loop repeats
+```
+
+**Fix applied for Backstage:**
+1. `startupProbe.failureThreshold: 30` (10s × 30 = **5 min** window) — in `backstage-values.yaml`
+2. `minAllowed.cpu: 200m` — VPA never assigns requests below what Node.js needs to start
+
+The general rule: **set `minAllowed.cpu` to the CPU needed for startup, not for steady state.** The startup probe window should be at least 2× the observed worst-case startup time. After startup completes, VPA sees the real steady-state usage and adjusts on the next eviction cycle — automatically, without manual intervention.
+
 ---
 
 ## Configuration Change
