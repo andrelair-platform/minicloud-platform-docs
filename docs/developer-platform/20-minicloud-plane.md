@@ -277,8 +277,10 @@ Backstage frontend
 
 ### Proxy config
 
+Production config lives in `minicloud-gitops/helm-values/backstage-values.yaml` (the ConfigMap source — `app-config.yaml` in the image is never loaded in production):
+
 ```yaml
-# app-config.production.yaml
+# minicloud-gitops/helm-values/backstage-values.yaml → appConfig
 proxy:
   endpoints:
     '/minicloud-plane':
@@ -286,11 +288,17 @@ proxy:
       changeOrigin: true
 ```
 
-For local dev:
+For local dev, `app-config.yaml` has:
+```yaml
+proxy:
+  endpoints:
+    '/minicloud-plane':
+      target: 'http://localhost:8080'   # port-forward the svc locally
+```
+
 ```bash
 # Port-forward to test without cluster access
 kubectl --context minicloud port-forward -n minicloud-plane-dev svc/minicloud-plane 8080:8080
-# Then set app-config.yaml proxy target to http://localhost:8080
 ```
 
 ### Plugin registration
@@ -326,6 +334,58 @@ The plugin tries both, so either works.
 |---|---|---|
 | `platform-demo` | `PT` | Platform Tasks |
 | `minicloud-plane` | `PT` | Platform Tasks |
+
+---
+
+## Backstage Catalog Entity
+
+`minicloud-plane/catalog-info.yaml` is a multi-document YAML file containing both a `Component` and an `API` entity. This populates:
+- The **Provided APIs** tab on the `minicloud-plane` component page
+- The **Consumed APIs** tab on the `minicloud-backstage` component page
+- The **APIs** section in the Backstage left nav
+
+### Component → API relationship
+
+```yaml
+# minicloud-plane/catalog-info.yaml (Component doc)
+spec:
+  providesApis:
+    - minicloud-plane-api
+---
+# Same file (API doc)
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: minicloud-plane-api
+spec:
+  type: openapi
+  definition: |
+    openapi: "3.0.3"
+    # ... full spec inline (health, /api/projects, /api/projects/{id}/issues)
+```
+
+```yaml
+# minicloud-backstage/catalog-info.yaml
+spec:
+  consumesApis:
+    - minicloud-plane-api
+```
+
+### Kubernetes tab
+
+The Backstage Kubernetes plugin associates cluster resources with a component via the `backstage.io/kubernetes-id` pod label. This label is set in the deployment pod template:
+
+```yaml
+# minicloud-gitops/services/minicloud-plane/base/deployment.yaml
+spec:
+  template:
+    metadata:
+      labels:
+        app: minicloud-plane
+        backstage.io/kubernetes-id: minicloud-plane
+```
+
+Without this label, the Kubernetes tab shows "No resources on any known clusters" even though the pod is running.
 
 ---
 
