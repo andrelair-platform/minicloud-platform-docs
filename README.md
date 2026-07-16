@@ -1,16 +1,31 @@
 # Mini Cloud Platform — Documentation
 
+[![Live site](https://img.shields.io/badge/docs-live-blue)](https://andrelair-platform.github.io/minicloud-platform-docs/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Docusaurus](https://img.shields.io/badge/Docusaurus-3.10-green)](https://docusaurus.io)
+
 > **Complete bare-metal enterprise infrastructure** — built from scratch with MAAS, k3s, ArgoCD, GitOps, a full data layer, and an enterprise security layer.
 
-**Live site:** https://andrelair-platform.github.io/minicloud-platform-docs/
+**Live site:** [https://andrelair-platform.github.io/minicloud-platform-docs/](https://andrelair-platform.github.io/minicloud-platform-docs/)
 
 **Part of the [andrelair-platform](https://github.com/andrelair-platform) GitHub organization** — see also: [minicloud-ansible](https://github.com/andrelair-platform/minicloud-ansible) · [minicloud-opentofu](https://github.com/andrelair-platform/minicloud-opentofu) · [minicloud-gitops](https://github.com/andrelair-platform/minicloud-gitops) · [platform-demo](https://github.com/andrelair-platform/platform-demo)
 
 ---
 
+## Table of Contents
+
+- [What This Project Is](#what-this-project-is)
+- [Documentation Structure](#documentation-structure)
+- [Full Tech Stack](#full-tech-stack)
+- [Running Locally](#running-locally)
+- [Deployment](#deployment)
+- [License](#license)
+
+---
+
 ## What This Project Is
 
-This is the full technical documentation for a private cloud platform built on 3 bare-metal ThinkPad nodes, provisioned via MAAS (Metal as a Service) and running production-grade Kubernetes workloads. It covers the entire stack from physical hardware to AI/ML pipelines — equivalent to what you would build on AWS/Azure/GCP, but self-hosted.
+This is the full technical documentation for a private cloud platform built on bare-metal ThinkPad nodes, provisioned via MAAS (Metal as a Service) and running production-grade Kubernetes workloads. It covers the entire stack from physical hardware to AI/ML pipelines — equivalent to what you would build on AWS/Azure/GCP, but self-hosted.
 
 | Node | IP | Role | Hardware |
 |---|---|---|---|
@@ -36,16 +51,16 @@ This is the full technical documentation for a private cloud platform built on 3
 | **Phase 10** | Ansible — infrastructure automation playbooks |
 | **Phase 11** | IaC — Terraform/OpenTofu + Crossplane |
 | **Phase 12** | GitOps — ArgoCD (auto-sync staging, manual production) |
-| **Phase 13** | CI/CD — GitLab pipelines |
+| **Phase 13** | CI/CD — GitHub Actions golden path |
 | **App Deployment Guide** | Helm charts, ArgoCD deploy, raw YAML, full CI/CD pipeline |
 | **Data Layer** | Kafka/Redpanda, ClickHouse, dbt, Apache Superset, OpenMetadata |
-| **Security Layer** | Keycloak SSO, OPA/Gatekeeper, Falco, Cosign+SBOM, kube-bench |
+| **Security Layer** | Authentik SSO, OPA/Gatekeeper, Falco, Cosign+SBOM, kube-bench |
 | **Phase 14** | Backup & DR — Velero + etcd snapshots |
 | **Phase 15** | Secrets — HashiCorp Vault |
 | **Phase 16** | Automation — n8n, Temporal, Apache Airflow |
 | **Phase 17** | Event-driven — KEDA + NATS JetStream |
 | **Phase 18** | Developer platform — Backstage |
-| **Phase 19** | AI/ML — Ollama, MLflow, Kubeflow |
+| **Phase 19** | AI/ML — Ollama, LiteLLM, Open WebUI, RAG pipeline |
 | **Phase 20** | Reliability — Chaos Mesh |
 | **Phase 21** | Advanced observability — Loki, Jaeger, Alertmanager |
 | **Phase 22** | eBPF networking — Cilium + Hubble |
@@ -67,7 +82,7 @@ Ansible       infrastructure automation
 Terraform     infrastructure as code
 Crossplane    Kubernetes-native IaC
 ArgoCD        GitOps continuous delivery
-GitLab CI     build → test → scan → package → deploy
+GitHub Actions build → test → scan → package → deploy
 
 ── PLATFORM SERVICES ───────────────────────
 Vault         secrets management
@@ -78,6 +93,8 @@ Airflow       data pipeline scheduling
 KEDA          event-driven autoscaling
 NATS          high-performance message broker
 Backstage     internal developer portal
+Plane CE      project management (Plane CE)
+Vaultwarden   self-hosted password manager
 
 ── OBSERVABILITY ───────────────────────────
 Prometheus    metrics collection
@@ -95,7 +112,7 @@ Superset      self-hosted BI dashboards
 OpenMetadata  data catalog, lineage & governance
 
 ── SECURITY LAYER ──────────────────────────
-Keycloak      SSO / OIDC identity provider for all tools
+Authentik     SSO / OIDC identity provider for all tools
 OPA/Gatekeeper admission control — policy as code
 Falco         runtime threat detection via eBPF syscalls
 Cosign        image signing + SBOM supply chain security
@@ -107,9 +124,11 @@ Tailscale     mesh VPN remote access
 Cloudflare    tunnel-based browser access
 
 ── AI / ML ─────────────────────────────────
-Ollama        local LLM serving (Mistral, LLaMA 3)
+Ollama        local LLM serving (phi4-mini, deepseek-r1)
+LiteLLM       AI gateway — 8 cloud + local providers
+Open WebUI    chat interface with RAG + hybrid BM25/HNSW search
+Langfuse      LLM observability, traces, evals, prompt versioning
 MLflow        experiment tracking + model registry
-Kubeflow      ML pipelines + distributed training
 ```
 
 ---
@@ -123,8 +142,11 @@ npm install
 # Start dev server (hot reload)
 npm start
 
-# Build for production
+# Build for production (fails on broken internal links)
 npm run build
+
+# Clear Docusaurus cache
+npm run clear
 ```
 
 ---
@@ -136,7 +158,7 @@ The site deploys automatically to GitHub Pages on every push to `main` via GitHu
 ```
 git push origin main
   → GitHub Actions: npm ci → npm run build → deploy to Pages
-  → Live at https://andreliar.github.io/minicloud-platform-docs/
+  → Live at https://andrelair-platform.github.io/minicloud-platform-docs/
 ```
 
 No manual deploy step needed.
@@ -145,4 +167,4 @@ No manual deploy step needed.
 
 ## License
 
-MIT
+[MIT](LICENSE) © andrelair-platform
