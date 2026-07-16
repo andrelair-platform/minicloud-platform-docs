@@ -97,6 +97,46 @@ The relationship between kubeadm and k3s is the same as the relationship between
 
 For a project where the goal is to demonstrate platform engineering skills — not to demonstrate ability to configure etcd from scratch — k3s is the correct choice. The cluster is now in its 75th operational phase. The distribution has never been the bottleneck.
 
+## Automating It with Ansible
+
+Four SSH sessions is fine for a one-time bootstrap. But after the cluster was up and `minicloud-ansible` was established as the automation layer, the natural next step was to write a playbook that can reproduce the full install from scratch — so the next cluster rebuild takes one command, not four.
+
+The playbook lives at `playbooks/install-k3s.yml` in [minicloud-ansible](https://github.com/andrelair-platform/minicloud-ansible). It has three plays:
+
+**Play 1 — Control plane (`set-hog`):**  
+Installs the k3s server, waits for port 6443 to be ready, waits for the node to reach `Ready` state, then reads the join token into an Ansible variable.
+
+**Play 2 — Workers (`fast-skunk`, `fast-heron`, `star-kitten`, `swift-mac`):**  
+Joins one worker at a time (`serial: 1`) using the token fetched from `hostvars`. Each worker must be `Ready` before the next one starts.
+
+**Play 3 — Kubeconfig:**  
+Fetches `/etc/rancher/k3s/k3s.yaml` from the control plane, patches the server address from `127.0.0.1` to the real IP, and renames the context to `minicloud`. Saves the result to `/tmp/minicloud.yaml` on the Ansible controller.
+
+```bash
+# Dry run
+ansible-playbook playbooks/install-k3s.yml --check
+
+# Full install (pins to current cluster version)
+ansible-playbook playbooks/install-k3s.yml
+
+# Pin a different version
+ansible-playbook playbooks/install-k3s.yml -e k3s_version=v1.37.0+k3s1
+
+# Workers only (control plane already running)
+ansible-playbook playbooks/install-k3s.yml --tags workers
+
+# After the playbook — copy kubeconfig to the controller
+scp /tmp/minicloud.yaml controller:~/.kube/minicloud.yaml
+```
+
+The playbook is **idempotent** — it checks for `/usr/local/bin/k3s` before installing. Re-running on an existing cluster skips the install tasks and only re-validates the `Ready` state.
+
+### Why the install wasn't automated from day one
+
+Two reasons. First, the k3s install is a Day-0 operation — it runs once per cluster lifetime. The effort of writing and testing a playbook outweighed the cost of four SSH commands. Second, `swift-mac` cannot be PXE-booted, so Ubuntu was installed manually via USB regardless. As long as one step is manual, the whole bootstrap sequence is effectively manual for that node.
+
+What was automated from day one was the part that actually repeats: `system-upgrade-controller` handles every future k3s version bump as a single YAML commit. The Ansible playbook covers the edge case — rebuild from scratch — which is worth automating even if it only happens once or twice in the cluster's lifetime.
+
 ## What Comes Next
 
 With five nodes running k3s, the next layer is networking and load balancing: MetalLB for bare-metal `LoadBalancer` services, a wildcard ingress controller, and a private CA so every internal service gets real TLS. That is covered in the next post.
