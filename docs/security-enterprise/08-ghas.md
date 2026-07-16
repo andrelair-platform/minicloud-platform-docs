@@ -41,16 +41,244 @@ Treats source code as a relational database and runs semantic queries against it
 
 ### 2. Dependabot — Software Composition Analysis (SCA)
 
-Monitors `package.json`, `requirements.txt`, `go.mod`, and `pyproject.toml` for known CVEs. Opens automatic PRs to bump vulnerable dependencies to safe versions.
+Monitors `package.json`, `requirements.txt`, `go.mod`, and `pyproject.toml` for known CVEs. Opens automatic pull requests to bump vulnerable dependencies to patched versions. Also monitors `.github/workflows/*.yml` files to keep GitHub Actions at current versions.
 
 **High-priority dependency surfaces:**
 
 | Repo | Package files | Critical packages to watch |
 |---|---|---|
-| `minicloud-ansible` | `requirements.txt` | `langfuse`, `ragas`, `qdrant-client`, `litellm`, `sentence-transformers` |
 | `minicloud-backstage` | `package.json` | `@backstage/*`, `express`, `passport` |
 | `ktayl-solution-web` | `package.json` | `astro`, `tailwindcss` |
 | `platform-demo` | `go.mod` | `gin`, `prometheus/client_golang` |
+| `minicloud-gitops` | `.github/workflows/*.yml` | `actions/*`, `tailscale/github-action` |
+
+---
+
+## Dependabot Configuration Reference
+
+### Which repos have Dependabot enabled
+
+Dependabot is enabled at the org level for security alerts on all repos. The `.github/dependabot.yml` config file (which controls automated PRs) is deployed only to repos that have the relevant package files:
+
+| Repo | `dependabot.yml` | Ecosystems monitored |
+|---|---|---|
+| `minicloud-gitops` | ✅ | `github-actions` |
+| `ktayl-solution-web` | ✅ | `npm`, `github-actions` |
+| `platform-demo` | ✅ | `gomod`, `github-actions` |
+| `minicloud-backstage` | ✅ | `npm`, `github-actions` |
+| `minicloud-rag-ingest` | ✅ | `pip`, `github-actions` |
+| `minicloud-markitdown-proxy` | ✅ | `pip`, `github-actions` |
+| `minicloud-open-webui` | ✅ | `docker`, `github-actions` |
+| `minicloud-onlyoffice` | ✅ | `docker`, `github-actions` |
+| `minicloud-plane` | ✅ | `gomod`, `github-actions` |
+| `minicloud-ansible` | ❌ removed | Had no `.github/workflows/` — caused weekly failures |
+| `minicloud-opentofu` | ❌ not applicable | No package manager files tracked |
+
+**Why `minicloud-ansible` has no `dependabot.yml`:** The original config declared `package-ecosystem: github-actions` but the repo has no CI workflows. Dependabot failed every week with `dependency_file_not_found`. The config was removed (commit `70efb61`). If a CI workflow is ever added to this repo, re-add the `github-actions` ecosystem entry.
+
+### Standard `dependabot.yml` for CI repos
+
+```yaml
+version: 2
+updates:
+  # Keep GitHub Actions current
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - github-actions
+```
+
+For repos with application dependencies, add the relevant ecosystem block below the `github-actions` block:
+
+```yaml
+  # npm (Backstage, Astro)
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+    open-pull-requests-limit: 5
+    groups:
+      patch-updates:
+        update-types:
+          - patch
+
+  # Go modules
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+    open-pull-requests-limit: 5
+
+  # Python (pip)
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+    open-pull-requests-limit: 5
+    groups:
+      ai-stack:
+        patterns:
+          - "langfuse*"
+          - "ragas*"
+          - "litellm*"
+```
+
+---
+
+## Dependabot PR Review Policy
+
+Not every Dependabot PR is safe to merge automatically. The policy below defines what level of review is required by version bump type.
+
+### Decision rules
+
+| Bump type | Example | Policy | Rationale |
+|---|---|---|---|
+| **Patch** (`x.y.Z`) | `tailwindcss` 4.3.1 → 4.3.2 | Merge after CI passes | Bug fixes and security patches only — no API changes permitted by semver |
+| **Minor** (`x.Y.0`) | `fastapi` 0.115.0 → 0.116.0 | Read changelog, merge if no breaking notes | New features; backwards-compatible by semver but real-world projects sometimes slip |
+| **Major** (`X.0.0`) | `astro` 6.x → 7.0.0 | **Hold** — test build locally first | API changes expected; migration guide required before merging |
+| **GitHub Actions** (major) | `actions/github-script` v7 → v9 | Read release notes for breaking changes, then merge | Check if any deprecated API (e.g. `require('@actions/github')`) is used in the workflow |
+
+### Quick reference — packages requiring extra caution
+
+| Package | Why extra caution |
+|---|---|
+| `astro` (major) | Config API and routing changes between major versions; must run `npm run build` locally |
+| `@backstage/*` (major) | Backstage's plugin API changes frequently across major versions; test in staging first |
+| `actions/github-script` | v9 is ESM-only — `require('@actions/github')` no longer works; audit workflow scripts before merging |
+| `tailscale/github-action` | Auth method changes can break all CI pipelines simultaneously |
+
+### Checking if a GitHub Actions bump is safe
+
+Before merging any `actions/*` major version bump, audit the workflow file:
+
+```bash
+# Find all uses of the action in the repo
+grep -r "github-script" .github/workflows/
+
+# Check the PR description — Dependabot includes a release notes summary
+gh pr view <N> --repo andrelair-platform/<repo> --json body --jq '.body'
+```
+
+For `actions/github-script` specifically: the v9 breaking changes are:
+- `require('@actions/github')` fails at runtime (ESM-only) — if not used in the script, the PR is safe
+- `const getOctokit = ...` redeclaration throws `SyntaxError` — check if the script declares this variable
+
+---
+
+## Operational Workflow
+
+### Reviewing open Dependabot PRs
+
+```bash
+# All open Dependabot PRs across the org
+gh search prs --owner andrelair-platform --author app/dependabot --state open \
+  --json repository,title,url --jq '.[] | "\(.repository.nameWithOwner) | \(.title) | \(.url)"'
+
+# PRs in a specific repo
+gh pr list --repo andrelair-platform/ktayl-solution-web \
+  --author app/dependabot --json number,title,mergeable
+```
+
+### Merging a safe patch PR
+
+```bash
+gh pr merge <N> --repo andrelair-platform/<repo> --merge
+```
+
+### Handling conflicts between simultaneous Dependabot PRs
+
+When two Dependabot PRs both modify `package.json` and `package-lock.json`, one will conflict after the other is merged. Tell Dependabot to rebase:
+
+```bash
+gh pr comment <N> --repo andrelair-platform/<repo> --body "@dependabot rebase"
+```
+
+Dependabot processes the comment within a few minutes and force-pushes an updated branch. Poll until the conflict clears, then merge:
+
+```bash
+gh pr view <N> --repo andrelair-platform/<repo> --json mergeable --jq '.mergeable'
+# MERGEABLE → safe to merge
+```
+
+### Checking open vulnerability alerts
+
+```bash
+# All unfixed Dependabot security alerts across the org
+gh api /orgs/andrelair-platform/dependabot/alerts \
+  --jq '.[] | select(.state=="open") | {
+    repo: .repository.name,
+    pkg: .dependency.package.name,
+    severity: .security_advisory.severity,
+    title: .security_advisory.summary
+  }'
+```
+
+### Dismissing a false positive
+
+If Dependabot flags a vulnerability that doesn't affect this platform (e.g. a CVE in a feature not used):
+
+```bash
+gh api --method PATCH \
+  /repos/andrelair-platform/<repo>/dependabot/alerts/<alert-id> \
+  -f state=dismissed \
+  -f dismissed_reason=not_used \
+  -f dismissed_comment="This code path is not reachable in our deployment"
+```
+
+---
+
+## Dependabot vs Renovate — Two-Bot Architecture
+
+This platform uses **two automated dependency update bots** that operate on different layers. They do not overlap.
+
+| | Dependabot | Renovate |
+|---|---|---|
+| **What it watches** | Application code dependencies (`package.json`, `go.mod`, `pip`, `docker`), GitHub Actions | Helm chart versions in `apps/*.yaml`, image tags in `helm-values/*.yaml` |
+| **Where it runs** | All custom code repos (`minicloud-backstage`, `platform-demo`, etc.) | `minicloud-gitops` only |
+| **PR frequency** | Weekly (Monday 06:00 UTC) | Weekly (weekends) |
+| **What a PR looks like** | `chore(deps): bump fastapi from 0.115.0 to 0.116.0` | `chore(deps): bump grafana from 8.12.0 to 8.13.0` |
+| **Who merges** | Human, following the policy above | Human, after reading Renovate's embedded changelog |
+| **Security PRs** | Immediate — security updates bypass the schedule | N/A — Renovate covers versions, not CVEs |
+
+**Rule of thumb:** if the update is in a `.github/workflows/` file, `package.json`, `go.mod`, or `requirements.txt` → it's a Dependabot PR. If it's in `apps/*.yaml` or `helm-values/*.yaml` → it's a Renovate PR.
+
+---
+
+## Known Gotchas
+
+### `github-actions` ecosystem requires `.github/workflows/` to exist
+
+Declaring `package-ecosystem: github-actions` in `dependabot.yml` causes a weekly `dependency_file_not_found` failure if the repo has no `.github/workflows/` directory. Do not add the `github-actions` ecosystem to repos without CI workflows.
+
+**Affected repo:** `minicloud-ansible` — config deleted (commit `70efb61`, 2026-07-16).
+
+### Two concurrent npm PRs always conflict
+
+When Dependabot opens two PRs that both touch `package.json` (e.g. bumping `tailwindcss` and `@tailwindcss/vite` in the same week), the second one will show `CONFLICTING` after the first merges. This is expected — use `@dependabot rebase` to resolve. Consider using `groups:` in `dependabot.yml` to bundle related npm packages into a single PR:
+
+```yaml
+groups:
+  tailwind:
+    patterns:
+      - "tailwindcss"
+      - "@tailwindcss/*"
+```
+
+### Major version PRs sit open indefinitely without action
+
+Dependabot does not close stale PRs. A `astro` 6→7 PR will remain open until manually merged or closed. Set a calendar reminder to revisit major version PRs after the upstream project's migration guide is published (typically 2–4 weeks after the major release).
 
 ### 3. Secret Scanning + Push Protection
 
