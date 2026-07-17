@@ -327,6 +327,225 @@ kill %1
 
 ---
 
+## Dashboard 2 — AI ROI & Business Value
+
+Dashboard UID: `ai-roi-v1` — `https://grafana.devandre.sbs/d/ai-roi-v1`
+
+Answers the question **"Is the platform paying for itself?"** for a platform engineering lead or CFO. Sources: Prometheus for request volume (used to derive ROI) and the LiteLLM PostgreSQL database for actual API spend and adoption metrics.
+
+### Business logic
+
+Three constants are baked into the PromQL expressions:
+
+| Constant | Value | Rationale |
+|---|---|---|
+| Time saved per query | 0.05 h (3 min) | Conservative estimate: AI answers a question in seconds that would take 3 min manual research |
+| Knowledge-worker cost | 35 €/h | French average for a mid-level analyst |
+| Platform cost | 50 €/month | Fixed: electricity + hardware amortisation for the 5-node ThinkPad cluster |
+
+**Net ROI formula:**
+```
+Net ROI (€) = queries_30d × 0.05 h × 35 €/h − 50 €
+```
+
+The Net ROI stat panel is red when negative, yellow when 0–50 €, green above 50 €.
+
+### Panels
+
+| Section | Panel | Source | Query / SQL |
+|---|---|---|---|
+| Business KPIs | Queries — 30 d | Prometheus | `sum(increase(litellm_proxy_total_requests_metric_total[30d]))` |
+| Business KPIs | Hours Saved — 30 d | Prometheus | queries × 0.05 |
+| Business KPIs | Cost Avoidance — 30 d (€) | Prometheus | queries × 0.05 × 35 |
+| Business KPIs | Actual API Spend — month ($) | PostgreSQL `litellm` | `SELECT COALESCE(SUM(spend),0) FROM "LiteLLM_SpendLogs" WHERE "startTime" >= date_trunc('month', NOW())` |
+| Business KPIs | Platform Cost — month (€) | Prometheus | `vector(50)` |
+| Business KPIs | Net ROI — 30 d (€) | Prometheus | queries × 0.05 × 35 − 50 |
+| Adoption | Active Callers — 7 d | PostgreSQL `litellm` | `COUNT(DISTINCT COALESCE("user", 'anonymous'))` last 7 d |
+| Adoption | Daily Request Volume | PostgreSQL `litellm` | `date_trunc('day', "startTime")`, COUNT(*), grouped by day |
+| Spend Breakdown | Spend by Model | PostgreSQL `litellm` | requests, spend $, prompt/completion tokens per model, current month |
+| Spend Breakdown | Spend by Caller | PostgreSQL `litellm` | requests, spend $ per API key caller, current month |
+
+ConfigMap: `manifests/ai/20-ai-roi-dashboard.yaml`
+
+---
+
+## Dashboard 3 — RAG Quality & Indexing
+
+Dashboard UID: `ai-rag-quality-v1` — `https://grafana.devandre.sbs/d/ai-rag-quality-v1`
+
+Answers the question **"What is indexed in the knowledge base and is it healthy?"** Sources exclusively the `ragdb` PostgreSQL database (table `document_chunk`, powered by pgvector). No Qdrant — the RAG pipeline uses pgvector directly.
+
+### New Grafana datasource: RAG PostgreSQL
+
+Added in `helm-values/kube-prometheus-stack-values.yaml`:
+
+```yaml
+additionalDataSources:
+  - name: RAG PostgreSQL
+    uid: ragdb-postgres
+    type: postgres
+    access: proxy
+    url: postgresql-ai.ai.svc.cluster.local:5432
+    user: aiplatform
+    isDefault: false
+    editable: false
+    secureJsonData:
+      password: "${GF_LITELLM_PG_PASSWORD}"   # same user/password as LiteLLM PostgreSQL
+    jsonData:
+      database: ragdb
+      sslmode: disable
+      postgresVersion: 1400
+```
+
+The same `postgresql-ai` instance hosts both the `litellm` and `ragdb` databases for the same `aiplatform` user — no new secret or ESO resource is needed.
+
+### `ragdb.document_chunk` schema
+
+```sql
+-- Queried by this dashboard
+id              TEXT         -- chunk identifier
+collection_name TEXT         -- UUID grouping chunks by ingest session
+text            TEXT         -- raw chunk content
+vmetadata       JSONB        -- {"source": "...", "section": "...", "document_type": "..."}
+vector          USER-DEFINED -- pgvector embedding (1536-dim)
+```
+
+Current content (as of 2026-07-17): **942 chunks**, **3 source documents**, **1 collection** (Basel III Framework — regulatory).
+
+### Panels
+
+| Section | Panel | SQL |
+|---|---|---|
+| Index Health | Total Chunks | `SELECT COUNT(*) FROM document_chunk` |
+| Index Health | Indexed Documents | `SELECT COUNT(DISTINCT vmetadata->>'source') FROM document_chunk` |
+| Index Health | Collections | `SELECT COUNT(DISTINCT collection_name) FROM document_chunk` |
+| Index Health | Avg Chunks / Document | `ROUND(COUNT(*) / COUNT(DISTINCT vmetadata->>'source'), 0)` |
+| Document Detail | Documents by Source | source, doc_type, chunk count, avg chars/chunk — GROUP BY source |
+| Document Detail | Doc Type Distribution | doc_type, chunk count, distinct docs — GROUP BY doc_type |
+| Retrieval Metrics | Note panel | Explains per-query metrics not yet instrumented |
+
+### Retrieval metrics — current limitation
+
+Per-query signals (hit rate, similarity score, retrieval latency) are not available. The `rag-ingest` service does not expose a `/metrics` endpoint and does not log query results to Langfuse. To add these in a future phase:
+
+1. Add `rag_retrieval_total{collection, status}` counter and `rag_retrieval_latency_seconds` histogram to `rag-ingest`
+2. Add a ServiceMonitor for Prometheus scraping
+3. Log cosine similarity scores per retrieved chunk to Langfuse as evaluation scores
+
+ConfigMap: `manifests/ai/21-ai-rag-quality-dashboard.yaml`
+
+---
+
+## Alerting — PrometheusRule `ai-governance-alerts`
+
+`manifests/ai/22-ai-governance-alerts.yaml` — deployed in namespace `monitoring` with labels `release: kube-prometheus-stack` so the Prometheus Operator picks it up.
+
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: ai-governance-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: ai-governance
+      interval: 5m
+```
+
+### Alert 1 — `AIMonthlyAPISpendOverrun`
+
+```yaml
+expr: |
+  (
+    sum(increase(litellm_input_tokens_metric_total{api_provider="groq"}[30d])) * 0.00000005
+    +
+    sum(increase(litellm_output_tokens_metric_total{api_provider="groq"}[30d])) * 0.00000008
+  ) > 5
+for: 1h
+severity: warning
+```
+
+Estimates Groq API spend from token volume using the `llama-3.1-8b-instant` public pricing: $0.05/M input tokens, $0.08/M output tokens. Fires when the 30-day rolling estimate exceeds $5 and has been above threshold for at least 1 hour.
+
+Runbook link: `https://grafana.devandre.sbs/d/litellm-cost-dept`
+
+### Alert 2 — `AIAdoptionLow`
+
+```yaml
+expr: sum(increase(litellm_proxy_total_requests_metric_total[24h])) < 5
+for: 6h
+severity: info
+```
+
+Fires when the platform has received fewer than 5 requests in the last 24 hours, sustained for 6 consecutive hours. This catches both zero-adoption periods and silent platform failures. The threshold (5 requests) is intentionally low for a portfolio-scale deployment.
+
+Verify alerts loaded:
+```bash
+ssh controller "kubectl get prometheusrule -n monitoring ai-governance-alerts"
+# Check Prometheus web UI → Alerts tab for the ai-governance group
+```
+
+---
+
+## Langfuse metadata tagging
+
+`manifests/ai/15-langfuse-prompt-handler-configmap.yaml` — the `LangfusePromptHandler` was extended so that **every** LLM request, regardless of model, receives structured Langfuse metadata tags.
+
+### What changed in `async_pre_call_hook`
+
+Step 1 (all models) now runs before step 2 (phi3-financial prompt injection):
+
+```python
+_MODEL_METADATA = {
+    "phi3-financial": {
+        "department": "finance",
+        "use_case": "financial-advisory",
+        "tags": ["department:finance", "use_case:financial-advisory"],
+    },
+}
+_DEFAULT_METADATA = {
+    "department": "general",
+    "use_case": "general-assistant",
+    "tags": ["department:general", "use_case:general-assistant"],
+}
+
+async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
+    # Step 1: inject metadata for all models
+    model = data.get("model", "")
+    meta = _MODEL_METADATA.get(model, _DEFAULT_METADATA)
+    md = data.setdefault("metadata", {})
+    md.setdefault("department", meta["department"])
+    md.setdefault("use_case", meta["use_case"])
+    existing_tags = md.setdefault("tags", [])
+    for tag in meta["tags"]:
+        if tag not in existing_tags:
+            existing_tags.append(tag)
+
+    # Step 2: phi3-financial system-prompt injection (unchanged)
+    if model != TARGET_MODEL:
+        return data
+    ...
+```
+
+LiteLLM forwards `data["metadata"]` to the Langfuse callback, which maps it to trace properties and tags. After this change, every Langfuse trace shows the business context of the request.
+
+### Effect in Langfuse UI
+
+```
+Trace metadata:
+  department:  finance          (or "general")
+  use_case:    financial-advisory (or "general-assistant")
+  tags:        ["department:finance", "use_case:financial-advisory"]
+```
+
+The `setdefault` pattern means callers can override these values per-request by passing their own `metadata` field — the hook only sets the defaults if the keys are absent.
+
+Source of truth: `minicloud-litellm-custom/langfuse_prompt_handler.py` (`feat/qwen2.5-replace-phi4mini` branch, commit `567a5d2`). The cluster ConfigMap is a verbatim mirror — no image rebuild required to update it.
+
+---
+
 ## GitOps references
 
 | Commit/PR | What |
@@ -334,4 +553,6 @@ kill %1
 | minicloud-gitops PR #24 | Move LiteLLM `success_callback` to `litellm_settings` (ConfigMap fix) |
 | minicloud-gitops PR #26 | Fix `LangfusePromptHandler` module-level instance (handler ConfigMap) |
 | minicloud-gitops PR #28 | Phase 76: Infinity plugin + ESO + AI Governance dashboard |
-| minicloud-litellm-custom commit 7673213 | Same fix in source repo |
+| minicloud-gitops PR #30 | Complete AI-2: ROI dashboard, RAG dashboard, 2 alerts, Langfuse tagging |
+| minicloud-litellm-custom commit 7673213 | Langfuse handler bugfixes in source repo |
+| minicloud-litellm-custom commit 567a5d2 | Add department/use_case metadata tagging to handler |
