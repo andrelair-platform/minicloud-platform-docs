@@ -9,7 +9,7 @@ description: "How we think about model size, quantization formats, and inference
 
 Running LLMs on bare-metal CPU hardware forces you to understand the numbers behind model files. This post documents how we reason about model size, quantization, and inference serving on minicloud — and the concrete change we made: replacing phi4-mini with Qwen 2.5 7B across all three Ollama instances.
 
-<!-- truncate -->
+{/* truncate */}
 
 ## What "7B" Actually Means
 
