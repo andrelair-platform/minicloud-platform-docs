@@ -264,6 +264,7 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: [
         'ai-ml/ollama',
+        'ai-ml/model-distribution',
         'ai-ml/mlflow',
         'ai-ml/kubeflow',
         'ai-ml/ai-security-overview',
