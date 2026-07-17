@@ -99,60 +99,114 @@ Une confusion fréquente : on parle de "le modèle" comme s'il n'en existait qu'
 |---|---|---|---|
 | Original (sorti du labo) | FP32 / BF16 | 14–28 Go (7B) | Fine-tuning, recherche |
 | Quantisé par la communauté | GGUF Q4_K_M | 4.7 Go (7B) | Inférence sur hardware grand public |
-| Fine-tuné + quantisé | GGUF custom | variable | Pipeline spécialisé |
+| Spécialisé par Modelfile | GGUF (poids inchangés) | identique au base | Pipeline avec persona + comportement custom |
+| Fine-tuné + quantisé | GGUF custom | variable | Spécialisation profonde, nouvelle connaissance |
 
 Le modèle original et ses versions quantisées **coexistent** sur HuggingFace. Elles ne se remplacent pas — elles servent des usages différents.
 
 ---
 
-## Le cas du fine-tuning : une troisième transformation
+## Les 3 vraies façons de spécialiser un LLM
 
-Le fine-tuning est une technique qui permet de spécialiser un modèle général sur un domaine ou une tâche précise. Sur minicloud, `phi3-financial` en est l'exemple.
+Avant d'aller plus loin, une distinction essentielle que beaucoup de ressources mélangent.
 
-Le processus complet ressemble à ceci :
+| Technique | Poids modifiés ? | GPU requis ? | Ce que ça change |
+|---|---|---|---|
+| **System prompt / Modelfile** | Non | Non | Comportement et persona |
+| **RAG** | Non | Non | Accès à des données fraîches et privées |
+| **Fine-tuning** | Oui | Oui | La connaissance encodée dans les paramètres |
+
+Ces trois techniques sont complémentaires, pas substituables. On peut les combiner — et c'est exactement ce que fait le pipeline `phi3-financial` sur minicloud.
+
+---
+
+## Le cas de `phi3-financial` — Modelfile, pas fine-tuning
+
+Il est tentant d'appeler `phi3-financial` un modèle fine-tuné parce qu'il a un nom distinct dans `ollama list`. Mais la preuve par les chiffres contredit cette interprétation :
+
+```bash
+kubectl exec -n ai deployment/ollama -- ollama list
+
+phi4-mini:latest       78fad5d182a7    2.5 GB
+phi3-financial:latest  66e3380808ef    2.5 GB
+```
+
+**Exactement la même taille.** Un vrai fine-tuning modifie les valeurs des poids — la taille du fichier GGUF résultant varie légèrement. Ici les deux fichiers font 2.5 GB, ce qui indique que les poids sont identiques.
+
+`phi3-financial` est un **Ollama Modelfile** : une configuration qui enveloppe `phi4-mini` avec un system prompt et des paramètres d'inférence, sans toucher aux poids.
+
+```dockerfile
+FROM phi4-mini
+
+SYSTEM """
+Tu es un expert en analyse financière spécialisé dans le secteur des assurances.
+Tu analyses uniquement des données financières et réponds de façon précise et factuelle.
+"""
+
+PARAMETER temperature 0.3
+```
+
+Quand tu fais `ollama create phi3-financial -f Modelfile`, Ollama crée une nouvelle entrée dans son registry avec ce nom et cette configuration. Les poids sont **identiques** à ceux de `phi4-mini` — aucun entraînement n'a eu lieu.
+
+La spécialisation de `phi3-financial` vient en réalité de trois couches empilées :
 
 ```
-phi4-mini original (Microsoft, BF16, 7.6 Go)
-    │
-    │ Fine-tuning sur des données financières
-    │ (textes réglementaires, rapports, Q&A sectoriels)
+Requête utilisateur
     │
     ▼
-phi3-financial (nouveaux poids BF16, même taille)
-    │
-    │ Quantization automatique par Ollama/llama.cpp
-    │
+LangfusePromptHandler (LiteLLM CustomLogger)
+    │ Injecte le system prompt financier depuis Langfuse
+    │ (versioning des prompts, A/B testing possible)
     ▼
-phi3-financial:latest dans ollama list
-(GGUF Q4, 2.5 Go)
+phi3-financial Modelfile
+    │ Applique temperature=0.3, contraintes de persona
+    ▼
+phi4-mini GGUF Q4_K_M
+    │ Poids identiques au modèle original Microsoft
+    ▼
+Réponse générée
 ```
 
-**Ce qui change lors du fine-tuning :** les valeurs des paramètres sont ajustées pour que le modèle performe mieux sur le domaine cible. Le modèle "oublie" légèrement ses connaissances générales au profit de connaissances spécialisées — c'est le compromis du fine-tuning.
+C'est une **spécialisation par prompt engineering en profondeur**, pas du fine-tuning. C'est parfaitement valide et largement utilisé en production — plus rapide à itérer, plus facile à maintenir, aucun GPU requis.
 
-**Ce qui ne change pas :** le nombre de paramètres, l'architecture du modèle, la façon dont les couches sont organisées.
+---
 
-**La quantization intervient après** : une fois le fine-tuning terminé, les nouveaux poids sont compressés exactement comme les poids originaux. Le modèle fine-tuné quantisé occupe la même place qu'un modèle de base quantisé de même taille.
+## Quand le fine-tuning devient nécessaire
+
+Le fine-tuning n'est justifié que dans des cas précis :
+
+**Nouvelles connaissances factuelles** — si le modèle doit connaître des faits qui n'étaient pas dans ses données d'entraînement (documentation interne, terminologie propriétaire, données post-cutoff).
+
+**Comportement très contraignant** — si le system prompt seul ne suffit pas à maintenir le persona sous des prompts adversariaux.
+
+**Efficacité à l'inférence** — un modèle fine-tuné sur une tâche précise peut atteindre de meilleures performances avec un context plus court, ce qui réduit les coûts.
+
+Pour `phi3-financial`, le RAG + LangfusePromptHandler couvre les deux premiers besoins sans les coûts d'un fine-tuning réel. Si le pipeline nécessitait un jour de connaître des règlements ACPR très spécifiques absents du pre-training, le fine-tuning deviendrait pertinent.
 
 ---
 
 ## Ce que ça implique concrètement pour l'inférence
 
-Ces trois types de modèles ne s'utilisent pas de la même façon dans un stack de production.
+Ces types de modèles ne s'utilisent pas de la même façon dans un stack de production.
 
-**Le modèle original (FP16)** — tu ne l'utilises que si tu fais du fine-tuning. Il faut au minimum un GPU avec 14 Go de VRAM, et du temps de calcul. C'est l'entrée d'un pipeline ML, pas sa sortie.
+**Le modèle original (FP16)** — uniquement pour le fine-tuning. Il faut au minimum un GPU avec 14 Go de VRAM et du temps de calcul. C'est l'entrée d'un pipeline ML, pas sa sortie.
 
-**Le modèle quantisé (GGUF Q4_K_M)** — c'est ce que tu déploies en production pour l'inférence. Il tourne sur CPU, sur des GPUs grand public, sur du hardware embarqué. C'est la sortie du pipeline, celle qui crée de la valeur pour les utilisateurs.
+**Le modèle quantisé (GGUF Q4_K_M)** — ce que tu déploies en production pour l'inférence. Tourne sur CPU, sur des GPUs grand public, sur du hardware embarqué. C'est la sortie du pipeline, celle qui crée de la valeur.
 
-**Le modèle fine-tuné + quantisé** — le meilleur des deux mondes : spécialisation d'un modèle de base sur ton domaine, déployé avec les contraintes hardware de la production. C'est l'état final de `phi3-financial` sur minicloud.
+**Le Modelfile** — une couche de configuration au-dessus d'un modèle quantisé existant. Zéro coût de calcul supplémentaire, itération rapide sur le comportement. C'est l'état réel de `phi3-financial` sur minicloud.
 
 ---
 
 ## Pourquoi c'est important pour le déploiement en entreprise
 
-Dans un contexte professionnel, la distinction entre ces trois types de modèles correspond à trois rôles différents :
+Dans un contexte professionnel, ces quatre niveaux correspondent à des rôles distincts :
 
-- **Les chercheurs / data scientists** travaillent avec les modèles FP16 pour le fine-tuning et l'évaluation.
-- **Les ingénieurs MLOps / platform engineers** s'occupent de la quantization, du packaging, et du déploiement des modèles quantisés.
-- **Les ingénieurs applicatifs** consomment les endpoints LiteLLM sans avoir à connaître le format sous-jacent.
+| Artefact | Équipe responsable |
+|---|---|
+| Modèle FP16 original | Data scientists / ML researchers |
+| Modèle GGUF quantisé | MLOps / Platform engineers |
+| Modelfile + system prompt | AI engineers / Prompt engineers |
+| RAG pipeline | AI engineers + Data engineers |
+| Fine-tuning | ML engineers (besoin GPU, dataset, évaluation) |
 
-Sur minicloud, ces trois rôles sont joués par une seule personne. En entreprise, ce sont trois équipes distinctes. Comprendre les frontières entre ces rôles — et les artefacts qui circulent entre eux — est ce qui permet de construire une chaîne MLOps qui fonctionne.
+Sur minicloud, ces rôles sont joués par une seule personne. En entreprise, ce sont des équipes distinctes avec des compétences différentes. Comprendre quelle technique appartient à quel niveau — et pourquoi — est ce qui distingue un ingénieur qui "utilise des LLMs" d'un ingénieur qui "conçoit des systèmes AI".
