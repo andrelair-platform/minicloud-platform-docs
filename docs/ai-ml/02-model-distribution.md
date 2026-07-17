@@ -81,6 +81,48 @@ Q2_K   → ~0.25 byte    → 7B =  2.7 GB  (dégradation trop forte)
 
 Descendre d'un niveau de quantization vaut mieux que de prendre un modèle plus petit. Un 7B Q4 surpasse un 3B Q8 sur presque toutes les tâches.
 
+### Lire la notation Q4_K_M
+
+La notation peut sembler opaque au premier abord. Voici comment la décoder.
+
+**Le chiffre — nombre de bits par paramètre**
+
+Un bit est la plus petite unité d'information : soit 0, soit 1.
+
+Avec N bits on peut représenter 2ᴺ valeurs distinctes :
+
+| Format | Bits | Valeurs possibles | Exemple |
+|---|---|---|---|
+| FP32 | 32 | ~4 milliards | `0.347821493...` très précis |
+| Q8 | 8 | 256 | `0.348` précis |
+| Q4 | 4 | 16 | `0.35` approché |
+| Q2 | 2 | 4 | `0.3` ou `0.4` — très grossier |
+
+La quantization c'est simplement **arrondir chaque paramètre** pour qu'il occupe moins de place. Comme passer d'une règle au millimètre à une règle au centimètre — suffisant pour construire une maison, insuffisant pour de l'horlogerie.
+
+**Le `K` — méthode intelligente**
+
+Sans `K` (ex: `Q8_0`) : tous les paramètres reçoivent exactement le même traitement, qu'ils soient importants ou non.
+
+Avec `K` (ex: `Q4_K_M`) : la méthode détecte quels paramètres ont le plus d'impact sur les sorties du modèle et leur préserve plus de précision. Les paramètres moins critiques sont arrondis plus agressivement. Résultat : même niveau de compression, meilleure qualité finale.
+
+**Le `M` — taille des blocs de calcul**
+
+- `_S` (Small) — groupes petits, légèrement plus rapide
+- `_M` (Medium) — équilibre vitesse/précision ← le défaut
+- `_L` (Large) — légèrement plus précis, légèrement plus lent
+
+**Résumé en une ligne**
+
+| Notation | Traduction |
+|---|---|
+| `Q4_K_M` | 4 bits/param, méthode intelligente, bloc medium — **défaut recommandé** |
+| `Q5_K_M` | 5 bits/param, méthode intelligente, bloc medium — si +1 GB de RAM disponible |
+| `Q8_0` | 8 bits/param, méthode basique — quasi-identique à FP16 |
+| `Q2_K` | 2 bits/param — seulement 4 valeurs possibles, dégradation perceptible |
+
+**Règle d'or :** ne descends jamais en dessous de Q4. Et préfère toujours `_K_M` à `_0` à bits équivalents.
+
 ---
 
 ## Migration phi4-mini → qwen2.5:7b (2026-07-16)
