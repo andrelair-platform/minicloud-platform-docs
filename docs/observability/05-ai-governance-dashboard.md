@@ -199,20 +199,30 @@ The Grafana helm chart maps `plugins:` to `GF_PLUGINS_PREINSTALL_SYNC`, which tr
 
 ## Difference from the existing `litellm-cost-dept` dashboard
 
-Both dashboards are complementary. They answer different questions.
+The two dashboards answer fundamentally different questions and are designed for different audiences. They are complementary — neither replaces the other.
+
+**`litellm-cost-dept` answers: "Who spent what, and are we within budget?"**
+
+Source is the LiteLLM PostgreSQL database (`LiteLLM_SpendLogs`, `LiteLLM_VerificationToken`). It shows dollars consumed per department, tokens billed, budget utilisation bars (green/yellow/red thresholds at 70%/90% of monthly allocation), and a table of the 50 most recent requests with unit cost. The default window is 30 days because billing is a monthly concern. The intended reader is a CIO, CFO, or department head reviewing a monthly chargeback report.
+
+**`ai-governance-v1` answers: "Is the system working correctly right now?"**
+
+Source is Prometheus (real-time LiteLLM metrics) and the Langfuse REST API via the Infinity datasource. It shows P50/P95/P99 latency, error rate %, guardrail invocations and errors from the Presidio PII filter, Redis cache hit rate, deployment health per model, and a live trace table from Langfuse. The default window is 3 hours with a 30-second refresh because platform health is a real-time concern. The intended reader is a platform engineer, AI lead, or CISO responding to an alert or doing a daily health check.
 
 | | `litellm-cost-dept` (Phase 22) | `ai-governance-v1` (Phase 76) |
 |---|---|---|
+| **The question** | Who spent what and are we in budget? | Is the system healthy right now? |
 | **Source** | PostgreSQL `LiteLLM_SpendLogs` + `LiteLLM_VerificationToken` | Prometheus + Langfuse REST API (Infinity) |
-| **View** | Financial — who spends what, budget utilisation per department | Operational — is the system healthy, how fast, how safe |
-| **Time range** | 30 days default | 3 hours default (real-time) |
+| **Default window** | 30 days | 3 hours |
 | **Refresh** | 5 min | 30 s |
 | **Audience** | CIO, CFO, budget owners | Platform engineer, AI lead, CISO |
-| **Key panels** | Spend USD, budget utilisation bar, tokens by model, spend by department | P95 latency, error rate, guardrail invocations, cache hit rate, deployment state |
+| **Key panels** | Spend USD, budget utilisation %, spend by department, cost per request | P95 latency, error rate, guardrail invocations, cache hit rate, deployment state |
+| **Latency** | Not visible | P50/P95/P99 timeseries + bargauge by model |
 | **Guardrails** | Not visible | Invocations/errors/latency for every Presidio PII scan |
 | **Langfuse** | Not connected | Daily trace count + recent trace table |
+| **Use case** | Monthly budget review, department chargeback | Incident response, daily ops, compliance audit |
 
-Use `litellm-cost-dept` for monthly budget reviews and chargeback. Use `ai-governance-v1` for day-to-day operations, incident response, and compliance audit trails.
+Use `litellm-cost-dept` for monthly budget reviews and chargeback reporting. Use `ai-governance-v1` for day-to-day operations, incident response, and SRE/CISO reviews. Both should be open during any AI platform incident: one tells you the blast radius in cost, the other tells you where the failure is.
 
 ---
 
