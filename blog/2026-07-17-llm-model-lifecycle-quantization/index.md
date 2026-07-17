@@ -11,7 +11,7 @@ Un modèle sort de l'entraînement à 28 Go. Tu le télécharges à 4.7 Go. Qui 
 
 Ce post répond à cette question, et explique comment les modèles open-source circulent depuis les labos de recherche jusqu'à ton cluster.
 
-<!-- truncate -->
+{/* truncate */}
 
 ## Pourquoi la quantization existe : trois objectifs
 

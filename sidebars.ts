@@ -516,6 +516,14 @@ const sidebars: SidebarsConfig = {
       items: ['developer-platform/vpa-auto'],
     },
 
+    // ── Phase 76 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 76 — AI Governance & Operations Dashboard ✅',
+      collapsed: true,
+      items: ['observability/ai-governance-dashboard'],
+    },
+
     // ── Admission Control Hardening ─────────────────────────────────
     {
       type: 'category',

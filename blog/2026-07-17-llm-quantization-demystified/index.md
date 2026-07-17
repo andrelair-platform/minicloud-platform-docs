@@ -11,7 +11,7 @@ Un modèle 7B en FP32, c'est 28 Go de RAM. Mes ThinkPads en ont 16 à 32. Imposs
 
 La quantization a résolu ce problème. Pas en sacrifiant la qualité — en changeant la façon dont les poids sont stockés.
 
-<!-- truncate -->
+{/* truncate */}
 
 ## Ce qu'est un paramètre, concrètement
 
