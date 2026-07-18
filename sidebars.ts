@@ -611,6 +611,14 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['security-enterprise/rbac-audit'],
     },
+
+    // ── Phase 76 — Matrix Synapse + Element Web ───────────────────────
+    {
+      type: 'category',
+      label: '💬 Phase 76 — Matrix Synapse + Element Web (Team Chat)',
+      collapsed: true,
+      items: ['developer-platform/matrix-synapse-element-web'],
+    },
   ],
 };
 
