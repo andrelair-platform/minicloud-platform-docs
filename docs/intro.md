@@ -87,6 +87,17 @@ Each phase builds directly on the previous one — nothing requires something th
 | **LLM Observability** | Langfuse 3.201.1 — traces every LiteLLM call with token counts, cost, model, department metadata, and latency. ClickHouse columnar store + Valkey + PostgreSQL + MinIO (S3 blobs). Authentik OIDC SSO; pre-provisioned org `minicloud-platform` + project `ai-gateway` via init env vars. | Langfuse, ClickHouse, Valkey | ✅ Done |
 | **Security gaps** | Full security hardening — supply chain (Cosign + SBOM on both CIs, Dependabot on 4 repos, GPG-signed commits + branch protection on main), ingress & edge (HSTS globally, rate limiting, Authentik forward-auth on Prometheus/Alertmanager/Polaris), ArgoCD hardening (admin disabled, AppProject with explicit source/destination/resource whitelist). Regression check #19: **42 PASS / 0 FAIL / 0 WARN**. | Cosign, GPG, AppProject, NGINX | ✅ Done |
 | **Observability gaps** | Full observability — Falco Sidekick → Alertmanager pipeline (failed logins, new cluster-admin, privileged pod alerts), Polaris workload quality scorer at `polaris.10.0.0.200.nip.io`, DB backup scripts (pg_dump → MinIO nightly), Vault raft snapshots (nightly), backup DR PrometheusRules (VeleroBackupFailed, MinioDiskFull), DR runbook (7 scenarios). | Falco Sidekick, Polaris, Alertmanager | ✅ Done |
+| **68–69** | minicloud-plane — Go microservice: Plane CE API client + webhook→NATS bridge + Backstage plugin (`EntityPlaneIssuesContent`) | Go, NATS JetStream, Plane CE, Backstage plugin | ✅ Done |
+| **70** | Backstage Software Templates — `go-service` golden-path scaffold (service + gitops + catalog auto-generated, CI skeleton, PR workflow) | Backstage scaffolder, Nunjucks | ✅ Done |
+| **71** | Backstage TechDocs — MkDocs local builder + publisher, `mkdocs-techdocs-core`, docs scaffolded into every new service | TechDocs, MkDocs | ✅ Done |
+| **73** | Argo Rollouts — canary deployment for `platform-demo` (50 % → Prometheus `AnalysisTemplate` → 100 %) | Argo Rollouts v1.9, canary, Prometheus | ✅ Done |
+| **74** | VPA `updateMode:Auto` — backstage, langfuse-web, litellm; ClickHouse + Prometheus stay Off | VPA Fairwinds v4, vertical autoscaling | ✅ Done |
+| **75** | Stakater Reloader + ArgoCD controller memory fix (OOMKill at 1 Gi / 183 restarts) | Reloader v1.4, ArgoCD 2 Gi controller | ✅ Done |
+| **76** | Matrix Synapse + Element Web — federated instant messaging, Authentik OIDC SSO, 9 installation gotchas resolved | Matrix Synapse v1.156, Element Web v1.11 | ✅ Done |
+| **77** | Jitsi Meet — self-hosted video conferencing, JVB hostNetwork on star-kitten, Authentik forward-auth | Jitsi Meet v2.21, JVB, WebRTC | ✅ Done |
+| **78** | Stalwart Mail Server — SMTP/IMAP/IMAPS, JMAP management API, Alertmanager STARTTLS integration, Onboard Employee template | Stalwart v0.16.13, JMAP | ✅ Done |
+| **79** | ERPNext / Frappe HR — HR source of truth, Authentik OIDC SSO, employee-created webhook triggers Backstage scaffolder | ERPNext v16.28, Frappe, MariaDB | ✅ Done |
+| **80** | Amazon SES outbound relay — STARTTLS relay via Stalwart, SPF / DKIM / DMARC, production access submitted | Amazon SES eu-west-1, SMTP relay | ✅ Done |
 | **—** | **Data Layer** | Kafka/Redpanda, ClickHouse, dbt, Superset, OpenMetadata | 🔜 |
 
 ---
@@ -96,7 +107,7 @@ Each phase builds directly on the previous one — nothing requires something th
 ```text
 ── INFRASTRUCTURE ──────────────────────────────────────────────────
 MAAS          → bare-metal provisioning (4 ThinkPads, PXE)
-k3s v1.36.1   → Kubernetes cluster (1 control-plane + 3 workers)
+k3s v1.36.2+k3s1 → Kubernetes cluster (1 control-plane + 4 workers, upgraded via system-upgrade-controller)
 MetalLB       → load balancer IPs (10.0.0.200)
 Longhorn       → distributed block storage
 local-path     → NVMe-backed storage (Ollama model weights)
@@ -114,8 +125,20 @@ Velero + MinIO → backup & disaster recovery (daily + k3s snapshots)
 Vault         → secrets management (AWS KMS auto-unseal, Raft)
 KEDA          → event-driven autoscaling (NATS JetStream)
 NATS          → message broker (JetStream HA)
-Backstage     → developer portal (Authentik OIDC, Kubernetes + ArgoCD + Grafana plugins)
-Nextcloud     → on-cluster collaboration (Authentik SSO)
+Backstage     → developer portal (Authentik OIDC, TechDocs, Software Templates, K8s + ArgoCD + Grafana plugins)
+Argo Rollouts → canary progressive delivery (platform-demo, analysis via Prometheus)
+VPA           → vertical pod autoscaler (Auto mode: backstage, litellm, langfuse-web)
+Reloader      → zero-downtime ConfigMap/Secret hot-reload (homer, backstage, litellm, searxng)
+Plane CE      → project management (plane.devandre.sbs)
+minicloud-plane → Go Level 4 API: Plane ↔ NATS ↔ Backstage integration
+ERPNext v16   → HR source of truth + employee onboarding webhook (erp.devandre.sbs)
+
+── COLLABORATION ────────────────────────────────────────────────────
+Stalwart v0.16 → self-hosted mail (SMTP/IMAP, Amazon SES relay, JMAP API)
+Matrix Synapse→ federated chat server (Authentik OIDC, PostgreSQL, Redis)
+Element Web   → Matrix client (element.devandre.sbs)
+Jitsi Meet    → video conferencing (JVB hostNetwork on star-kitten, Tailscale-only ICE)
+Nextcloud     → file collaboration + OnlyOffice .docx editing (Authentik SSO)
 
 ── OBSERVABILITY ───────────────────────────────────────────────────
 Prometheus    → metrics (kube-prometheus-stack)
@@ -175,6 +198,6 @@ OpenMetadata  → data catalog, lineage, governance
 - Deployed External Secrets Operator with Vault KV v2 backend (9 ExternalSecrets — all platform credentials pulled from Vault; no plaintext secrets in git)
 - Implemented full backup & DR: Velero + MinIO (daily cluster backup), nightly DB dumps (pg_dump → MinIO), Vault raft snapshots, PrometheusRule alerts (VeleroBackupFailed, MinioDiskFull), and validated restore test
 - Built Authentik-based department RBAC: 16 groups, 16 demo personas with group-based policy bindings across ArgoCD, Grafana, Harbor, Open WebUI, and Nextcloud; MFA enforced on all accounts
-- Established full platform health suite: regression check script covering cluster, security, observability, AI Gateway, and backups — Regression check #37: **20 PASS / 0 FAIL / 3 WARN** (all warns are known drift)
+- Established full platform health suite: regression check script covering cluster, security, observability, AI Gateway, and backups — Regression check #40: **22 PASS / 0 FAIL / 0 WARN** (all drifts resolved)
 - Implemented remote access via Tailscale VPN and Cloudflare Tunnel (`*.devandre.sbs` public edge, no Tailscale required)
 - Applied chaos engineering with Chaos Mesh: PodChaos (0 ms downtime under 5 simultaneous kills), NetworkChaos (200 ms latency injection + clean recovery), StressChaos (contained cgroup OOM)
