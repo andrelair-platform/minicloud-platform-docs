@@ -305,6 +305,7 @@ const sidebars: SidebarsConfig = {
         'observability/alertmanager',
         'observability/jaeger',
         'observability/falco-sidekick-polaris',
+        'observability/k8s-monitoring-gaps',
       ],
     },
 
