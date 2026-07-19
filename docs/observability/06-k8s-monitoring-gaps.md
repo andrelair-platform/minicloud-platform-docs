@@ -224,3 +224,35 @@ kubectl get endpoints kube-scheduler-proxy kube-controller-manager-proxy -n moni
 # scheduler_framework_extension_point_duration_seconds_count → 60 series
 # workqueue_depth{job="kube-controller-manager-proxy"} → 93 series
 ```
+
+---
+
+## Important Metrics Coverage
+
+All 9 key operational metrics are actively collected, alerted on, or visible in dashboards.
+
+| Metric | Collected by | Alert | Dashboard |
+|--------|-------------|-------|-----------|
+| Pending Pods | kube-state-metrics | `PodStuckPending` (fires after 5m) | Workload Health — Pending Pods stat |
+| Failed Pods | kube-state-metrics | — | Workload Health — Failed Pods stat (red at ≥1) |
+| Pod restarts | kube-state-metrics | — | Workload Health — Top Restarting Pods table |
+| CrashLoopBackOff | kube-state-metrics | — | Workload Health — stat + CrashLoop table |
+| Node NotReady | kube-state-metrics | `KubeNodeNotReady` (kps built-in) | Kubernetes / Compute Resources |
+| PVC usage | kubelet (`volume_manager`) | `KubePersistentVolumeFilesystemUsage` (kps built-in) | Kubernetes / Persistent Volumes |
+| Deployment availability | kube-state-metrics | `KubeDeploymentReplicasMismatch` (kps built-in) | Workload Health — Deployment Missing Replicas |
+| Replica count | kube-state-metrics | — | Workload Health — Deployment Missing Replicas |
+| HPA activity | kube-state-metrics | — | Kubernetes / HPA |
+
+---
+
+## Verdict
+
+:::tip All coverage confirmed ✅
+
+| Category | Result |
+|----------|--------|
+| **Data sources** (6/6) | kube-apiserver ✅ · kubelet ✅ · CoreDNS ✅ · scheduler ✅ · controller-manager ✅ · etcd → Kine ✅ |
+| **Important metrics** (9/9) | Pending ✅ · Failed ✅ · Restarts ✅ · CrashLoop ✅ · NodeNotReady ✅ · PVC ✅ · Deployment ✅ · Replicas ✅ · HPA ✅ |
+| **Tools** (3/3) | kube-state-metrics ✅ · Prometheus ✅ · Grafana ✅ |
+
+:::
