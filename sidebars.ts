@@ -516,6 +516,14 @@ const sidebars: SidebarsConfig = {
       items: ['developer-platform/vpa-auto'],
     },
 
+    // ── Phase 79 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 79 — ERPNext HR (Employee Onboarding Automation) ✅',
+      collapsed: true,
+      items: ['developer-platform/erpnext-hr'],
+    },
+
     // ── Phase 76 ────────────────────────────────────────────────────
     {
       type: 'category',
