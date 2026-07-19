@@ -541,6 +541,14 @@ const sidebars: SidebarsConfig = {
       items: ['observability/ai-governance-dashboard'],
     },
 
+    // ── Application Monitoring ───────────────────────────────────────
+    {
+      type: 'category',
+      label: '📊 Application Monitoring — RED Metrics & Canary Analysis ✅',
+      collapsed: true,
+      items: ['observability/application-monitoring'],
+    },
+
     // ── Admission Control Hardening ─────────────────────────────────
     {
       type: 'category',
