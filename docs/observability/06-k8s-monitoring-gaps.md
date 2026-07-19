@@ -31,7 +31,15 @@ monitoring coverage. All 5 are now closed.
 | CoreDNS | `kps-coredns` | ✅ | ✅ |
 | scheduler | `kube-scheduler-proxy` | ✅ | ✅ closed via socat proxy |
 | controller-manager | `kube-controller-manager-proxy` | ✅ | ✅ closed via socat proxy |
-| etcd | ❌ None | ❌ | k3s embedded etcd on `:2381`, TLS client cert required — deferred |
+| etcd | N/A — see below | ✅ | ✅ Kine/SQLite metrics via apiserver scrape |
+
+:::info No etcd — this cluster uses Kine/SQLite
+k3s was started without `--cluster-init`, so there is no embedded etcd process.
+The datastore is **Kine** (a SQLite-backed etcd-compatible layer). Kine metrics
+(`kine_sql_total`, `kine_sql_time_seconds_*`, `kine_compact_total`) are already
+flowing in Prometheus via the existing `kps-apiserver` ServiceMonitor — no additional
+scrape config needed.
+:::
 
 ---
 
