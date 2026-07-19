@@ -516,6 +516,14 @@ const sidebars: SidebarsConfig = {
       items: ['developer-platform/vpa-auto'],
     },
 
+    // ── Phase 80 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 80 — Amazon SES (Outbound Email Relay) ✅',
+      collapsed: true,
+      items: ['developer-platform/amazon-ses'],
+    },
+
     // ── Phase 79 ────────────────────────────────────────────────────
     {
       type: 'category',
