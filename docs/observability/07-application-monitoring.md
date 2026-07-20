@@ -1,117 +1,49 @@
 ---
 id: application-monitoring
-title: Application Monitoring — RED Metrics & Canary Analysis
+title: Application Monitoring — RED Metrics & Service Alerts
 sidebar_position: 7
 ---
 
-# Application Monitoring — RED Metrics & Canary Analysis
+# Application Monitoring — RED Metrics & Service Alerts
 
-After the infrastructure monitoring audit (Phase gap analysis, all 5 gaps closed), the next layer was **application-level observability**: instrumenting microservices with Prometheus metrics following Google's Four Golden Signals, wiring ServiceMonitors, and using those metrics as Argo Rollouts canary gates.
+This page covers application-level observability: instrumenting microservices with Prometheus metrics following Google's RED method, enabling native metrics on third-party services, wiring ServiceMonitors, and creating PrometheusRule alerts for the remaining signal gaps.
 
-Two services were instrumented: `platform-demo` and `minicloud-plane`. A PodMonitor was added for NGINX Ingress latency. Three blocking issues were found and fixed along the way.
-
----
-
-## Theory — Four Golden Signals vs RED
-
-Google's Four Golden Signals (from the SRE book) define the minimum viable signal set for any production service:
-
-| Signal | Description |
-|--------|-------------|
-| **Latency** | Time to serve a request — distinguish success from error latency |
-| **Traffic** | Demand on the system (requests/sec) |
-| **Errors** | Rate of failed requests — explicit (5xx) and implicit (wrong data) |
-| **Saturation** | How full the service is — the resource that's most constrained |
-
-**RED** is the per-microservice subset:
-
-| Signal | Prometheus metric |
-|--------|------------------|
-| **Rate** | `http_requests_total` — requests per second |
-| **Errors** | `http_requests_total{code=~"5.."}` — 5xx rate |
-| **Duration** | `http_request_duration_seconds` — latency histogram |
-
-Saturation is handled at the infrastructure layer (CPU/memory via node-exporter + VPA).
+Work was done in three phases: P1 (own Go services), P2 (native-metrics third-party services), and RED signal gap resolution.
 
 ---
 
-## Gap analysis before instrumentation
+## Theory — RED Method
 
-| Service | Rate | Errors | Duration | Notes |
-|---------|------|--------|----------|-------|
-| platform-demo | ❌ | ❌ | ❌ | No `/metrics`, Rollout AnalysisTemplate was a dead letter |
-| minicloud-plane | ❌ | ❌ | ❌ | No `/metrics` |
-| NGINX Ingress | ✅ | ✅ | ❌ | Metrics port 9113 active, no latency histogram (disabled by default) |
-| LiteLLM | ✅ | ✅ | ✅ | Prometheus callback active from Phase 76 |
-| Backstage, Open WebUI, Synapse, Stalwart | ❌ | ❌ | ❌ | No native Prometheus endpoint — P3 (exporters needed) |
+| Signal | Description | Prometheus pattern |
+|--------|-------------|--------------------|
+| **Rate** | Requests per second | `rate(http_requests_total[2m])` |
+| **Errors** | Failed request rate | `rate(http_requests_total{code=~"5.."}[2m])` |
+| **Duration** | Latency distribution | `histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))` |
 
-Priority P1: platform-demo + minicloud-plane (own Go services — full control). P2: native-metrics services (NATS, Harbor, Authentik, Vault). P3: services requiring exporters.
+Saturation (CPU/memory) is handled at the infrastructure layer via node-exporter + VPA.
 
 ---
 
-## P1 — Instrumenting platform-demo
+## P1 — Own Go services
 
-`platform-demo` is a minimal Go HTTP service. Two metrics were added using `prometheus/client_golang`:
+### Instrumentation pattern
+
+Both `platform-demo` and `minicloud-plane` use the same two metrics defined via `promauto`:
 
 ```go
-var (
-    httpRequestsTotal = promauto.NewCounterVec(prometheus.CounterOpts{
-        Name: "http_requests_total",
-        Help: "Total HTTP requests by method, handler, and status code.",
-    }, []string{"method", "handler", "code"})
+httpRequestsTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+    Name: "http_requests_total",
+}, []string{"method", "handler", "code"})
 
-    httpRequestDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
-        Name:    "http_request_duration_seconds",
-        Help:    "HTTP request duration in seconds.",
-        Buckets: []float64{.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5},
-    }, []string{"method", "handler", "code"})
-)
+httpRequestDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+    Name:    "http_request_duration_seconds",
+    Buckets: []float64{.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5},
+}, []string{"method", "handler", "code"})
 ```
 
-A `statusWriter` wrapper captures the HTTP response code after the handler returns (the code isn't known before `WriteHeader` is called):
+A `statusWriter` wrapper captures the HTTP response code after the handler returns (the code is only known after `WriteHeader` is called):
 
 ```go
-type statusWriter struct {
-    http.ResponseWriter
-    code int
-}
-
-func (sw *statusWriter) WriteHeader(code int) {
-    sw.code = code
-    sw.ResponseWriter.WriteHeader(code)
-}
-
-func instrument(pattern string, h http.HandlerFunc) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        sw := &statusWriter{ResponseWriter: w, code: http.StatusOK}
-        start := time.Now()
-        h(sw, r)
-        code := strconv.Itoa(sw.code)
-        httpRequestsTotal.WithLabelValues(r.Method, pattern, code).Inc()
-        httpRequestDuration.WithLabelValues(r.Method, pattern, code).Observe(time.Since(start).Seconds())
-    }
-}
-```
-
-Routes:
-
-```go
-mux.HandleFunc("/", instrument("/", handleRoot))
-mux.HandleFunc("/healthz", instrument("/healthz", handleHealthz))
-mux.HandleFunc("/readyz", instrument("/readyz", handleReadyz))
-mux.Handle("/metrics", promhttp.Handler())  // probe routes are NOT instrumented
-```
-
-The `/healthz` and `/readyz` probes are instrumented intentionally — their latency shows kubelet probe overhead. The `/metrics` endpoint itself is not (it would add noise to the rate signal).
-
----
-
-## P1 — Instrumenting minicloud-plane
-
-`minicloud-plane` uses the same metric definitions, extracted to `internal/metrics/middleware.go` since it serves multiple route families (`/webhook`, `/api/`):
-
-```go
-// internal/metrics/middleware.go
 func Instrument(pattern string, h http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         sw := &statusWriter{ResponseWriter: w, code: http.StatusOK}
@@ -124,214 +56,84 @@ func Instrument(pattern string, h http.Handler) http.Handler {
 }
 ```
 
+### minicloud-plane — instrument the health probe
+
 Routes in `cmd/server/main.go`:
 
 ```go
-mux.HandleFunc("/health", healthHandler)  // probe — intentionally NOT instrumented
+// All four routes are wrapped — including /health
+mux.Handle("/health", metrics.Instrument("/health", http.HandlerFunc(healthHandler)))
 mux.Handle("/webhook", metrics.Instrument("/webhook", webhook.NewHandler(...)))
 mux.Handle("/api/", metrics.Instrument("/api/", planeapi.NewHandler(...)))
 mux.Handle("/metrics", promhttp.Handler())
 ```
 
-The `/health` probe is excluded — it runs on every kubelet cycle and would dominate the request rate signal.
+:::caution Promauto gotcha — metrics absent until first request
+`promauto.NewCounterVec` and `NewHistogramVec` register the metric but do **not** emit any output until `.WithLabelValues()` is called at least once. In a distroless Go container with no shell and no initial traffic, `http_requests_total` is completely absent from `/metrics` output — Prometheus shows the target as `up` but returns 0 series for that metric.
 
----
+**Fix:** wrap the liveness probe endpoint with `Instrument()`. The kubelet hits `/health` every ~15 seconds, seeding both the counter and histogram within one scrape cycle. `/metrics` itself must NOT be wrapped (would add noise to the rate signal).
+:::
 
-## ServiceMonitors
+### ServiceMonitors
 
 Both services get a `ServiceMonitor` in their kustomize `base/`:
 
 ```yaml
-# services/platform-demo/base/servicemonitor.yaml
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: platform-demo
+  # no namespace here — kustomize namespace transformer sets it per overlay
 spec:
   selector:
     matchLabels:
       app: platform-demo
   endpoints:
-    - port: http
+    - port: http    # must be a named port on the Service
       path: /metrics
       interval: 30s
+  # no namespaceSelector — defaults to own namespace (correct for overlay pattern)
 ```
 
-**No `metadata.namespace` and no `spec.namespaceSelector` in the base.** This is intentional:
-
-- kustomize's `namespace:` field in an overlay rewrites `metadata.namespace` on every resource — the ServiceMonitor lands in the correct namespace per overlay automatically.
-- Without `namespaceSelector`, prometheus-operator defaults to scraping in the ServiceMonitor's own namespace — which is exactly what you want when using overlays (dev SM scrapes dev Service, prod SM scrapes prod Service).
-
-Adding `namespaceSelector` to the base would cause the dev overlay SM (namespace: `platform-demo-dev`) to scrape the service in the wrong namespace.
-
-The Service also needs a named port for the ServiceMonitor `port:` reference:
-
-```yaml
-# services/minicloud-plane/base/service.yaml
-ports:
-  - name: http     # required — ServiceMonitor references by name, not number
-    port: 8080
-    targetPort: 8080
-```
+**Why no `namespaceSelector`:** prometheus-operator defaults to scraping in the ServiceMonitor's own namespace. Since kustomize writes the SM to `platform-demo-dev`, it scrapes the Service in `platform-demo-dev`. Adding a `namespaceSelector` to the base would cause the dev SM to scrape the wrong namespace.
 
 ---
 
-## NGINX Ingress — PodMonitor + latency metrics
+## P1 — NGINX Ingress — community ingress-nginx 4.15.1
 
-F5 NGINX Ingress Controller v5.4.1 exposes a Prometheus metrics port (9113) on each pod, named `prometheus`. There is no dedicated metrics Service — a PodMonitor is used instead of a ServiceMonitor:
+The cluster was migrated from F5 nginx-ingress to community `ingress-nginx/ingress-nginx` chart 4.15.1 (see NGINX migration runbook for full context). The community chart exposes `nginx_ingress_controller_request_duration_seconds_bucket` — a per-route latency histogram — natively in OSS mode.
 
-```yaml
-# manifests/monitoring/10-nginx-ingress-podmonitor.yaml
-apiVersion: monitoring.coreos.com/v1
-kind: PodMonitor
-metadata:
-  name: nginx-ingress
-  namespace: monitoring
-spec:
-  namespaceSelector:
-    matchNames:
-      - ingress-nginx
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: nginx-ingress
-  podMetricsEndpoints:
-    - port: prometheus
-      scheme: http
-      path: /metrics
-      interval: 30s
-```
-
-Upstream latency histograms (`nginx_upstream_server_response_latency_ms`) are disabled by default. Enable them:
+**Key helm-values configuration:**
 
 ```yaml
 # helm-values/nginx-ingress-values.yaml
 controller:
-  enableLatencyMetrics: true
+  config:
+    enable-latency-metrics: "true"   # ConfigMap key — NOT a CLI flag
+    allow-snippet-annotations: "true"
+    annotations-risk-level: "Critical"
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      namespace: monitoring
 ```
+
+The chart creates the ServiceMonitor automatically (`controller.metrics.serviceMonitor.enabled: true`). No manual PodMonitor needed.
+
+**Histogram labels:** `ingress`, `host`, `method`, `status`, `path`, `le` — full per-route breakdown.
+
+:::caution annotations-risk-level is a ConfigMap key, not a CLI flag
+`server-snippet` and `configuration-snippet` annotations are risk level `Critical` in community ingress-nginx v1.12+. Setting only `allow-snippet-annotations: "true"` is insufficient — you must also add `annotations-risk-level: "Critical"` to `controller.config`. Adding it under `extraArgs` causes CrashLoopBackOff (`unknown flag: --annotations-risk-level`).
+:::
 
 ---
 
-## CI bump-gitops — PR auto-merge pattern
+## P1 — Canary AnalysisTemplate
 
-Both services push to `harbor.10.0.0.200.nip.io` and bump the kustomize overlay in `minicloud-gitops`. The gitops repo's `main` branch has a `main-protection` ruleset with no bypass actors — direct push is blocked.
-
-**Pattern used:**
+With both Go services instrumented, the Phase 73 Argo Rollouts AnalysisTemplate works as intended for `platform-demo`:
 
 ```yaml
-- name: Bump image tag and open auto-merged PR
-  env:
-    GH_TOKEN: ${{ secrets.GITOPS_TOKEN }}
-  run: |
-    SHA="${{ needs.build-and-push.outputs.image_tag }}"
-    BRANCH="ci/platform-demo-${SHA}"
-    git checkout -b "${BRANCH}"
-    cd services/platform-demo/overlays/dev
-    kustomize edit set image harbor.10.0.0.200.nip.io/library/platform-demo:${SHA}
-    cd -
-    git add services/platform-demo/overlays/dev/kustomization.yaml
-    if git diff --cached --quiet; then
-      echo "No change — already at ${SHA}"
-      exit 0
-    fi
-    git commit -S -m "ci(platform-demo): bump dev image to ${SHA}"
-    git push origin "${BRANCH}"
-    gh pr create \
-      --repo andrelair-platform/minicloud-gitops \
-      --base main --head "${BRANCH}" \
-      --title "ci(platform-demo): bump dev image to ${SHA}" \
-      --body "Automated image promotion from CI run ${{ github.run_id }}."
-    gh pr merge "${BRANCH}" \
-      --repo andrelair-platform/minicloud-gitops \
-      --admin --merge --delete-branch
-```
-
-Key points:
-- `GH_TOKEN` must be `GITOPS_TOKEN` (not `GITHUB_TOKEN`) — needs write access to the gitops repo, which is a different repo from the one the workflow runs in.
-- `--admin` bypasses the PR review requirement using the token owner's admin role.
-- `main` branch push → `overlays/dev` (not `overlays/prod` — prod requires an explicit human PR).
-- The image verification step (curl + Harbor Registry API) runs before the bump to prevent writing a dead tag to gitops.
-
----
-
-## Three blocking issues found during rollout
-
-### Issue 1 — Wrong Prometheus service name in AnalysisTemplate
-
-The Argo Rollouts AnalysisTemplate (from Phase 73) referenced the default kube-prometheus-stack service name:
-
-```yaml
-# BROKEN
-address: http://kube-prometheus-stack-prometheus.monitoring.svc:9090
-```
-
-The Helm release was installed with release name `kps`, so the actual service is `kps-prometheus`:
-
-```yaml
-# FIXED
-address: http://kps-prometheus.monitoring.svc:9090
-```
-
-Every canary deploy since Phase 73 was silently aborting due to this DNS failure. Fix: `gitops PR #167`.
-
-**How to find the correct service name:** `kubectl get svc -n monitoring | grep prometheus` — look for the ClusterIP service on port 9090 (not `prometheus-operated`, which is the headless StatefulSet service).
-
-### Issue 2 — NetworkPolicy blocks Argo Rollouts → Prometheus
-
-The `monitoring` namespace has a `default-deny-ingress` NetworkPolicy. The `allow-observability` allowlist only included `observability`, `kube-system`, `ingress-nginx`, and `falco`. The Argo Rollouts controller (in `argo-rollouts` namespace) was refused:
-
-```
-Post "http://kps-prometheus.monitoring.svc:9090/api/v1/query": 
-dial tcp 10.43.253.241:9090: connect: connection refused
-```
-
-The Prometheus pod was healthy (`prometheus-kps-prometheus-0`, 2/2 Running) — the issue was purely NetworkPolicy. Fix: added `allow-argo-rollouts` policy scoped to port 9090 (`gitops PR #169`):
-
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-argo-rollouts
-  namespace: monitoring
-spec:
-  podSelector: {}
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: argo-rollouts
-      ports:
-        - port: 9090
-          protocol: TCP
-```
-
-**General rule:** when adding a `default-deny-ingress` policy to a namespace, enumerate every controller or operator that queries services in that namespace (Prometheus, cert-manager, ArgoCD, Argo Rollouts, ESO, etc.) and add allow rules for each.
-
-### Issue 3 — kubectl-argo-rollouts plugin not installed on controller
-
-After fixing the NetworkPolicy, retrying the aborted Rollout required the plugin:
-
-```bash
-# Install on controller (matches app version v1.9.0 deployed in Phase 73)
-curl -sL https://github.com/argoproj/argo-rollouts/releases/download/v1.9.0/kubectl-argo-rollouts-linux-amd64 \
-  -o ~/.local/bin/kubectl-argo-rollouts
-chmod +x ~/.local/bin/kubectl-argo-rollouts
-
-# Retry aborted rollout
-kubectl argo rollouts retry rollout platform-demo -n platform-demo-dev
-```
-
-The plugin version must match (or be compatible with) the controller version — a mismatch causes API errors.
-
----
-
-## Canary AnalysisTemplate — success rate gate
-
-With both issues fixed, the Phase 73 AnalysisTemplate works as intended:
-
-```yaml
-# services/platform-demo/base/analysis-template.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: AnalysisTemplate
 metadata:
@@ -352,58 +154,249 @@ spec:
             sum(rate(http_requests_total{service="platform-demo"}[2m]))
 ```
 
-- 5 samples × 30s = 2.5 min of analysis
+- 5 samples × 30s = 2.5 min of canary analysis
 - Gate: ≥95% non-5xx requests
-- On failure: rollout aborts, stable RS stays live, no user impact
+- On failure: rollout aborts, stable RS stays live
 
-The canary deploy flow after instrumentation:
-
-1. CI pushes new image → `gh pr merge --admin` bumps `overlays/dev/kustomization.yaml`
-2. ArgoCD syncs → Argo Rollouts detects image change → starts canary
-3. Canary RS comes up at 50% traffic
-4. AnalysisRun runs 5× Prometheus queries against `http_requests_total` from the canary pod
-5. If ≥95% success: promote to 100%, mark new RS as stable
-6. If below 95%: abort, revert to previous stable RS
+:::caution Use the actual Prometheus service name
+The kube-prometheus-stack was installed with release name `kps`. All services are prefixed `kps-*`. `kube-prometheus-stack-prometheus.monitoring.svc` does not resolve — always run `kubectl get svc -n monitoring` to find the real name.
+:::
 
 ---
 
-## Prometheus targets — final state
+## P2 — Native-metrics third-party services
 
-After all fixes, three new targets are `up`:
+These services expose `/metrics` natively and only needed Helm values changes and ServiceMonitors.
 
+### Authentik
+
+```yaml
+# helm-values/authentik-values.yaml
+server:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
 ```
-up  platform-demo    platform-demo-dev   http://10.42.4.236:9898/metrics
-up  minicloud-plane  minicloud-plane-dev http://10.42.1.66:8080/metrics  
-up  nginx-ingress    ingress-nginx       http://10.42.0.167:9113/metrics
+
+Chart exposes port 9300 with `authentik_main_request_duration_seconds` histogram. **1 target `up`.**
+
+### Harbor
+
+```yaml
+# helm-values/harbor-values.yaml
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
 ```
 
-Verify:
+Enables harbor-exporter sidecar (port 8001) on core/registry/jobservice/exporter pods. Chart creates 4 ServiceMonitors. **4 targets `up`.**
 
+:::caution Harbor pods need manual restart after enabling metrics
+Harbor stores `METRIC_ENABLE=true` in a ConfigMap loaded via `envFrom`. The pods do not reload automatically without the Reloader annotation. After enabling metrics:
 ```bash
-kubectl exec -n monitoring prometheus-kps-prometheus-0 -c prometheus -- \
-  wget -qO- 'http://localhost:9090/api/v1/targets?state=active' \
-  | python3 -c "
-import json,sys
-data=json.load(sys.stdin)
-for t in data['data']['activeTargets']:
-    labels=t['labels']
-    if any(x in str(labels) for x in ['platform-demo','minicloud-plane','nginx-ingress']):
-        print(t['health'], labels.get('job'), labels.get('namespace'), t['scrapeUrl'])
-"
+kubectl rollout restart deployment/harbor-core deployment/harbor-jobservice -n harbor
 ```
+If harbor-jobservice is stuck (Longhorn RWO Multi-Attach on different node): `kubectl rollout undo deployment/harbor-jobservice -n harbor`.
+:::
+
+### NATS
+
+Already configured from Phase 55. Chart-native PodMonitor (`promExporter.podMonitor.enabled: true`). **3 targets `up`** on port 7777.
+
+### Vault
+
+Added `telemetry` stanza to Vault HCL config in `helm-values/vault-values.yaml`:
+
+```hcl
+telemetry {
+  prometheus_retention_time = "30s"
+  disable_hostname           = true
+}
+# inside listener "tcp":
+telemetry {
+  unauthenticated_metrics_access = true
+}
+```
+
+Custom `manifests/monitoring/11-vault-servicemonitor.yaml` targets port 8200, path `/v1/sys/metrics?format=prometheus`. **2 targets `up`** (vault + vault-internal jobs).
+
+:::caution vault Service does not have the `component: server` pod label
+The Vault StatefulSet pod has label `component: server` but the Service does not. An over-specific `matchLabels: {component: server}` on the ServiceMonitor selector finds zero endpoints → target absent from Prometheus entirely. Remove `component: server` from the selector.
+:::
+
+### LiteLLM
+
+Already configured from Phase 57 (`success_callback: ["prometheus"]` + `require_auth_for_metrics_endpoint: false`). **1 target `up`.**
+
+### Matrix Synapse
+
+```yaml
+# helm-values/synapse-values.yaml
+extraConfig: |
+  enable_metrics: true
+```
+
+Chart generates a `metrics_port: 9090` listener but does **not** expose it in the chart-managed Service (only port 8008). Added standalone `matrix-synapse-metrics` Service in `manifests/monitoring/12-synapse-servicemonitor.yaml`. **1 target `up`.**
 
 ---
 
-## Sample PromQL queries
+## Final Prometheus target state
 
-**platform-demo request rate (req/s):**
+| Service | Targets | Notes |
+|---------|---------|-------|
+| authentik | 1 | port 9300 |
+| harbor | 4 | core + registry + jobservice + exporter |
+| litellm | 1 | port 8080 |
+| nats | 3 | one per pod |
+| nginx-ingress | 1 | port 10254, chart ServiceMonitor |
+| platform-demo | 1 | port 9898 |
+| minicloud-plane | 1 | port 8080 |
+| vault | 2 | vault + vault-internal jobs |
+| **Total** | **14** | **all `up`** |
+
+---
+
+## RED signal gap audit & resolution
+
+After all ServiceMonitors were wired, a gap audit checked which services had all three RED signals available.
+
+### Gap audit results
+
+| Service | Rate | Errors | Latency | Root cause |
+|---------|------|--------|---------|------------|
+| platform-demo | ✅ | ✅ | ✅ histogram | Custom instrumentation |
+| minicloud-plane | ✅ | ✅ | ✅ histogram | Custom instrumentation + `/health` probe fix |
+| NGINX Ingress | ✅ | ✅ | ✅ histogram | `nginx_ingress_controller_request_duration_seconds_bucket`, 216 samples, per-route `(ingress, host, method, status)` labels |
+| Harbor | ✅ | ✅ | ⚠️ avg only | `harbor_core_http_request_total{code}` has status label ✅. Latency uses `prometheus.Summary` in upstream Go code — only `_count/_sum`, no `_bucket` |
+| NATS | ✅ | ⚠️ backpressure | ❌ | `nats_varz_slow_consumers` + JetStream API error counter available. Per-message latency not exposed by prometheus-nats-exporter |
+| Vault | ✅ | ❌ | ⚠️ avg only | No HTTP status codes in CE telemetry. Latency is `vault_core_handle_request` Summary (avg only). `vault_core_handle_request_sum / count` shows ~16s avg — AWS KMS round-trips from home lab |
+| Authentik | ✅ | ✅ | ✅ histogram | `authentik_main_request_duration_seconds` histogram |
+| LiteLLM | ✅ | ✅ | ✅ | Native callbacks |
+
+### Upstream limitations
+
+These cannot be fixed without patching upstream source code:
+
+- **Harbor/Vault latency:** Both use `prometheus.Summary` in their Go code — emits `_count` and `_sum` only, no `_bucket`. `histogram_quantile` is impossible. Best available signal: `rate(sum[5m]) / rate(count[5m])` for rolling average.
+- **Vault HTTP errors:** Vault CE telemetry endpoint does not expose HTTP 4xx/5xx status code counters.
+- **NATS per-message latency:** The prometheus-nats-exporter polls NATS's `/varz` HTTP monitoring endpoint, which does not include delivery timing.
+
+---
+
+## PrometheusRule — service-level alerts
+
+`manifests/monitoring/13-service-alerts.yaml` covers the remaining alertable signals (gitops PRs #195, #199, #201, #203):
+
+### Harbor alerts
+
+```yaml
+- alert: HarborHighErrorRate
+  expr: |
+    sum(rate(harbor_core_http_request_total{code=~"5.."}[5m])) /
+    sum(rate(harbor_core_http_request_total[5m])) > 0.01
+  for: 5m
+  # fires when 5xx rate > 1% sustained over 5 minutes
+
+- alert: HarborJobServiceErrors
+  expr: sum(rate(harbor_jobservice_task_total{status="Error"}[10m])) > 0
+  for: 10m
+```
+
+### NATS alerts
+
+```yaml
+- alert: NATSSlowConsumers
+  expr: nats_varz_slow_consumers > 0
+  for: 2m
+  # slow consumer = subscriber can't keep up, NATS will drop messages
+
+- alert: NATSJetStreamAPIErrors
+  expr: increase(nats_varz_jetstream_stats_api_errors[5m]) > 0
+  for: 0m
+
+- alert: NATSStaleConnections
+  expr: increase(nats_varz_stale_connections[5m]) > 0
+  for: 0m
+```
+
+:::caution nats_varz_stale_connections is a cumulative counter, not a gauge
+`nats_varz_stale_connections` counts connections forcibly closed by NATS due to slow consumer backpressure — it only increments, never decrements. Using `> 5` fires permanently once 5 total stale connections have ever occurred. Use `increase([5m]) > 0` to alert only when new force-closures happen.
+:::
+
+### Vault alerts
+
+```yaml
+- alert: VaultHighRequestLatency
+  expr: |
+    (
+      rate(vault_core_handle_request_sum[5m]) /
+      rate(vault_core_handle_request_count[5m]) > 0.5
+    ) and (
+      rate(vault_core_handle_request_count[5m]) > 0.05
+    )
+  for: 5m
+  # avg latency > 500ms, with minimum traffic guard of 0.05 req/s
+
+- alert: VaultSealedOrUnhealthy
+  expr: vault_core_active == 0
+  for: 1m
+  labels:
+    severity: critical
+```
+
+:::caution VaultHighRequestLatency needs a minimum traffic rate guard
+`rate(sum[5m]) / rate(count[5m])` on a low-volume counter (e.g., 1 request at startup) returns the latency of that single request. A KMS unseal or barrier initialization can take 10-30 seconds — which triggers the 500ms threshold as a false positive. The `AND rate(count[5m]) > 0.05` guard (≥3 req/min) prevents this.
+:::
+
+---
+
+## CI bump-gitops — PR auto-merge pattern
+
+Both Go services push to `harbor.10.0.0.200.nip.io` and bump the kustomize overlay in `minicloud-gitops`. The gitops repo's `main` branch requires PRs — direct push is blocked.
+
+```yaml
+- name: Bump image tag and open auto-merged PR
+  env:
+    GH_TOKEN: ${{ secrets.GITOPS_TOKEN }}
+  run: |
+    SHA="${{ needs.build-and-push.outputs.image_tag }}"
+    BRANCH="ci/platform-demo-${SHA}"
+    git checkout -b "${BRANCH}"
+    cd services/platform-demo/overlays/dev
+    kustomize edit set image harbor.10.0.0.200.nip.io/library/platform-demo:${SHA}
+    cd -
+    git add services/platform-demo/overlays/dev/kustomization.yaml
+    git commit -S -m "ci(platform-demo): bump dev image to ${SHA}"
+    git push origin "${BRANCH}"
+    gh pr create --repo andrelair-platform/minicloud-gitops \
+      --base main --head "${BRANCH}" \
+      --title "ci(platform-demo): bump dev image to ${SHA}" \
+      --body "Automated image promotion from CI run ${{ github.run_id }}."
+    gh pr merge "${BRANCH}" \
+      --repo andrelair-platform/minicloud-gitops \
+      --admin --merge --delete-branch
+```
+
+- `GITOPS_TOKEN` (not `GITHUB_TOKEN`) — needs write access to the gitops repo
+- `--admin` bypasses the PR review requirement
+- `main` push → `overlays/dev` only; prod requires an explicit human PR
+
+---
+
+## Useful PromQL queries
+
+**platform-demo request rate:**
 ```promql
 sum(rate(http_requests_total{job="platform-demo"}[2m])) by (handler)
 ```
 
 **platform-demo p99 latency:**
 ```promql
-histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job="platform-demo"}[5m])) by (le, handler))
+histogram_quantile(0.99,
+  sum(rate(http_request_duration_seconds_bucket{job="platform-demo"}[5m])) by (le, handler)
+)
 ```
 
 **minicloud-plane webhook error rate:**
@@ -413,9 +406,37 @@ sum(rate(http_requests_total{job="minicloud-plane", handler="/webhook", code=~"5
 sum(rate(http_requests_total{job="minicloud-plane", handler="/webhook"}[5m]))
 ```
 
-**NGINX upstream latency p95 (ms):**
+**NGINX per-route p99 latency:**
 ```promql
-histogram_quantile(0.95, sum(rate(nginx_upstream_server_response_latency_ms_bucket[5m])) by (le, ingress))
+histogram_quantile(0.99,
+  sum(rate(nginx_ingress_controller_request_duration_seconds_bucket[5m])) by (le, ingress, status)
+)
+```
+
+**NGINX per-route error rate:**
+```promql
+sum(rate(nginx_ingress_controller_requests{status=~"5.."}[5m])) by (ingress)
+/
+sum(rate(nginx_ingress_controller_requests[5m])) by (ingress)
+```
+
+**Harbor 5xx rate:**
+```promql
+sum(rate(harbor_core_http_request_total{code=~"5.."}[5m])) by (operation)
+```
+
+**Harbor avg latency (Summary — no p99 available):**
+```promql
+rate(harbor_core_http_request_duration_seconds_sum[5m])
+/
+rate(harbor_core_http_request_duration_seconds_count[5m])
+```
+
+**Vault avg request latency:**
+```promql
+rate(vault_core_handle_request_sum{job="vault-internal"}[5m])
+/
+rate(vault_core_handle_request_count{job="vault-internal"}[5m])
 ```
 
 ---
@@ -424,9 +445,12 @@ histogram_quantile(0.95, sum(rate(nginx_upstream_server_response_latency_ms_buck
 
 | Gotcha | Symptom | Fix |
 |--------|---------|-----|
-| kube-prometheus-stack release name prefix | AnalysisRun DNS error: `no such host kube-prometheus-stack-prometheus` | Use actual service name: `kubectl get svc -n monitoring` |
-| NetworkPolicy blocks controller→Prometheus | `connection refused` from Argo Rollouts AnalysisRun | Add `allow-argo-rollouts` NetworkPolicy in `monitoring` namespace |
-| `kubectl argo rollouts` plugin not installed | `unknown command "argo" for "kubectl"` | Install matching version from GitHub releases |
-| ServiceMonitor `namespaceSelector` in base | Dev SM scrapes prod namespace | Omit `namespaceSelector` — prometheus-operator defaults to own namespace |
-| Direct push to gitops main blocked | CI: `remote: error: GH006: Protected branch update failed` | Use `gh pr create` + `gh pr merge --admin` pattern |
-| `main` branch → `overlays/prod` | Prod never got instrumented image, no dev testing | Map `main` → `overlays/dev`; prod requires explicit human PR |
+| promauto metrics absent until first `.WithLabelValues()` call | Target `up` but metric has 0 series in Prometheus | Instrument the liveness probe endpoint — probes seed counters within seconds |
+| kube-prometheus-stack release name prefix | AnalysisRun DNS error: `no such host kube-prometheus-stack-prometheus` | `kubectl get svc -n monitoring` — actual name is `kps-prometheus` |
+| NetworkPolicy blocks Argo Rollouts → Prometheus | `connection refused` from AnalysisRun | Add `allow-argo-rollouts` NetworkPolicy in `monitoring` namespace (port 9090) |
+| `annotations-risk-level` is ConfigMap key not CLI flag | CrashLoopBackOff if set under `extraArgs` | Set in `controller.config` section alongside `allow-snippet-annotations` |
+| `nats_varz_stale_connections` is cumulative counter | Alert fires permanently once count > threshold | Use `increase([5m]) > 0` not `> N` |
+| Vault latency false positive on low-count counter | Single 16s KMS startup request triggers 500ms alert | Add `AND rate(count[5m]) > 0.05` minimum traffic guard |
+| Harbor/Vault: Summary not Histogram | No `_bucket` → `histogram_quantile` fails | Upstream limitation — use `rate(sum)/rate(count)` for average only |
+| ServiceMonitor `namespaceSelector` in kustomize base | Dev SM scrapes prod namespace | Omit `namespaceSelector` — prometheus-operator defaults to own namespace |
+| Vault ServiceMonitor `component: server` over-specified | Zero endpoints found, target absent from Prometheus | Remove `component: server` — that label exists on pods, not on the Service |
