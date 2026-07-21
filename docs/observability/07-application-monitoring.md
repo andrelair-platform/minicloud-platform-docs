@@ -8,7 +8,7 @@ sidebar_position: 7
 
 This page covers application-level observability: instrumenting microservices with Prometheus metrics following Google's RED method, enabling native metrics on third-party services, wiring ServiceMonitors, and creating PrometheusRule alerts for the remaining signal gaps.
 
-Work was done in three phases: P1 (own Go services), P2 (native-metrics third-party services), and RED signal gap resolution.
+Work was done in three phases: P1 (own Go services), P2 (native-metrics third-party services), P3 (custom instrumentation for Backstage and Open WebUI), and RED signal gap resolution.
 
 ---
 
@@ -242,19 +242,93 @@ Chart generates a `metrics_port: 9090` listener but does **not** expose it in th
 
 ---
 
+## P3 — Custom instrumentation
+
+### Backstage — separate metrics server on port 9464
+
+Backstage's `plugin-app-backend` registers a catch-all SPA handler on port 7007 that intercepts **all** routes — including `/metrics` — and returns the SPA HTML with HTTP 200 but wrong content-type. Prometheus's text parser rejects it and marks the target `down`.
+
+The fix is a separate `http.createServer` using `prom-client`'s default registry, started before `createBackend()` in `packages/backend/src/index.ts`:
+
+```typescript
+import * as http from 'http';
+import * as promClient from 'prom-client';
+
+// Expose Prometheus metrics on port 9464 — separate from 7007 to avoid
+// the plugin-app-backend catch-all intercepting /metrics with SPA HTML.
+promClient.collectDefaultMetrics();
+http
+  .createServer(async (req, res) => {
+    if (req.url === '/metrics') {
+      const body = await promClient.register.metrics();
+      res.writeHead(200, { 'Content-Type': promClient.register.contentType });
+      res.end(body);
+    } else {
+      res.writeHead(404);
+      res.end();
+    }
+  })
+  .listen(9464);
+```
+
+`prom-client` is a transitive dependency already pulled in by `@backstage/plugin-catalog-backend` and `@backstage/plugin-scaffolder-backend` — no new dependency needed.
+
+The Bitnami chart exposes the port via `extraPorts` (container) and `service.extraPorts` (Service), then a ServiceMonitor in `monitoring` namespace picks it up. **1 target `up`** — 43 Node.js process metric families.
+
+:::caution plugin-app-backend catch-all intercepts /metrics on port 7007
+`GET /metrics` on port 7007 returns HTTP 200 with SPA HTML content. Prometheus marks the target `down` with a content-type parse error. The only fix is a completely separate HTTP server on a different port — there is no middleware injection point that runs before the SPA catch-all.
+:::
+
+### Open WebUI — `prometheus-fastapi-instrumentator` via `sitecustomize.py`
+
+Open WebUI is a FastAPI app with no native Prometheus endpoint. The custom image adds instrumentation without touching upstream code by exploiting Python's `sitecustomize.py` auto-load mechanism.
+
+`patches/sitecustomize.py` patches `FastAPI.__init__` before any user code runs:
+
+```python
+import fastapi as _f
+
+_orig = _f.FastAPI.__init__
+
+def _new(self, *a, **kw):
+    _orig(self, *a, **kw)
+    try:
+        from prometheus_fastapi_instrumentator import Instrumentator
+        Instrumentator(excluded_handlers=["/metrics"]).instrument(self).expose(
+            self, include_in_schema=False
+        )
+    except Exception:
+        pass
+
+_f.FastAPI.__init__ = _new
+```
+
+The Dockerfile installs `prometheus-fastapi-instrumentator` and copies the file to `site.getsitepackages()[0]/sitecustomize.py`. Python loads it automatically before `open_webui.main` is imported by uvicorn.
+
+The ServiceMonitor in `manifests/monitoring/15-open-webui-servicemonitor.yaml` targets the existing `http` port (80) on the Open WebUI Service — no additional port needed since uvicorn serves both the app and `/metrics` on port 8080. **1 target `up`** with full FastAPI `http_request_duration_seconds` histogram.
+
+:::note Stalwart and ERPNext accepted as N/A
+**Stalwart v0.16.13 CE** — no `/metrics` endpoint in the binary. ERPNext (Frappe/Gunicorn) returns 404 on all Prometheus paths. Both are instrumentation dead-ends without upstream changes; accepted as monitoring gaps.
+:::
+
+---
+
 ## Final Prometheus target state
 
 | Service | Targets | Notes |
 |---------|---------|-------|
 | authentik | 1 | port 9300 |
+| backstage | 1 | port 9464, prom-client default registry |
 | harbor | 4 | core + registry + jobservice + exporter |
 | litellm | 1 | port 8080 |
 | nats | 3 | one per pod |
 | nginx-ingress | 1 | port 10254, chart ServiceMonitor |
+| open-webui | 1 | port 8080, prometheus-fastapi-instrumentator |
 | platform-demo | 1 | port 9898 |
 | minicloud-plane | 1 | port 8080 |
+| matrix-synapse | 1 | port 9090 |
 | vault | 2 | vault + vault-internal jobs |
-| **Total** | **14** | **all `up`** |
+| **Total** | **17** | **all `up`, 64/64 total Prometheus targets** |
 
 ---
 
@@ -454,3 +528,5 @@ rate(vault_core_handle_request_count{job="vault-internal"}[5m])
 | Harbor/Vault: Summary not Histogram | No `_bucket` → `histogram_quantile` fails | Upstream limitation — use `rate(sum)/rate(count)` for average only |
 | ServiceMonitor `namespaceSelector` in kustomize base | Dev SM scrapes prod namespace | Omit `namespaceSelector` — prometheus-operator defaults to own namespace |
 | Vault ServiceMonitor `component: server` over-specified | Zero endpoints found, target absent from Prometheus | Remove `component: server` — that label exists on pods, not on the Service |
+| Backstage: `plugin-app-backend` catch-all on port 7007 intercepts `/metrics` | Target `down` with parse error (content-type: text/html) | Add separate `http.createServer` on port 9464 using `prom-client` — do not add middleware on port 7007 |
+| Open WebUI: FastAPI app instrumented via `sitecustomize.py` auto-load | (not a failure — design note) | `sitecustomize.py` in `site-packages/` is loaded by Python before any user code; patches `FastAPI.__init__` to inject `prometheus-fastapi-instrumentator` on every app instance |
