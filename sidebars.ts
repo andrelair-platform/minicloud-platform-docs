@@ -549,6 +549,14 @@ const sidebars: SidebarsConfig = {
       items: ['observability/application-monitoring'],
     },
 
+    // ── OTel Log Pipeline ────────────────────────────────────────────
+    {
+      type: 'category',
+      label: '📡 OTel Collector Log Pipeline — Stack-Agnostic Shipping ✅',
+      collapsed: true,
+      items: ['observability/otelcol-log-pipeline'],
+    },
+
     // ── Admission Control Hardening ─────────────────────────────────
     {
       type: 'category',
