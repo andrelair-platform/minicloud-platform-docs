@@ -307,6 +307,7 @@ const sidebars: SidebarsConfig = {
         'observability/falco-sidekick-polaris',
         'observability/k8s-monitoring-gaps',
         'observability/loki-ruler-logql-alerting',
+        'observability/grafana-log-dashboards-controller-logs',
       ],
     },
 
