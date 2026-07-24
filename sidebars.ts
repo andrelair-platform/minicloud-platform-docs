@@ -306,6 +306,7 @@ const sidebars: SidebarsConfig = {
         'observability/jaeger',
         'observability/falco-sidekick-polaris',
         'observability/k8s-monitoring-gaps',
+        'observability/loki-ruler-logql-alerting',
       ],
     },
 
