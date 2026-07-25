@@ -703,6 +703,14 @@ const sidebars: SidebarsConfig = {
       items: ['security-enterprise/rbac-audit'],
     },
 
+    // ── kubectl OIDC Access ───────────────────────────────────────────
+    {
+      type: 'category',
+      label: '🔑 kubectl OIDC Access — Setup & 4-Root-Cause Debug ✅',
+      collapsed: true,
+      items: ['security-enterprise/kubectl-oidc-access'],
+    },
+
     // ── Phase 76 — Matrix Synapse + Element Web ───────────────────────
     {
       type: 'category',
