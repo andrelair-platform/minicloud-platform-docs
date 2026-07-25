@@ -567,6 +567,14 @@ const sidebars: SidebarsConfig = {
       items: ['observability/alerting-gaps'],
     },
 
+    // ── Distributed Tracing Gaps ─────────────────────────────────────
+    {
+      type: 'category',
+      label: '🔍 Distributed Tracing — Gaps A–E Closed ✅',
+      collapsed: true,
+      items: ['observability/distributed-tracing-gaps'],
+    },
+
     // ── Admission Control Hardening ─────────────────────────────────
     {
       type: 'category',
