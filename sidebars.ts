@@ -559,6 +559,14 @@ const sidebars: SidebarsConfig = {
       items: ['observability/otelcol-log-pipeline'],
     },
 
+    // ── Alerting Gap Analysis ────────────────────────────────────────
+    {
+      type: 'category',
+      label: '🔔 Alerting Gap Analysis — 9 Gaps Closed ✅',
+      collapsed: true,
+      items: ['observability/alerting-gaps'],
+    },
+
     // ── Admission Control Hardening ─────────────────────────────────
     {
       type: 'category',
