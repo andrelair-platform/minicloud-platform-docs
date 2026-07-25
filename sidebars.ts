@@ -607,6 +607,14 @@ const sidebars: SidebarsConfig = {
       items: ['observability/capacity-planning-gaps'],
     },
 
+    // ── Cost Optimization Gaps ────────────────────────────────────────
+    {
+      type: 'category',
+      label: '💰 Cost Optimization — Waste & Right-Sizing ✅',
+      collapsed: true,
+      items: ['observability/cost-optimization-gaps'],
+    },
+
     // ── Admission Control Hardening ─────────────────────────────────
     {
       type: 'category',
