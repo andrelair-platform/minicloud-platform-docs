@@ -583,6 +583,14 @@ const sidebars: SidebarsConfig = {
       items: ['observability/otelcol-log-pipeline-gaps'],
     },
 
+    // ── Application Monitoring Gaps ──────────────────────────────────
+    {
+      type: 'category',
+      label: '📊 Application Monitoring — Gap Analysis & Fixes ✅',
+      collapsed: true,
+      items: ['observability/application-monitoring-gaps'],
+    },
+
     // ── Admission Control Hardening ─────────────────────────────────
     {
       type: 'category',
