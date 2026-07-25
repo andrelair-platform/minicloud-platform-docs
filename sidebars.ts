@@ -599,6 +599,14 @@ const sidebars: SidebarsConfig = {
       items: ['observability/regression-detection-gaps'],
     },
 
+    // ── Capacity Planning Gaps ────────────────────────────────────────
+    {
+      type: 'category',
+      label: '📈 Capacity Planning — Forecasting & Right-Sizing ✅',
+      collapsed: true,
+      items: ['observability/capacity-planning-gaps'],
+    },
+
     // ── Admission Control Hardening ─────────────────────────────────
     {
       type: 'category',
