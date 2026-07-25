@@ -511,6 +511,14 @@ const sidebars: SidebarsConfig = {
       items: ['developer-platform/argo-rollouts'],
     },
 
+    // ── CI/CD Gap Analysis ───────────────────────────────────────────
+    {
+      type: 'category',
+      label: '🧪 CI/CD Gap Analysis — Unit Tests, Security Scans, Progressive Delivery ✅',
+      collapsed: true,
+      items: ['developer-platform/cicd-gap-analysis'],
+    },
+
     // ── Phase 74 ────────────────────────────────────────────────────
     {
       type: 'category',
