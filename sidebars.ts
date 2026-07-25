@@ -575,6 +575,14 @@ const sidebars: SidebarsConfig = {
       items: ['observability/distributed-tracing-gaps'],
     },
 
+    // ── OTel Log Pipeline Gaps ───────────────────────────────────────
+    {
+      type: 'category',
+      label: '📋 OTel Log Pipeline — 7 Gaps Closed ✅',
+      collapsed: true,
+      items: ['observability/otelcol-log-pipeline-gaps'],
+    },
+
     // ── Admission Control Hardening ─────────────────────────────────
     {
       type: 'category',
