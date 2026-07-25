@@ -591,6 +591,14 @@ const sidebars: SidebarsConfig = {
       items: ['observability/application-monitoring-gaps'],
     },
 
+    // ── Regression Detection Gaps ─────────────────────────────────────
+    {
+      type: 'category',
+      label: '📉 Regression Detection — Before/After Deployment ✅',
+      collapsed: true,
+      items: ['observability/regression-detection-gaps'],
+    },
+
     // ── Admission Control Hardening ─────────────────────────────────
     {
       type: 'category',
