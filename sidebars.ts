@@ -519,6 +519,14 @@ const sidebars: SidebarsConfig = {
       items: ['developer-platform/cicd-gap-analysis'],
     },
 
+    // ── Automated Regression Detection ───────────────────────────────
+    {
+      type: 'category',
+      label: '🔁 Automated Regression Detection ✅',
+      collapsed: true,
+      items: ['developer-platform/automated-regression-detection'],
+    },
+
     // ── Phase 74 ────────────────────────────────────────────────────
     {
       type: 'category',
