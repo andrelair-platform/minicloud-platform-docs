@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>minicloud — Production Stack Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  background: #020617;
+  min-height: 100vh;
+  padding: 1.5rem;
+  color: #f1f5f9;
+}
+.container { max-width: 1760px; margin: 0 auto; }
+.header { margin-bottom: 1.5rem; }
+.header-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.4rem; }
+.pulse { width: 10px; height: 10px; background: #22d3ee; border-radius: 50%; box-shadow: 0 0 8px #22d3ee; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+h1 { font-size: 1.1rem; font-weight: 700; color: #f1f5f9; letter-spacing: 0.5px; }
+.subtitle { color: #64748b; font-size: 0.72rem; margin-left: 1.4rem; }
+.toolbar { margin-left: auto; display: flex; gap: 0.5rem; }
+.btn {
+  background: rgba(30,41,59,0.9); border: 1px solid #334155;
+  color: #94a3b8; padding: 0.3rem 0.75rem; border-radius: 5px;
+  font-family: inherit; font-size: 0.7rem; cursor: pointer;
+  transition: all 0.2s;
+}
+.btn:hover { background: #1e293b; color: #f1f5f9; border-color: #475569; }
+.diagram-wrap {
+  background: rgba(15,23,42,0.5); border: 1px solid #1e293b;
+  border-radius: 10px; overflow-x: auto; padding: 1rem;
+}
+svg { display: block; min-width: 1720px; }
+.cards {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem; margin-top: 1.25rem;
+}
+.card {
+  background: rgba(15,23,42,0.7); border: 1px solid #1e293b;
+  border-radius: 8px; padding: 0.85rem;
+}
+.card-title { font-size: 0.7rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: 1px; }
+.card-list { list-style: none; }
+.card-list li { font-size: 0.65rem; color: #94a3b8; padding: 0.15rem 0; border-bottom: 1px solid rgba(30,41,59,0.5); }
+.card-list li:last-child { border: none; }
+.card-list li span { color: #f1f5f9; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="header-row">
+      <div class="pulse"></div>
+      <h1>minicloud — Production Stack Architecture</h1>
+      <div class="toolbar">
+        <button class="btn" onclick="copysvg()">Copy SVG</button>
+        <button class="btn" onclick="dlpng()">PNG</button>
+        <button class="btn" onclick="dlpdf()">PDF</button>
+      </div>
+    </div>
+    <div class="subtitle">On-premises 5-node k3s cluster · 4 ThinkPads + MacBook Pro 2012 · GitOps · Observability · AI Platform · Phase 80 complete</div>
+  </div>
+
+  <div class="diagram-wrap" id="diagram-wrap">
+  <svg id="arch" viewBox="0 0 1720 900" xmlns="http://www.w3.org/2000/svg" font-family="'JetBrains Mono', monospace">
+    <defs>
+      <!-- Grid pattern -->
+      <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#0f172a" stroke-width="1"/>
+      </pattern>
+      <!-- Arrow markers -->
+      <marker id="arr-cyan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#22d3ee"/>
+      </marker>
+      <marker id="arr-yellow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#fbbf24"/>
+      </marker>
+      <marker id="arr-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#a78bfa"/>
+      </marker>
+      <marker id="arr-emerald" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#34d399"/>
+      </marker>
+      <marker id="arr-slate" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+      </marker>
+      <marker id="arr-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#fb923c"/>
+      </marker>
+    </defs>
+
+    <!-- Background -->
+    <rect width="1720" height="900" fill="#020617"/>
+    <rect width="1720" height="900" fill="url(#grid)"/>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- EXTERNAL — LEFT                                             -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Internet Users -->
+    <rect x="4" y="42" width="148" height="55" rx="6" fill="rgba(15,23,42,0.9)" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="78" y="63" fill="#93c5fd" font-size="9" font-weight="700" text-anchor="middle">INTERNET USERS</text>
+    <text x="78" y="78" fill="#64748b" font-size="7.5" text-anchor="middle">browsers · mobile</text>
+    <text x="78" y="90" fill="#64748b" font-size="7.5" text-anchor="middle">devandre.sbs ·  *.nip.io</text>
+
+    <!-- Developer -->
+    <rect x="4" y="112" width="148" height="55" rx="6" fill="rgba(15,23,42,0.9)" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="78" y="133" fill="#93c5fd" font-size="9" font-weight="700" text-anchor="middle">DEVELOPER</text>
+    <text x="78" y="148" fill="#64748b" font-size="7.5" text-anchor="middle">MacBook Air (local)</text>
+    <text x="78" y="160" fill="#64748b" font-size="7.5" text-anchor="middle">kubectl · ArgoCD CLI</text>
+
+    <!-- GitHub + CI -->
+    <rect x="4" y="182" width="148" height="55" rx="6" fill="rgba(15,23,42,0.9)" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="78" y="203" fill="#93c5fd" font-size="9" font-weight="700" text-anchor="middle">GITHUB ACTIONS</text>
+    <text x="78" y="218" fill="#64748b" font-size="7.5" text-anchor="middle">8 repos · CI/CD</text>
+    <text x="78" y="230" fill="#64748b" font-size="7.5" text-anchor="middle">Tailscale + CA trust</text>
+
+    <!-- Tailscale -->
+    <rect x="4" y="252" width="148" height="55" rx="6" fill="rgba(15,23,42,0.9)" stroke="#22d3ee" stroke-width="1.5"/>
+    <text x="78" y="273" fill="#22d3ee" font-size="9" font-weight="700" text-anchor="middle">TAILSCALE VPN</text>
+    <text x="78" y="288" fill="#64748b" font-size="7.5" text-anchor="middle">100.88.123.8 controller</text>
+    <text x="78" y="300" fill="#64748b" font-size="7.5" text-anchor="middle">tag:ci for GitHub Actions</text>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- EXTERNAL — RIGHT                                            -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Cloudflare -->
+    <rect x="1568" y="42" width="148" height="55" rx="6" fill="rgba(15,23,42,0.9)" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="1642" y="63" fill="#fdba74" font-size="9" font-weight="700" text-anchor="middle">CLOUDFLARE</text>
+    <text x="1642" y="78" fill="#64748b" font-size="7.5" text-anchor="middle">CDN · WAF · DNS</text>
+    <text x="1642" y="90" fill="#64748b" font-size="7.5" text-anchor="middle">devandre.sbs zone</text>
+
+    <!-- AWS SES -->
+    <rect x="1568" y="112" width="148" height="55" rx="6" fill="rgba(15,23,42,0.9)" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="1642" y="133" fill="#fdba74" font-size="9" font-weight="700" text-anchor="middle">AWS SES</text>
+    <text x="1642" y="148" fill="#64748b" font-size="7.5" text-anchor="middle">eu-west-1 · outbound relay</text>
+    <text x="1642" y="160" fill="#64748b" font-size="7.5" text-anchor="middle">inbound: SQS → S3 → pod</text>
+
+    <!-- Groq -->
+    <rect x="1568" y="182" width="148" height="55" rx="6" fill="rgba(15,23,42,0.9)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="1642" y="203" fill="#c4b5fd" font-size="9" font-weight="700" text-anchor="middle">GROQ API</text>
+    <text x="1642" y="218" fill="#64748b" font-size="7.5" text-anchor="middle">llama-3.1-8b-instant</text>
+    <text x="1642" y="230" fill="#64748b" font-size="7.5" text-anchor="middle">phi3-financial fallback</text>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- k3s CLUSTER OUTER BOX                                       -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <rect x="160" y="22" width="1400" height="850" rx="10"
+          fill="rgba(15,23,42,0.25)" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="8,4"/>
+    <text x="174" y="37" fill="#22d3ee" font-size="8.5" font-weight="700" letter-spacing="2">k3s CLUSTER  ·  v1.36.2+k3s1  ·  5 NODES  ·  71 ARGOCD APPS</text>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- ACCESS LAYER (top strip inside cluster)                     -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <rect x="168" y="44" width="1385" height="72" rx="6"
+          fill="rgba(34,211,238,0.04)" stroke="#22d3ee" stroke-width="1" stroke-dasharray="4,3"/>
+    <text x="178" y="56" fill="#22d3ee" font-size="7.5" font-weight="700" letter-spacing="1.5">ACCESS LAYER</text>
+
+    <!-- MetalLB -->
+    <rect x="178" y="59" width="155" height="48" rx="5" fill="rgba(15,23,42,0.85)" stroke="#22d3ee" stroke-width="1.5"/>
+    <text x="255" y="78" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">MetalLB</text>
+    <text x="255" y="93" fill="#94a3b8" font-size="7.5" text-anchor="middle">LB IP: 10.0.0.200</text>
+
+    <!-- NGINX Ingress -->
+    <rect x="343" y="59" width="165" height="48" rx="5" fill="rgba(15,23,42,0.85)" stroke="#22d3ee" stroke-width="1.5"/>
+    <text x="425" y="78" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">NGINX Ingress</text>
+    <text x="425" y="93" fill="#94a3b8" font-size="7.5" text-anchor="middle">community 4.15.1 · TLS</text>
+
+    <!-- Authentik SSO -->
+    <rect x="518" y="59" width="165" height="48" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fb7185" stroke-width="1.5"/>
+    <text x="600" y="78" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Authentik SSO</text>
+    <text x="600" y="93" fill="#94a3b8" font-size="7.5" text-anchor="middle">OIDC · TOTP · All apps</text>
+
+    <!-- cert-manager -->
+    <rect x="693" y="59" width="160" height="48" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fb7185" stroke-width="1.5"/>
+    <text x="773" y="78" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">cert-manager</text>
+    <text x="773" y="93" fill="#94a3b8" font-size="7.5" text-anchor="middle">Let's Encrypt · minicloud CA</text>
+
+    <!-- Cloudflared Tunnel -->
+    <rect x="863" y="59" width="160" height="48" rx="5" fill="rgba(15,23,42,0.85)" stroke="#22d3ee" stroke-width="1.5"/>
+    <text x="943" y="78" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Cloudflared Tunnel</text>
+    <text x="943" y="93" fill="#94a3b8" font-size="7.5" text-anchor="middle">public → internal routing</text>
+
+    <!-- Vault -->
+    <rect x="1033" y="59" width="155" height="48" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fb7185" stroke-width="1.5"/>
+    <text x="1110" y="78" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Vault + ESO</text>
+    <text x="1110" y="93" fill="#94a3b8" font-size="7.5" text-anchor="middle">PKI · secrets · KMS · AWS</text>
+
+    <!-- Gatekeeper -->
+    <rect x="1198" y="59" width="155" height="48" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fb7185" stroke-width="1.5"/>
+    <text x="1275" y="78" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Gatekeeper + Falco</text>
+    <text x="1275" y="93" fill="#94a3b8" font-size="7.5" text-anchor="middle">OPA policies · runtime sec</text>
+
+    <!-- Longhorn -->
+    <rect x="1363" y="59" width="175" height="48" rx="5" fill="rgba(15,23,42,0.85)" stroke="#64748b" stroke-width="1.5"/>
+    <text x="1450" y="78" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Longhorn + MinIO</text>
+    <text x="1450" y="93" fill="#94a3b8" font-size="7.5" text-anchor="middle">distributed storage · backup</text>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- ZONE 1 — GITOPS & AUTOMATION                               -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <rect x="168" y="124" width="258" height="436" rx="7"
+          fill="rgba(251,191,36,0.04)" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="6,3"/>
+    <text x="180" y="138" fill="#fbbf24" font-size="7.5" font-weight="700" letter-spacing="1.5">GITOPS &amp; AUTOMATION</text>
+
+    <!-- ArgoCD -->
+    <rect x="178" y="145" width="112" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="234" y="164" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">ArgoCD</text>
+    <text x="234" y="179" fill="#94a3b8" font-size="7" text-anchor="middle">app-of-apps · 71 apps</text>
+
+    <!-- Harbor -->
+    <rect x="300" y="145" width="116" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="358" y="164" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Harbor Registry</text>
+    <text x="358" y="179" fill="#94a3b8" font-size="7" text-anchor="middle">Cosign · SBOM · CVE scan</text>
+
+    <!-- Argo Rollouts -->
+    <rect x="178" y="199" width="112" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="234" y="218" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Argo Rollouts</text>
+    <text x="234" y="233" fill="#94a3b8" font-size="7" text-anchor="middle">Canary · BlueGreen</text>
+
+    <!-- Argo Analysis -->
+    <rect x="300" y="199" width="116" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="358" y="218" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">AnalysisTemplate</text>
+    <text x="358" y="233" fill="#94a3b8" font-size="7" text-anchor="middle">Prometheus gates · k6</text>
+
+    <!-- KEDA -->
+    <rect x="178" y="253" width="112" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="234" y="272" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">KEDA</text>
+    <text x="234" y="287" fill="#94a3b8" font-size="7" text-anchor="middle">event-driven scale</text>
+
+    <!-- VPA -->
+    <rect x="300" y="253" width="116" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="358" y="272" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">VPA</text>
+    <text x="358" y="287" fill="#94a3b8" font-size="7" text-anchor="middle">right-sizing · Auto mode</text>
+
+    <!-- Reloader -->
+    <rect x="178" y="307" width="112" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="234" y="326" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Reloader</text>
+    <text x="234" y="341" fill="#94a3b8" font-size="7" text-anchor="middle">ConfigMap hot-reload</text>
+
+    <!-- system-upgrade -->
+    <rect x="300" y="307" width="116" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="358" y="326" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">system-upgrade</text>
+    <text x="358" y="341" fill="#94a3b8" font-size="7" text-anchor="middle">k3s upgrades · Plans</text>
+
+    <!-- Velero -->
+    <rect x="178" y="361" width="112" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="234" y="380" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Velero + Kopia</text>
+    <text x="234" y="395" fill="#94a3b8" font-size="7" text-anchor="middle">daily backup → MinIO</text>
+
+    <!-- Vaultwarden -->
+    <rect x="300" y="361" width="116" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="358" y="380" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Vaultwarden</text>
+    <text x="358" y="395" fill="#94a3b8" font-size="7" text-anchor="middle">SSO passwords · Timshel</text>
+
+    <!-- NetworkPolicies -->
+    <rect x="178" y="415" width="238" height="38" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="297" y="434" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">NetworkPolicies · default-deny-ingress</text>
+    <text x="297" y="447" fill="#94a3b8" font-size="7" text-anchor="middle">Gatekeeper · Falco runtime · kube-bench CIS</text>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- ZONE 2 — DEVELOPER PLATFORM                                -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <rect x="436" y="124" width="258" height="436" rx="7"
+          fill="rgba(96,165,250,0.04)" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="6,3"/>
+    <text x="448" y="138" fill="#60a5fa" font-size="7.5" font-weight="700" letter-spacing="1.5">DEVELOPER PLATFORM</text>
+
+    <!-- Backstage -->
+    <rect x="446" y="145" width="112" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#60a5fa" stroke-width="1.5"/>
+    <text x="502" y="164" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Backstage IDP</text>
+    <text x="502" y="179" fill="#94a3b8" font-size="7" text-anchor="middle">TechDocs · Templates</text>
+
+    <!-- NATS -->
+    <rect x="568" y="145" width="116" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#60a5fa" stroke-width="1.5"/>
+    <text x="626" y="164" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">NATS</text>
+    <text x="626" y="179" fill="#94a3b8" font-size="7" text-anchor="middle">JetStream · messaging</text>
+
+    <!-- platform-demo -->
+    <rect x="446" y="199" width="112" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="502" y="218" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">platform-demo</text>
+    <text x="502" y="233" fill="#94a3b8" font-size="7" text-anchor="middle">Go svc · Canary 50%</text>
+
+    <!-- minicloud-plane -->
+    <rect x="568" y="199" width="116" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="626" y="218" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">minicloud-plane</text>
+    <text x="626" y="233" fill="#94a3b8" font-size="7" text-anchor="middle">Go svc · BlueGreen</text>
+
+    <!-- Plane CE -->
+    <rect x="446" y="253" width="112" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#60a5fa" stroke-width="1.5"/>
+    <text x="502" y="272" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Plane CE</text>
+    <text x="502" y="287" fill="#94a3b8" font-size="7" text-anchor="middle">project management</text>
+
+    <!-- Homer -->
+    <rect x="568" y="253" width="116" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#60a5fa" stroke-width="1.5"/>
+    <text x="626" y="272" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Homer</text>
+    <text x="626" y="287" fill="#94a3b8" font-size="7" text-anchor="middle">dashboard · all links</text>
+
+    <!-- Separator -->
+    <line x1="446" y1="308" x2="684" y2="308" stroke="#60a5fa" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.5"/>
+    <text x="448" y="320" fill="#60a5fa" font-size="7" font-weight="600" letter-spacing="1">COLLABORATION</text>
+
+    <!-- Nextcloud -->
+    <rect x="446" y="325" width="112" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="502" y="344" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Nextcloud</text>
+    <text x="502" y="359" fill="#94a3b8" font-size="7" text-anchor="middle">files · docs · OnlyOffice</text>
+
+    <!-- ERPNext -->
+    <rect x="568" y="325" width="116" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="626" y="344" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">ERPNext</text>
+    <text x="626" y="359" fill="#94a3b8" font-size="7" text-anchor="middle">HR source of truth</text>
+
+    <!-- Matrix+Element -->
+    <rect x="446" y="379" width="112" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="502" y="398" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Matrix + Element</text>
+    <text x="502" y="413" fill="#94a3b8" font-size="7" text-anchor="middle">Synapse · SSO · OIDC</text>
+
+    <!-- Jitsi -->
+    <rect x="568" y="379" width="116" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="626" y="398" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Jitsi Meet</text>
+    <text x="626" y="413" fill="#94a3b8" font-size="7" text-anchor="middle">star-kitten · JVB host</text>
+
+    <!-- Stalwart -->
+    <rect x="446" y="433" width="238" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="565" y="452" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Stalwart Mail v0.16.13</text>
+    <text x="565" y="467" fill="#94a3b8" font-size="7" text-anchor="middle">devandre.sbs · SMTP:587 · IMAP:993 → SES relay outbound</text>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- ZONE 3 — AI / ML PLATFORM                                  -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <rect x="704" y="124" width="270" height="436" rx="7"
+          fill="rgba(167,139,250,0.05)" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="6,3"/>
+    <text x="716" y="138" fill="#a78bfa" font-size="7.5" font-weight="700" letter-spacing="1.5">AI / ML PLATFORM</text>
+
+    <!-- LiteLLM -->
+    <rect x="714" y="145" width="120" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="774" y="164" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">LiteLLM Proxy</text>
+    <text x="774" y="179" fill="#94a3b8" font-size="7" text-anchor="middle">virtual keys · routing</text>
+
+    <!-- Ollama -->
+    <rect x="844" y="145" width="120" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="904" y="164" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Ollama</text>
+    <text x="904" y="179" fill="#94a3b8" font-size="7" text-anchor="middle">phi4-mini · nomic-embed</text>
+
+    <!-- Open WebUI -->
+    <rect x="714" y="199" width="120" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="774" y="218" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Open WebUI</text>
+    <text x="774" y="233" fill="#94a3b8" font-size="7" text-anchor="middle">chat UI · RAG · SSO</text>
+
+    <!-- Langfuse -->
+    <rect x="844" y="199" width="120" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="904" y="218" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Langfuse</text>
+    <text x="904" y="233" fill="#94a3b8" font-size="7" text-anchor="middle">LLM traces · evals</text>
+
+    <!-- markitdown-proxy -->
+    <rect x="714" y="253" width="120" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="774" y="272" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">markitdown-proxy</text>
+    <text x="774" y="287" fill="#94a3b8" font-size="7" text-anchor="middle">PDF/Office → Markdown</text>
+
+    <!-- rag-ingest -->
+    <rect x="844" y="253" width="120" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="904" y="272" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">rag-ingest</text>
+    <text x="904" y="287" fill="#94a3b8" font-size="7" text-anchor="middle">chunk → embed → store</text>
+
+    <!-- pgvector -->
+    <rect x="714" y="307" width="250" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="839" y="326" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">pgvector / ragdb</text>
+    <text x="839" y="341" fill="#94a3b8" font-size="7" text-anchor="middle">768-dim nomic-embed-text vectors · PostgreSQL</text>
+
+    <!-- AI Metrics separator -->
+    <line x1="714" y1="363" x2="964" y2="363" stroke="#a78bfa" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.5"/>
+    <text x="716" y="374" fill="#a78bfa" font-size="7" font-weight="600" letter-spacing="1">AI OBSERVABILITY METRICS</text>
+
+    <!-- TTFT + Tokens -->
+    <rect x="714" y="379" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#7c3aed" stroke-width="1.5"/>
+    <text x="774" y="396" fill="#c4b5fd" font-size="8.5" font-weight="600" text-anchor="middle">TTFT · Tokens/s</text>
+    <text x="774" y="411" fill="#64748b" font-size="7" text-anchor="middle">Langfuse traces</text>
+
+    <!-- Cost/Token -->
+    <rect x="844" y="379" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#7c3aed" stroke-width="1.5"/>
+    <text x="904" y="396" fill="#c4b5fd" font-size="8.5" font-weight="600" text-anchor="middle">Cost/Request</text>
+    <text x="904" y="411" fill="#64748b" font-size="7" text-anchor="middle">LiteLLM Prometheus</text>
+
+    <!-- LLM Error Rate -->
+    <rect x="714" y="427" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#7c3aed" stroke-width="1.5"/>
+    <text x="774" y="444" fill="#c4b5fd" font-size="8.5" font-weight="600" text-anchor="middle">LLM Error Rate</text>
+    <text x="774" y="459" fill="#64748b" font-size="7" text-anchor="middle">success/fail counters</text>
+
+    <!-- Embed Latency -->
+    <rect x="844" y="427" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#7c3aed" stroke-width="1.5"/>
+    <text x="904" y="444" fill="#c4b5fd" font-size="8.5" font-weight="600" text-anchor="middle">Embed Latency</text>
+    <text x="904" y="459" fill="#64748b" font-size="7" text-anchor="middle">nomic-embed-text p95</text>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- ZONE 4 — CI/CD PIPELINE                                    -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <rect x="984" y="124" width="268" height="436" rx="7"
+          fill="rgba(52,211,153,0.04)" stroke="#34d399" stroke-width="1.5" stroke-dasharray="6,3"/>
+    <text x="996" y="138" fill="#34d399" font-size="7.5" font-weight="700" letter-spacing="1.5">CI / CD PIPELINE</text>
+
+    <!-- Build+Scan -->
+    <rect x="994" y="145" width="248" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="1118" y="164" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Build → Trivy scan → Sign</text>
+    <text x="1118" y="179" fill="#94a3b8" font-size="7" text-anchor="middle">docker buildx · Cosign · syft SBOM</text>
+
+    <!-- Push Harbor -->
+    <rect x="994" y="199" width="248" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="1118" y="218" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Push → Harbor pre-flight</text>
+    <text x="1118" y="233" fill="#94a3b8" font-size="7" text-anchor="middle">harbor.10.0.0.200.nip.io via Tailscale</text>
+
+    <!-- bump-gitops -->
+    <rect x="994" y="253" width="248" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="1118" y="272" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">bump-gitops → ArgoCD sync</text>
+    <text x="1118" y="287" fill="#94a3b8" font-size="7" text-anchor="middle">GPG-signed PR · kustomize set image</text>
+
+    <!-- Parallel jobs -->
+    <line x1="994" y1="308" x2="1242" y2="308" stroke="#34d399" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.5"/>
+    <text x="996" y="320" fill="#34d399" font-size="7" font-weight="600" letter-spacing="1">PARALLEL — ANALYSIS WINDOW</text>
+
+    <!-- canary-load -->
+    <rect x="994" y="325" width="120" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="1054" y="344" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">canary-load</text>
+    <text x="1054" y="359" fill="#94a3b8" font-size="7" text-anchor="middle">k6 · 5 min · p95&lt;500ms</text>
+
+    <!-- rollout-gate -->
+    <rect x="1122" y="325" width="120" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="1182" y="344" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">rollout-gate</text>
+    <text x="1182" y="359" fill="#94a3b8" font-size="7" text-anchor="middle">polls Healthy/Degraded</text>
+
+    <!-- promote-staging -->
+    <rect x="994" y="379" width="248" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="1118" y="398" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">promote-staging</text>
+    <text x="1118" y="413" fill="#94a3b8" font-size="7" text-anchor="middle">needs: [rollout-gate, canary-load] · GPG PR</text>
+
+    <!-- Regression Detection -->
+    <line x1="994" y1="435" x2="1242" y2="435" stroke="#34d399" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.5"/>
+    <text x="996" y="447" fill="#34d399" font-size="7" font-weight="600" letter-spacing="1">REGRESSION DETECTION</text>
+
+    <!-- Prometheus gates -->
+    <rect x="994" y="452" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="1054" y="470" fill="#fde68a" font-size="8.5" font-weight="600" text-anchor="middle">Prometheus Gates</text>
+    <text x="1054" y="484" fill="#64748b" font-size="7" text-anchor="middle">success-rate ≥ 95%</text>
+
+    <!-- Rollback alert -->
+    <rect x="1122" y="452" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fb7185" stroke-width="1.5"/>
+    <text x="1182" y="470" fill="#fda4af" font-size="8.5" font-weight="600" text-anchor="middle">RolloutAutoRollback</text>
+    <text x="1182" y="484" fill="#64748b" font-size="7" text-anchor="middle">Degraded → email alert</text>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- ZONE 5 — STORAGE & INFRASTRUCTURE                         -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <rect x="1262" y="124" width="268" height="436" rx="7"
+          fill="rgba(100,116,139,0.05)" stroke="#64748b" stroke-width="1.5" stroke-dasharray="6,3"/>
+    <text x="1274" y="138" fill="#94a3b8" font-size="7.5" font-weight="700" letter-spacing="1.5">STORAGE &amp; INFRA</text>
+
+    <!-- Longhorn -->
+    <rect x="1272" y="145" width="248" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#64748b" stroke-width="1.5"/>
+    <text x="1396" y="164" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Longhorn</text>
+    <text x="1396" y="179" fill="#94a3b8" font-size="7" text-anchor="middle">distributed block storage · swift-mac PVCs</text>
+
+    <!-- MinIO -->
+    <rect x="1272" y="199" width="120" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#64748b" stroke-width="1.5"/>
+    <text x="1332" y="218" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">MinIO</text>
+    <text x="1332" y="233" fill="#94a3b8" font-size="7" text-anchor="middle">controller · S3 compat</text>
+
+    <!-- Velero -->
+    <rect x="1402" y="199" width="118" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#64748b" stroke-width="1.5"/>
+    <text x="1461" y="218" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Velero + Kopia</text>
+    <text x="1461" y="233" fill="#94a3b8" font-size="7" text-anchor="middle">daily → MinIO TTL 7d</text>
+
+    <!-- MAAS -->
+    <rect x="1272" y="253" width="248" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#64748b" stroke-width="1.5"/>
+    <text x="1396" y="272" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">MAAS Controller</text>
+    <text x="1396" y="287" fill="#94a3b8" font-size="7" text-anchor="middle">ThinkPad X390 · NAT · Tailscale endpoint · node_exporter</text>
+
+    <!-- SES Inbound pipeline -->
+    <line x1="1272" y1="308" x2="1520" y2="308" stroke="#64748b" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.5"/>
+    <text x="1274" y="320" fill="#94a3b8" font-size="7" font-weight="600" letter-spacing="1">EMAIL PIPELINE</text>
+
+    <!-- SES inbound -->
+    <rect x="1272" y="325" width="248" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="1396" y="344" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">SES Inbound (AWS eu-west-1)</text>
+    <text x="1396" y="359" fill="#94a3b8" font-size="7" text-anchor="middle">MX → S3 → SNS → SQS → ses-ingest pod</text>
+
+    <!-- SES outbound -->
+    <rect x="1272" y="379" width="248" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="1396" y="398" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">SES Outbound Relay</text>
+    <text x="1396" y="413" fill="#94a3b8" font-size="7" text-anchor="middle">Stalwart → ses-relay → SES:587 → recipient</text>
+
+    <!-- PKI -->
+    <rect x="1272" y="433" width="120" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#64748b" stroke-width="1.5"/>
+    <text x="1332" y="452" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">minicloud CA</text>
+    <text x="1332" y="467" fill="#94a3b8" font-size="7" text-anchor="middle">root CA · TLS all svcs</text>
+
+    <!-- OpenTofu -->
+    <rect x="1402" y="433" width="118" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#64748b" stroke-width="1.5"/>
+    <text x="1461" y="452" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">OpenTofu / MAAS</text>
+    <text x="1461" y="467" fill="#94a3b8" font-size="7" text-anchor="middle">node provisioning IaC</text>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- OBSERVABILITY ZONE (full width)                            -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <rect x="168" y="572" width="1375" height="160" rx="7"
+          fill="rgba(52,211,153,0.04)" stroke="#34d399" stroke-width="1.5" stroke-dasharray="6,3"/>
+    <text x="180" y="586" fill="#34d399" font-size="7.5" font-weight="700" letter-spacing="1.5">OBSERVABILITY STACK  ·  64/64 PROMETHEUS TARGETS UP  ·  17 CUSTOM APP TARGETS</text>
+
+    <!-- Prometheus -->
+    <rect x="178" y="593" width="218" height="126" rx="5" fill="rgba(15,23,42,0.85)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="287" y="610" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Prometheus (kps)</text>
+    <text x="287" y="625" fill="#94a3b8" font-size="7" text-anchor="middle">kube-state-metrics</text>
+    <text x="287" y="638" fill="#94a3b8" font-size="7" text-anchor="middle">Node Exporter (cluster + ctrl)</text>
+    <text x="287" y="651" fill="#94a3b8" font-size="7" text-anchor="middle">cAdvisor · 33 recording rules</text>
+    <text x="287" y="664" fill="#94a3b8" font-size="7" text-anchor="middle">SLO rules · Regression rules</text>
+    <text x="287" y="677" fill="#94a3b8" font-size="7" text-anchor="middle">Argo Rollouts metrics :8090</text>
+    <text x="287" y="690" fill="#94a3b8" font-size="7" text-anchor="middle">scheduler · ctrl-mgr socat proxy</text>
+    <text x="287" y="710" fill="#34d399" font-size="7" font-weight="600" text-anchor="middle">64 targets · 1 min eval · 30d retention</text>
+
+    <!-- Grafana -->
+    <rect x="406" y="593" width="195" height="126" rx="5" fill="rgba(15,23,42,0.85)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="503" y="610" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Grafana</text>
+    <text x="503" y="625" fill="#94a3b8" font-size="7" text-anchor="middle">35+ dashboards</text>
+    <text x="503" y="638" fill="#94a3b8" font-size="7" text-anchor="middle">Workload Health</text>
+    <text x="503" y="651" fill="#94a3b8" font-size="7" text-anchor="middle">App Logs Explorer</text>
+    <text x="503" y="664" fill="#94a3b8" font-size="7" text-anchor="middle">Error Rate by Service</text>
+    <text x="503" y="677" fill="#94a3b8" font-size="7" text-anchor="middle">SLO Dashboard · Traces</text>
+    <text x="503" y="690" fill="#94a3b8" font-size="7" text-anchor="middle">Regression Detection</text>
+    <text x="503" y="710" fill="#34d399" font-size="7" font-weight="600" text-anchor="middle">dataLinks → Loki → Tempo</text>
+
+    <!-- Alertmanager -->
+    <rect x="611" y="593" width="185" height="126" rx="5" fill="rgba(15,23,42,0.85)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="703" y="610" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Alertmanager</text>
+    <text x="703" y="625" fill="#94a3b8" font-size="7" text-anchor="middle">SMTP → Stalwart:587</text>
+    <text x="703" y="638" fill="#94a3b8" font-size="7" text-anchor="middle">→ SES → kanmegnea@</text>
+    <text x="703" y="651" fill="#94a3b8" font-size="7" text-anchor="middle">RolloutAutoRollback</text>
+    <text x="703" y="664" fill="#94a3b8" font-size="7" text-anchor="middle">LatencyRegression</text>
+    <text x="703" y="677" fill="#94a3b8" font-size="7" text-anchor="middle">ErrorRateRegression</text>
+    <text x="703" y="690" fill="#94a3b8" font-size="7" text-anchor="middle">SLO burn-rate alerts</text>
+    <text x="703" y="710" fill="#34d399" font-size="7" font-weight="600" text-anchor="middle">6 LogQL ruler alerts (Loki)</text>
+
+    <!-- Loki -->
+    <rect x="806" y="593" width="185" height="126" rx="5" fill="rgba(15,23,42,0.85)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="898" y="610" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Loki</text>
+    <text x="898" y="625" fill="#94a3b8" font-size="7" text-anchor="middle">log aggregation</text>
+    <text x="898" y="638" fill="#94a3b8" font-size="7" text-anchor="middle">OTTL transforms</text>
+    <text x="898" y="651" fill="#94a3b8" font-size="7" text-anchor="middle">level label extraction</text>
+    <text x="898" y="664" fill="#94a3b8" font-size="7" text-anchor="middle">kopia cardinality fix</text>
+    <text x="898" y="677" fill="#94a3b8" font-size="7" text-anchor="middle">ruler: 6 LogQL alerts</text>
+    <text x="898" y="690" fill="#94a3b8" font-size="7" text-anchor="middle">controller via Promtail</text>
+    <text x="898" y="710" fill="#34d399" font-size="7" font-weight="600" text-anchor="middle">30-day retention · OTLP native</text>
+
+    <!-- OTel Collector -->
+    <rect x="1001" y="593" width="185" height="126" rx="5" fill="rgba(15,23,42,0.85)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="1093" y="610" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">OTel Collector</text>
+    <text x="1093" y="625" fill="#94a3b8" font-size="7" text-anchor="middle">DaemonSet 0.156.0</text>
+    <text x="1093" y="638" fill="#94a3b8" font-size="7" text-anchor="middle">filelog receiver (pods)</text>
+    <text x="1093" y="651" fill="#94a3b8" font-size="7" text-anchor="middle">OTTL transformprocessor</text>
+    <text x="1093" y="664" fill="#94a3b8" font-size="7" text-anchor="middle">→ Loki (otlphttp)</text>
+    <text x="1093" y="677" fill="#94a3b8" font-size="7" text-anchor="middle">→ Tempo (otlp gRPC)</text>
+    <text x="1093" y="690" fill="#94a3b8" font-size="7" text-anchor="middle">runAsUser:0 for /var/log</text>
+    <text x="1093" y="710" fill="#34d399" font-size="7" font-weight="600" text-anchor="middle">replaces Promtail in-cluster</text>
+
+    <!-- Tempo -->
+    <rect x="1196" y="593" width="185" height="126" rx="5" fill="rgba(15,23,42,0.85)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="1288" y="610" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Tempo 2.9.0</text>
+    <text x="1288" y="625" fill="#94a3b8" font-size="7" text-anchor="middle">distributed tracing</text>
+    <text x="1288" y="638" fill="#94a3b8" font-size="7" text-anchor="middle">OTLP gRPC:4317</text>
+    <text x="1288" y="651" fill="#94a3b8" font-size="7" text-anchor="middle">TraceQL · TraceToLogs</text>
+    <text x="1288" y="664" fill="#94a3b8" font-size="7" text-anchor="middle">tracesToLogsV2 → Loki</text>
+    <text x="1288" y="677" fill="#94a3b8" font-size="7" text-anchor="middle">14-day retention</text>
+    <text x="1288" y="690" fill="#94a3b8" font-size="7" text-anchor="middle">Go services instrumented</text>
+    <text x="1288" y="710" fill="#34d399" font-size="7" font-weight="600" text-anchor="middle">Gaps A–E complete (2026-07-25)</text>
+
+    <!-- SLO + Regression -->
+    <rect x="1391" y="593" width="142" height="126" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="1462" y="610" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">SLO + Regression</text>
+    <text x="1462" y="625" fill="#94a3b8" font-size="7" text-anchor="middle">7 SLO objectives</text>
+    <text x="1462" y="638" fill="#94a3b8" font-size="7" text-anchor="middle">11 recording rules</text>
+    <text x="1462" y="651" fill="#94a3b8" font-size="7" text-anchor="middle">burn-rate 2-tier</text>
+    <text x="1462" y="664" fill="#94a3b8" font-size="7" text-anchor="middle">offset 1h baseline</text>
+    <text x="1462" y="677" fill="#94a3b8" font-size="7" text-anchor="middle">5 regression alerts</text>
+    <text x="1462" y="690" fill="#94a3b8" font-size="7" text-anchor="middle">Argo Rollouts gates</text>
+    <text x="1462" y="710" fill="#fbbf24" font-size="7" font-weight="600" text-anchor="middle">Prometheus PrometheusRules</text>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- HARDWARE ZONE                                               -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <rect x="168" y="742" width="1375" height="112" rx="7"
+          fill="rgba(100,116,139,0.05)" stroke="#475569" stroke-width="1.5" stroke-dasharray="6,3"/>
+    <text x="180" y="756" fill="#64748b" font-size="7.5" font-weight="700" letter-spacing="1.5">HARDWARE  ·  MAAS PROVISIONED  ·  UBUNTU 22.04  ·  AUTO-RESTART ON POWER FAILURE (except swift-mac)</text>
+
+    <!-- MAAS Controller -->
+    <rect x="178" y="762" width="215" height="80" rx="5" fill="rgba(15,23,42,0.85)" stroke="#475569" stroke-width="1.5"/>
+    <text x="285" y="780" fill="#94a3b8" font-size="8.5" font-weight="600" text-anchor="middle">MAAS Controller</text>
+    <text x="285" y="794" fill="#64748b" font-size="7" text-anchor="middle">ThinkPad X390 · Ubuntu 22.04</text>
+    <text x="285" y="807" fill="#64748b" font-size="7" text-anchor="middle">100.88.123.8 · 98G NVMe</text>
+    <text x="285" y="820" fill="#64748b" font-size="7" text-anchor="middle">NAT · MinIO · Promtail · Cloudflared</text>
+    <text x="285" y="833" fill="#475569" font-size="7" text-anchor="middle">node_exporter :9100</text>
+
+    <!-- set-hog -->
+    <rect x="403" y="762" width="215" height="80" rx="5" fill="rgba(15,23,42,0.85)" stroke="#22d3ee" stroke-width="1.5"/>
+    <text x="510" y="780" fill="#22d3ee" font-size="8.5" font-weight="600" text-anchor="middle">set-hog</text>
+    <text x="510" y="794" fill="#64748b" font-size="7" text-anchor="middle">k3s CONTROL PLANE · 10.0.0.2</text>
+    <text x="510" y="807" fill="#64748b" font-size="7" text-anchor="middle">ThinkPad · Kine/SQLite etcd</text>
+    <text x="510" y="820" fill="#64748b" font-size="7" text-anchor="middle">scheduler + ctrl-mgr socat proxy</text>
+    <text x="510" y="833" fill="#475569" font-size="7" text-anchor="middle">hostNetwork metrics :10269 :10267</text>
+
+    <!-- fast-skunk -->
+    <rect x="628" y="762" width="215" height="80" rx="5" fill="rgba(15,23,42,0.85)" stroke="#475569" stroke-width="1.5"/>
+    <text x="735" y="780" fill="#94a3b8" font-size="8.5" font-weight="600" text-anchor="middle">fast-skunk</text>
+    <text x="735" y="794" fill="#64748b" font-size="7" text-anchor="middle">k3s worker · 10.0.0.4</text>
+    <text x="735" y="807" fill="#64748b" font-size="7" text-anchor="middle">ThinkPad X390</text>
+    <text x="735" y="820" fill="#64748b" font-size="7" text-anchor="middle">general workloads</text>
+
+    <!-- fast-heron -->
+    <rect x="853" y="762" width="215" height="80" rx="5" fill="rgba(15,23,42,0.85)" stroke="#475569" stroke-width="1.5"/>
+    <text x="960" y="780" fill="#94a3b8" font-size="8.5" font-weight="600" text-anchor="middle">fast-heron</text>
+    <text x="960" y="794" fill="#64748b" font-size="7" text-anchor="middle">k3s worker · 10.0.0.7</text>
+    <text x="960" y="807" fill="#64748b" font-size="7" text-anchor="middle">ThinkPad</text>
+    <text x="960" y="820" fill="#64748b" font-size="7" text-anchor="middle">Vault pinned (nodeSelector)</text>
+
+    <!-- star-kitten -->
+    <rect x="1078" y="762" width="215" height="80" rx="5" fill="rgba(15,23,42,0.85)" stroke="#475569" stroke-width="1.5"/>
+    <text x="1185" y="780" fill="#94a3b8" font-size="8.5" font-weight="600" text-anchor="middle">star-kitten</text>
+    <text x="1185" y="794" fill="#64748b" font-size="7" text-anchor="middle">k3s worker · 10.0.0.8</text>
+    <text x="1185" y="807" fill="#64748b" font-size="7" text-anchor="middle">ThinkPad</text>
+    <text x="1185" y="820" fill="#64748b" font-size="7" text-anchor="middle">Jitsi JVB pinned (hostNetwork)</text>
+
+    <!-- swift-mac -->
+    <rect x="1303" y="762" width="230" height="80" rx="5" fill="rgba(15,23,42,0.85)" stroke="#475569" stroke-width="1.5"/>
+    <text x="1418" y="780" fill="#94a3b8" font-size="8.5" font-weight="600" text-anchor="middle">swift-mac</text>
+    <text x="1418" y="794" fill="#64748b" font-size="7" text-anchor="middle">k3s worker · 10.0.0.10</text>
+    <text x="1418" y="807" fill="#64748b" font-size="7" text-anchor="middle">MacBook Pro 13" 2012 · Ubuntu 22.04</text>
+    <text x="1418" y="820" fill="#64748b" font-size="7" text-anchor="middle">Longhorn storage preferred</text>
+    <text x="1418" y="833" fill="#475569" font-size="7" text-anchor="middle">no Apple SMC auto-restart</text>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- CONNECTION ARROWS                                           -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Internet Users → Cloudflare (right) -->
+    <line x1="152" y1="69" x2="1568" y2="69" stroke="#64748b" stroke-width="1" stroke-dasharray="4,4" opacity="0.4"/>
+
+    <!-- Internet Users → NGINX Ingress (via tunnel) -->
+    <line x1="152" y1="72" x2="178" y2="83" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arr-cyan)" opacity="0.7"/>
+
+    <!-- Tailscale → cluster ingress -->
+    <line x1="152" y1="280" x2="178" y2="83" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arr-cyan)" opacity="0.7" stroke-dasharray="5,3"/>
+
+    <!-- Developer → Harbor (CI path) -->
+    <line x1="152" y1="145" x2="178" y2="168" stroke="#fbbf24" stroke-width="1.2" marker-end="url(#arr-yellow)" opacity="0.6"/>
+
+    <!-- GitHub Actions → Harbor -->
+    <line x1="152" y1="210" x2="300" y2="168" stroke="#fbbf24" stroke-width="1.2" marker-end="url(#arr-yellow)" opacity="0.6"/>
+
+    <!-- GitHub Actions → ArgoCD (gitops bump) -->
+    <line x1="152" y1="215" x2="178" y2="168" stroke="#fbbf24" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#arr-yellow)" opacity="0.5"/>
+
+    <!-- ArgoCD → Argo Rollouts -->
+    <line x1="234" y1="189" x2="234" y2="199" stroke="#fbbf24" stroke-width="1" marker-end="url(#arr-yellow)" opacity="0.6"/>
+
+    <!-- LiteLLM → Ollama -->
+    <line x1="834" y1="167" x2="844" y2="167" stroke="#a78bfa" stroke-width="1.2" marker-end="url(#arr-purple)" opacity="0.6"/>
+
+    <!-- LiteLLM → Groq (external) -->
+    <line x1="964" y1="167" x2="1568" y2="210" stroke="#a78bfa" stroke-width="1" stroke-dasharray="5,3" marker-end="url(#arr-purple)" opacity="0.5"/>
+
+    <!-- Open WebUI → LiteLLM -->
+    <line x1="774" y1="199" x2="774" y2="189" stroke="#a78bfa" stroke-width="1" marker-end="url(#arr-purple)" opacity="0.5"/>
+
+    <!-- rag-ingest → pgvector -->
+    <line x1="904" y1="297" x2="964" y2="321" stroke="#a78bfa" stroke-width="1" marker-end="url(#arr-purple)" opacity="0.5"/>
+
+    <!-- Prometheus → Grafana (in obs zone) -->
+    <line x1="396" y1="656" x2="406" y2="656" stroke="#34d399" stroke-width="1.2" marker-end="url(#arr-emerald)" opacity="0.7"/>
+
+    <!-- Prometheus → Alertmanager -->
+    <line x1="396" y1="666" x2="611" y2="666" stroke="#34d399" stroke-width="1.2" marker-end="url(#arr-emerald)" opacity="0.7"/>
+
+    <!-- OTel → Loki -->
+    <line x1="1001" y1="656" x2="991" y2="656" stroke="#34d399" stroke-width="1.2" marker-end="url(#arr-emerald)" opacity="0.7"/>
+
+    <!-- OTel → Tempo -->
+    <line x1="1186" y1="656" x2="1196" y2="656" stroke="#34d399" stroke-width="1.2" marker-end="url(#arr-emerald)" opacity="0.7"/>
+
+    <!-- Alertmanager → Stalwart (SES) right external -->
+    <line x1="796" y1="660" x2="1568" y2="145" stroke="#fb923c" stroke-width="1" stroke-dasharray="5,3" marker-end="url(#arr-orange)" opacity="0.4"/>
+
+    <!-- Cloudflare (right) → NGINX Ingress (access layer) -->
+    <line x1="1568" y1="83" x2="508" y2="83" stroke="#fb923c" stroke-width="1" stroke-dasharray="5,3" marker-end="url(#arr-orange)" opacity="0.5"/>
+
+  </svg>
+  </div>
+
+  <!-- Detail cards -->
+  <div class="cards">
+    <div class="card">
+      <div class="card-title" style="color:#fbbf24">GITOPS &amp; AUTOMATION</div>
+      <ul class="card-list">
+        <li><span>ArgoCD 3.x</span> — app-of-apps, 71 apps, SSA=false for Rollout apps</li>
+        <li><span>Harbor</span> — registry, Cosign signing, SBOM attestation, Trivy CVE scan</li>
+        <li><span>Argo Rollouts</span> — platform-demo (Canary 50%), minicloud-plane (BlueGreen)</li>
+        <li><span>KEDA</span> — event-driven scale on NATS JetStream queue length</li>
+        <li><span>VPA</span> — Off mode: langfuse-clickhouse, Prometheus; Auto: backstage, litellm</li>
+        <li><span>Reloader</span> — auto-restart: homer, litellm, searxng, backstage on ConfigMap change</li>
+        <li><span>system-upgrade-controller</span> — k3s v1.36.2+k3s1 all 5 nodes via Plans</li>
+        <li><span>Velero + Kopia</span> — daily 03:00, TTL 7d, MinIO bucket, itemOperationTimeout 8h</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#fb7185">SECURITY</div>
+      <ul class="card-list">
+        <li><span>Authentik SSO</span> — OIDC + TOTP for all apps, Embedded Outpost, forward-auth</li>
+        <li><span>Vault</span> — HashiCorp CE, AWS KMS auto-unseal, fast-heron pinned (RWO)</li>
+        <li><span>ESO</span> — ExternalSecrets, ClusterSecretStore, Vault backend</li>
+        <li><span>cert-manager</span> — Let's Encrypt (public), minicloud CA (internal TLS)</li>
+        <li><span>Gatekeeper OPA</span> — 9 constraints: BlockNetRaw, BlockCapabilities, RequireSeccomp</li>
+        <li><span>Falco</span> — runtime syscall monitoring, DaemonSet</li>
+        <li><span>Vaultwarden</span> — Timshel fork 1.34.1-6, SSO via Authentik, 15 creds migrated</li>
+        <li><span>kube-bench</span> — k3s-CIS-1.7: 16/16 PASS on all 4 workers</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#a78bfa">AI / ML PLATFORM</div>
+      <ul class="card-list">
+        <li><span>LiteLLM</span> — proxy, virtual keys, routing, Prometheus metrics, cost tracking</li>
+        <li><span>Ollama</span> — phi4-mini (chat), nomic-embed-text 768-dim (RAG embeddings)</li>
+        <li><span>Open WebUI</span> — custom image, sitecustomize.py Prometheus instrumentation</li>
+        <li><span>Langfuse</span> — LLM traces, TTFT, tokens/s, prompt eval, ClickHouse + PG backend</li>
+        <li><span>markitdown-proxy</span> — PDF/images→Docling, Office→MarkItDown, port 8000</li>
+        <li><span>rag-ingest</span> — convert→chunk→embed→pgvector pipeline, port 8001</li>
+        <li><span>pgvector (ragdb)</span> — PostgreSQL 768-dim vectors for nomic-embed-text</li>
+        <li><span>Groq</span> — llama-3.1-8b-instant fallback for phi3-financial (25/25 CI eval)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#34d399">CI / CD &amp; REGRESSION DETECTION</div>
+      <ul class="card-list">
+        <li><span>8 custom repos</span> — all → harbor.10.0.0.200.nip.io via Tailscale tag:ci</li>
+        <li><span>Org-level secrets</span> — 7 secrets on andrelair-platform, all repos inherit</li>
+        <li><span>Golden path</span> — build→Trivy→Cosign→SBOM→pre-flight→bump-gitops→GPG PR</li>
+        <li><span>canary-load</span> — parallel k6 5min, covers AnalysisRun window, initialDelay:60s</li>
+        <li><span>rollout-gate</span> — polls Rollout phase, HTTP smoke probe, 8min timeout</li>
+        <li><span>Prometheus gates</span> — success-rate≥95%, p95≤500ms, or vector fallback</li>
+        <li><span>RolloutAutoRollback</span> — argo_rollout_info{phase="Degraded"}→email in 1min</li>
+        <li><span>promote-staging</span> — needs: [rollout-gate, canary-load], GPG-signed PR</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#34d399">OBSERVABILITY</div>
+      <ul class="card-list">
+        <li><span>Prometheus</span> — 64 targets, 17 custom app targets, 33 recording rules, SLO</li>
+        <li><span>Grafana</span> — 35+ dashboards: Workload, App Logs, Error Rate, Crash, SLO, Traces</li>
+        <li><span>Loki</span> — OTLP native, 30d retention, ruler 6 LogQL alerts, kopia cardinality fix</li>
+        <li><span>OTel Collector</span> — DaemonSet, OTTL transforms, runAsUser:0, replaces Promtail</li>
+        <li><span>Tempo</span> — 2.9.0, distributed tracing, TraceQL, tracesToLogs→Loki, 14d</li>
+        <li><span>Alertmanager</span> — SMTP via Stalwart:587→SES, regression alerts, SLO burn-rate</li>
+        <li><span>Node Exporter</span> — cluster nodes + MAAS controller (Docker+systemd)</li>
+        <li><span>SLO rules</span> — 7 objectives, 11 recording rules, 9 alert rules (burn-rate 2-tier)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#fb923c">COLLABORATION &amp; EMAIL</div>
+      <ul class="card-list">
+        <li><span>Stalwart Mail v0.16.13</span> — devandre.sbs, RocksDB, JMAP API, STARTTLS</li>
+        <li><span>SES eu-west-1</span> — production access 2026-07-26, 50k msg/day, SPF+DKIM+DMARC</li>
+        <li><span>SES Inbound</span> — MX→S3→SNS→SQS→ses-ingest pod→Stalwart→mailbox</li>
+        <li><span>Matrix Synapse</span> — v1.156.0, Element Web, OIDC via Authentik, 10Gi PVC</li>
+        <li><span>ERPNext</span> — v16.28.0, HR source of truth, MariaDB+Valkey, employee onboard</li>
+        <li><span>Jitsi Meet</span> — v2.21.0, JVB pinned star-kitten hostNetwork, Authentik forward-auth</li>
+        <li><span>Nextcloud</span> — OnlyOffice DocumentServer, SSO, Longhorn PVC</li>
+        <li><span>Backstage onboard template</span> — scaffolder→Stalwart JMAP→Authentik→mail</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#64748b">STORAGE &amp; NETWORKING</div>
+      <ul class="card-list">
+        <li><span>Longhorn</span> — distributed block storage, swift-mac preferred, multipathd IET blacklist</li>
+        <li><span>MinIO</span> — controller Docker container, S3-compat, Velero backup bucket</li>
+        <li><span>MetalLB</span> — L2 mode, LB IP 10.0.0.200, NGINX Ingress Service</li>
+        <li><span>NGINX Ingress</span> — community 4.15.1, latency histogram, annotations-risk-level:Critical</li>
+        <li><span>Cloudflared</span> — systemd Restart=always, public *.devandre.sbs tunnel</li>
+        <li><span>Tailscale</span> — controller endpoint 100.88.123.8, CI tag:ci OAuth</li>
+        <li><span>minicloud CA</span> — root CA, macOS System Keychain, Vault PKI, cert-manager ClusterIssuer</li>
+        <li><span>MAAS</span> — OpenTofu IaC, bare-metal provisioning, NAT 10.0.0.0/24</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#22d3ee">HARDWARE</div>
+      <ul class="card-list">
+        <li><span>MAAS Controller</span> — ThinkPad X390, 98G NVMe, Tailscale, NAT, MinIO, Cloudflared</li>
+        <li><span>set-hog</span> — k3s control-plane, 10.0.0.2, Kine/SQLite, socat proxy for metrics</li>
+        <li><span>fast-skunk</span> — k3s worker, 10.0.0.4, general workloads</li>
+        <li><span>fast-heron</span> — k3s worker, 10.0.0.7, Vault nodeSelector pinned</li>
+        <li><span>star-kitten</span> — k3s worker, 10.0.0.8, Jitsi JVB hostNetwork pinned</li>
+        <li><span>swift-mac</span> — k3s worker, 10.0.0.10, MacBook Pro 13" 2012, Longhorn preferred, no SMC auto-restart</li>
+        <li><span>Boot order</span> — controller (30s) → cluster nodes (2min) → Tailscale on Mac</li>
+        <li><span>Power failure recovery</span> — iptables-restore + FORWARD rules manually on controller</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+<script>
+function copysvg() {
+  const svg = document.getElementById('arch');
+  const s = new XMLSerializer().serializeToString(svg);
+  navigator.clipboard.writeText(s).then(() => {
+    const btn = event.target; btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy SVG'; }, 2000);
+  });
+}
+async function dlpng() {
+  const btn = event.target; btn.textContent = 'Generating…';
+  const canvas = await html2canvas(document.getElementById('diagram-wrap'), { backgroundColor: '#020617', scale: 2 });
+  const a = document.createElement('a'); a.href = canvas.toDataURL('image/png');
+  a.download = 'minicloud-production-stack.png'; a.click();
+  btn.textContent = 'PNG';
+}
+async function dlpdf() {
+  const btn = event.target; btn.textContent = 'Generating…';
+  const canvas = await html2canvas(document.getElementById('diagram-wrap'), { backgroundColor: '#020617', scale: 1.5 });
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [canvas.width, canvas.height] });
+  pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height);
+  pdf.save('minicloud-production-stack.pdf');
+  btn.textContent = 'PDF';
+}
+</script>
+</body>
+</html>
