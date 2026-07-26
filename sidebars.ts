@@ -623,6 +623,14 @@ const sidebars: SidebarsConfig = {
       items: ['observability/cost-optimization-gaps'],
     },
 
+    // ── SLO Dashboard ─────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: '🎯 SLO Dashboard — 7 Service-Level Objectives ✅',
+      collapsed: true,
+      items: ['observability/slo-dashboard'],
+    },
+
     // ── Admission Control Hardening ─────────────────────────────────
     {
       type: 'category',
