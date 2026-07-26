@@ -742,6 +742,14 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['developer-platform/matrix-synapse-element-web'],
     },
+
+    // ── Production Stack Architecture ────────────────────────────────
+    {
+      type: 'category',
+      label: '🗺 Production Stack Architecture — Complete Diagram ✅',
+      collapsed: true,
+      items: ['developer-platform/production-stack-architecture'],
+    },
   ],
 };
 
