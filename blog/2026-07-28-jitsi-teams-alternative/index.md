@@ -11,6 +11,8 @@ date: 2026-07-28
 image: /img/blog/jitsi/jitsi-architecture.svg
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 Microsoft Teams costs money. It sends your meeting data to servers you don't control. It requires accounts in a Microsoft tenant. And if the licensing changes, your video conferencing disappears overnight.
 
 Jitsi Meet costs nothing, runs on hardware you own, keeps your data inside your network, and works with any browser — no app install required.
@@ -51,7 +53,7 @@ Jitsi is not a single application — it's four services that work together. Und
 
 <div style={{textAlign: 'center', margin: '2rem 0'}}>
   <img
-    src="/img/blog/jitsi/jitsi-architecture.svg"
+    src={useBaseUrl('/img/blog/jitsi/jitsi-architecture.svg')}
     alt="Jitsi Meet full system architecture diagram"
     style={{maxWidth: '100%', borderRadius: '8px'}}
   />
@@ -110,7 +112,7 @@ The connection process sounds complicated, but it follows a clear sequence. Here
 
 <div style={{textAlign: 'center', margin: '2rem 0'}}>
   <img
-    src="/img/blog/jitsi/jitsi-call-flow.svg"
+    src={useBaseUrl('/img/blog/jitsi/jitsi-call-flow.svg')}
     alt="Jitsi call establishment sequence diagram"
     style={{maxWidth: '100%', borderRadius: '8px'}}
   />
@@ -282,7 +284,7 @@ This breaks TURN. WebRTC browsers always request `REQUESTED-ADDRESS-FAMILY=IPv4`
 
 <div style={{textAlign: 'center', margin: '2rem 0'}}>
   <img
-    src="/img/blog/jitsi/jitsi-network-paths.svg"
+    src={useBaseUrl('/img/blog/jitsi/jitsi-network-paths.svg')}
     alt="Jitsi network media paths diagram"
     style={{maxWidth: '100%', borderRadius: '8px'}}
   />
@@ -577,6 +579,18 @@ The real cost is engineering time to set up and maintain it — roughly 8–10 h
 **Authentik forward-auth is simpler than Jitsi's built-in JWT auth.** Jitsi has its own JWT-based token system for room-level access control. It works, but it requires generating tokens for each meeting and distributing them. Authentik forward-auth at the ingress level is simpler and gives you all the access control you need for an internal team setup.
 
 **The Helm chart's `coturn.enabled=false` path is underserved.** When you run Coturn externally, the chart doesn't inject the TURN config into Prosody. You need to do it manually via `extraEnvFrom` with a ConfigMap and Secret. This is documented in the chart but easy to miss.
+
+**Disable WebSocket transport when running behind Cloudflare.** The `jitsi-contrib` chart has two WebSocket options: `websockets.colibri.enabled` (JVB signaling) and `websockets.xmpp.enabled` (Prosody). Both must be `false` when you proxy the domain through Cloudflare. Cloudflare's proxy layer interferes with the WebSocket upgrade on those paths, causing silent connection failures that are hard to distinguish from ICE problems. With them disabled, JVB uses SCTP over DTLS for signaling, which flows cleanly through the media channel.
+
+```yaml
+websockets:
+  colibri:
+    enabled: false
+  xmpp:
+    enabled: false
+```
+
+**Authentik `forward_single` vs `forward_domain` — one provider per application.** The `forward_domain` provider (which covers `*.devandre.sbs`) can only be assigned to a single Authentik application at a time. If you try to reuse it for Jitsi after it's already assigned to another app, you'll get "Application with this provider already exists." The solution: create a dedicated `forward_single` provider for Jitsi (`external_host: https://meet.devandre.sbs`), create a new application pointing to it, then PATCH the Embedded Outpost to add the new provider to its `providers` list. One provider, one application — always.
 
 ---
 
