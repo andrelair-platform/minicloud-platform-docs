@@ -292,7 +292,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Phase 20 — Reliability (Chaos Mesh)',
       collapsed: true,
-      items: ['reliability/chaos-mesh'],
+      items: ['reliability/chaos-mesh', 'reliability/phase81-chaos-game-day'],
     },
 
     // ── Phase 21 ────────────────────────────────────────────────────
