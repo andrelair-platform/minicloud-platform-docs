@@ -382,3 +382,13 @@ The distinction matters because engineers who move from bare-metal to EKS someti
 The layers that require real setup time on bare-metal are the ones managed providers solve. The layers that remain your responsibility — container images and Helm charts — cost the same two hours of Renovate configuration on any platform.
 
 Knowing this makes the managed provider value proposition precise rather than vague. You pay $73/month for an EKS control plane to eliminate the OS/runtime/CIS layers. The container image and chart patching story is identical on both sides of that purchase.
+
+---
+
+## The Conclusion That Actually Matters
+
+Managed providers — EKS, GKE, AKS — eliminate **layers 1, 2, and 5**: OS patching, the Kubernetes runtime binary, and CIS posture maintenance. These are real savings. kured, system-upgrade-controller, and kube-bench exist on bare-metal precisely because there is no provider absorbing that work.
+
+They do not touch **layers 3 and 4**: container base image CVEs and application Helm chart CVEs. A critical vulnerability in `golang:1.25-alpine` is your problem whether you run on a ThinkPad or on a $500/month EKS cluster. `FROM ubuntu:22.04` in your Dockerfile inherits CVEs on any platform. Renovate addresses both, and it runs identically on bare-metal and on EKS.
+
+This is the part that gets missed in "just use a managed provider" advice. The layers that feel the most painful on bare-metal — the ones that involve rebooting nodes, swapping binaries, and re-running CIS benchmarks — are exactly the ones managed providers handle. The layer that is quietly the most dangerous — an application container built on a six-month-old base image with 40 unpatched CVEs — is equally your responsibility everywhere.
