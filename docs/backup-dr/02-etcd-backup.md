@@ -233,6 +233,80 @@ handles the manifests/state.
 
 ---
 
+## Restoration Test — 2026-08-01
+
+A non-destructive restoration test was run against both backup streams without touching the live cluster.
+
+### Procedure
+
+1. Downloaded the latest file from each MinIO bucket to `/tmp/restore-test/` on the controller
+2. Decompressed (`gunzip`)
+3. Ran SQLite integrity check via Python's built-in `sqlite3` module (no `sqlite3` binary on the controller)
+4. Counted live (non-deleted) resources by key prefix to confirm real cluster state was captured
+
+### Results
+
+| Check | kine.db (systemd 02:30 UTC) | k3s.db (CronJob 04:14 UTC) |
+|---|---|---|
+| File | `kine-20260801-003000.db.gz` | `k3s-state-20260801-041425.db.gz` |
+| Compressed size | 48 MiB | 48 MiB |
+| Decompressed size | 193 MB | 193 MB |
+| SQLite integrity | **ok** | **ok** |
+| Nodes | 10 | 10 |
+| Namespaces | 54 | 54 |
+| Deployments | 100 | 100 |
+| Secrets | 226 | 226 |
+| ConfigMaps | 187 | 187 |
+| Services | 142 | 142 |
+| ArgoCD Applications | 124 | 124 |
+| cert-manager Certificates | 35 | 35 |
+| CRDs | 161 | 161 |
+| PersistentVolumeClaims | 44 | 44 |
+| Max revision (kine id) | 22,755,628 | 22,755,628 |
+
+**Verdict: PASS** — both backup streams produce valid, structurally complete SQLite databases containing real cluster state.
+
+### What this confirms
+
+- Neither file is corrupt or truncated
+- Both backup mechanisms run independently and produce consistent output
+- All critical resource types are present (ArgoCD apps, CRDs, certs, PVCs, secrets)
+- The most recent lease key (`/registry/leases/kube-node-lease/fast-skunk`) confirms freshness — the backup was taken from a live, running cluster
+
+### What this does NOT confirm
+
+- That k3s can actually boot from the restored file — a full live test would require stopping the control plane or using a spare machine running k3s with `--data-dir /tmp/test`
+- That application data (Longhorn PVC contents) is also present — that is covered separately by Velero + Longhorn backups
+
+### How to re-run the test
+
+```bash
+# On controller — adjust filenames to latest
+mkdir -p /tmp/restore-test
+~/.local/bin/mc cp minilocal/db-backups/kine/kine-YYYYMMDD-HHMMSS.db.gz /tmp/restore-test/kine.db.gz
+gunzip /tmp/restore-test/kine.db.gz
+
+python3 -c "
+import sqlite3
+conn = sqlite3.connect('/tmp/restore-test/kine.db')
+print('Integrity:', conn.execute('PRAGMA integrity_check').fetchone()[0])
+for label, pattern in [
+    ('Nodes',       '/registry/minions/%'),
+    ('Namespaces',  '/registry/namespaces/%'),
+    ('Deployments', '/registry/deployments/%/%'),
+    ('ArgoCD Apps', '/registry/argoproj.io/applications/%'),
+    ('PVCs',        '/registry/persistentvolumeclaims/%'),
+]:
+    count = conn.execute(f\"SELECT COUNT(*) FROM kine WHERE name LIKE '{pattern}' AND deleted=0\").fetchone()[0]
+    print(f'{label}: {count}')
+conn.close()
+"
+
+rm -rf /tmp/restore-test
+```
+
+---
+
 ## What this does NOT cover
 
 - **PV data.** SQLite has only Kubernetes API state, not the contents of
