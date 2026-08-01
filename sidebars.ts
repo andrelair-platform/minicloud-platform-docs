@@ -329,6 +329,14 @@ const sidebars: SidebarsConfig = {
       items: ['networking/cilium'],
     },
 
+    // ── Phase 85 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 85 — CoreDNS HA (2 replicas) ✅',
+      collapsed: true,
+      items: ['networking/coredns-ha'],
+    },
+
     // ── Phase 23 ────────────────────────────────────────────────────
     {
       type: 'category',
