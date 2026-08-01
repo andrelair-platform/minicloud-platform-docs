@@ -297,11 +297,9 @@ spec:
 | Pod restarts | 0 | **0** | **0** |
 | `AllInjected` | — | **True** | — |
 
-The 29m reading (one pod stressed, the other not — experiment targeted all pods
-but the stressor ran in one pod that received the load-balanced request) confirms
-the cgroup throttle is working. The stressor tried to use 2 × 80% = 160% of one
-core, but the cgroup quota limited it to 200m = 20% of one core. HTTP latency
-stayed within SLO (p95 below 500ms).
+The 29m reading confirms the cgroup throttle is working. The stressor tried to
+use 2 × 80% = 160% of one core, but the cgroup quota limited it to 200m = 20%
+of one core. HTTP latency stayed within SLO (p95 below 500ms).
 
 ---
 
@@ -365,4 +363,3 @@ kubectl delete podchaos platform-demo-pod-failure -n chaos-mesh
 5. **StressChaos + cgroup limits = safe node isolation.** Two workers at 80%
    load produced ~29m CPU usage (capped at 200m limit) with zero node-level
    impact. The chaos confirmed the resource limits work as designed.
-```

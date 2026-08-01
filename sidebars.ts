@@ -200,6 +200,7 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: [
         'backup-dr/velero',
+        'backup-dr/longhorn-backup',
         'backup-dr/etcd-backup',
         'backup-dr/disk-management',
         'backup-dr/database-backup',
@@ -226,13 +227,22 @@ const sidebars: SidebarsConfig = {
       items: ['registry/harbor-proxy-cache'],
     },
 
-    // ── Deferred: Automation & Workflows ────────────────────────────
+    // ── Phase 83 — n8n ──────────────────────────────────────────────
     {
       type: 'category',
-      label: '🔜 Deferred — Automation & Workflows (n8n / Temporal / Airflow)',
+      label: 'Phase 83 — n8n Workflow Automation ✅',
       collapsed: true,
       items: [
         'automation/n8n',
+      ],
+    },
+
+    // ── Deferred: Automation & Workflows ────────────────────────────
+    {
+      type: 'category',
+      label: '🔜 Deferred — Automation (Temporal / Airflow)',
+      collapsed: true,
+      items: [
         'automation/temporal',
         'automation/airflow',
       ],
@@ -741,6 +751,22 @@ const sidebars: SidebarsConfig = {
       label: '💬 Phase 76 — Matrix Synapse + Element Web (Team Chat)',
       collapsed: true,
       items: ['developer-platform/matrix-synapse-element-web'],
+    },
+
+    // ── Phase 77 — Jitsi Meet ────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 77 — Jitsi Meet + Coturn TURN Server ✅',
+      collapsed: true,
+      items: ['developer-platform/jitsi-meet'],
+    },
+
+    // ── Phase 78 — Stalwart Mail ─────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 78 — Stalwart Mail Server (devandre.sbs) ✅',
+      collapsed: true,
+      items: ['developer-platform/stalwart-mail'],
     },
 
     // ── Production Stack Architecture ────────────────────────────────
