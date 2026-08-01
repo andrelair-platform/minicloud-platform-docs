@@ -453,6 +453,32 @@ known limitation, not a TODO.
 
 ---
 
+## Incident: PartiallyFailed backups — rate limiter fix (2026-08-01)
+
+Daily backups were completing `PartiallyFailed` with 74 identical errors:
+```
+failed to list node-agent pods: client rate limiter Wait returned an error: context deadline exceeded
+```
+
+**Root cause:** `defaultVolumesToFsBackup: true` caused Velero to call `list node-agent pods` for every pod in the backup scope — 3030 items in this cluster. The default rate limiter (5 QPS / 10 burst) could not drain the queue before pod context deadlines expired.
+
+**Fix in `helm-values/velero-values.yaml`:**
+```yaml
+configuration:
+  # Opt-in FS backup only — annotate pods with backup.velero.io/backup-volumes
+  # defaultVolumesToFsBackup: true caused 74 "context deadline exceeded" errors
+  # per backup: every pod triggered a node-agent list, saturating 5 QPS default.
+  defaultVolumesToFsBackup: false
+
+  # Raised from defaults (5 QPS / 10 burst) for 3000+ item cluster
+  clientQPS: 100
+  clientBurst: 200
+```
+
+Only 3 volumes were actually completing kopia backups before the fix (ollama ×2, litellm-cache — all local-path, re-downloadable). Switching to opt-in lost nothing. Persistent-volume data for critical workloads is now covered by [Longhorn offsite backup to MinIO](./longhorn-backup).
+
+---
+
 ## Real-world skills demonstrated
 
 | Skill | Industry context |
