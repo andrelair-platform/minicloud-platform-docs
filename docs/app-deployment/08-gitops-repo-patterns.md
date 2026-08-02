@@ -193,10 +193,25 @@ Source repos (one per service):
 
 Deployment repo (shared):
   minicloud-gitops/
-    services/platform-demo/overlays/{dev,staging,prod}/
-    services/minicloud-plane/overlays/{dev,staging,prod}/
-    helm-values/backstage-values.yaml
+  ├── apps/
+  │   ├── platform/    ← 43 infra apps (ArgoCD, Vault, Cilium, Harbor…)
+  │   └── workloads/   ← 28 service apps (platform-demo, Backstage…)
+  ├── services/
+  │   ├── platform-demo/
+  │   │   ├── base/
+  │   │   └── minicloud-1/{dev,staging,prod}/   ← cluster dimension
+  │   └── minicloud-plane/
+  │       ├── base/
+  │       └── minicloud-1/{dev,staging,prod}/
+  └── helm-values/
+      └── minicloud-1/   ← all 36 Helm values files
+          ├── argocd-values.yaml
+          └── …
 ```
+
+The `minicloud-1/` directory level is the **cluster identifier**. Adding a second cluster would produce `minicloud-2/{dev,staging,prod}/` alongside `minicloud-1/`, with no other structural changes needed. Today there is one cluster; the dimension is added now to make the structure explicit.
+
+The `apps/` directory is split into `platform/` (infrastructure tooling owned by the platform operator) and `workloads/` (application services). ArgoCD's root app uses `recurse: true` to scan both subdirectories.
 
 This is the correct choice for a single-operator platform. If minicloud grew to multiple independent teams each owning a service, the deployment repo would be split per team — each team's service would move into its own `deployment-<service>/` repository with the environment-first folder structure, and that team would own the CI pipeline that bumps their image tag there.
 

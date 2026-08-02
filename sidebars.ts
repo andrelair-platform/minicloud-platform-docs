@@ -161,6 +161,7 @@ const sidebars: SidebarsConfig = {
         'app-deployment/deploy-yaml',
         'app-deployment/cicd-pipeline',
         'app-deployment/gitops-repo-patterns',
+        'app-deployment/enterprise-gitops-controls',
       ],
     },
 
