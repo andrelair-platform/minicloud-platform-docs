@@ -160,6 +160,7 @@ const sidebars: SidebarsConfig = {
         'app-deployment/deploy-argocd',
         'app-deployment/deploy-yaml',
         'app-deployment/cicd-pipeline',
+        'app-deployment/gitops-repo-patterns',
       ],
     },
 
