@@ -777,6 +777,14 @@ const sidebars: SidebarsConfig = {
       items: ['developer-platform/stalwart-mail'],
     },
 
+    // ── Phase 86 ────────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Phase 86 — Per-App-Per-Env Namespace Isolation ✅',
+      collapsed: true,
+      items: ['app-deployment/per-env-isolation'],
+    },
+
     // ── Production Stack Architecture ────────────────────────────────
     {
       type: 'category',
