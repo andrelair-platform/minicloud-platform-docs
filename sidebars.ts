@@ -162,6 +162,7 @@ const sidebars: SidebarsConfig = {
         'app-deployment/cicd-pipeline',
         'app-deployment/gitops-repo-patterns',
         'app-deployment/enterprise-gitops-controls',
+        'app-deployment/per-env-isolation',
       ],
     },
 
@@ -777,14 +778,6 @@ const sidebars: SidebarsConfig = {
       label: 'Phase 78 — Stalwart Mail Server (devandre.sbs) ✅',
       collapsed: true,
       items: ['developer-platform/stalwart-mail'],
-    },
-
-    // ── Phase 86 ────────────────────────────────────────────────────
-    {
-      type: 'category',
-      label: 'Phase 86 — Per-App-Per-Env Namespace Isolation ✅',
-      collapsed: true,
-      items: ['app-deployment/per-env-isolation'],
     },
 
     // ── Production Stack Architecture ────────────────────────────────

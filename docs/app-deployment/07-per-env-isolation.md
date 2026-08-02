@@ -20,7 +20,7 @@ Nine pull requests (PRs #480–#487, #496, #504) shipped the controls in a singl
 <app>-prod       ← Manual sync; tag promoted via PR after staging approval
 ```
 
-Each namespace is an ArgoCD `Application` pointing to the matching Kustomize overlay in `minicloud-gitops/services/<app>/overlays/{dev,staging,prod}/`. The base layer holds shared manifests with no namespace or image tag; overlays pin both.
+Each namespace is an ArgoCD `Application` pointing to the matching Kustomize overlay in `minicloud-gitops/services/<app>/minicloud-1/{dev,staging,prod}/`. The base layer holds shared manifests with no namespace or image tag; overlays pin both.
 
 ---
 
@@ -103,9 +103,9 @@ Production namespaces have **no human RoleBinding** — ArgoCD service account a
 `gitops-demo` → `platform-demo-prod` to align with the per-app-per-env naming convention. Three files changed:
 
 ```
-services/platform-demo/overlays/prod/kustomization.yaml  namespace field
-apps/platform-demo.yaml                                  destination.namespace + ignoreDifferences.namespace
-manifests/argocd-project/00-project.yaml                 added platform-demo-prod destination
+services/platform-demo/minicloud-1/prod/kustomization.yaml  namespace field
+apps/workloads/platform-demo.yaml                           destination.namespace + ignoreDifferences.namespace
+manifests/argocd-project/00-project.yaml                    added platform-demo-prod destination
 ```
 
 Post-merge steps:
@@ -130,22 +130,22 @@ Push to main
 CI builds image → tags as <sha>
     │
     ▼
-kustomize edit set image in overlays/dev/   ← auto-commit by CI
+kustomize edit set image in minicloud-1/dev/   ← auto-commit by CI
     │
     ▼
-ArgoCD auto-syncs platform-demo-dev         ← live within ~30s
+ArgoCD auto-syncs platform-demo-dev           ← live within ~30s
     │
     ▼  (validate in dev)
-PR: bump newTag in overlays/staging/kustomization.yaml
+PR: bump newTag in minicloud-1/staging/kustomization.yaml
     │
     ▼
 Merge PR → manual ArgoCD sync click
     │
     ▼
-ArgoCD syncs platform-demo-staging          ← live after click
+ArgoCD syncs platform-demo-staging            ← live after click
     │
     ▼  (validate in staging, QA sign-off)
-PR: bump newTag in overlays/prod/kustomization.yaml
+PR: bump newTag in minicloud-1/prod/kustomization.yaml
     │
     ▼
 Merge PR → manual ArgoCD sync click
@@ -165,7 +165,7 @@ _template/
 ├── base/
 │   ├── networkpolicy-deny.yaml      ← default-deny + allow-same-ns + Cilium node policy
 │   └── networkpolicy-ingress.yaml   ← allow-ingress-nginx + allow-monitoring
-└── overlays/
+└── minicloud-1/
     ├── dev/
     │   ├── ingress.yaml             ← Authentik forward-auth, SERVICE_NAME-dev host
     │   ├── quota.yaml               ← dev ResourceQuota + LimitRange
@@ -180,7 +180,7 @@ _template/
         └── quota.yaml
 ```
 
-To scaffold a new service: copy `services/_template/`, replace every `SERVICE_NAME` occurrence, add the three namespaces to `manifests/argocd-project/00-project.yaml`, create ArgoCD Application files in `apps/`, and update the Vault Kubernetes auth role.
+To scaffold a new service: copy `services/_template/`, replace every `SERVICE_NAME` occurrence, add the three namespaces to `manifests/argocd-project/00-project.yaml`, create ArgoCD Application files in `apps/workloads/`, and update the Vault Kubernetes auth role.
 
 ---
 
