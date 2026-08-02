@@ -8,7 +8,7 @@ sidebar_position: 7
 
 Implemented 2026-08-02. Completed the **Option 2 multi-namespace pattern** across four services (`platform-demo`, `minicloud-plane`, `collab`, `insurance`): each service gets three dedicated namespaces (`<app>-dev`, `<app>-staging`, `<app>-prod`) with full isolation controls applied consistently at every tier.
 
-Eight pull requests (PRs #480–#487, #496) shipped the controls in a single batch. All PRs were additive except PR #485 (prod namespace rename) and required no cluster downtime.
+Nine pull requests (PRs #480–#487, #496, #504) shipped the controls in a single batch. All PRs were additive except PR #485 (prod namespace rename) and required no cluster downtime.
 
 ---
 
@@ -64,17 +64,26 @@ Non-secret config is now visible in git. Each `platform-demo` overlay ships a `C
 
 Vault agent injection for `API_KEY` is unchanged — secret and non-secret config coexist.
 
-### 4. Per-Env Ingress + Certificate (PRs #483, #496)
+### 4. Per-Env Ingress + Certificate (PRs #483, #496, #504)
 
-Each overlay now owns its own `Ingress` and cert-manager `Certificate`, giving each environment a stable, independently routable URL:
+Each overlay owns its own `Ingress` and cert-manager `Certificate`, giving each environment a stable, independently routable URL.
 
-| Env | Internal URL | Public URL |
-|-----|-------------|-----------|
+**platform-demo**
+
+| Env | Internal (nip.io) | Public (Cloudflare) |
+|-----|-------------------|---------------------|
 | dev | `platform-demo-dev.10.0.0.200.nip.io` | `dev.demo.devandre.sbs` |
 | staging | `platform-demo-staging.10.0.0.200.nip.io` | `staging.demo.devandre.sbs` |
 | prod | `platform-demo.10.0.0.200.nip.io` | `demo.devandre.sbs` |
 
-All three ingresses carry identical Authentik forward-auth annotations (proxy to outpost, error-page 401 → sign-in redirect). Certificates are issued by `minicloud-ca` ClusterIssuer; Cloudflare Tunnel provides the public TLS edge.
+**minicloud-plane** (staging and prod only — dev traffic is cluster-internal via Backstage and NATS)
+
+| Env | Internal (nip.io) | Public (Cloudflare) |
+|-----|-------------------|---------------------|
+| staging | `minicloud-plane-staging.10.0.0.200.nip.io` | `staging.plane-integration.devandre.sbs` |
+| prod | `minicloud-plane.10.0.0.200.nip.io` | `plane-integration.devandre.sbs` |
+
+All ingresses carry identical Authentik forward-auth annotations (proxy to outpost, error-page 401 → sign-in redirect). In-cluster callers (Backstage, NATS bridge) use the ClusterIP `minicloud-plane.<namespace>.svc:8080` directly and bypass the ingress. Certificates are issued by `minicloud-ca` ClusterIssuer for the nip.io SANs; Cloudflare Tunnel provides the public TLS edge for `devandre.sbs` hostnames.
 
 ### 5. RBAC RoleBindings via OIDC Groups (PR #484)
 
@@ -196,6 +205,12 @@ kubectl exec -n platform-demo-dev <pod> -- env | grep APP_ENV
 curl -sI https://dev.demo.devandre.sbs
 curl -sI https://staging.demo.devandre.sbs
 curl -sI https://demo.devandre.sbs
+
+# minicloud-plane per-env URLs
+/usr/bin/curl --cacert ~/minicloud-ca.crt -sI https://minicloud-plane-staging.10.0.0.200.nip.io/healthz
+/usr/bin/curl --cacert ~/minicloud-ca.crt -sI https://minicloud-plane.10.0.0.200.nip.io/healthz
+curl -sI https://staging.plane-integration.devandre.sbs/healthz
+curl -sI https://plane-integration.devandre.sbs/healthz
 
 # RBAC — confirm bindings exist
 kubectl get rolebinding -A | grep oidc
