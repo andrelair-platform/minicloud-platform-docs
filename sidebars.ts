@@ -677,6 +677,14 @@ const sidebars: SidebarsConfig = {
       items: ['observability/lifecycle-day2-operations'],
     },
 
+    // ── Security Evaluation ───────────────────────────────────────────
+    {
+      type: 'category',
+      label: '🔐 Security Evaluation — Runtime, Admission, Network ✅',
+      collapsed: true,
+      items: ['observability/security-evaluation'],
+    },
+
     // ── Admission Control Hardening ─────────────────────────────────
     {
       type: 'category',
