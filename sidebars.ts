@@ -661,6 +661,14 @@ const sidebars: SidebarsConfig = {
       items: ['observability/slo-dashboard'],
     },
 
+    // ── Control Plane & Node Health Monitoring ─────────────────────────
+    {
+      type: 'category',
+      label: '🖥️ Control Plane & Node Health — 3 Gaps Closed ✅',
+      collapsed: true,
+      items: ['observability/controlplane-node-monitoring-gaps'],
+    },
+
     // ── Admission Control Hardening ─────────────────────────────────
     {
       type: 'category',
