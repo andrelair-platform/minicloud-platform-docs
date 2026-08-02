@@ -300,6 +300,7 @@ const sidebars: SidebarsConfig = {
         'ai-ml/rag-eval-pipeline',
         'ai-ml/content-safety',
         'ai-ml/research-agent',
+        'ai-ml/deep-research-agent',
       ],
     },
 
