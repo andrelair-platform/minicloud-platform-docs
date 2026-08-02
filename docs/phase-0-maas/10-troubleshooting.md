@@ -240,3 +240,52 @@ Replace `q6m3px` with the correct system_id for the affected node:
 | set-hog | `nbc6cx` |
 | fast-skunk | `sby3w7` |
 | fast-heron | `q6m3px` |
+
+---
+
+## Issue 8 - MAAS Temporal Power Dispatch Fails
+
+**Symptom (MAAS 3.7, webhook power type):**
+```text
+Error: Unexpected exception: UnroutablePowerWorkflowException:
+Error determining BMC task queue for machine nbc6cx
+```
+
+**Cause:**
+
+MAAS 3.7 routes power commands through the Temporal workflow engine. The function `get_temporal_task_queue_for_bmc` must resolve which Temporal task queue to dispatch the `power-on` activity to. It does this in two steps:
+
+1. Extract the BMC IP from `power_query_uri` via `ip_extractor`, map it to a subnet → VLAN
+2. Fallback: look up `BmcRoutableRackControllerRelationship` entries in the DB
+
+If the webhook URIs use `127.0.0.1`, MAAS can extract the IP but cannot match loopback to any managed subnet → both paths fail → `UnroutablePowerWorkflowException` is raised before any workflow is started.
+
+**Fix:**
+
+Bind the power broker on all interfaces and use the management network IP in MAAS power parameters:
+
+```bash
+# 1. Update power broker to listen on 0.0.0.0 (edit /home/ktayl/bin/maas-power-broker.py)
+#    Change: HTTPServer(("127.0.0.1", 5241), Handler)
+#    To:     HTTPServer(("0.0.0.0", 5241), Handler)
+
+# 2. Restart the broker
+systemctl --user restart maas-power-broker.service
+
+# 3. Update power parameters for each machine to use 10.0.0.1 instead of 127.0.0.1
+maas ktayl machine update <system_id> power_type=webhook power_parameters='{
+  "power_on_uri":   "http://10.0.0.1:5241/power/on/<hostname>",
+  "power_off_uri":  "http://10.0.0.1:5241/power/off/<hostname>",
+  "power_query_uri":"http://10.0.0.1:5241/power/query/<hostname>",
+  "power_on_regex": "status.*\\:.*running",
+  "power_off_regex":"status.*\\:.*stopped",
+  "power_verify_ssl":"n",
+  "power_user":"", "power_pass":"", "power_token":""
+}'
+```
+
+After the update, MAAS maps `10.0.0.1` → subnet `10.0.0.0/24` → VLAN 5001, creates a BMC routing relationship, and dispatches power activities to `agent:power@vlan-5001`. All `maas ktayl machine power-on/query-power-state` commands work.
+
+**Why `10.0.0.1`:** That is the controller's IP on `enx606d3cdf7160` (the cluster management interface). MAAS manages `10.0.0.0/24` (VLAN 5001, DHCP enabled), so it can map this address to a VLAN.
+
+**Architecture note:** The Go `maas-agent` binary registers Temporal activity workers on two task queues: `<system_id>@agent:main` (DHCP, config) and `agent:power@vlan-<id>` (power activities). The Python `maas-temporal-worker` runs the `PowerOnWorkflow` on the shared `region` queue and dispatches the `power-on` activity to the agent's power queue. The webhook driver activity executes the HTTP call to the power broker.
