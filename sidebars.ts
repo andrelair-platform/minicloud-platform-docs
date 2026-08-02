@@ -23,6 +23,7 @@ const sidebars: SidebarsConfig = {
         'phase-0-maas/validation',
         'phase-0-maas/troubleshooting',
         'phase-0-maas/add-node',
+        'phase-0-maas/power-broker',
       ],
     },
 
