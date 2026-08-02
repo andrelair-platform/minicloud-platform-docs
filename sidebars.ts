@@ -685,6 +685,14 @@ const sidebars: SidebarsConfig = {
       items: ['observability/security-evaluation'],
     },
 
+    // ── DORA Metrics ──────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: '📊 DORA Metrics Dashboard ✅',
+      collapsed: true,
+      items: ['observability/dora-metrics'],
+    },
+
     // ── Admission Control Hardening ─────────────────────────────────
     {
       type: 'category',
