@@ -669,6 +669,14 @@ const sidebars: SidebarsConfig = {
       items: ['observability/controlplane-node-monitoring-gaps'],
     },
 
+    // ── Lifecycle & Day-2 Operations ──────────────────────────────────
+    {
+      type: 'category',
+      label: '🔄 Lifecycle & Day-2 Operations — Evaluated ✅',
+      collapsed: true,
+      items: ['observability/lifecycle-day2-operations'],
+    },
+
     // ── Admission Control Hardening ─────────────────────────────────
     {
       type: 'category',
