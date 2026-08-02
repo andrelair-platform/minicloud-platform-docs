@@ -47,6 +47,8 @@ svg { display: block; min-width: 1720px; }
 .card-list li { font-size: 0.65rem; color: #94a3b8; padding: 0.15rem 0; border-bottom: 1px solid rgba(30,41,59,0.5); }
 .card-list li:last-child { border: none; }
 .card-list li span { color: #f1f5f9; }
+.card-link { display: inline-block; margin-top: 0.55rem; font-size: 0.63rem; color: #22d3ee; text-decoration: none; border: 1px solid rgba(34,211,238,0.3); border-radius: 4px; padding: 0.2rem 0.5rem; transition: all 0.2s; }
+.card-link:hover { background: rgba(34,211,238,0.08); border-color: #22d3ee; }
 </style>
 </head>
 <body>
@@ -799,6 +801,19 @@ svg { display: block; min-width: 1720px; }
         <li><span>Boot order</span> — controller (30s) → cluster nodes (2min) → Tailscale on Mac</li>
         <li><span>Power failure recovery</span> — iptables-restore + FORWARD rules manually on controller</li>
       </ul>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#fbbf24">GITOPS DESIGN PATTERNS</div>
+      <ul class="card-list">
+        <li><span>Two-repo split</span> — source code repo + deployment config repo, always separate</li>
+        <li><span>Source repo</span> — application code, Dockerfile, CI pipeline (builds image, bumps tag)</li>
+        <li><span>Deployment repo</span> — Kustomize overlays / Helm values only, zero application code</li>
+        <li><span>Monorepo pattern</span> — one deployment repo for all services; best for single team or solo operator</li>
+        <li><span>Per-project pattern</span> — one deployment repo per service/team; required when access control or per-app audit trails are needed</li>
+        <li><span>Decision rule</span> — start monorepo, split at ~5–10 teams when access control becomes concrete</li>
+        <li><span>minicloud</span> — monorepo (minicloud-gitops) for all services; correct at current scale</li>
+      </ul>
+      <a class="card-link" href="../docs/app-deployment/gitops-repo-patterns">→ Full doc: GitOps Repository Patterns</a>
     </div>
   </div>
 </div>
