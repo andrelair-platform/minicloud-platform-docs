@@ -693,6 +693,14 @@ const sidebars: SidebarsConfig = {
       items: ['observability/dora-metrics'],
     },
 
+    // ── Security & Resource Boundaries ────────────────────────────────
+    {
+      type: 'category',
+      label: '🛡 Security & Resource Boundaries — RBAC, Quotas ✅',
+      collapsed: true,
+      items: ['observability/security-resource-boundaries'],
+    },
+
     // ── Admission Control Hardening ─────────────────────────────────
     {
       type: 'category',
