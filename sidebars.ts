@@ -831,6 +831,14 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['developer-platform/production-stack-architecture'],
     },
+
+    // ── IS Governance ─────────────────────────────────────────────────
+    {
+      type: 'category',
+      label: '📋 IS Governance — Scrumban + PRINCE2 Stage-Gates ✅',
+      collapsed: true,
+      items: ['developer-platform/is-governance-scrumban-prince2'],
+    },
   ],
 };
 
