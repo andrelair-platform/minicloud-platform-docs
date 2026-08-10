@@ -143,11 +143,36 @@ All IS delivery work lives in GitHub. GitHub Projects is not a separate tool —
 
 #### Track Assignment Rules
 
-| Track | Assigned to | Who assigns it |
-|---|---|---|
-| **Regulatory** | Issues with a hard legal or ACPR deadline | Pre-assigned at issue creation |
-| **Kanban** | Platform operations, security patches, monitoring, incident responses | Pre-assigned for ops issues; any engineer can flag an issue as Kanban when an unplanned need arises |
-| **Sprint** | All planned IS features and improvements | Default — assigned at sprint planning |
+| Track | Color | Assigned to | Who assigns it |
+|---|---|---|---|
+| **Sprint** | 🔵 Blue | All planned IS features and improvements | Default — assigned at sprint planning |
+| **Kanban** | 🟢 Green | Platform operations, security patches, monitoring, incident responses | Pre-assigned for ops issues; any engineer can flag an issue as Kanban when an unplanned need arises |
+| **Regulatory** | 🔴 Red | Issues with a hard legal or ACPR deadline | Pre-assigned at issue creation |
+
+:::info Current state
+The Track field is live on the project board (field ID `PVTSSF_lADOEN4i9s4BbQIFzhaH6GY`). The 262 existing backlog issues are all planned IS features and belong to the **Sprint** track. No issues are tagged Kanban yet — the Kanban lane only becomes active when the first reactive issue appears (CVE alert, ACPR circular, prod incident follow-up). Tag it Track = Kanban at creation time.
+:::
+
+#### How to use Track in practice
+
+**Creating a new planned feature** (normal flow):
+1. Create issue in `platform-backlog`
+2. Assign milestone (Q3 2026 / Q4 2026 / etc.)
+3. GitHub Actions auto-adds it to the project board
+4. At next sprint planning: set Track = Sprint, assign to a Sprint iteration
+
+**Creating an urgent/unplanned issue** (Kanban flow):
+1. Create issue — label `priority: P1` or `priority: P2`
+2. Set Track = Kanban immediately (do not wait for sprint planning)
+3. Set Status = In Progress as soon as someone picks it up
+4. No sprint assignment needed — flows independently of the sprint cadence
+5. WIP limit: maximum 3 Kanban issues In Progress across the team at any time
+
+**Creating a regulatory issue** (compliance flow):
+1. Create issue — include the deadline date in the title (e.g. `[2026-09-01] Factur-X PDP mandatory`)
+2. Set Track = Regulatory, Priority = P1 or P2
+3. Assign milestone matching the deadline quarter
+4. This issue is treated as Kanban-priority (does not wait for sprint) but is also tracked in the PRINCE2 stage gate evidence
 
 ---
 
