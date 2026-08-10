@@ -432,7 +432,15 @@ const sidebars: SidebarsConfig = {
             'developer-platform/amazon-ses',
           ],
         },
-        'developer-platform/erpnext-hr',
+        {
+          type: 'category',
+          label: 'ERP & Finance',
+          collapsed: true,
+          items: [
+            'developer-platform/erpnext-hr',
+            'developer-platform/erpnext-french-insurance-config',
+          ],
+        },
       ],
     },
 
