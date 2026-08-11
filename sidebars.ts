@@ -439,6 +439,7 @@ const sidebars: SidebarsConfig = {
           items: [
             'developer-platform/erpnext-hr',
             'developer-platform/erpnext-french-insurance-config',
+            'developer-platform/erpnext-facturx-custom-image',
           ],
         },
       ],
