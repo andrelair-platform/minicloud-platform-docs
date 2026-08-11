@@ -41,7 +41,7 @@ It replaces all the old individual declarations (DUCS, DADS, CIBTP, etc.) with a
 
 ```mermaid
 gantt
-    title Payroll & DSN — Monthly timeline (salary paid 17th)
+    title Payroll & DSN — Monthly timeline (current month salary paid on the 17th)
     dateFormat DD
     axisFormat %d
 
@@ -52,7 +52,8 @@ gantt
 
     section Salary payment
     Submit salary slips                        :milestone, 16, 0d
-    💶 Salary paid to employees               :milestone, 17, 0d
+    🏦 Initiate bank transfer                 :milestone, 16, 0d
+    💶 Employees receive salary               :milestone, 17, 0d
 
     section DSN declaration
     Submit DSN to social security              :18, 5d
@@ -60,7 +61,9 @@ gantt
 ```
 
 :::note Reading the calendar
-The Gantt above shows one month. "Day 05" in the DSN section refers to the **5th of the following month** — the legal deadline. For companies with 50 employees or fewer, the deadline is the **15th of the following month**.
+- The salary paid on the **17th is for the current month** — for example, the January salary is paid on 17 January (not in February).
+- "Day 05" in the DSN section refers to the **5th of the following month** — the legal deadline. For companies with 50 employees or fewer, the deadline is the **15th of the following month**.
+- The bank transfer is **initiated on the 16th** so that the funds clear in employee accounts on the 17th.
 :::
 
 ---
@@ -153,9 +156,13 @@ A slip must be **Submitted** before it is included in the DSN. Slips in Draft st
 
 ---
 
-### Step 5 — 💶 Salary payment (17th)
+### Step 5 — 💶 Salary payment (16th → 17th)
 
-The Finance team initiates the bank transfer for the total net payroll. Employees receive their salary on the 17th.
+On the **16th**, Finance initiates the SEPA bank transfer for the total net payroll. The transfer is sent to the bank the day before so that funds clear and employees see the salary in their account on the **17th**.
+
+:::info This is the current month's salary
+The salary paid on the 17th of January is the **January salary** — not December's. The slip covers the full month (1st to 31st) but is processed and paid mid-month because it is a fixed monthly salary, not an hourly calculation.
+:::
 
 ---
 
@@ -236,8 +243,8 @@ To update: **HR** → **Employee** → search by name → edit and save.
 | 1st–10th | Collect absences, bonuses, variable data | HR |
 | 11th–13th | Create Payroll Entry, generate salary slips | HR |
 | 14th–15th | Review amounts, Finance approves | HR + Finance |
-| **16th** | Submit all salary slips in ERPNext | HR |
-| **17th** | 💶 Salary transferred to employees | Finance |
+| **16th** | Submit all salary slips — initiate bank transfer | HR + Finance |
+| **17th** | 💶 Employees receive **current month** salary | — |
 | 18th–5th (next month) | Submit DSN declaration | HR |
 | **5th (next month)** | ⏰ Legal DSN deadline (> 50 employees) | — |
 | **15th (next month)** | ⏰ Legal DSN deadline (≤ 50 employees) | — |
@@ -268,4 +275,4 @@ The declaration system forwards it automatically to URSSAF, pension funds (retra
 Yes. **Payroll** → **Payroll Entry** → open any past month → scroll to **Comments** to see the submission confirmation and reference number.
 
 **What if the 17th falls on a weekend or bank holiday?**
-Pay on the last working day before the 17th. The Payroll Entry dates and DSN period remain unchanged (1st–last day of the month).
+Initiate the bank transfer on the **Friday before**, so employees receive their salary on **Monday**. Example: if the 17th is a Saturday, Finance sends the transfer on Friday the 16th — employees see the money on Monday the 19th. The Payroll Entry dates and DSN period remain unchanged (1st to last day of the month).
