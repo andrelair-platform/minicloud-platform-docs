@@ -22,7 +22,10 @@ Sprint 3 (2026-08-10). ERPNext v16.28.0 is already deployed (Phase 79). This spr
 | Tax templates (TVA + TSCA) | ✅ ERP-1 |
 | LOB product hierarchy | ✅ ERP-1 |
 | Factur-X Minimum PoC | ✅ ERP-1 |
+| Custom ERPNext image + `erpnext_facturx` Frappe app | ✅ [ERP-3](./erpnext-facturx-custom-image) |
+| CII XML on_submit hook — 13/13 assertions pass | ✅ [ERP-3](./erpnext-facturx-custom-image) |
 | Factur-X PDF/A-3 embedding | ⬜ Phase 90 |
+| n8n invoice workflow (SIRET/ORIAS verify) | ⬜ Phase 90 |
 | Insurance custom doctypes (Police, Sinistre) | ⬜ Phase 88 |
 
 ---

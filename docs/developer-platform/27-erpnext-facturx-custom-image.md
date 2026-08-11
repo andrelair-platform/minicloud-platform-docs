@@ -229,7 +229,14 @@ To add a new Frappe integration (e.g. n8n webhook on invoice submit):
 3. Push to `main` — CI builds and bumps the image tag in `erpnext-values.yaml` automatically
 4. ArgoCD syncs → ERPNext pods restart with the new app version
 
-No manual `bench install-app` or pod exec needed — the app is baked into the image.
+:::caution One-time `bench install-app` required per site
+`pip install -e` in the Dockerfile registers the app at the Python level. Frappe also needs the app registered in the **site database** (`site_config.json`). On the first deploy, run once:
+```bash
+kubectl exec -n erp <gunicorn-pod> -- bash -c \
+  'cd /home/frappe/frappe-bench && bench --site erp.devandre.sbs install-app erpnext_facturx'
+```
+This writes `erpnext_facturx` into `site_config.json` on the Longhorn PVC — it persists across pod restarts. Required again only after a full site wipe (disaster recovery).
+:::
 
 ---
 
@@ -243,22 +250,35 @@ No manual `bench install-app` or pod exec needed — the app is baked into the i
 | Trivy HTTP/2 `INTERNAL_ERROR` on git binary in 838 MB image | Trivy secret scan reads every byte of every file; git binary triggers stream error | `scanners: 'vuln'` disables secret scanning |
 | nginx rolling update deadlock | Chart injects `topologySpreadConstraint maxSkew:1` preventing 2 nginx pods on the same node | `nginx.topologySpreadConstraints: []` in erpnext-values.yaml |
 | Frappe app files are ephemeral | Files copied to a running pod are lost on pod restart | Bake into Docker image with `COPY + pip install -e`, not copied at runtime |
+| Hook does not fire even though app is pip-installed | `pip install -e` makes the app importable but Frappe only fires hooks from apps registered in `site_config.json` (`installed_apps`) | Run `bench --site <site> install-app erpnext_facturx` once after first deploy |
 | Redis stale cache after COA replacement | `get_party_account` returns deleted account from cache | `frappe.cache.flushall()` after migration (ERP-1 gotcha) |
 
 ---
 
 ## Current State
 
+**Validated 2026-08-11:** ACC-SINV-2026-00001-1 submitted → `generate_and_attach` fired → XML attached → **13/13 assertions pass.**
+
+| Field | Value |
+|---|---|
+| Image | `harbor.10.0.0.200.nip.io/library/erpnext-ktayl:v16.28.0-facturx-9e0425d` |
+| Hook | `Sales Invoice.on_submit → erpnext_facturx.facturx.generate_and_attach` |
+| Output | `ACC-SINV-2026-00001-1-facturx.xml` (2143 bytes, private attachment) |
+| Profile | `urn:factur-x.eu:1p0:minimum` |
+| SIRET | `12345678900014` (schemeID=0002) |
+| VAT | `FR12345678900` (schemeID=VA) |
+| Amounts | TaxBasis=1500€ + TSCA 13%=195€ → Grand=1695€ |
+| PDF/A-3 | XML fallback (Chromium PDF not available in gunicorn pod) |
+
 ```bash
 # Verify running image
 ssh controller "kubectl get pods -n erp -l app.kubernetes.io/name=erpnext \
   -o jsonpath='{.items[0].spec.containers[0].image}'"
-# → harbor.10.0.0.200.nip.io/library/erpnext-ktayl:v16.28.0-facturx-9e0425d
 
-# Verify hook is registered
-ssh controller "kubectl exec -n erp <gunicorn-pod> -- \
-  /home/frappe/frappe-bench/env/bin/python -c \
-  'import erpnext_facturx.hooks as h; print(h.doc_events)'"
+# Verify app installed in site
+ssh controller "kubectl exec -n erp \$(kubectl get pod -n erp -l app.kubernetes.io/name=erpnext -o name | head -1 | cut -d/ -f2) -- \
+  bash -c 'cd /home/frappe/frappe-bench/sites && /home/frappe/frappe-bench/env/bin/python -c \
+  \"import frappe; frappe.init(site=\\\"erp.devandre.sbs\\\"); frappe.connect(); print(frappe.get_installed_apps())\"'"
 ```
 
 ---
