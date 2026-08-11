@@ -245,8 +245,6 @@ const sidebars: SidebarsConfig = {
         'developer-platform/backstage-software-templates',
         'developer-platform/techdocs',
         'developer-platform/multi-env-namespaces',
-        'developer-platform/plane-ce',
-        'developer-platform/minicloud-plane',
       ],
     },
 
@@ -430,6 +428,15 @@ const sidebars: SidebarsConfig = {
           items: [
             'developer-platform/stalwart-mail',
             'developer-platform/amazon-ses',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Project Management',
+          collapsed: true,
+          items: [
+            'developer-platform/plane-ce',
+            'developer-platform/minicloud-plane',
           ],
         },
         {
