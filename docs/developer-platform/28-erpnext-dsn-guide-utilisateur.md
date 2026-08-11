@@ -2,13 +2,13 @@
 id: erpnext-dsn-guide-utilisateur
 title: DSN Monthly Declaration — User Guide
 sidebar_label: DSN User Guide
-description: Step-by-step guide for the HR and Finance team to generate and submit the monthly DSN payroll declaration from ERPNext.
+description: Step-by-step guide for the HR and Finance team to run payroll and submit the monthly DSN declaration from ERPNext. Salaries paid on the 17th.
 ---
 
 # DSN Monthly Declaration — User Guide
 
 :::info Audience
-This guide is for the **HR and payroll team**. No technical knowledge required. The IT team has already set everything up — your job is simply to follow the steps below once a month.
+This guide is for the **HR and payroll team**. No technical knowledge required. The IT team has already set everything up — your job is to follow the steps below once a month.
 :::
 
 ---
@@ -17,7 +17,7 @@ This guide is for the **HR and payroll team**. No technical knowledge required. 
 
 **DSN (Déclaration Sociale Nominative)** is the mandatory monthly declaration that every French employer must send to social security organisations (URSSAF, retraite complémentaire, prévoyance, etc.).
 
-It replaces all the old individual declarations (DUCS, DADS, CIBTP, etc.) with a single file generated automatically from your payroll software.
+It replaces all the old individual declarations (DUCS, DADS, CIBTP, etc.) with a single file generated automatically from your payroll data.
 
 | Old way | New way with DSN |
 |---|---|
@@ -25,129 +25,227 @@ It replaces all the old individual declarations (DUCS, DADS, CIBTP, etc.) with a
 | Manual data entry, risk of errors | Generated directly from salary slips |
 | Sent by post or separate portals | Sent electronically in seconds |
 
-The legal deadline for most companies is the **5th of the month following the payroll period** (or the 15th for companies with fewer than 50 employees).
-
 ---
 
 ## Who does what
 
 | Role | Responsibility |
 |---|---|
-| **HR / Payroll manager** | Creates and submits salary slips in ERPNext |
-| **Finance / Accounting** | Verifies gross amounts before submission |
+| **HR / Payroll manager** | Runs payroll, verifies slips, submits DSN |
+| **Finance / Accounting** | Validates gross amounts, approves bank transfer |
 | **IT team** | Maintains the system — no monthly action required |
 
 ---
 
-## The monthly process
+## Monthly calendar — salaries paid on the 17th
 
 ```mermaid
-flowchart LR
-    A([Salary slips\ncreated in ERPNext]) --> B[Submit each slip\nin ERPNext]
-    B --> C{All slips\nsubmitted?}
-    C -- No --> B
-    C -- Yes --> D[Click\n'Submit DSN']
-    D --> E[ERPNext generates\nDSN file automatically]
-    E --> F[File sent to\ndeclaration system]
-    F --> G{Accepted?}
-    G -- Yes --> H([✅ Done —\nconfirmation saved])
-    G -- No --> I([⚠️ Contact IT\nwith error message])
+gantt
+    title Payroll & DSN — Monthly timeline (salary paid 17th)
+    dateFormat DD
+    axisFormat %d
+
+    section Payroll preparation
+    Collect variable data (absences, bonuses)  :active, 01, 10d
+    Run payroll entry in ERPNext               :11, 3d
+    Finance review & approval                  :14, 2d
+
+    section Salary payment
+    Submit salary slips                        :milestone, 16, 0d
+    💶 Salary paid to employees               :milestone, 17, 0d
+
+    section DSN declaration
+    Submit DSN to social security              :18, 5d
+    ⏰ Legal deadline (>50 employees)         :milestone, 05, 0d
 ```
+
+:::note Reading the calendar
+The Gantt above shows one month. "Day 05" in the DSN section refers to the **5th of the following month** — the legal deadline. For companies with 50 employees or fewer, the deadline is the **15th of the following month**.
+:::
 
 ---
 
-## Step-by-step: what to do each month
+## How is a salary slip generated?
 
-### Step 1 — Create salary slips (by the last working day of the month)
+Salary slips are **not created one by one**. ERPNext generates them all at once from a **Payroll Entry** — a single form that covers all employees for a given month.
+
+```mermaid
+flowchart TD
+    A[HR opens a new\nPayroll Entry] --> B[Sets the period:\n1st → last day of the month]
+    B --> C[Clicks 'Get Employees']
+    C --> D[ERPNext lists all active\nemployees automatically]
+    D --> E[Clicks 'Create Salary Slips']
+    E --> F[ERPNext calculates each slip:\nearnings · deductions · net pay]
+    F --> G[HR reviews amounts]
+    G --> H{Amounts correct?}
+    H -- No --> I[Edit individual slip\nthen recalculate]
+    I --> G
+    H -- Yes --> J[Clicks 'Submit Salary Slips']
+    J --> K([✅ All slips submitted\nReady for DSN & bank transfer])
+```
+
+Each slip is calculated automatically based on:
+- The employee's **salary structure** (base salary, standard deductions) set up in their HR file
+- Any **variable elements** entered that month (bonus, absence deduction, overtime)
+
+The HR manager only needs to check the final numbers — all the maths is done by ERPNext.
+
+---
+
+## The full monthly process — step by step
+
+### Step 1 — Prepare variable payroll data (1st–10th)
+
+Before running payroll, collect for each employee:
+- Absences (days off without pay, sick leave not covered, etc.)
+- Bonuses or one-off payments
+- Any changes to hours or contract
+
+Enter these in ERPNext under **HR** → **Leave Application** (absences) or directly on the Payroll Entry as additional earnings/deductions.
+
+---
+
+### Step 2 — Run the Payroll Entry (11th–13th)
 
 1. Log in to ERPNext at **[erp.devandre.sbs](https://erp.devandre.sbs)**
-2. Go to **Payroll** → **Salary Slip**
-3. Create a salary slip for each employee for the month
-4. Verify the amounts (gross pay, deductions)
-5. Click **Submit** on each slip
+2. Go to **Payroll** → **Payroll Entry** → **New**
+3. Fill in:
+   - **Company**: ktayl solution
+   - **Start Date**: 1st of the month (e.g. 01/01/2026)
+   - **End Date**: last day of the month (e.g. 31/01/2026)
+   - **Payroll Frequency**: Monthly
+   - **Payment Account**: the company bank account
+4. Click **Get Employees** — ERPNext automatically lists all active employees
+5. Click **Create Salary Slips** — one slip is generated per employee
 
-:::warning Important
-A salary slip must be in **Submitted** status (shown in blue) before it is included in the DSN. Draft slips are ignored.
+:::info What ERPNext calculates automatically
+For each employee, ERPNext applies their salary structure:
+- **Gross pay** = base salary + bonuses
+- **Deductions** = retraite complémentaire, CSG/CRDS, mutuelle, etc.
+- **Net pay** = what the employee receives on the 17th
 :::
 
-### Step 2 — Submit the monthly DSN (by the 5th of the following month)
+---
 
-Once all salary slips for the month are submitted:
+### Step 3 — Review and approve (14th–15th)
+
+Open each salary slip from the Payroll Entry to verify:
+- Gross pay is correct
+- Deductions are as expected
+- Net pay matches what will be transferred to the employee's bank account
+
+If a figure is wrong: open the individual slip → amend → save → recalculate.
+
+Once all amounts are confirmed, Finance validates the total payroll cost.
+
+---
+
+### Step 4 — Submit salary slips (16th — day before payment)
+
+Back on the Payroll Entry:
+
+1. Click **Submit Salary Slips** — all slips move from Draft to Submitted
+2. Click **Create Bank Entry** — ERPNext generates the accounting entry for the salary transfer
+
+:::warning
+A slip must be **Submitted** before it is included in the DSN. Slips in Draft status are invisible to the declaration system.
+:::
+
+---
+
+### Step 5 — 💶 Salary payment (17th)
+
+The Finance team initiates the bank transfer for the total net payroll. Employees receive their salary on the 17th.
+
+---
+
+### Step 6 — Submit the DSN (18th – 5th of following month)
+
+Once salaries are paid, submit the declaration:
 
 1. Go to **Payroll** → **Payroll Entry** — open the entry for the month
 2. In the top-right menu, click **Submit DSN**
-3. A confirmation pop-up will show:
+3. A confirmation pop-up shows:
    - Number of employees included
-   - Any warnings (e.g. missing information on an employee file)
+   - Any warnings (missing employee data)
 4. Click **Confirm**
 
 ERPNext will:
 - Collect all submitted salary slips for the month
 - Generate the DSN file automatically
 - Send it to the declaration system
-- Save the confirmation receipt
+- Save the confirmation receipt on the Payroll Entry
 
-### Step 3 — Check the result
+---
 
-After submission, open the Payroll Entry for the month. At the bottom of the page, under **Comments**, you will see a message like:
+### Step 7 — Check the result
+
+Open the Payroll Entry. At the bottom, under **Comments**, you will see:
 
 > **DSN 01/2026 — ✅ Acceptée**
 > Soumis le: 2026-02-03T09:14:32Z
 > Identifiant envoi: A3F7C291
 > Individus: 1 | Déclarations: 1
 
-This means the declaration was accepted. **Your work for the month is done.**
+**Your work for the month is done.**
 
-If you see ❌ Rejetée, see the section below.
+If you see ❌ Rejetée, see the next section.
 
 ---
 
 ## If the declaration is rejected
 
-A rejection means the file had a structural problem. This is rare and is always an IT issue, not a payroll data issue.
+A rejection means the file had a structural problem. This is rare — see the table below to know who acts.
 
 **What to do:**
-1. Copy the full content of the red comment (the error message)
+1. Take a screenshot of the red comment (the error message)
 2. Send it to the IT team
-3. The IT team will correct the issue and resubmit on your behalf
+3. The IT team corrects the issue and resubmits on your behalf
 
-**Common reasons for rejection and who fixes it:**
+**Who fixes what:**
 
-| Message | Meaning | Who fixes it |
+| Error message | Meaning | Who fixes it |
 |---|---|---|
-| Bloc obligatoire absent: S10.G00.00 | File header missing | IT team |
-| Version norme invalide | Software version issue | IT team |
-| NIR manquant sur la fiche employé | Employee social security number missing | **HR team** — add NIR to the employee record |
-| Date de naissance manquante | Employee date of birth missing | **HR team** — add to employee record |
+| Bloc obligatoire absent | File structure issue | IT team |
+| Version norme invalide | Software configuration issue | IT team |
+| NIR manquant | Social security number missing on employee record | **HR team** |
+| Date de naissance manquante | Date of birth missing on employee record | **HR team** |
 
 ---
 
 ## Employee file — required fields for DSN
 
-Each employee must have the following fields filled in ERPNext **before** their first salary slip is submitted:
+Each employee must have the following filled in ERPNext **before their first payroll run**:
 
-| Field in ERPNext | What it is | Where to find it |
+| Field | What it is | Where to find it |
 |---|---|---|
-| NIR | Social security number (15 digits) | Employee's *carte Vitale* or pay slip from previous employer |
-| Date of birth | Date de naissance | Employee ID or contract |
-| Gender | Sexe | Employee ID |
+| NIR | Social security number (15 digits) | Employee's *carte Vitale* or previous payslip |
+| Date of birth | Date de naissance | ID document or employment contract |
+| Gender | Sexe | ID document |
 | Date of joining | Date d'entrée dans l'entreprise | Employment contract |
 | Employment type | CDI, CDD, Alternance, etc. | Employment contract |
 
-To update an employee record: **HR** → **Employee** → search the employee's name → edit and save.
+To update: **HR** → **Employee** → search by name → edit and save.
 
 ---
 
-## Calendar reminder
+## Full monthly timeline at a glance
 
-| Action | Deadline |
-|---|---|
-| All salary slips submitted | Last working day of the month |
-| DSN submitted | **5th of the following month** (companies > 50 employees) |
-| DSN submitted | **15th of the following month** (companies ≤ 50 employees) |
+| Date | Action | Who |
+|---|---|---|
+| 1st–10th | Collect absences, bonuses, variable data | HR |
+| 11th–13th | Create Payroll Entry, generate salary slips | HR |
+| 14th–15th | Review amounts, Finance approves | HR + Finance |
+| **16th** | Submit all salary slips in ERPNext | HR |
+| **17th** | 💶 Salary transferred to employees | Finance |
+| 18th–5th (next month) | Submit DSN declaration | HR |
+| **5th (next month)** | ⏰ Legal DSN deadline (> 50 employees) | — |
+| **15th (next month)** | ⏰ Legal DSN deadline (≤ 50 employees) | — |
 
-:::tip Set a recurring task
-Add a recurring task in Plane on the 1st of each month: *"Submit DSN for [previous month]"* — assigned to the payroll manager.
+:::tip Set recurring tasks in Plane
+- Task on the **11th**: *"Run payroll for [month]"* → HR manager
+- Task on the **16th**: *"Submit salary slips — payment tomorrow"* → HR manager
+- Task on the **18th**: *"Submit DSN for [month]"* → HR manager
 :::
 
 ---
@@ -155,16 +253,19 @@ Add a recurring task in Plane on the 1st of each month: *"Submit DSN for [previo
 ## Frequently asked questions
 
 **Can I resubmit a DSN after a correction?**
-Yes. If a salary slip is amended after submission, the IT team can generate a corrective DSN (DSN de substitution). Contact IT with the employee name and the correction details.
+Yes. If a salary slip is amended after submission, contact IT with the employee name and the correction. The IT team generates a corrective DSN (DSN de substitution).
 
 **What if an employee is missing from the DSN?**
-Their salary slip was not submitted before the DSN was sent. Check the slip status in ERPNext — if it shows "Draft", submit it and then ask IT to resubmit the DSN.
+Their salary slip was not submitted. Check the slip in ERPNext — if it shows "Draft", submit it and then ask IT to resubmit the DSN.
 
-**Is the DSN the same as the payslip sent to the employee?**
-No. The payslip (bulletin de salaire) is the document given to the employee. The DSN is the declaration sent to social security on behalf of the employer. They contain the same salary data but are completely separate documents.
+**Is the DSN the same as the payslip the employee receives?**
+No. The payslip (bulletin de salaire) is what you give the employee. The DSN is the declaration sent to social security on behalf of the company. They use the same salary data but are completely separate documents.
 
 **Who receives the DSN?**
-The declaration system forwards it automatically to URSSAF, the pension funds (retraite complémentaire), and the provident insurance (prévoyance) — depending on which organisations your company is registered with.
+The declaration system forwards it automatically to URSSAF, pension funds (retraite complémentaire), and provident insurance (prévoyance).
 
 **Can I check past declarations?**
-Yes. Go to **Payroll** → **Payroll Entry** → open any past month → scroll to **Comments** at the bottom to see the submission confirmation and reference number.
+Yes. **Payroll** → **Payroll Entry** → open any past month → scroll to **Comments** to see the submission confirmation and reference number.
+
+**What if the 17th falls on a weekend or bank holiday?**
+Pay on the last working day before the 17th. The Payroll Entry dates and DSN period remain unchanged (1st–last day of the month).
