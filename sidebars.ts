@@ -450,6 +450,7 @@ const sidebars: SidebarsConfig = {
             'developer-platform/erpnext-dsn-guide-utilisateur',
             'developer-platform/erpnext-crm-insurance-templates',
             'developer-platform/erpnext-billing-dunning',
+            'developer-platform/erpnext-insurance-lob-doctypes',
           ],
         },
       ],
