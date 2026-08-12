@@ -496,6 +496,16 @@ const sidebars: SidebarsConfig = {
       ],
     },
 
+    // ── Engineering Standards ─────────────────────────────────────────
+    {
+      type: 'category',
+      label: '🧪 Engineering Standards',
+      collapsed: false,
+      items: [
+        'engineering-standards/testing-strategy',
+      ],
+    },
+
   ],
 };
 
