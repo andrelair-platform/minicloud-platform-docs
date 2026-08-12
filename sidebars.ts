@@ -447,6 +447,7 @@ const sidebars: SidebarsConfig = {
             'developer-platform/erpnext-hr',
             'developer-platform/erpnext-french-insurance-config',
             'developer-platform/erpnext-facturx-custom-image',
+            'developer-platform/erpnext-dsn-architecture',
             'developer-platform/erpnext-dsn-guide-utilisateur',
             'developer-platform/erpnext-crm-insurance-templates',
             'developer-platform/erpnext-billing-dunning',
