@@ -18,11 +18,11 @@ One standard, applied consistently across all repositories. The depth scales wit
 
 | Layer | What it checks | Speed | When it runs |
 |---|---|---|---|
-| **L0 — Static** | Lint, format, types, YAML schema | < 1 min | Every push, every branch |
-| **L1 — Unit** | Pure logic, no external deps, mocks everything | < 5 min | Every push |
-| **L2 — Integration** | Real DB, real queue, mocked HTTP | < 15 min | PR to `staging` |
-| **L3 — Contract** | API shape matches what consumers expect | < 5 min | PR to `staging` |
-| **L4 — E2E / Smoke** | Full happy path on real infra | < 10 min | PR to `main` |
+| **L0 — Static** | Lint, format, types, YAML schema | &lt; 1 min | Every push, every branch |
+| **L1 — Unit** | Pure logic, no external deps, mocks everything | &lt; 5 min | Every push |
+| **L2 — Integration** | Real DB, real queue, mocked HTTP | &lt; 15 min | PR to `staging` |
+| **L3 — Contract** | API shape matches what consumers expect | &lt; 5 min | PR to `staging` |
+| **L4 — E2E / Smoke** | Full happy path on real infra | &lt; 10 min | PR to `main` |
 
 ---
 
@@ -68,7 +68,7 @@ tests/
 
 ### Rules
 
-1. **`make test`** runs L1 locally — no Docker, no network, <5 min
+1. **`make test`** runs L1 locally — no Docker, no network, &lt;5 min
 2. **`make test-integration`** runs L2 with Docker Compose
 3. **Coverage threshold: 70%** on business logic files (excludes config, glue, `__init__.py`)
 4. Every new public function or API endpoint → at least one happy-path test + one failure case
@@ -157,4 +157,4 @@ make fmt
 
 **Coverage on business logic only.** Frappe hooks, `__init__.py` files, and setup scripts are excluded. The 70% threshold applies to the files that actually contain business logic (`dsn_generator.py`, `dsn_submitter.py`, `facturx.py`, etc.).
 
-**Tests document behaviour.** Test names use the form `test_<what>_<condition>` (e.g. `test_response_is_ok_rejete_returns_false`) so the test suite doubles as executable specification of what each function must do.
+**Tests document behaviour.** Test names use the form `test_WHAT_CONDITION` (e.g. `test_response_is_ok_rejete_returns_false`) so the test suite doubles as executable specification of what each function must do.
