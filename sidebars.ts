@@ -413,6 +413,14 @@ const sidebars: SidebarsConfig = {
       items: [
         {
           type: 'category',
+          label: '🏦 Insurance Platform',
+          collapsed: false,
+          items: [
+            'insurance-platform/business-applications-catalog',
+          ],
+        },
+        {
+          type: 'category',
           label: 'Collaboration',
           collapsed: true,
           items: [
