@@ -16,7 +16,7 @@ Classical model inversion attacks query a model repeatedly to reconstruct its tr
 
 **This is low risk for this specific deployment because:**
 
-`llama3.2:1b` and `llama3.2:3b` are pre-trained base models from Meta, trained on public web data. HDI Seguros policy documents, claim records, underwriting criteria, and financial data **are not in that training set** — they are confidential internal documents that never reached the public internet. There is nothing to extract from the model weights that relates to HDI Seguros business.
+`llama3.2:1b` and `llama3.2:3b` are pre-trained base models from Meta, trained on public web data. ktayl-solution policy documents, claim records, underwriting criteria, and financial data **are not in that training set** — they are confidential internal documents that never reached the public internet. There is nothing to extract from the model weights that relates to this platform's business.
 
 The assessment changes completely if models are ever fine-tuned on internal documents. See the [Fine-Tuning Gate](#fine-tuning-gate) section — this is a hard prerequisite before any fine-tuning phase.
 
@@ -234,7 +234,7 @@ kubectl exec -n ai deployment/qdrant -- \
 
 ## Fine-Tuning Gate
 
-If fine-tuning of `llama3.2` on internal HDI Seguros documents is ever considered, the following safety checklist must be completed and documented in a closed GitHub issue before the fine-tuning workflow can run:
+If fine-tuning of `llama3.2` on internal ktayl-solution documents is ever considered, the following safety checklist must be completed and documented in a closed GitHub issue before the fine-tuning workflow can run:
 
 | Item | Why |
 |---|---|

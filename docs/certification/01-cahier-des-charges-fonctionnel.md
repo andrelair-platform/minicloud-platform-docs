@@ -778,7 +778,7 @@ Chaque service est considéré « Done » lorsque :
 | **LOB** | Line of Business — ligne de métier assurance (Auto, MRH, etc.) |
 | **TSCA** | Taxe Spéciale sur les Conventions d'Assurance (remplace TVA pour l'assurance) |
 | **PCG** | Plan Comptable Général — référentiel comptable français |
-| **GERAS** | Système de gestion de sinistres legacy (référentiel de comparaison HDI) |
+| **GERAS** | Système de gestion de sinistres legacy (core system de référence dans le secteur assurance) |
 | **Strangler Fig** | Pattern de modernisation progressive : les nouveaux appels passent par le nouveau système, le legacy reste en arrière-plan |
 | **M2M** | Machine-to-Machine — authentification inter-services sans utilisateur humain |
 | **BFF** | Backend For Frontend — couche d'agrégation côté serveur Next.js |

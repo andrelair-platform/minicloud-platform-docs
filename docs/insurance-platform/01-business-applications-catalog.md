@@ -90,7 +90,7 @@ LOB-specific modules extend the core policy and claims services with domain rule
 | **Construction & Engineering** | [#219](https://github.com/andrelair-platform/platform-backlog/issues/219) | 📋 Backlog | TRC/TRM project policies, Bris de Machine, renewable energy |
 | **Financial Lines (D&O / RC Pro)** | [#220](https://github.com/andrelair-platform/platform-backlog/issues/220) | 📋 Backlog | RCMS/D&O claims-made, retroactive dates, discovery periods |
 | **Collaborateurs** | [#221](https://github.com/andrelair-platform/platform-backlog/issues/221) | 📋 Backlog | Group personal accident, business travel, Europ Assistance API |
-| **International Programs** | [#222](https://github.com/andrelair-platform/platform-backlog/issues/222) | 📋 Backlog | Master + local admitted policies, HDI network, 130-country coverage |
+| **International Programs** | [#222](https://github.com/andrelair-platform/platform-backlog/issues/222) | 📋 Backlog | Master + local admitted policies, international network, 130-country coverage |
 | **Alternative Risk Transfer** | [#223](https://github.com/andrelair-platform/platform-backlog/issues/223) | 🔬 Research | Captive management, parametric covers, risk financing |
 
 ---
@@ -231,15 +231,15 @@ Post-cert →  Reinsurance, actuarial, LOB extensions,
 
 ---
 
-## Relation to HDI IS (reference architecture)
+## IS Domain Coverage
 
-| HDI system | ktayl-solution equivalent |
+| Domain | ktayl-solution component |
 |---|---|
-| GERAS (claims + policy) | ktayl-claims-service + ktayl-policy-service |
-| UWWB (underwriting) | UW workbench (#81) + authority matrix (#231) |
-| Industry Desktop / portal | ktayl-portal (#202) |
-| eFile / DOXIS DMS | Paperless-ngx (#76) |
-| OneFlow / Task Management | Plane CE (live) |
-| one.Partner / Partner@Global | ERPNext CRM (#53, #92) |
-| Data Lake | Global Data Platform (#152) |
-| TALIAS (IAM) | Authentik + MidPoint IGA (#205) |
+| Claims & policy lifecycle | ktayl-claims-service + ktayl-policy-service |
+| Underwriting | UW workbench (#81) + authority matrix (#231) |
+| Customer portal | ktayl-portal (#202) |
+| Document management | Paperless-ngx (#76) |
+| Task & project management | Plane CE (live) |
+| CRM & partner management | ERPNext CRM (#53, #92) |
+| Data platform | Global Data Platform (#152) |
+| IAM & governance | Authentik + MidPoint IGA (#205) |

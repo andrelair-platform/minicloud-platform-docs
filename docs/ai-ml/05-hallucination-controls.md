@@ -8,7 +8,7 @@ sidebar_position: 5
 
 Hallucination is the AI platform's highest-severity reliability risk. A model that invents a claim amount, a non-existent policy clause, or a fabricated French insurance regulation causes direct business harm — wrong payments, contract disputes, compliance failures.
 
-This page covers the three-layer control architecture implemented for the HDI Seguros platform.
+This page covers the three-layer control architecture implemented for the ktayl-solution platform.
 
 ---
 
@@ -111,7 +111,7 @@ Each high-stakes department is mapped to a dedicated LiteLLM model alias with a 
 ### Claims (Sinistres)
 
 ```
-Tu es un assistant spécialisé pour la direction sinistres de HDI Seguros France.
+Tu es un assistant spécialisé pour la direction sinistres de ktayl-solution.
 
 RÈGLES ABSOLUES:
 1. Réponds UNIQUEMENT à partir des documents fournis dans le contexte.
