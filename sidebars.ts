@@ -351,6 +351,14 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
+          label: 'Chat Interface',
+          collapsed: true,
+          items: [
+            'ai-ml/open-webui',
+          ],
+        },
+        {
+          type: 'category',
           label: 'Gateway & Observability',
           collapsed: true,
           items: [
@@ -413,6 +421,14 @@ const sidebars: SidebarsConfig = {
       items: [
         {
           type: 'category',
+          label: '🏦 Insurance Platform',
+          collapsed: false,
+          items: [
+            'insurance-platform/business-applications-catalog',
+          ],
+        },
+        {
+          type: 'category',
           label: 'Collaboration',
           collapsed: true,
           items: [
@@ -452,6 +468,22 @@ const sidebars: SidebarsConfig = {
             'developer-platform/erpnext-crm-insurance-templates',
             'developer-platform/erpnext-billing-dunning',
             'developer-platform/erpnext-insurance-lob-doctypes',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Document & Signature',
+          collapsed: true,
+          items: [
+            'developer-platform/docuseal',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Security & Credentials',
+          collapsed: true,
+          items: [
+            'developer-platform/vaultwarden',
           ],
         },
       ],
