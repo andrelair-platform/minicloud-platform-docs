@@ -85,15 +85,17 @@ ArgoCD manages 78 apps via the app-of-apps pattern from `minicloud-gitops`. All 
 ```
 Open WebUI (custom minicloud-open-webui)
     └→ LiteLLM Proxy (2 replicas, KEDA auto-scale)
-            ├→ vLLM v0.6.6 (Mistral / phi-mini, on-cluster, star-kitten)
-            ├→ Ollama (nomic-embed-text, embeddings)
-            └→ Cloud fallback (Azure OpenAI / Anthropic — €10/mo cap each)
+            ├→ vLLM v0.6.6 (Phi-3-mini, on-cluster)
+            ├→ Groq API (llama-3.1-8b-instant, primary for phi3-financial)
+            ├→ OpenAI text-embedding-3-small (embeddings, 1536-dim)
+            ├→ DeepSeek, Mistral (cloud, via LiteLLM routes)
+            └→ minicloud-agent / minicloud-crew-agent (OpenAI-compat endpoints)
 
 RAG pipeline:
   Document → markitdown-proxy (PDF/Office/images → Markdown via Docling)
            → rag-ingest (chunk → embed → store)
-           → Qdrant v1.x (policy-docs, incident-reports, regulatory collections)
-           → nomic-embed-text (768-dim via Ollama)
+           → LiteLLM → OpenAI text-embedding-3-small (1536-dim)
+           → Qdrant (policy-docs, incident-reports, regulatory collections)
 
 AI agents:
   minicloud-agent 1.0.1     — LangChain single-agent, MCP tool layer
@@ -181,7 +183,7 @@ The observability stack uses five complementary tools:
 |-------|----------|---------|
 | Longhorn | Distributed (swift-mac preferred) | All stateful workloads with RWO/RWX PVCs |
 | MinIO | MAAS Controller (Docker) | Velero backup bucket, kine SQLite backups, S3-compat |
-| Qdrant | `ai` ns (Longhorn PVC) | RAG vector collections (768-dim nomic-embed-text) |
+| Qdrant | `ai` ns (Longhorn PVC) | RAG vector collections (1536-dim text-embedding-3-small via OpenAI) |
 | PostgreSQL-ai | `ai` ns | MLflow, LiteLLM cache, RAG metadata |
 | postgresql-synapse | `chat` ns, set-hog pinned | Matrix-synapse dedicated DB (migrated 2026-08-07) |
 | ClickHouse | `langfuse` ns | LLM trace storage |
@@ -230,6 +232,6 @@ ssh controller "docker restart minio"
 
 **Why Stalwart + SES instead of a managed email provider?** Full control over deliverability, DKIM rotation, and JMAP automation. SES production access (50k msg/day) eliminates sandbox restrictions at near-zero cost.
 
-**Why Qdrant over pgvector?** Dedicated vector DB with named collections, HNSW indexing, and snapshot API. pgvector is still running in `postgresql-ai` for legacy RAG metadata; new collections use Qdrant.
+**Why Qdrant over pgvector?** Dedicated vector DB with named collections, HNSW indexing, and snapshot API. pgvector is still running in `postgresql-ai` for legacy RAG metadata; new collections use Qdrant with OpenAI `text-embedding-3-small` (1536-dim, routed via LiteLLM).
 
 **Why Cloudflare Tunnel in k8s (not systemd)?** 2-replica Deployment with pod anti-affinity eliminates the ~90s devandre.sbs outage that occurred on every controller reboot. Cloudflare load-balances across connectors automatically.
