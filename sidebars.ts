@@ -520,6 +520,16 @@ const sidebars: SidebarsConfig = {
       ],
     },
 
+    // ── Certification RNCP ───────────────────────────────────────────
+    {
+      type: 'category',
+      label: '🎓 Certification RNCP39583',
+      collapsed: false,
+      items: [
+        'certification/cahier-des-charges-fonctionnel',
+      ],
+    },
+
     // ── IS Governance ────────────────────────────────────────────────
     {
       type: 'category',
