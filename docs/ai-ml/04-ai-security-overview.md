@@ -6,7 +6,7 @@ sidebar_position: 4
 
 # AI Platform Security Overview
 
-Building AI is straightforward. Securing it is not. The HDI Seguros AI platform handles confidential policy documents, claim records, financial data, and actuarial models — all of which are targets for a distinct set of attacks that do not exist in conventional software systems.
+Building AI is straightforward. Securing it is not. The ktayl-solution AI platform handles confidential policy documents, claim records, financial data, and actuarial models — all of which are targets for a distinct set of attacks that do not exist in conventional software systems.
 
 This section covers six threat categories and the controls implemented against each.
 

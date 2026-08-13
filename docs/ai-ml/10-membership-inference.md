@@ -14,7 +14,7 @@ Membership inference attacks determine whether a specific record exists in a sys
 
 Classical membership inference determines whether a specific data sample was in a model's **training set** by probing output confidence or perplexity. Researchers can distinguish "the model memorised this text" from "the model hasn't seen this before."
 
-This is low risk here for the same reason as model inversion (see [Model Inversion](model-inversion)): `llama3.2:1b/3b` were trained on public web data. No HDI Seguros documents are in that training set.
+This is low risk here for the same reason as model inversion (see [Model Inversion](model-inversion)): `llama3.2:1b/3b` were trained on public web data. No ktayl-solution documents are in that training set.
 
 This changes if fine-tuning ever happens — the fine-tuning gate in issue #48 blocks that path until a membership inference test is explicitly documented and closed.
 

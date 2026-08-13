@@ -260,7 +260,7 @@ If a chunk is stripped, the response is generated from the remaining clean conte
 
 ### Canary token check
 
-Every department system prompt contains a secret string (`CANARY-HDI-xxxxxxxx`) stored in a Kubernetes Secret. If this string appears in a model response, the model has leaked its system prompt — either because an injection succeeded or because of an unexpected model behaviour.
+Every department system prompt contains a secret string (`CANARY-KTAYL-xxxxxxxx`) stored in a Kubernetes Secret. If this string appears in a model response, the model has leaked its system prompt — either because an injection succeeded or because of an unexpected model behaviour.
 
 ```
 Normal operation:  canary is in system prompt → never appears in response
@@ -272,7 +272,7 @@ Injection success: model echoes system prompt → canary appears in response
 **Rotating the canary token (monthly):**
 
 ```bash
-NEW_CANARY="CANARY-HDI-$(openssl rand -hex 6)"
+NEW_CANARY="CANARY-KTAYL-$(openssl rand -hex 6)"
 
 kubectl patch secret litellm-secrets -n ai \
   --type='json' \

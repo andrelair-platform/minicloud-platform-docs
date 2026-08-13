@@ -6,7 +6,7 @@ sidebar_position: 6
 
 # Bias Detection & EU AI Act Compliance
 
-Hallucination is a reliability problem. Bias is a **legal problem**. An AI system that gives different coverage advice based on a claimant's name, age, or apparent origin exposes HDI Seguros to liability under French anti-discrimination law — even if no human made the decision consciously.
+Hallucination is a reliability problem. Bias is a **legal problem**. An AI system that gives different coverage advice based on a claimant's name, age, or apparent origin exposes ktayl-solution to liability under French anti-discrimination law — even if no human made the decision consciously.
 
 ---
 
