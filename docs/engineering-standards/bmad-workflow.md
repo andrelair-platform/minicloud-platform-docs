@@ -137,6 +137,55 @@ Claude produces fully formed stories with CdCF-referenced ACs, technical notes, 
 
 ---
 
+## Official BMAD Tools
+
+The [BMAD Method](https://docs.bmad-method.org/) provides a set of Claude Code skills that augment our custom workflow. Install once per repo:
+
+```bash
+npx bmad-method install --directory . --modules bmm --tools claude-code --yes
+# Creates _bmad/ directory. Add to .gitignore: /_bmad/
+```
+
+### Tool-to-workflow mapping
+
+| When | Use | What it does |
+|------|-----|--------------|
+| Before writing a story | `/bmad-forge-idea` | Adversarial pressure-testing — 3 verdicts: hardened / killed / clearer |
+| Sprint kick-off | `/bmad-sprint-planning` | Readiness gate (PASS/CONCERNS/FAIL), produces `sprint-status.yaml` |
+| Writing specs/ACs | `/bmad-advanced-elicitation` | Pre-mortem, first-principles, red-team analysis |
+| Architecture decisions | `/bmad-party-mode` | Multi-agent design discussion; Anti-Consensus Club template |
+| Deep unknowns | `/bmad-deep-recon` | Structured research: 6 types × 3 modes (discovery/targeted/validation) |
+| Story implementation | `/bmad-build` | Spec-driven autonomous loop: clarify → implement → review → report |
+| Autonomous multi-story | `/bmad-build-auto` | Unattended build loop; exits with `blocked` or `done` |
+| Post-sprint | `[bmad-review]` | Evidence-based retrospective; 3 verdicts: accepted / accepted-with-open-items / rejected |
+
+### Named agents for story co-authoring
+
+In a Claude session, invoke agents by name to use their specialist persona:
+
+| Agent | Invoke | When |
+|-------|--------|------|
+| Mary (BA) | `/bmad-agent-mary` | Eliciting ACs from CdCF functional requirements |
+| John (PM) | `/bmad-agent-john` | Writing the PRD, prioritisation, MoSCoW |
+| Sally (UX) | `/bmad-agent-sally` | User journeys, edge-case flows |
+| Winston (Architect) | `/bmad-agent-winston` | Technical notes, ADRs, system boundaries |
+| Amelia (Dev) | `/bmad-agent-amelia` | Task breakdown, implementation approach |
+
+### Web planning (Gemini Gems / ChatGPT GPTs)
+
+For analysis and planning conversations, BMAD bundles are available as web tools. The design principle: **Plan in the web, build in the IDE.**
+
+| Bundle | Platform | When |
+|--------|----------|------|
+| Product Brief Coach | Gem / GPT | Initial scoping |
+| PRD Coach | Gem / GPT | Writing the requirements doc |
+| UX Coach | Gem / GPT | User flow design |
+| Brainstorming Coach | Gem / GPT | Idea exploration before `bmad-forge-idea` |
+
+Polished artifacts from web sessions go into `bmad/stories/<project>/<ms>/` for git-versioning and the bridge script.
+
+---
+
 ## Path C — Manual Story Creation
 
 For adding individual stories to an existing sprint mid-sprint.
