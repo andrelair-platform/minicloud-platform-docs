@@ -537,6 +537,8 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: [
         'certification/cahier-des-charges-fonctionnel',
+        'certification/sprint-log',
+        'certification/retrospective-risk-register',
       ],
     },
 
