@@ -150,21 +150,29 @@ The CdCF delivery plan runs **M0 (Aug 2026) → Soutenance (Apr 2027)**. Each mi
 
 ---
 
-## Upcoming — Sprint 1 (M1–M2) Backlog
+## Sprint 1 (M1–M2) — Live Board
 
 **Target:** September–October 2026 · **Focus:** `ktayl-policy-service` (Go 1.23)
 
-| Priority | Item | Issue | Estimate |
-|----------|------|-------|----------|
-| P0 | Create `ktayl-policy-service` repo + Go module scaffold | #203 | 0.5 day |
-| P0 | OpenAPI spec (policy CRUD endpoints) | #203 | 1 day |
-| P0 | Domain model: Policy, Coverage, Premium, Document | #203 | 1 day |
-| P1 | PostgreSQL schema + Flyway migrations | #203 | 0.5 day |
-| P1 | NATS JetStream publisher (`policy.created`, `policy.amended`) | #203 | 1 day |
-| P1 | L1 unit tests (≥70% coverage) | #203 | 1 day |
-| P1 | CI pipeline (golangci-lint + go test + Harbor push) | #203 | 0.5 day |
-| P1 | k8s manifests + ArgoCD Application | #203 | 0.5 day |
-| P2 | L2 integration test (testcontainers PostgreSQL) | #203 | 0.5 day |
-| P2 | Validate REC-POL-01 (policy creation acceptance test) | #203 | 0.5 day |
+:::info GitHub is the source of truth
+Sprint 1 is tracked entirely on GitHub. This table is a static export — real-time status, assignees, and comments live on the board.
 
-**Sprint 1 target velocity:** 10 items · REC-POL-01 validated
+- **Milestone:** [CERT-1 M1-M2 — ktayl-policy-service (Go)](https://github.com/andrelair-platform/platform-backlog/milestone/11)
+- **Board:** [minicloud platform roadmap](https://github.com/orgs/andrelair-platform/projects/2)
+- **BMAD stories:** `minicloud-gitops/bmad/stories/cert-1/m1-m2/` (S001–S010)
+:::
+
+| BMAD ID | Story | Est. (sp) | Priority |
+|---------|-------|-----------|----------|
+| S001 | Go module scaffold — repo structure, Containerfile, CI skeleton | 2 | Must |
+| S002 | Domain model — Policy/Coverage/Premium structs + Flyway V1 schema | 3 | Must |
+| S003 | Policy REST API — CRUD endpoints + OpenAPI 3.1 spec | 5 | Must |
+| S004 | Policy state machine — transitions, validation, DORA audit log | 3 | Must |
+| S005 | Attestation PDF generation + MinIO storage (7-year retention) | 3 | Must |
+| S006 | NATS JetStream publisher — CloudEvents 1.0 on policy transitions | 3 | Must |
+| S007 | Authentik M2M JWT middleware — JWKS validation + scope-based authz | 3 | Must |
+| S008 | L1 unit test suite — ≥70% coverage gate, golangci-lint CI | 2 | Must |
+| S009 | L2 integration tests — testcontainers PostgreSQL + NATS | 3 | Must |
+| S010 | k8s manifests + ArgoCD Application — GitOps on cluster | 3 | Must |
+
+**Total estimate:** 30 story points · **Target:** REC-POL-01 validated at sprint close
