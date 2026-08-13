@@ -559,6 +559,7 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: [
         'engineering-standards/testing-strategy',
+        'engineering-standards/bmad-workflow',
       ],
     },
 
