@@ -83,7 +83,10 @@ ArgoCD manages 78 apps via the app-of-apps pattern from `minicloud-gitops`. All 
 ### AI / ML Platform
 
 ```
-Open WebUI (custom minicloud-open-webui)
+User-facing AI interfaces:
+  Open WebUI (chat.devandre.sbs)  — conversational chat, RAG, model switching
+  Flowise 2.2.7 (flowise.devandre.sbs) — visual LLM flow builder, no-code pipelines
+    │
     └→ LiteLLM Proxy (2 replicas, KEDA auto-scale)
             ├→ vLLM v0.6.6 (Phi-3-mini, on-cluster)
             ├→ Groq API (llama-3.1-8b-instant, primary for phi3-financial)
@@ -170,6 +173,8 @@ The observability stack uses five complementary tools:
 | Plane CE | plane.devandre.sbs | project management |
 | Vaultwarden | vault-pw.devandre.sbs | Timshel fork (SSO button), human credential store |
 | Docuseal | sign.devandre.sbs | e-Signature (eIDAS Simple), 4 insurance templates |
+| Flowise | flowise.devandre.sbs | visual LLM flow builder (ai ns) |
+| MLflow | mlflow.devandre.sbs | ML experiment tracking + model registry (ai ns) |
 | n8n | n8n.devandre.sbs | workflow automation |
 | Temporal | temporal.devandre.sbs | durable workflow engine v1.31.2 |
 
