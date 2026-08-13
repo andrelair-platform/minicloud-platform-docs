@@ -802,4 +802,82 @@ Chaque service est considéré « Done » lorsque :
 | RNCP39583 | https://www.francecompetences.fr/recherche/rncp/39583/ |
 | ACPR COREP | https://www.acpr.banque-france.fr/reglementation/reporting-prudentiel |
 | DORA (EU 2022/2554) | https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32022R2554 |
+
+---
+
+## 15. Gouvernance du projet — RACI
+
+Ce projet suit le [standard de gouvernance de la plateforme](../project-governance/project-governance-standard). La section ci-dessous instancie la matrice RACI pour le périmètre CERT-1.
+
+### 15.1 Mapping des rôles
+
+Dans le contexte d'un projet de portfolio mené en solo, une seule personne remplit l'ensemble des rôles. Le tableau ci-dessous indique, pour chaque rôle entreprise standard, le « chapeau » porté à chaque phase.
+
+| Code | Rôle entreprise | Porté par | Phase principale |
+|------|----------------|-----------|-----------------|
+| **STK** | Stakeholder / Commanditaire | Andrey-Vanlaurel Kanmegne Tabouguie | Initiation, validation finale |
+| **PM** | Product Manager | Andrey-Vanlaurel Kanmegne Tabouguie | Roadmap, arbitrages scope |
+| **BA** | Business Analyst | Andrey-Vanlaurel Kanmegne Tabouguie | Rédaction CdCF, exigences |
+| **UX/UI** | UX/UI Designer | Andrey-Vanlaurel Kanmegne Tabouguie | Wireframes portail, maquettes |
+| **SA** | Solution Architect | Andrey-Vanlaurel Kanmegne Tabouguie | Architecture microservices, choix techno |
+| **TL** | Tech Lead | Andrey-Vanlaurel Kanmegne Tabouguie | Décisions d'implémentation, revue de code |
+| **FE** | Frontend Developer | Andrey-Vanlaurel Kanmegne Tabouguie | Portail Next.js 14 |
+| **BE** | Backend Developer | Andrey-Vanlaurel Kanmegne Tabouguie | Services Policy (Go), Claims (Java), IA (Python) |
+| **DBA** | Database Engineer | Andrey-Vanlaurel Kanmegne Tabouguie | Schémas PostgreSQL, migrations Flyway/Liquibase |
+| **DO** | DevOps / Platform Engineer | Andrey-Vanlaurel Kanmegne Tabouguie | CI/CD GitHub Actions, ArgoCD, k3s manifests |
+| **QA** | QA Engineer | Andrey-Vanlaurel Kanmegne Tabouguie | Tests L1–L4, Playwright E2E |
+| **SEC** | Security Engineer | Andrey-Vanlaurel Kanmegne Tabouguie | SAST, Gatekeeper OPA, cosign SBOM, secrets |
+| **SRE** | Site Reliability Engineer | Andrey-Vanlaurel Kanmegne Tabouguie | Prometheus, Grafana, alertes, runbooks |
+
+### 15.2 Matrice RACI
+
+**Légende :** R = Responsable · A = Approbateur · C = Consulté · I = Informé · — = non impliqué
+
+| Activité / Livrable | STK | PM | BA | UX/UI | SA | TL | FE | BE | DBA | DO | QA | SEC | SRE |
+|---------------------|-----|----|----|-------|----|----|----|----|-----|----|----|-----|-----|
+| **Phase 1 — Initiation & Exigences** | | | | | | | | | | | | | |
+| Définir les objectifs métier et le périmètre | A | R | C | — | C | I | — | — | — | — | — | I | — |
+| Valider le budget et la charte projet | R+A | C | I | — | I | — | — | — | — | — | — | — | — |
+| Rédiger le cahier des charges fonctionnel (CdCF) | C | A | R | C | C | C | — | — | — | — | — | C | — |
+| Définir les exigences non-fonctionnelles (ENF) | C | A | R | — | C | C | — | — | — | C | C | C | C |
+| Identifier les contraintes réglementaires (ACPR/DORA/RGPD) | C | C | R | — | A | C | — | — | — | — | — | C | — |
+| **Phase 2 — Architecture & Design** | | | | | | | | | | | | | |
+| Concevoir l'architecture microservices et l'intégration NATS | I | C | C | — | R+A | C | C | C | C | C | — | C | C |
+| Définir les parcours utilisateurs et les wireframes portail | C | C | C | R+A | — | C | C | — | — | — | — | — | — |
+| Concevoir le modèle de données (Contrats, Sinistres) | I | I | C | — | C | A | — | C | R | — | — | C | — |
+| Choisir les patterns d'architecture IA (LangGraph, RAG) | I | C | C | — | R+A | C | — | C | — | — | — | C | — |
+| **Phase 3 — Développement** | | | | | | | | | | | | | |
+| Développer ktayl-policy-service (Go 1.23) | I | I | C | — | C | A | — | R | C | — | — | — | — |
+| Développer ktayl-claims-service (Java 21 / Spring Boot) | I | I | C | — | C | A | — | R | C | — | — | — | — |
+| Développer ktayl-ai-claims-assistant (Python / LangGraph) | I | I | C | — | C | A | — | R | — | — | — | C | — |
+| Développer ktayl-portal (Next.js 14 / RGAA AA) | I | I | C | C | C | A | R | C | — | — | — | — | — |
+| Implémenter le job COREP Spring Batch (reporting ACPR) | I | I | R | — | C | A | — | R | C | — | — | C | — |
+| Intégrations externes (ERPNext, Docuseal, Paperless-ngx) | I | C | C | — | C | A | C | R | C | — | — | C | — |
+| **Phase 4 — Infrastructure & CI/CD** | | | | | | | | | | | | | |
+| Configurer les pipelines CI/CD (GitHub Actions + Harbor) | I | I | — | — | C | A | — | — | — | R | — | C | — |
+| Rédiger les manifests Kustomize et applications ArgoCD | I | I | — | — | C | C | — | — | — | R+A | — | C | C |
+| Configurer RBAC, NetworkPolicies, Gatekeeper OPA | I | I | — | — | C | C | — | — | — | R | — | A | C |
+| Configurer ESO / Vault secrets | I | I | — | — | C | C | — | C | — | R | — | A | — |
+| **Phase 5 — Tests & Sécurité** | | | | | | | | | | | | | |
+| Écrire les tests unitaires et d'intégration (L1/L2) | I | I | C | — | — | A | C | R | C | — | C | — | — |
+| Écrire les tests E2E Playwright (L4) | I | C | C | C | — | A | R | C | — | — | R | — | — |
+| Audit SAST (golangci-lint, ruff, mypy, eslint + tsc) | I | C | — | — | C | C | — | — | — | C | C | R+A | — |
+| Revue sécurité (cosign SBOM, CVE scan, secrets) | I | C | — | — | C | C | — | — | — | C | C | R+A | — |
+| UAT — validation des critères d'acceptation (REC-*) | C | A | R | C | — | C | C | C | — | C | R | C | — |
+| **Phase 6 — Mise en production & Opérations** | | | | | | | | | | | | | |
+| Approuver la mise en production | R+A | C | — | — | C | C | — | — | — | C | C | C | C |
+| Déployer en production (ArgoCD sync main) | I | I | — | — | C | C | — | — | — | R+A | — | C | C |
+| Configurer la supervision (Prometheus, Grafana, Loki) | I | I | — | — | C | C | — | — | — | R | — | — | A |
+| Configurer Argo Rollouts canary / BlueGreen | I | I | — | — | C | A | — | — | — | R | — | — | C |
+| Rédiger les runbooks et la documentation technique | I | C | C | C | C | A | R | R | C | C | R | C | C |
+| Réponse aux incidents (SLO breach, RTO < 4h DORA) | I | I | — | — | — | C | C | C | — | C | — | C | R+A |
+
+### 15.3 Rôles hors périmètre v1.0
+
+| Rôle | Motif d'exclusion |
+|------|------------------|
+| **Data Engineer** | Pas de pipeline ETL/data warehouse dans v1.0. Prévu phase IS-GAP-87 (Metabase BI). |
+| **Release Manager** | Rôle couvert par l'automatisation ArgoCD + GitHub Actions (merge PR → déploiement staging automatique). |
+| **Support / Helpdesk** | Pas d'utilisateurs externes en v1.0 (environnement de démonstration). Rôle activé à la mise en service réelle. |
+| **Cloud Architect** | Infrastructure 100% on-premises (bare-metal k3s). Pas de composants cloud public hors SES + Lightsail TURN. |
 | RGAA 4.1 | https://www.numerique.gouv.fr/publications/rgaa-accessibilite/ |

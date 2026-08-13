@@ -520,6 +520,16 @@ const sidebars: SidebarsConfig = {
       ],
     },
 
+    // ── Project Governance ───────────────────────────────────────────
+    {
+      type: 'category',
+      label: '📐 Project Governance',
+      collapsed: false,
+      items: [
+        'project-governance/project-governance-standard',
+      ],
+    },
+
     // ── Certification RNCP ───────────────────────────────────────────
     {
       type: 'category',
