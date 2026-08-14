@@ -7,6 +7,27 @@ const sidebars: SidebarsConfig = {
     {type: 'doc', id: 'intro', label: '🗺 Platform Overview'},
     {type: 'doc', id: 'developer-platform/production-stack-architecture', label: '🏛 Production Stack Architecture'},
 
+    // ── Product Roadmap ──────────────────────────────────────────────
+    {
+      type: 'category',
+      label: '🗓 Product Roadmap',
+      collapsed: false,
+      items: [
+        'product-roadmap/overview',
+      ],
+    },
+
+    // ── Insurance Platform ───────────────────────────────────────────
+    {
+      type: 'category',
+      label: '🏢 Insurance Platform (ktayl solution IS)',
+      collapsed: false,
+      items: [
+        'insurance-platform/business-applications-catalog',
+        'insurance-platform/ktayl-policy-service',
+      ],
+    },
+
     // ── Infrastructure ───────────────────────────────────────────────
     {
       type: 'category',
