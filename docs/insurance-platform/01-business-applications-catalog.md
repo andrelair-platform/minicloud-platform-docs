@@ -264,6 +264,7 @@ ktayl-ip-portal       ──► n8n (automated SO communication workflows)
 | **Global Address List** | Stalwart LDAP | [#227](https://github.com/andrelair-platform/platform-backlog/issues/227) | 📋 Backlog | Corporate address book — Authentik directory → email autocomplete |
 | **Shared mailboxes** | Stalwart IMAP ACL | [#228](https://github.com/andrelair-platform/platform-backlog/issues/228) | 📋 Backlog | Team inboxes: sinistres, production, comptabilité, courtiers, direction |
 | **Distribution lists** | Stalwart virtual aliases | [#229](https://github.com/andrelair-platform/platform-backlog/issues/229) | 📋 Backlog | Team mailing lists: sinistres@, production@, courtiers@, direction@ |
+| **minicloud Copilot** | n8n + LiteLLM + Qdrant + maubot | [#260](https://github.com/andrelair-platform/platform-backlog/issues/260) | 📋 Backlog | M365 Copilot equivalent — AI layer across mail, chat, meetings, docs and enterprise search. 5 connectors wiring existing services. See [minicloud Copilot](../ai-ml/minicloud-copilot) |
 
 ---
 

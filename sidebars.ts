@@ -421,6 +421,7 @@ const sidebars: SidebarsConfig = {
             'ai-ml/deep-research-agent',
           ],
         },
+        'ai-ml/minicloud-copilot',
       ],
     },
 

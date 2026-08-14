@@ -9,7 +9,7 @@ All platform-layer items not yet scheduled — distinct from the [Insurance IS c
 
 Full issue tracker: [andrelair-platform/platform-backlog](https://github.com/andrelair-platform/platform-backlog)
 
-**95 items across 8 domains.** No hallucination — every row below links to a real open GitHub issue.
+**101 items across 9 domains.** No hallucination — every row below links to a real open GitHub issue.
 
 ---
 
@@ -43,6 +43,21 @@ Enterprise AI EPIC (13 domains) →  #89               📋 backlog
 | **AI Agent Golden Path** | [#189](https://github.com/andrelair-platform/platform-backlog/issues/189) | 6 months → 4 days | Backstage scaffolder: developer defines use case + connectors → full CI/GitOps agent generated |
 | **Dynamic LangGraph generation** | [#190](https://github.com/andrelair-platform/platform-backlog/issues/190) | Core ToyotaGPT innovation | Declarative YAML spec → platform auto-generates LangGraph workflow. Architecture never changes; only configuration does |
 | **Unified AI Andon Dashboard** | [#191](https://github.com/andrelair-platform/platform-backlog/issues/191) | Andon board → LangSmith | All agents in one operator view: LiteLLM + vLLM + Langfuse + RAG health + cost per query |
+
+---
+
+## 0b. minicloud Copilot — Workplace AI connectors (6 items)
+
+Self-hosted M365 Copilot equivalent. All data sources (Stalwart, Nextcloud, Jitsi, Matrix, ERPNext) and all AI components (LiteLLM, RAG, Qdrant, markitdown-proxy, n8n) are already live. These 6 issues wire them together. Full detail: [minicloud Copilot doc page](../ai-ml/minicloud-copilot).
+
+| Item | Issue | M365 Copilot equivalent | Description |
+|---|---|---|---|
+| **minicloud Copilot EPIC** | [#260](https://github.com/andrelair-platform/platform-backlog/issues/260) | M365 Copilot umbrella | Architecture, build order, stack mapping |
+| **Email AI** | [#261](https://github.com/andrelair-platform/platform-backlog/issues/261) | Outlook Copilot | Stalwart IMAP → n8n → LiteLLM → triage + draft (sinistres@ auto-classify P1/P2/P3) |
+| **Meeting notes** | [#262](https://github.com/andrelair-platform/platform-backlog/issues/262) | Teams meeting recap | Jitsi → Whisper → LiteLLM → structured notes + action items → Nextcloud + Matrix |
+| **Document grounding** | [#263](https://github.com/andrelair-platform/platform-backlog/issues/263) | SharePoint grounding | Nextcloud webhook → markitdown-proxy → rag-ingest → Qdrant (fastest win — no new containers) |
+| **Chat AI assistant** | [#264](https://github.com/andrelair-platform/platform-backlog/issues/264) | Teams Copilot Chat | maubot Matrix bot — `@ai` in any Element room → LiteLLM + RAG |
+| **Enterprise Search UI** | [#265](https://github.com/andrelair-platform/platform-backlog/issues/265) | M365 Enterprise Search | Unified RAG search in Open WebUI — 5 Qdrant collections, French BM25, source citations |
 
 ---
 
@@ -202,6 +217,7 @@ Workforce systems and internal productivity tools that make the simulated compan
 | Domain | Items |
 |---|---|
 | Enterprise AI Platform (ToyotaGPT model) ⭐ | 6 |
+| minicloud Copilot (workplace AI connectors) | 6 |
 | AI Platform hardening | 25 |
 | Platform / IaC / Backstage / DevEx | 19 |
 | DevSecOps | 12 |
@@ -209,7 +225,7 @@ Workforce systems and internal productivity tools that make the simulated compan
 | SRE & Platform Ops | 9 |
 | Data Engineering extended | 6 |
 | FinOps | 5 |
-| **Total** | **94** |
+| **Total** | **100** |
 
 ---
 
@@ -218,6 +234,6 @@ Workforce systems and internal productivity tools that make the simulated compan
 | Scope | Items |
 |---|---|
 | Insurance IS domain ([catalog](../insurance-platform/business-applications-catalog)) | 53 |
-| Platform engineering (this page) | 94 |
+| Platform engineering (this page) | 100 |
 | Research pipeline (no committed date) | 8 |
-| **Total active backlog** | **155** |
+| **Total active backlog** | **161** |
