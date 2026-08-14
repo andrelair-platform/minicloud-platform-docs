@@ -244,10 +244,10 @@ Quick-scan of IS domain items not yet scheduled. Full detail per item is in the 
 
 | Scope | Count |
 |---|---|
-| Insurance IS domain (this page) | 52 |
-| Platform engineering | 90 |
+| Insurance IS domain (this page) | 53 |
+| Platform engineering | 88 |
 | Research pipeline | 8 |
-| **Total active backlog** | **150** |
+| **Total active backlog** | **149** |
 
 ### 51 Backlog items (📋)
 
@@ -305,6 +305,7 @@ Quick-scan of IS domain items not yet scheduled. Full detail per item is in the 
 | 50 | MidPoint IGA | IAM |
 | 51 | PAM (Teleport + Vault SSH) | IAM |
 | 52 | GLPI | IAM / IT Ops |
+| 53 | Distribution lists (Stalwart virtual aliases) | Communication |
 
 ### 8 Research items (🔬)
 
@@ -328,14 +329,14 @@ Quick-scan of IS domain items not yet scheduled. Full detail per item is in the 
 | Claims Extended | 5 |
 | IP / GNP | 4 |
 | Data & BI | 4 |
-| Communication | 4 |
+| Communication | 5 |
 | LOB extensions | 4 |
 | Compliance | 4 |
 | Reinsurance / Actuarial | 3 |
 | IAM / IT Ops | 3 |
 | Document Mgmt | 1 |
 
-Underwriting and Distribution are the two heaviest domains — together 20 of the 52 backlog items.
+Underwriting and Distribution are the two heaviest domains — together 20 of the 53 IS backlog items.
 
 ---
 

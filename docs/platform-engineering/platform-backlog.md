@@ -161,8 +161,6 @@ Workforce systems and internal productivity tools that make the simulated compan
 | **Succession & Development** | [#164](https://github.com/andrelair-platform/platform-backlog/issues/164) | Talent pools, succession plans, individual development plans |
 | **Recruiting / ATS** | [#165](https://github.com/andrelair-platform/platform-backlog/issues/165) | Job requisitions, candidate pipeline, AI screening, offer management |
 | **Azure Entra External Identities** | [#167](https://github.com/andrelair-platform/platform-backlog/issues/167) | B2C customer portal SSO — external policyholders and brokers |
-| **Distribution lists** | [#229](https://github.com/andrelair-platform/platform-backlog/issues/229) | Team mailing lists via Stalwart virtual aliases (sinistres@, prod@…) |
-| **IT AI helpdesk chatbot (Dify)** | [#107](https://github.com/andrelair-platform/platform-backlog/issues/107) | AI assistant for internal IT questions, fed from Outline + GLPI |
 
 ---
 
@@ -173,11 +171,11 @@ Workforce systems and internal productivity tools that make the simulated compan
 | AI Platform hardening | 25 |
 | Platform / IaC / Backstage / DevEx | 19 |
 | DevSecOps | 12 |
-| HR + Intranet + Internal tools | 14 |
+| HR + Intranet + Internal tools | 12 |
 | SRE & Platform Ops | 9 |
 | Data Engineering extended | 6 |
 | FinOps | 5 |
-| **Total** | **90** |
+| **Total** | **88** |
 
 ---
 
@@ -185,7 +183,7 @@ Workforce systems and internal productivity tools that make the simulated compan
 
 | Scope | Items |
 |---|---|
-| Insurance IS domain ([catalog](../insurance-platform/business-applications-catalog)) | 52 |
-| Platform engineering (this page) | 90 |
+| Insurance IS domain ([catalog](../insurance-platform/business-applications-catalog)) | 53 |
+| Platform engineering (this page) | 88 |
 | Research pipeline (no committed date) | 8 |
-| **Total active backlog** | **150** |
+| **Total active backlog** | **149** |
