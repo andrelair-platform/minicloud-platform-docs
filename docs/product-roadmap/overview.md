@@ -236,6 +236,100 @@ Long-horizon items. No delivery date committed.
 
 ---
 
+## Backlog Scorecard
+
+Quick-scan of everything not yet scheduled. Full detail (stack, issue link, description) is in the [Business Applications Catalog](../insurance-platform/business-applications-catalog).
+
+### 51 Backlog items (📋)
+
+| # | Item | Domain |
+|---|---|---|
+| 1 | ktayl-uwb-api | Underwriting |
+| 2 | ktayl-uwb-ui | Underwriting |
+| 3 | underwriting-workflow (Temporal) | Underwriting |
+| 4 | UW AI agents (CrewAI) | Underwriting |
+| 5 | UW broker intake (n8n) | Underwriting |
+| 6 | UW authority matrix | Underwriting |
+| 7 | UW guidelines repository | Underwriting |
+| 8 | Technical UW committee workflow | Underwriting |
+| 9 | Actuarial pricing engine | Underwriting |
+| 10 | Risk engineering assessment | Underwriting |
+| 11 | Claims indemnification SEPA payment | Claims Extended |
+| 12 | Loss adjuster management | Claims Extended |
+| 13 | Subrogation management | Claims Extended |
+| 14 | SIU fraud investigation | Claims Extended |
+| 15 | Contentieux / litigation | Claims Extended |
+| 16 | Marine & Transport LOB | LOB |
+| 17 | Construction & Engineering LOB | LOB |
+| 18 | Financial Lines (D&O / RC Pro) LOB | LOB |
+| 19 | Collaborateurs LOB | LOB |
+| 20 | International Programs LOB (data model) | IP / GNP |
+| 21 | ktayl-ip-portal (GNP equivalent) | IP / GNP |
+| 22 | IP bordereau module (ERPNext) | IP / GNP |
+| 23 | SO claims feed | IP / GNP |
+| 24 | Commercial Insurance CRM | Distribution |
+| 25 | ERPNext CRM config | Distribution |
+| 26 | ERPNext billing | Distribution |
+| 27 | Premium collection lifecycle | Distribution |
+| 28 | Insurance product factory | Distribution |
+| 29 | Insurance attestation PDF | Distribution |
+| 30 | ORIAS broker verification | Distribution |
+| 31 | Delegated underwriting authority | Distribution |
+| 32 | Co-insurance / pool management | Distribution |
+| 33 | Customer-facing AI chatbot | Distribution |
+| 34 | Reinsurance management | Reinsurance |
+| 35 | Reinsurer bordereau portal | Reinsurance |
+| 36 | Actuarial reserving tool | Actuarial |
+| 37 | AML/KYC compliance | Compliance |
+| 38 | GDPR Art. 30 register | Compliance |
+| 39 | GDPR workflow (n8n) | Compliance |
+| 40 | DDA/IDD training LMS (Moodle) | Compliance |
+| 41 | Paperless-ngx DMS | Document Mgmt |
+| 42 | VoIP / call center (Asterisk) | Communication |
+| 43 | SMS gateway (OVH) | Communication |
+| 44 | Global Address List (Stalwart LDAP) | Communication |
+| 45 | Shared mailboxes (Stalwart IMAP ACL) | Communication |
+| 46 | Global Data Platform (ClickHouse + dbt + Metabase) | Data & BI |
+| 47 | Insurance KPI dashboard | Data & BI |
+| 48 | People Analytics (Metabase) | Data & BI |
+| 49 | GCP BigQuery | Data & BI |
+| 50 | MidPoint IGA | IAM |
+| 51 | PAM (Teleport + Vault SSH) | IAM |
+| 52 | GLPI | IAM / IT Ops |
+
+### 8 Research items (🔬)
+
+| # | Item | Why it matters |
+|---|---|---|
+| 1 | Domain-specific LLM fine-tune | French insurance corpus on vLLM — specialist model |
+| 2 | Catastrophe modelling | Nat cat aggregate exposure, Solvency II SCR |
+| 3 | COBOL actuarial rating engine | Legacy demo — IBM z/OS credential evidence |
+| 4 | Algorithmic Cyber Underwriter | AI-driven cyber risk assessment + pricing |
+| 5 | Corporate risk intelligence agent | Pre-UW due diligence for CAC40 B2B prospects |
+| 6 | Alternative Risk Transfer | Captive management, parametric covers |
+| 7 | IFRS 17 reporting | Insurance contract measurement + P&L |
+| 8 | Data Lakehouse (Iceberg + Nessie) | Iceberg tables on MinIO, analytical layer |
+
+### Domain weight
+
+| Domain | Backlog count |
+|---|---|
+| Underwriting | 10 |
+| Distribution & Commercial | 10 |
+| Claims Extended | 5 |
+| IP / GNP | 4 |
+| Data & BI | 4 |
+| Communication | 4 |
+| LOB extensions | 4 |
+| Compliance | 4 |
+| Reinsurance / Actuarial | 3 |
+| IAM / IT Ops | 3 |
+| Document Mgmt | 1 |
+
+Underwriting and Distribution are the two heaviest domains — together 20 of the 52 backlog items.
+
+---
+
 ## IS Domain Coverage Map
 
 | IS Domain | Component | Status |
