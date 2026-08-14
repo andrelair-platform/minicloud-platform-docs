@@ -9,7 +9,40 @@ All platform-layer items not yet scheduled — distinct from the [Insurance IS c
 
 Full issue tracker: [andrelair-platform/platform-backlog](https://github.com/andrelair-platform/platform-backlog)
 
-**90 items across 7 domains.** No hallucination — every row below links to a real open GitHub issue.
+**95 items across 8 domains.** No hallucination — every row below links to a real open GitHub issue.
+
+---
+
+## 0. Enterprise AI Platform — ToyotaGPT model (6 items) ⭐
+
+Toyota built **ToyotaGPT** — a standardised agent factory that reduced AI application delivery from 6 months / 6 engineers to **4 days / 1 engineer**. The minicloud platform is already 80% of the way there (LiteLLM gateway, LangGraph agents, Langfuse observability, markitdown-proxy OCR, RAG + Qdrant — all live). These 6 issues close the remaining gap.
+
+**Mapping to ToyotaGPT:**
+
+```
+Toyota concept                     minicloud equivalent
+──────────────────────────────────────────────────────────
+Unified AI gateway              →  LiteLLM          ✅ live
+LangGraph agents                →  minicloud-crew-agent  ✅ live
+LangSmith observability         →  Langfuse          ✅ live
+Custom OCR / extractors         →  markitdown-proxy  ✅ live
+RAG + vector DB                 →  RAG pipeline + Qdrant  ✅ live
+MCP-compatible tool layer       →  #187              📋 backlog
+Skills Engine (reusable caps.)  →  #188              📋 backlog
+6-month→4-day golden path       →  #189              📋 backlog
+Dynamic workflow generation     →  #190              📋 backlog  ← core innovation
+Andon board (production view)   →  #191              📋 backlog
+Enterprise AI EPIC (13 domains) →  #89               📋 backlog
+```
+
+| Item | Issue | ToyotaGPT equivalent | Description |
+|---|---|---|---|
+| **Enterprise AI Platform EPIC** | [#89](https://github.com/andrelair-platform/platform-backlog/issues/89) | Full ToyotaGPT initiative | Capability-first architecture across 13 AI domains — umbrella for #187–#191 |
+| **MCP Enterprise Tool Layer** | [#187](https://github.com/andrelair-platform/platform-backlog/issues/187) | MCP-compatible tool layer | One interface for ERPNext, GLPI, Plane, Stalwart — any agent, zero custom integration |
+| **AI Skills Catalog** | [#188](https://github.com/andrelair-platform/platform-backlog/issues/188) | Skills Engine | Reusable versioned skills in Backstage — auto-synthesised from enterprise documents |
+| **AI Agent Golden Path** | [#189](https://github.com/andrelair-platform/platform-backlog/issues/189) | 6 months → 4 days | Backstage scaffolder: developer defines use case + connectors → full CI/GitOps agent generated |
+| **Dynamic LangGraph generation** | [#190](https://github.com/andrelair-platform/platform-backlog/issues/190) | Core ToyotaGPT innovation | Declarative YAML spec → platform auto-generates LangGraph workflow. Architecture never changes; only configuration does |
+| **Unified AI Andon Dashboard** | [#191](https://github.com/andrelair-platform/platform-backlog/issues/191) | Andon board → LangSmith | All agents in one operator view: LiteLLM + vLLM + Langfuse + RAG health + cost per query |
 
 ---
 
@@ -168,6 +201,7 @@ Workforce systems and internal productivity tools that make the simulated compan
 
 | Domain | Items |
 |---|---|
+| Enterprise AI Platform (ToyotaGPT model) ⭐ | 6 |
 | AI Platform hardening | 25 |
 | Platform / IaC / Backstage / DevEx | 19 |
 | DevSecOps | 12 |
@@ -175,7 +209,7 @@ Workforce systems and internal productivity tools that make the simulated compan
 | SRE & Platform Ops | 9 |
 | Data Engineering extended | 6 |
 | FinOps | 5 |
-| **Total** | **88** |
+| **Total** | **94** |
 
 ---
 
@@ -184,6 +218,6 @@ Workforce systems and internal productivity tools that make the simulated compan
 | Scope | Items |
 |---|---|
 | Insurance IS domain ([catalog](../insurance-platform/business-applications-catalog)) | 53 |
-| Platform engineering (this page) | 88 |
+| Platform engineering (this page) | 94 |
 | Research pipeline (no committed date) | 8 |
-| **Total active backlog** | **149** |
+| **Total active backlog** | **155** |
