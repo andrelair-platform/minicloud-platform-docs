@@ -263,6 +263,7 @@ ktayl-ip-portal       ──► n8n (automated SO communication workflows)
 | **SMS gateway** | OVH SMS API | [#108](https://github.com/andrelair-platform/platform-backlog/issues/108) | 📋 Backlog | Payment reminders, dunning, claim status alerts |
 | **Global Address List** | Stalwart LDAP | [#227](https://github.com/andrelair-platform/platform-backlog/issues/227) | 📋 Backlog | Corporate address book — Authentik directory → email autocomplete |
 | **Shared mailboxes** | Stalwart IMAP ACL | [#228](https://github.com/andrelair-platform/platform-backlog/issues/228) | 📋 Backlog | Team inboxes: sinistres, production, comptabilité, courtiers, direction |
+| **Distribution lists** | Stalwart virtual aliases | [#229](https://github.com/andrelair-platform/platform-backlog/issues/229) | 📋 Backlog | Team mailing lists: sinistres@, production@, courtiers@, direction@ |
 
 ---
 

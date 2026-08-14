@@ -238,7 +238,16 @@ Long-horizon items. No delivery date committed.
 
 ## Backlog Scorecard
 
-Quick-scan of everything not yet scheduled. Full detail (stack, issue link, description) is in the [Business Applications Catalog](../insurance-platform/business-applications-catalog).
+Quick-scan of IS domain items not yet scheduled. Full detail per item is in the [Business Applications Catalog](../insurance-platform/business-applications-catalog).
+
+**Platform engineering items (DevSecOps, FinOps, SRE, IaC, AI hardening, HR, intranet) are tracked separately → [Platform Engineering Backlog](../platform-engineering/platform-backlog)**
+
+| Scope | Count |
+|---|---|
+| Insurance IS domain (this page) | 53 |
+| Platform engineering | 88 |
+| Research pipeline | 8 |
+| **Total active backlog** | **149** |
 
 ### 51 Backlog items (📋)
 
@@ -296,6 +305,7 @@ Quick-scan of everything not yet scheduled. Full detail (stack, issue link, desc
 | 50 | MidPoint IGA | IAM |
 | 51 | PAM (Teleport + Vault SSH) | IAM |
 | 52 | GLPI | IAM / IT Ops |
+| 53 | Distribution lists (Stalwart virtual aliases) | Communication |
 
 ### 8 Research items (🔬)
 
@@ -319,14 +329,14 @@ Quick-scan of everything not yet scheduled. Full detail (stack, issue link, desc
 | Claims Extended | 5 |
 | IP / GNP | 4 |
 | Data & BI | 4 |
-| Communication | 4 |
+| Communication | 5 |
 | LOB extensions | 4 |
 | Compliance | 4 |
 | Reinsurance / Actuarial | 3 |
 | IAM / IT Ops | 3 |
 | Document Mgmt | 1 |
 
-Underwriting and Distribution are the two heaviest domains — together 20 of the 52 backlog items.
+Underwriting and Distribution are the two heaviest domains — together 20 of the 53 IS backlog items.
 
 ---
 
