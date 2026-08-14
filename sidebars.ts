@@ -425,6 +425,14 @@ const sidebars: SidebarsConfig = {
           collapsed: false,
           items: [
             'insurance-platform/business-applications-catalog',
+            {
+              type: 'category',
+              label: 'Custom Services',
+              collapsed: false,
+              items: [
+                'insurance-platform/ktayl-policy-service',
+              ],
+            },
           ],
         },
         {
