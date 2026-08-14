@@ -148,6 +148,8 @@ Paperless-ngx ─────────── (#76) audit-trail document archi
 
 LOB-specific modules extend the core policy and claims services with domain rules.
 
+### 4a. Standard LOBs
+
 | App | Issue | Phase | Description |
 |---|---|---|---|
 | **IARD AUTO + HAB** | (ERPNext #50 ✅) | ✅ Live | Base IARD products configured in ERPNext (3 products: RC AUTO, MRH, PREV-IND) |
@@ -155,8 +157,49 @@ LOB-specific modules extend the core policy and claims services with domain rule
 | **Construction & Engineering** | [#219](https://github.com/andrelair-platform/platform-backlog/issues/219) | 📋 Backlog | TRC/TRM project policies, Bris de Machine, renewable energy |
 | **Financial Lines (D&O / RC Pro)** | [#220](https://github.com/andrelair-platform/platform-backlog/issues/220) | 📋 Backlog | RCMS/D&O claims-made, retroactive dates, discovery periods |
 | **Collaborateurs** | [#221](https://github.com/andrelair-platform/platform-backlog/issues/221) | 📋 Backlog | Group personal accident, business travel, Europ Assistance API |
-| **International Programs** | [#222](https://github.com/andrelair-platform/platform-backlog/issues/222) | 📋 Backlog | Master + local admitted policies, international network, 130-country coverage |
 | **Alternative Risk Transfer** | [#223](https://github.com/andrelair-platform/platform-backlog/issues/223) | 🔬 Research | Captive management, parametric covers, risk financing |
+
+### 4b. International Programs (IP) — GNP equivalent
+
+International Programs is operationally distinct from standard LOBs: it involves **two parties** (Producing Office = ktayl France and Servicing Office = local insurer abroad), a **master policy + local admitted sub-policies** structure, and **cross-entity data exchange** for premiums, reserves, claims and accounting — exactly what HDI's Global Network Portal (GNP) handles.
+
+**Concept:**
+
+```
+ktayl France (Producing Office)
+        │
+        │  master policy terms, capacity, limits
+        ↓
+ktayl-ip-portal ─────────── GNP equivalent: central coordination hub
+        │
+        ├── Policy data sync ──→ Servicing Offices (local admitted insurers)
+        │                        premium cession, reserve allocation
+        │
+        ├── Claims data ◄─────── ktayl-claims-service (direct claims)
+        │                        + local SO claim notifications
+        │
+        ├── IP bordereaux ──────→ ERPNext (cession accounting écritures)
+        │                        separate format from reinsurance bordereaux
+        │
+        └── Network status ─────  Viewer / User / Accountant role access
+                                  (mirrors GNP roles 1014444/1014445/1014446)
+```
+
+**Integration topology:**
+```
+ktayl-policy-service  ──► IP data model extension (master + local sub-policies)
+ktayl-claims-service  ──► ktayl-ip-portal (SO claim notifications inbound)
+ktayl-ip-portal       ──► ERPNext (IP bordereau → accounting écritures)
+ktayl-ip-portal       ──► Paperless-ngx (SO documents archive)
+ktayl-ip-portal       ──► n8n (automated SO communication workflows)
+```
+
+| App | Stack | Issue | Phase | Description |
+|---|---|---|---|---|
+| **International Programs LOB** | Extension of ktayl-policy-service | [#222](https://github.com/andrelair-platform/platform-backlog/issues/222) | 📋 Backlog | IP data model in ktayl-policy-service: master policy + local admitted sub-policies, network cession amounts, SO registry |
+| **ktayl-ip-portal** | Go / React | [#222](https://github.com/andrelair-platform/platform-backlog/issues/222) | 📋 Backlog | GNP equivalent — Producing Office ↔ Servicing Office hub: policy sync, reserve/premium coordination, claims notification, network status. Roles: Viewer / User / Accountant |
+| **IP bordereau module** | ERPNext / Frappe | [#222](https://github.com/andrelair-platform/platform-backlog/issues/222) | 📋 Backlog | IP-specific cession bordereaux (distinct format from reinsurance #209): PO → SO premium cession, reserve transfers, accounting écritures in ERPNext PCG |
+| **SO claims feed** | Go (in ktayl-ip-portal) | [#222](https://github.com/andrelair-platform/platform-backlog/issues/222) | 📋 Backlog | Inbound claim data from Servicing Offices — mirrors GNP ↔ ICS (Claims@Global) interface. SO notifies PO of local claims against the master program |
 
 ---
 
@@ -303,7 +346,8 @@ Post-cert →  Reinsurance, actuarial, LOB extensions,
 | Domain | ktayl-solution component |
 |---|---|
 | Claims & policy lifecycle | ktayl-claims-service + ktayl-policy-service |
-| Underwriting | UW workbench (#81) + authority matrix (#231) |
+| Underwriting | ktayl-uwb-api + ktayl-uwb-ui + UW AI agents (#81) |
+| International Programs (GNP) | ktayl-ip-portal + IP bordereau module (#222) |
 | Customer portal | ktayl-portal (#202) |
 | Document management | Paperless-ngx (#76) |
 | Task & project management | Plane CE (live) |
