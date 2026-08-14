@@ -238,7 +238,16 @@ Long-horizon items. No delivery date committed.
 
 ## Backlog Scorecard
 
-Quick-scan of everything not yet scheduled. Full detail (stack, issue link, description) is in the [Business Applications Catalog](../insurance-platform/business-applications-catalog).
+Quick-scan of IS domain items not yet scheduled. Full detail per item is in the [Business Applications Catalog](../insurance-platform/business-applications-catalog).
+
+**Platform engineering items (DevSecOps, FinOps, SRE, IaC, AI hardening, HR, intranet) are tracked separately → [Platform Engineering Backlog](../platform-engineering/platform-backlog)**
+
+| Scope | Count |
+|---|---|
+| Insurance IS domain (this page) | 52 |
+| Platform engineering | 90 |
+| Research pipeline | 8 |
+| **Total active backlog** | **150** |
 
 ### 51 Backlog items (📋)
 

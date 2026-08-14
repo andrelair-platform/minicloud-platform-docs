@@ -14,6 +14,7 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: [
         'product-roadmap/overview',
+        'platform-engineering/platform-backlog',
       ],
     },
 
