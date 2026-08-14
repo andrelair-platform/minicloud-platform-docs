@@ -287,6 +287,7 @@ ktayl-ip-portal       ──► n8n (automated SO communication workflows)
 | **Vaultwarden** | k3s (live) | — | ✅ Live | Password manager — 15 IS credentials |
 | **MidPoint IGA** | Docker | [#205](https://github.com/andrelair-platform/platform-backlog/issues/205) | 📋 Backlog | Habilitation platform — access request → manager approval → Authentik SCIM |
 | **PAM (Teleport + Vault SSH)** | k3s | [#151](https://github.com/andrelair-platform/platform-backlog/issues/151) | 📋 Backlog | JIT privileged access, dynamic secrets, quarterly access review |
+| **GLPI** | Docker + PostgreSQL | — | 📋 Backlog | ITSM / service desk — ticketing, asset management, change management, internal service catalog |
 
 ---
 
@@ -307,7 +308,10 @@ ktayl-ip-portal       ──► n8n (automated SO communication workflows)
 | Backstage IDP | Developer portal | ✅ Live |
 | Docuseal | e-Signature | ✅ Live |
 | Grafana + Loki + Tempo | Observability | ✅ Live |
-| GLPI | ITSM | ✅ Live |
+| Flowise 2.2.7 | AI workflow builder | ✅ Live |
+| Nextcloud | File sharing / collaboration | ✅ Live |
+| NATS JetStream | Event streaming | ✅ Live |
+| Qdrant | Vector database (RAG) | ✅ Live |
 | Vaultwarden | Password management | ✅ Live |
 | Authentik | IAM / SSO | ✅ Live |
 | Harbor | Container registry | ✅ Live |
