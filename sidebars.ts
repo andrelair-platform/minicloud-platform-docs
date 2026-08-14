@@ -17,17 +17,6 @@ const sidebars: SidebarsConfig = {
       ],
     },
 
-    // ── Insurance Platform ───────────────────────────────────────────
-    {
-      type: 'category',
-      label: '🏢 Insurance Platform (ktayl solution IS)',
-      collapsed: false,
-      items: [
-        'insurance-platform/business-applications-catalog',
-        'insurance-platform/ktayl-policy-service',
-      ],
-    },
-
     // ── Infrastructure ───────────────────────────────────────────────
     {
       type: 'category',
