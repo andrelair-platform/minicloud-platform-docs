@@ -245,9 +245,9 @@ Quick-scan of IS domain items not yet scheduled. Full detail per item is in the 
 | Scope | Count |
 |---|---|
 | Insurance IS domain (this page) | 53 |
-| Platform engineering | 88 |
+| Platform engineering | 100 |
 | Research pipeline | 8 |
-| **Total active backlog** | **149** |
+| **Total active backlog** | **161** |
 
 ### 51 Backlog items (📋)
 
