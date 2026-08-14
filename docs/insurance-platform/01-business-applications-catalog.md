@@ -53,16 +53,81 @@ ktayl-claims-service → ERPNext (premium accounting)
 
 ## 2. Underwriting
 
+### 2a. AI Underwriting Assistant (core system)
+
+The underwriting system follows the principle: **AI prepares the decision, the underwriter makes it.**
+
+The target operating model transforms the underwriter's workload from 60% administration + 40% underwriting judgment to 10–20% administration + 80–90% actual underwriting — multiplying the number of risks one underwriter can handle while improving consistency and auditability.
+
+**Architecture (platform integration map):**
+
+```
+Broker / Client
+      │
+Email / Portal / API
+      ↓
+n8n  ──────────────────── (existing) intake, classify, route
+      ↓
+markitdown-proxy ─────── (existing) PDF/Excel/Office → text
+      ↓
+minicloud-crew-agent ─── (extend) 3 UW agents:
+  ├── Document Agent      classify, extract, source-attribute every field
+  ├── Risk Agent          exposure analysis, claims history summary, anomaly flags
+  └── Compliance Agent    KYC/AML, sanctions screening, missing-doc detection
+      ↓
+Structured Risk JSON + source attribution (confidence %, page ref)
+      ↓
+underwriting-workflow ── (Temporal, existing) state machine
+  SUBMITTED → INTAKE → DOCS_EXTRACTED → DATA_VALIDATED
+  → RISK_ASSESSED → AWAITING_DECISION → QUOTED → BOUND | DECLINED
+      ↓
+ktayl-uwb-api ──────────── (NEW, Go) rules engine + authority routing
+  IF revenue > €100M AND limit > €20M → senior_review
+  IF industry = "chemical" AND hazard = "high" → specialist_review
+  IF claims_freq > threshold → additional_UW_required
+      ↓
+ktayl-uwb-ui ───────────── (NEW, React) Underwriter Workbench — single screen:
+  Client | Risk | Request | Claims history | AI findings | [ACCEPT] [MODIFY] [DECLINE]
+      ↓
+ktayl-uwb-api (quote generation + pricing engine)
+      ↓
+n8n ────────────────────── (existing) auto-generate broker communication
+      ↓
+ERPNext ────────────────── (existing) policy bind, premium accounting
+      ↓
+Paperless-ngx ─────────── (#76) audit-trail document archive
+```
+
+**Key design constraints:**
+- Every AI-extracted field shows: value + source document + page + confidence %
+- LLM never writes directly to the core system — always JSON → validation → human approval → system
+- Quote ≠ Policy mismatch detection before bind (AI cross-check)
+- Underwriter workbench is a task inbox, not a CRUD form
+
 | App | Stack | Issue | Phase | Description |
 |---|---|---|---|---|
-| **Underwriting workbench** | TBD | [#81](https://github.com/andrelair-platform/platform-backlog/issues/81) | 📋 Backlog | Risk scoring, capacity check, L1–L4 referral workflow |
-| **UW authority matrix** | Config / API | [#231](https://github.com/andrelair-platform/platform-backlog/issues/231) | 📋 Backlog | Binding authority levels per LOB, enforced routing, escalation chain |
+| **ktayl-uwb-api** | Go | [#81](https://github.com/andrelair-platform/platform-backlog/issues/81) | 📋 Backlog | Risk data model, rules engine, authority routing, pricing engine, quote generation, ERPNext policy push |
+| **ktayl-uwb-ui** | React / TypeScript | [#81](https://github.com/andrelair-platform/platform-backlog/issues/81) | 📋 Backlog | Underwriter Workbench single-screen: client + risk + AI findings + decision buttons (ACCEPT / MODIFY / DECLINE) |
+| **underwriting-workflow** | Temporal (existing) | [#81](https://github.com/andrelair-platform/platform-backlog/issues/81) | 📋 Backlog | Long-running UW state machine in the existing Temporal cluster — new workflow type, no new infrastructure |
+| **UW AI agents** | Python / CrewAI (extend minicloud-crew-agent) | [#81](https://github.com/andrelair-platform/platform-backlog/issues/81) | 📋 Backlog | 3 specialized agents: Document (extract+classify), Risk (exposure+claims+anomaly), Compliance (KYC+sanctions+missing-docs) |
+| **UW broker intake** | n8n (existing) | — | 📋 Backlog | n8n workflows: broker email → doc routing → missing-info auto-request → status updates. No new service. |
+
+### 2b. Underwriting Governance & Tooling
+
+| App | Stack | Issue | Phase | Description |
+|---|---|---|---|---|
+| **UW authority matrix** | Config / API (inside ktayl-uwb-api) | [#231](https://github.com/andrelair-platform/platform-backlog/issues/231) | 📋 Backlog | Binding authority levels per LOB, enforced routing, escalation chain |
 | **UW guidelines repository** | Versioned docs | [#230](https://github.com/andrelair-platform/platform-backlog/issues/230) | 📋 Backlog | LOB rules, prohibited sectors, capacity limits, pricing floors — UW Director approval |
-| **Technical UW committee** | Workflow | [#232](https://github.com/andrelair-platform/platform-backlog/issues/232) | 📋 Backlog | L4 risk escalation, quorum management, digital vote, signed decision |
-| **Actuarial pricing engine** | Python / microservice | [#101](https://github.com/andrelair-platform/platform-backlog/issues/101) | 📋 Backlog | Premium rating per LOB — replaces manual Excel tariff grids |
+| **Technical UW committee** | Temporal workflow | [#232](https://github.com/andrelair-platform/platform-backlog/issues/232) | 📋 Backlog | L4 risk escalation, quorum management, digital vote, signed decision |
+| **Actuarial pricing engine** | Python / microservice | [#101](https://github.com/andrelair-platform/platform-backlog/issues/101) | 📋 Backlog | Statistical premium rating per LOB — replaces manual Excel tariff grids, feeds ktayl-uwb-api |
 | **Risk engineering assessment** | Form / PDF | [#208](https://github.com/andrelair-platform/platform-backlog/issues/208) | 📋 Backlog | On-site visit report, prevention scoring, UW integration |
+
+### 2c. Advanced / Research
+
+| App | Stack | Issue | Phase | Description |
+|---|---|---|---|---|
 | **Corporate risk intelligence agent** | Python / LangGraph | [#210](https://github.com/andrelair-platform/platform-backlog/issues/210) | 🔬 Research | Pre-UW due diligence for CAC40 B2B prospects (Pappers + OpenSanctions) |
-| **Algorithmic Cyber Underwriter** | Python / AI | [#150](https://github.com/andrelair-platform/platform-backlog/issues/150) | 🔬 Research | AI-driven cyber risk assessment, pricing decision support |
+| **Algorithmic Cyber Underwriter** | Python / AI | [#150](https://github.com/andrelair-platform/platform-backlog/issues/150) | 🔬 Research | AI-driven cyber risk assessment, automated pricing decision support |
 | **COBOL actuarial rating engine** | GnuCOBOL + API wrapper | [#148](https://github.com/andrelair-platform/platform-backlog/issues/148) | 🔬 Research | Legacy rating engine demo — IBM z/OS credential, modern REST wrapper |
 
 ---
@@ -220,7 +285,9 @@ Q2 2027  →  ktayl-ai-claims-assistant (Python/LangGraph)
              CLM-PAY-1 SEPA payment
              Insurance attestation PDF
 
-Q3 2027  →  Underwriting workbench + authority matrix
+Q3 2027  →  ktayl-uwb-api + ktayl-uwb-ui (Underwriting Workbench)
+             underwriting-workflow (Temporal) + UW AI agents (CrewAI)
+             UW authority matrix + actuarial pricing engine
              Premium collection lifecycle
              ORIAS verification
              SMS gateway + shared mailboxes
