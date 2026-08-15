@@ -162,6 +162,7 @@ const sidebars: SidebarsConfig = {
           label: 'Hardening',
           collapsed: true,
           items: [
+            'security-enterprise/security-hardening-roadmap',
             'security-enterprise/security-overview',
             'security-enterprise/host-hardening',
             'security-enterprise/cluster-hardening',
