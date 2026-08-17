@@ -52,6 +52,10 @@ const config: Config = {
           blogSidebarTitle: 'Recent Posts',
           blogSidebarCount: 'ALL',
           postsPerPage: 10,
+          feedOptions: {
+            type: 'rss',
+            limit: false,
+          },
         },
         theme: {
           customCss: './src/css/custom.css',
