@@ -57,6 +57,61 @@ Provider tiers are tagged with `model_info.access_group` (`onprem`/`eu`/`us`; un
 
 **Detailed governance docs** (in `minicloud-gitops/docs/ai-governance/`): `model-governance-matrix.md` · `dora-audit.md`.
 
+### Routing: two independent axes (design decision)
+
+A common expectation is that "the gateway decides which model to use" — *simple
+question → cheap model, complex analysis → premium, ultra-confidential → private*.
+Those examples actually mix **two orthogonal axes**, and this gateway deliberately
+automates only one:
+
+| Axis | Question | Who decides | Status here |
+|---|---|---|---|
+| **Sensitivity** (confidentiality) | *may this data go to this provider?* | **the gateway** | ✅ **automatic & enforced** |
+| **Complexity / cost** (cheap vs premium) | *is a big model worth it here?* | **the calling application** | 🟡 app-driven (by design) |
+
+**Design decision — sensitivity first.** In a regulated (insurance) IS, compliance
+and security must **always** win over FinOps optimisation. The gateway therefore
+applies **hard governance on the sensitivity axis** — `model_info.access_group`
+per model + tier-scoped RBAC keys + Presidio PII masking — so confidential data
+**can never** reach an untrusted/CN provider, regardless of what the caller asks
+for. This is enforced, not advisory.
+
+**Why complexity routing is left to the application.** Deciding "simple vs
+complex" automatically means either a magic classifier (adds latency, opacity, an
+extra decision point to govern) or brittle heuristics. The application knows its
+own intent far better than a guesser — so it selects the model **explicitly**.
+The gateway's job is to make that choice *safe* (a P3 key still can't escape the
+EU/on-cluster tier even if it asks for a US premium model) and *portable* (aliases,
+not hard-coded SKUs).
+
+**How each example maps today:**
+
+| Flow | Handled by |
+|---|---|
+| Ultra-confidential → private/EU | ✅ gateway (sensitivity RBAC — automatic) |
+| No big model needed → local Llama (vLLM) | app picks the `phi3-financial` (on-cluster) alias |
+| Simple question → cheap model | app picks `gpt-4o-mini` / `mistral-small` |
+| Complex analysis → premium | app picks `claude-sonnet` / `bedrock-mistral-large` |
+| RAG → specialised | app assembles the pipeline (`mistral-embed` + a generator) |
+
+Plus, independent of both axes: **least-busy load-balancing** across a model's
+backends, **fallbacks** (retries/cooldown → on-cluster vLLM as sovereign
+fallback), and a **semantic cache** (Valkey).
+
+**Recommended pattern — intent aliases (not hard-coded model names).** Applications
+should target **functional aliases** by intent rather than provider SKUs, so the
+cost/performance ratio is a config decision, not code:
+
+- `chat-fast` / `tier-economy` → cheap models (mistral-small, gpt-4o-mini)
+- `chat-reasoning` / `tier-premium` → premium (claude-sonnet, bedrock-mistral-large)
+- `embeddings` → `mistral-embed` (EU)
+
+This keeps complexity/cost app-driven **and** governed: the alias resolves only to
+backends the caller's tier is allowed to reach (sensitivity × intent). Wiring these
+intent aliases (LiteLLM `model_group_alias`) is a tracked backlog item —
+**complexity/cost-aware routing, Option 1** (explicit intent), preferred over an
+automatic semantic router whose latency/infra cost usually outweighs the savings.
+
 ---
 
 ## Architecture
