@@ -353,6 +353,7 @@ const sidebars: SidebarsConfig = {
           label: 'Inference Infrastructure',
           collapsed: true,
           items: [
+            'ai-ml/compute-constraints',
             'ai-ml/ollama',
             'ai-ml/model-distribution',
             'ai-ml/mlflow',
