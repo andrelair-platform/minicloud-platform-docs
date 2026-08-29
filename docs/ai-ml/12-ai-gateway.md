@@ -6,9 +6,58 @@ sidebar_label: AI Gateway
 
 # AI Gateway — LiteLLM + PostgreSQL
 
-**Phase complete:** 2026-07-05  
-**Issues closed:** #34 (LiteLLM proxy), #41 (inference optimization)  
-**GitOps:** `manifests/ai/` in minicloud-gitops — ArgoCD Application `litellm` Synced/Healthy
+**Phase complete:** 2026-07-05 · **Hardened:** 2026-08-29 (epic #296)  
+**Issues closed:** #34 (LiteLLM proxy), #41 (inference optimization), **#296 + #297–310 (Enterprise Hardening)**  
+**GitOps:** `manifests/ai/` in minicloud-gitops — ArgoCD Application `litellm` Synced/Healthy · cloud IaC: `minicloud-cloud` (OpenTofu)
+
+:::note Doc status
+Sections below the *Enterprise Hardening* block describe the original 2026-07 design. Some details are now **superseded**: Ollama was dropped from the cluster (generation moved to **Ollama Cloud** + cloud providers; embeddings moved to **mistral-embed**, not `bge-m3`), and department key tiers are complemented by **sensitivity-tier RBAC**. The Enterprise Hardening section is the current source of truth for governance, routing, residency and audit.
+:::
+
+## AI Gateway Enterprise Hardening (Epic #296 — 2026-08-29)
+
+Turned the gateway from "multi-model proxy" into a **governed, multi-cloud AI Platform** with EU data residency, sensitivity-based routing, per-consumer RBAC, PII masking, SLO/FinOps/residency observability, compliance alerting and a DORA audit trail. All 13 stories done (milestone #17 closed).
+
+### Architecture (current)
+
+```
+callers (teams, RBAC-scoped keys)
+        │
+        ▼
+  LiteLLM Gateway (:4000)  ── Presidio PII masking (pre_call, default_on)
+        │
+ ┌──────┼───────────────────────────────────────────────┐
+ ▼      ▼                    ▼                    ▼
+on-cluster (P3)         EU cloud (P2)        US enterprise (P1)   untrusted (P0-only)
+vLLM phi3 / agents      mistral-* (Mistral)  gpt-4o / claude /    groq / nvidia / hf /
+(sovereign)             AWS Bedrock (eu-west-1)  gemini             ollama-cloud / deepseek-CN
+                        Azure OpenAI (Sweden C.)
+```
+
+Provider tiers are tagged with `model_info.access_group` (`onprem`/`eu`/`us`; untagged = P0-only). Teams are scoped to tiers → **confidential data can never reach an untrusted/CN provider**.
+
+### What was delivered
+
+| # | Story | Outcome |
+|---|---|---|
+| **P0** #297-300 | Cloud IaC foundation | Repo **`minicloud-cloud`** (OpenTofu, single tool, split by scope) · state **S3+DynamoDB** (EU) · **root AWS key deactivated → scoped IAM users** (`minicloud-tofu` provisioning, `litellm-bedrock` runtime) + Azure **Service Principal** · **€15/provider budget alerts** (AWS Budgets + Azure Cost) |
+| **P1** #301-302 | Governance | **Model governance matrix** (per-model jurisdiction/residency/training-terms/max-class) + **4 data classes** P0-P3 → `minicloud-gitops/docs/ai-governance/model-governance-matrix.md` |
+| **P2** #303-304 | Cloud tier (EU) | **AWS Bedrock** `bedrock-mistral-large` (eu-west-1) + **Azure OpenAI** `azure-gpt-4.1-mini` (Sweden Central, Standard-regional) — both EU-resident, wired via LiteLLM, tested e2e |
+| **P3** #305-306 | Enforcement | `model_info.access_group` per model + **teams scoped to tiers** (`[onprem,eu,us]` → never untrusted P0/CN) + per-consumer budgets/tpm/rpm |
+| **P4** #307-309 | Obs & audit | **Residency recording rules** (`ai:litellm_*_by_tier`, `out_of_eu_ratio`) + Grafana *Residency & Governance FinOps* · compliance alerts (`AIPresidioGuardrailErrors`=critical→email+Slack, out-of-EU, SLO, error-spike) · **DORA audit doc** (`docs/ai-governance/dora-audit.md`) |
+| #310 | Embeddings fix | `nomic-embed-text` (dropped Ollama model) → **`mistral-embed`** (EU, 1024-dim) — restricted-doc (P3) embeddings now stay in the EU |
+
+### Cost model
+**AI tokens only** — Standard/on-demand tiers, no PTU/PrivateLink/cloud-monitoring/managed-KB. Cloud credentials live only in **Vault** (`secret/platform/cloud-providers`), reusable via `source scripts/load-env.sh` in `minicloud-cloud`.
+
+### Compliance mapping
+- **EU AI Act:** governance matrix = technical documentation + risk tiers.
+- **DORA:** matrix = ICT third-party register; Langfuse per-call audit trail (retention **365d**); LiteLLM gateway = provider-swap-as-config exit strategy; on-cluster vLLM fallback.
+- **GDPR/ACPR:** PII masked pre-call (Presidio); restricted (P3) data confined to on-cluster/EU tiers.
+
+**Detailed governance docs** (in `minicloud-gitops/docs/ai-governance/`): `model-governance-matrix.md` · `dora-audit.md`.
+
+---
 
 ## Architecture
 
