@@ -376,6 +376,7 @@ const sidebars: SidebarsConfig = {
           collapsed: true,
           items: [
             'ai-ml/ai-gateway',
+            'ai-ml/ai-platform-golden-path',
             'ai-ml/llmops-stack-assessment',
             'ai-ml/langfuse',
           ],
