@@ -94,9 +94,32 @@ not hard-coded SKUs).
 | Complex analysis → premium | app picks `claude-sonnet` / `bedrock-mistral-large` |
 | RAG → specialised | app assembles the pipeline (`mistral-embed` + a generator) |
 
-Plus, independent of both axes: **least-busy load-balancing** across a model's
-backends, **fallbacks** (retries/cooldown → on-cluster vLLM as sovereign
-fallback), and a **semantic cache** (Valkey).
+### Resilience & rate-limit handling
+
+Independent of the two routing axes, three layers keep the gateway available even
+on rate-limited **free-tier** providers. Fallback chains **never cross a
+governance tier** (free↔free, EU↔EU) so a failover cannot leak data out of its
+residency class.
+
+| Layer | Mechanism | Behaviour |
+|---|---|---|
+| **0 — Semantic cache** | Valkey `redis-semantic`, similarity ≥ 0.8, TTL 600s | Near-duplicate prompts are served from cache — fewer provider calls, fewer 429s at the source |
+| **1 — Key rotation / load-balance** | `routing_strategy: least-busy` + `num_retries: 3`, `allowed_fails: 3`, `cooldown_time: 60` | A model declared N times (e.g. `ollama-cloud` ×3 keys) is load-balanced; a backend that returns 429 `allowed_fails` times is cooled for 60s and retries route to another key — the next key takes over automatically |
+| **2 — Cross-model fallback** | `router_settings.fallbacks` | When **all** keys of a model are cooled, fall through to a same-tier alternative |
+
+Current fallback chains (`manifests/ai/00-litellm-configmap.yaml`):
+
+```
+free (dev):   ollama-cloud (3 keys) ⇄ nvidia-nano-30b        # 4 paths before failure
+EU (prod):    bedrock-mistral-large → mistral-large → mistral-small
+```
+
+**Not everything gets a fallback on purpose:** embeddings have none —
+`nvidia-embed` (2048-dim) and `mistral-embed` (1024-dim) differ in dimension, and
+a cross-dim failover would poison the Qdrant collection; embeddings rely on
+retries/cooldown only. On-cluster models (`phi3-financial`, vision) have no cloud
+fallback so sensitive content stays on-prem. A chronic free-tier saturation is
+surfaced by the **`AIProviderErrorSpike`** alert + the Grafana error-rate panel.
 
 **Recommended pattern — intent aliases (not hard-coded model names).** Applications
 should target **functional aliases** by intent rather than provider SKUs, so the
