@@ -55,6 +55,40 @@ produces a **mixed Freight** (e.g. `backend@old + frontend@new`). A **git** Ware
 Freight on the commit, so every image is promoted at the **same SHA** — consistent and
 auditable. (retrieva is a public repo, so its git subscription needs no credential.)
 
+## Which deployments need Kargo? (why only 6 of ~91 apps)
+
+A common confusion: the cluster runs **~91 Argo CD Applications, 127 Deployments,
+34 StatefulSets, ~369 pods** — yet only **6 services** are on Kargo. That is not an
+oversight. **Kargo promotes *one immutable artifact that you build* across *multiple
+stages*.** It only earns its place when **all four** conditions hold at once:
+
+1. **You build the image** (your source → CI → image — not a vendor's chart).
+2. **Two environments** run the *same* artifact (a `dev` **and** a `prod`).
+3. The image is **env-agnostic** (config read at **runtime**, so the identical binary is promotable).
+4. The prod tag is **immutable** (ghcr / SHA, never a moving `:latest`).
+
+Everything else on the platform falls into three buckets that **do not** need Kargo —
+they update by a plain **version bump in Git → Argo CD sync**, with nothing to move
+between stages:
+
+| Bucket | Examples | Why not Kargo |
+|---|---|---|
+| **① Third-party / off-the-shelf** (the majority) | Grafana, Vault, Harbor, Argo CD, Authentik, Prometheus, Loki, Nextcloud, Matrix, ERPNext & Plane charts | You don't build their image and there's no `dev` copy — *conditions 1 & 2 fail*. "Promote" = bump the chart/image version in `helm-values/`. |
+| **② Platform infra** | cert-manager, ESO, Cilium, Longhorn, KEDA, Tempo, cloudflared | Cluster plumbing, single instance, no application lifecycle — *condition 2 fails*. |
+| **③ Your custom images, but single-environment** | minicloud-backstage, minicloud-open-webui, minicloud-onlyoffice, minicloud-erpnext, ktayl-solution-web | You *do* build them (✓ condition 1) but there's **one prod instance**, no `dev→prod` — *condition 2 fails*. They're tools deployed once; update = bump the tag → Argo CD deploys. |
+
+**The mental test:** *"Do I have a `dev` **and** a `prod` running the same artifact I
+build, and do I want to move a validated version from one to the other?"*
+**Yes → Kargo** (the 6). **No** (third-party / single instance / infra) **→ just Argo CD
++ Helm version-pinning.**
+
+:::note Why 91 ≠ 91 candidates
+One Kargo service is itself **~3 Argo CD Applications** (`<svc>-dev` + `<svc>-prod` +
+`kargo-<svc>`). The 91 count also includes every separate dev/prod app, all third-party
+apps and all infra. **91 apps is not 91 promotion candidates** — the vast majority
+self-update by a Git version bump, not a multi-stage promotion.
+:::
+
 ## Which services are wired (all 6 custom services)
 
 | Service | Warehouse | Stages | Notes |
@@ -62,7 +96,7 @@ auditable. (retrieva is a public repo, so its git subscription needs no credenti
 | platform-demo | image (public ghcr) | dev + prod | reference; full canary promo demonstrated |
 | minicloud-plane / -agent / -crew | image (Internal ghcr + cred) | dev + prod | dev PRs squash-auto-merge |
 | ktayl-policy-service | image (Internal ghcr + cred) | dev + prod | migrated to ghcr/SHA; own prod Postgres |
-| **retrieva** | **git** (2 images) | **prod-only** | frontend made **runtime-config** so one image serves all envs; dev stays on its dev-branch track |
+| **retrieva** | **git** (2 images) | **dev + prod** | frontend made **runtime-config** so one image serves all envs; builds on `main` only, Kargo owns dev→prod |
 
 ## For developers — how you work with it
 
