@@ -124,6 +124,54 @@ self-update by a Git version bump, not a multi-stage promotion.
   prod namespace collides — see retrieva). The litmus test: **Kargo promotes one immutable
   artifact across stages.**
 
+## Auto-promotion & Kargo-owned dev verification (the target model)
+
+By default here, promotions are **manual** (safe posture). The target model — piloted on
+**platform-demo** — makes Kargo the **sole promoter of dev** and moves **dev verification off
+the CI** into Kargo. Rationale: once Kargo owns promotion, having CI drive the dev deploy and
+then smoke it *synchronously in the same run* is a **sync-over-async anti-pattern**. CI should
+only **build & prove the artifact**; *"what qualifies a Freight for prod?"* → *"it was verified
+in dev"*, and that verification belongs to the deploy orchestrator.
+
+Three pieces in `services/<svc>/kargo/`:
+
+1. **`ProjectConfig`** — `spec.promotionPolicies: [{stage: dev, autoPromotionEnabled: true}]`.
+   New Freight is auto-promoted to the dev Stage (which subscribes to the Warehouse). Prod is
+   omitted → stays manual (the CODEOWNERS PR gate).
+2. **Stage `dev.spec.verification.analysisTemplates`** — references an AnalysisTemplate. After
+   promoting to dev, Kargo runs it as an `AnalysisRun`; the Freight becomes `verifiedIn:[dev]`
+   **only if it passes**. The prod Stage (`sources.stages: [dev]`) accepts **only verified
+   Freight** — that is the dev→prod gate.
+3. **`AnalysisTemplate`** — a `job`-provider **smoke** (curl the app's health endpoint). A failed
+   verification does **not** roll back dev (promotion already happened); it just blocks
+   prod-promotability. Prod still has its canary Rollout metric brake.
+
+The CI then loses `bump-gitops`/`smoke`/`canary` and builds **main-only**.
+
+```
+git push main → CI (build+sign+SBOM only) → ghcr:<sha>
+   → Warehouse → Freight → auto-promote dev (PR, auto-merged) → Argo CD sync
+   → Kargo verification (smoke AnalysisRun) → Freight verifiedIn:[dev] → promotable to prod
+```
+
+### The smoke must reach a real, deployed app — two variants by dev topology
+
+The probe is **service-specific**; this is the main thing a rollout must get right. Both use a
+Gatekeeper-compliant pod (`runAsNonRoot`, `allowPrivilegeEscalation: false`, drop all caps,
+resource limits, seccomp `RuntimeDefault`) and a **fully-qualified image**
+(`docker.io/curlimages/curl:…` — a bare name is denied by the allowed-registries policy).
+
+| Variant | Dev topology | How the smoke reaches the app | Extra infra |
+|---|---|---|---|
+| **A** | **scale-to-zero (KEDA) + SSO** (platform-demo) | curl the **KEDA interceptor directly** (`…interceptor-proxy.keda.svc:8080` + `Host: <dev-host>`) → wakes dev 0→1 **and** bypasses the ingress SSO (you test the app, not the identity chain) | one label-scoped `NetworkPolicy` in the `keda` ns allowing `kargo.akuity.io/project=true` namespaces → interceptor:8080 (covers all Kargo services) |
+| **B** | **always-on + no SSO** (plane / agent / crew / ktayl) | curl the app **via ingress-nginx** (`--connect-to <dev-host>:443:<nginx-svc>:443` for correct SNI, `-k`) | **none** — ingress-nginx accepts from all namespaces and the dev ns already allows ingress-nginx |
+
+**Rollout checklist per service:** confirm its dev topology (scale-to-zero? SSO?) → pick variant
+A or B → add `projectconfig.yaml` + `analysis-dev-smoke.yaml` (+ variant-A netpol) + Stage
+`verification` → **prove live** (create an AnalysisRun from the deployed template → `Successful`)
+→ only then strip the CI (`bump-gitops`/`smoke`/`canary`, main-only). Prove *before* stripping so
+dev keeps being fed if anything is wrong.
+
 ## Gotchas worth knowing
 
 - **Mixed Freight** (multi-image, one unchanged) → use a **git Warehouse** (above).
