@@ -154,29 +154,43 @@ git push main → CI (build+sign+SBOM only) → ghcr:<sha>
    → Kargo verification (smoke AnalysisRun) → Freight verifiedIn:[dev] → promotable to prod
 ```
 
-### The smoke must reach a real, deployed app — two variants by dev topology
+### The smoke must reach a real, deployed app — the variant depends on dev topology
 
-The probe is **service-specific**; this is the main thing a rollout must get right. Both use a
-Gatekeeper-compliant pod (`runAsNonRoot`, `allowPrivilegeEscalation: false`, drop all caps,
-resource limits, seccomp `RuntimeDefault`) and a **fully-qualified image**
-(`docker.io/curlimages/curl:…` — a bare name is denied by the allowed-registries policy).
+The probe is **service-specific** — this is the main thing a rollout must get right, and the
+biggest lesson of the rollout: *the "same recipe" doesn't exist; each service's dev topology
+decides how the smoke reaches it.* All variants use a Gatekeeper-compliant pod (`runAsNonRoot`,
+`allowPrivilegeEscalation: false`, drop all caps, resource limits, seccomp `RuntimeDefault`) and a
+**fully-qualified image** (`docker.io/curlimages/curl:…` — a bare name is denied by the
+allowed-registries policy).
 
 | Variant | Dev topology | How the smoke reaches the app | Extra infra |
 |---|---|---|---|
-| **A** | **scale-to-zero (KEDA) + SSO** (platform-demo) | curl the **KEDA interceptor directly** (`…interceptor-proxy.keda.svc:8080` + `Host: <dev-host>`) → wakes dev 0→1 **and** bypasses the ingress SSO (you test the app, not the identity chain) | one label-scoped `NetworkPolicy` in the `keda` ns allowing `kargo.akuity.io/project=true` namespaces → interceptor:8080 (covers all Kargo services) |
-| **B** | **always-on + no SSO** (plane / agent / crew / ktayl) | curl the app **via ingress-nginx** (`--connect-to <dev-host>:443:<nginx-svc>:443` for correct SNI, `-k`) | **none** — ingress-nginx accepts from all namespaces and the dev ns already allows ingress-nginx |
+| **A** | **HTTP scale-to-zero (KEDA) + SSO** — platform-demo | curl the **KEDA interceptor directly** (`…interceptor-proxy.keda.svc:8080` + `Host: <dev-host>`) → wakes dev 0→1 **and** bypasses the ingress SSO (you test the app, not the identity chain) | one label-scoped `NetworkPolicy` in the `keda` ns allowing `kargo.akuity.io/project=true` namespaces → interceptor:8080 (covers all Kargo services) |
+| **B** | **always-on + ingress, no SSO** — ktayl | curl the app **via ingress-nginx** (`--connect-to <dev-host>:443:<nginx-svc>:443` for correct SNI, `-k`) | **none** — ingress-nginx accepts from all namespaces and the dev ns already allows ingress-nginx |
+| **C** | **always-on, internal (no ingress)** — agent, crew | curl the **dev Service directly cross-namespace** (`http://<svc>.<svc>-dev.svc:<port>/health`) from the Kargo project ns | a label-scoped `allow-kargo-verification` `NetworkPolicy` **in each dev ns** allowing ingress from `kargo.akuity.io/project=true` → the app port |
+| **D** | **cron scale-to-zero (KEDA), internal** — plane | **scale-aware**: the Job pauses the KEDA ScaledObject at 1 replica (`autoscaling.keda.sh/paused-replicas`), waits for Ready, smokes cross-ns, then removes the annotation so cron control resumes | the Variant-C netpol **+** a ServiceAccount/Role (patch scaledobjects, get rollouts/pods in the dev ns) bound to the AnalysisRun Job |
 
-**Rollout checklist per service:** confirm its dev topology (scale-to-zero? SSO?) → pick variant
-A or B → add `projectconfig.yaml` + `analysis-dev-smoke.yaml` (+ variant-A netpol) + Stage
-`verification` → **prove live** (create an AnalysisRun from the deployed template → `Successful`)
-→ only then strip the CI (`bump-gitops`/`smoke`/`canary`, main-only). Prove *before* stripping so
-dev keeps being fed if anything is wrong.
+An **HTTP** scale-to-zero app (Variant A) wakes on the probe itself; a **cron** scale-to-zero app
+(Variant D) does **not** — it's up only on a schedule, so an on-demand smoke must *make* it up
+first, then hand control back. Don't confuse the two KEDA modes.
+
+**Rollout checklist per service:** confirm its dev topology (autoscaler kind? ingress? SSO?) →
+pick the variant → add `projectconfig.yaml` + `analysis-dev-smoke.yaml` (+ any variant netpol/RBAC)
++ Stage `verification` → **prove live** (create an AnalysisRun from the deployed template →
+`Successful`) → only then strip the CI (remove the dev bump-gitops, `push` on `main` only). Prove
+*before* stripping so dev keeps being fed if anything is wrong.
 
 ## Gotchas worth knowing
 
 - **Mixed Freight** (multi-image, one unchanged) → use a **git Warehouse** (above).
 - **No-delta promotion** (overlay already at the Freight SHA) → the Stage `if`-gates the
   PR steps on `commit != clone HEAD` so it succeeds without opening an empty PR.
+- **All-numeric image tag** (a git short-SHA that is all digits, e.g. `4846055` — ~3.7% of
+  them) → Kargo coerces the expression result to a **number**, so `kustomize-set-image` rejects
+  it (`images.0.tag: Invalid type`) and the promotion **Errors**. Wrap the tag expression in
+  **`quote()`**: `tag: '${{ quote(imageFrom(...).Tag) }}'`. Diagnose an Errored promotion via
+  `kubectl get promotion <name> -o json` → `.status.stepExecutionMetadata[]` (the first *failed*
+  step is the real cause; downstream `cannot fetch commit from <nil>` guard errors are secondary).
 - **Unsigned Kargo commits** vs `main`'s verified-signatures rule → **squash-merge** Kargo
   PRs (GitHub signs the squash commit); the dev auto-merge workflow already uses `--squash`.
 - **Gatekeeper** requires container `securityContext` (runAsNonRoot, no-priv-esc) + resource
