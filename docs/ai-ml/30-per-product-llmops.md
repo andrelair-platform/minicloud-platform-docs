@@ -75,9 +75,35 @@ vault kv put secret/platform/langfuse/<product> public-key=pk-lf-… secret-key=
 ```
 
 The **same project keys are used for dev and prod** — traces from both
-environments land in one product view, tagged/sessioned so they're
-distinguishable. (Keys live at `secret/platform/langfuse/<product>`, *not* under
-the per-env `platform/<product>` / `platform/<product>-dev` paths.)
+environments land in one product view, kept distinguishable by Langfuse's native
+**`environment`** attribute (see the box below). (Keys live at
+`secret/platform/langfuse/<product>`, *not* under the per-env
+`platform/<product>` / `platform/<product>-dev` paths.)
+
+:::tip One project, dev + prod — the `environment` attribute
+You **don't** (and often *can't*, on OSS with a project cap) create one Langfuse
+project per environment. Use the **single shared project** and set Langfuse's
+first-class **`environment`** attribute per environment — the UI then gives you an
+**Environment filter/scope** (and per-environment dashboards) over the one project.
+
+Because the image is **env-agnostic** (the same artifact runs dev & prod — a Kargo
+prerequisite — and `NODE_ENV=production` in *both*), the environment **cannot** come
+from inside the image. It must be a **per-overlay env var**:
+
+```yaml
+# base/<backend>.yaml         → default for prod
+- { name: LANGFUSE_TRACING_ENVIRONMENT, value: "production" }
+# minicloud-1/dev/backend-patch.yaml → dev overlay overrides it (merged by env name)
+- { name: LANGFUSE_TRACING_ENVIRONMENT, value: "development" }
+```
+
+The backend passes it to the SDK: `new Langfuse({ environment })` (the SDK also
+auto-reads `LANGFUSE_TRACING_ENVIRONMENT`). Value must match
+`^(?!langfuse)[a-z0-9-_]+$`. As belt-and-suspenders (older UIs), the reference
+module also adds an `env:<value>` **tag** and `metadata.environment` to every
+trace, so you can filter by tag if the Environment scope isn't available. Same
+pattern for `session_id`/`user_id` grouping — all within the one project.
+:::
 
 ### 3. ESO → the product's k8s Secret
 
@@ -105,6 +131,7 @@ fresh and all keys render. Running pods keep their already-injected env.
 ```yaml
 # services/<product>/base/<backend>.yaml
 - { name: LANGFUSE_BASE_URL, value: "http://langfuse-web.langfuse.svc.cluster.local:3000" }
+- { name: LANGFUSE_TRACING_ENVIRONMENT, value: "production" }   # dev overlay overrides to "development"
 - name: LANGFUSE_PUBLIC_KEY
   valueFrom: { secretKeyRef: { name: <product>-secrets, key: langfuse-public-key } }
 - name: LANGFUSE_SECRET_KEY
@@ -191,11 +218,16 @@ platform `system.trace_log` reached **25 GiB** (1.06 B rows) on the 30 Gi PVC �
 the worker **dropped every trace** (LiteLLM + app-level) after max retries. The
 real Langfuse data was ~2 MiB.
 
-**Disable these logs with the `remove="1"` ATTRIBUTE** in the ClickHouse config —
-`<trace_log remove="1"/>`, not `<trace_log><enabled>false</enabled></trace_log>`
-(ClickHouse silently ignores the unknown `<enabled>` element and keeps the log
-enabled). Wired in `helm-values/minicloud-1/langfuse-values.yaml`
-(`clickhouse.extraOverrides`).
+**Bound these logs with a `<ttl>` sub-element** in the ClickHouse config —
+`<trace_log><ttl>event_date + INTERVAL 3 DAY DELETE</ttl></trace_log>`. Neither
+`<trace_log remove="1"/>` nor `<trace_log><enabled>false</enabled></trace_log>`
+works: these logs are ON by ClickHouse **compiled-in default**, so removing/omitting
+the config node just falls back to the enabled default (`remove="1"` was confirmed
+*loaded* yet the tables kept logging). A `<ttl>` is applied on startup and caps each
+at 3 days (~1 GiB for trace_log). Most logs use `event_date`; `opentelemetry_span_log`
+uses `finish_date`. Immediate (no restart): `ALTER TABLE system.<log> MODIFY TTL
+event_date + INTERVAL 3 DAY` (persists on the PVC). Wired in
+`helm-values/minicloud-1/langfuse-values.yaml` (`clickhouse.extraOverrides`).
 
 **Emergency cleanup of a 100%-full ClickHouse:** `TRUNCATE` itself fails (it needs
 to reserve 1 MiB) — use `DROP TABLE system.trace_log SYNC`, which unlinks parts
