@@ -381,6 +381,7 @@ const sidebars: SidebarsConfig = {
             'ai-ml/retrieva',
             'ai-ml/llmops-stack-assessment',
             'ai-ml/langfuse',
+            'ai-ml/per-product-llmops',
           ],
         },
         {
