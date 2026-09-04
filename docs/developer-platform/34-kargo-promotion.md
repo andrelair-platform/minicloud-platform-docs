@@ -228,6 +228,52 @@ humans read the SemVer.
   digest, two tags, no rebuild. (retrieva has no release-please → no SemVer source → not applicable;
   a multi-image service would alias each image.)
 
+### The two forces it reconciles
+
+Naming a container pulls in two opposite directions; dual-tagging gives each its own answer on the
+**same digest** instead of forcing one tag to serve both:
+
+| | Human need (Ops / Product) | Machine need (GitOps / CI-CD) |
+|---|---|---|
+| Wants | readability · breaking-change signal · chronology & compatibility | zero ambiguity · absolute immutability · automation with no blocking |
+| Answer | **SemVer** `v2.3.1` | **git SHA / OCI digest** `4846055` |
+
+### Full-SemVer vs Full-SHA vs Dual-tagging
+
+| Criterion | Full-SemVer (`v2.3.1`) | Full-SHA (`4846055`) | **Dual-tagging (here)** |
+|---|---|---|---|
+| Technical immutability | Medium — a tag can be overwritten on re-run | Absolute — bound to the commit | **Absolute — key = SHA / digest** |
+| GitOps / CD fit | Weak — friction at every commit | Native, frictionless | **Native — Kargo uses the SHA** |
+| Human / Ops readability | Excellent — order, breaking changes | None without external tooling | **Excellent — SemVer alias** |
+| CI complexity | Medium | Very low | **Low (~25 lines, release-only)** |
+
+**Why Full-SemVer fails as a *promotion key*:** to deploy every `main` commit to dev you'd either
+block the continuous flow waiting for a release to be cut, or bump patches artificially at every
+merge (`v1.2.451`, `v1.2.452` — SemVer emptied of meaning). And a `v2.3.1` Docker tag is **not**
+immutable: a replayed/failed pipeline can overwrite it on the registry, so the cluster can run two
+different binaries under one name. SemVer also encodes API compatibility, **not execution
+chronology** — it can't tell you whether prod's `v1.9.4` already contains dev's fixes. The SHA has
+none of these problems, which is why it stays the promotion key.
+
+### Reading the version running in prod (the 3am answer)
+
+prod pins a SHA (e.g. `bf4b617`). To find *what* that is without opening Git:
+
+```bash
+IMG=ghcr.io/andrelair-platform/platform-demo
+crane ls "$IMG" | grep '^v'                 # SemVer aliases that exist
+crane digest "$IMG:v0.1.2"                  # digest of the release …
+crane digest "$IMG:bf4b617"                 # … equals the prod SHA's digest → prod IS v0.1.2
+```
+
+Where the SemVer surfaces:
+
+- **ghcr package page** — the digest shows **both** tags (`bf4b617` + `v0.1.2`).
+- **GitHub Release** `vX.Y.Z` ↔ **CHANGELOG** — *what changed* between versions.
+- **Argo CD / Kargo UI** — show the image tag; a released digest is identifiable by its `v*` tag.
+- **Follow-up (not auto-wired yet):** an explicit SemVer field on a Grafana/Slack on-call panel —
+  resolve it from the digest's tags or the matching GitHub Release in the panel/annotation.
+
 ## Two environments only
 
 Kargo's arrival removed **staging** platform-wide (overlays, `_staging-optional`,
