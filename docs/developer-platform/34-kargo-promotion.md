@@ -221,8 +221,12 @@ humans read the SemVer.
   artificially on every merge or block auto-promotion waiting for a tag — friction the SHA avoids.
 - **Never back-fill** an old digest with a version it wasn't released as (false mapping) — the alias
   only goes forward, on the fresh image a release builds.
-- Pilot: **platform-demo** (`.github/workflows/release.yml`); activates on the next release-please
-  release (the job is skipped when `release_created=false`).
+- **Wired on all 5 release-please services** (platform-demo, ktayl-policy-service, minicloud-plane,
+  minicloud-agent, minicloud-crew-agent) in each `.github/workflows/release.yml`; the job is skipped
+  when `release_created=false`. **Verified live on platform-demo**: cutting `v0.1.2` added the
+  `v0.1.2` tag to the **same digest** as the release commit's SHA image (`sha256:59ff60…`) — one
+  digest, two tags, no rebuild. (retrieva has no release-please → no SemVer source → not applicable;
+  a multi-image service would alias each image.)
 
 ## Two environments only
 
