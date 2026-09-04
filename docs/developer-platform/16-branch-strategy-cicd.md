@@ -1,225 +1,171 @@
 ---
 id: branch-strategy-cicd
-title: Branch Strategy & CI/CD Flow
+title: Branch Strategy, Repo Structure & CI/CD Flow
 sidebar_label: Branch Strategy & CI/CD
 ---
 
-# Branch Strategy & CI/CD Flow
+# Branch Strategy, Repository Structure & CI/CD Flow
 
-All 14 repositories in `andrelair-platform` follow a single, enforced branching standard. The standard splits repos into two categories based on whether they build and push a Docker image.
+:::note Superseded model
+This page was rewritten (2026-09-04) for the **trunk-based + Kargo** model. The earlier
+`dev`/`staging`/`prod` **branch-per-environment** flow (long-lived branches, `dev-<sha>` /
+`staging-<sha>` image tags, CI-driven overlay bumps) is **retired**. Environments are now Kustomize
+overlays reconciled from `main`, promoted by Kargo — see
+[Kargo — Multi-Stage Promotion](./34-kargo-promotion.md).
+:::
 
----
-
-## Two-Category System
-
-### Category A — Image repos (9 repos)
-
-Repos that have a `Dockerfile` and a CI pipeline pushing to Harbor. These use three branches:
-
-| Branch | Environment | CI behaviour | GitOps bump |
-|---|---|---|---|
-| `dev` | Development | Build + push `dev-<sha>` tag. No cosign. | Yes (dev overlay / dev manifest) |
-| `staging` | Staging | Build + push `staging-<sha>` tag. Cosign-signed. | No |
-| `main` | Production | Build + push `<sha>` tag. Cosign + SBOM. | Yes (prod manifest) |
-
-**Repos in Category A:**
-
-| Repo | GitOps target |
-|---|---|
-| `minicloud-backstage` | `helm-values/backstage-values.yaml` (main only) |
-| `minicloud-rag-ingest` | `manifests/ai/11-rag-ingest.yaml` (main only) |
-| `minicloud-markitdown-proxy` | `manifests/ai/10-markitdown-proxy.yaml` (main only) |
-| `minicloud-litellm-custom` | `manifests/ai/01-litellm-deployment.yaml` (main only) |
-| `minicloud-open-webui` | `helm-values/open-webui-values.yaml` (main only) |
-| `minicloud-onlyoffice` | `manifests/productivity/` (main only) |
-| `minicloud-plane` | `manifests/` (main only) |
-| `platform-demo` | `services/platform-demo/overlays/{dev,staging,prod}` (all 3 branches) |
-| `ktayl-solution-web` | `manifests/ktayl-solution-web/00-deployment.yaml` (main only) |
-
-### Category B — Config / docs / IaC repos (5 repos)
-
-Repos with no Docker image. These use `main` only — `dev` and `staging` branches add no value when there is no artifact to promote.
-
-| Repo | Purpose |
-|---|---|
-| `minicloud-gitops` | ArgoCD app-of-apps + all Helm values — source of truth for the cluster |
-| `minicloud-ansible` | Post-MAAS node bootstrap + Day-2 rolling upgrade playbooks |
-| `minicloud-opentofu` | MAAS infrastructure as code (subnet, DHCP, machines) |
-| `minicloud-platform-docs` | Docusaurus docs site → GitHub Pages |
-| `phi3-financial` | LLM prompt-engineering evaluation pipeline |
+All ~26 repositories in `andrelair-platform` follow one **trunk-based** standard: a long-lived `main`,
+short-lived feature branches, and **no branch-per-environment**. Environments are *deploy targets*
+(namespaces/overlays), not git branches.
 
 ---
 
-## Branch Protection — Enforced via GitHub Rulesets
+## Environments are not git branches
 
-Branch protection is enforced through **repository-level rulesets** (GitHub's ruleset feature, available on the free plan). Two rulesets exist per image repo; one per config repo.
+The platform runs exactly two **environments** (`dev` + `prod`). Neither is driven by a long-lived
+branch — that's the GitOps anti-pattern (Git is the control plane; environments are overlays, not
+branches you merge between).
 
-### `main-protection` ruleset (all 14 repos)
+| Thing | What it is | Fed by |
+|---|---|---|
+| **`dev` environment** | `<svc>-dev` namespace + `minicloud-1/dev` overlay (permanent) | **Kargo** auto-promotes the `main` build into it, then verifies it |
+| **`prod` environment** | `<svc>-prod` namespace + `minicloud-1/prod` overlay (permanent) | **Kargo** opens a CODEOWNERS-gated PR promoting the dev-verified Freight |
+| **`main` branch** | the trunk — the only deploy trigger | a merge builds `:<sha>` → Kargo takes over |
+| **`dev` branch** *(optional)* | a working/integration branch | **nothing** — pushing it no longer builds or deploys |
+| **feature branches** | `feat/…` `fix/…` `docs/…` `chore/…` → PR → `main` | short-lived; **auto-deleted on merge** (`delete_branch_on_merge=true` on all 26 repos) |
+
+`staging` was removed platform-wide (environment retired for the 2-env standard; leftover branches
+purged 2026-09-04). Do not recreate it.
+
+---
+
+## Repository structure — polyrepo + one GitOps repo
+
+Delivery is **polyrepo**: each service owns its source repo (code + `Dockerfile` + CI); a single
+**`minicloud-gitops`** repo holds all deploy configuration (app-of-apps). Source and deploy config
+are separated — the opposite of co-locating Helm charts in the manifest repo.
+
+```
+<service-repo>/                     # one per microservice (polyrepo)
+├── <source>, Dockerfile
+├── .github/workflows/ci.yml        # build → test → scan → sign → push (build-only)
+└── .github/workflows/release.yml   # release-please + SemVer dual-tag
+
+minicloud-gitops/                   # the single GitOps repo (deploy config only)
+├── apps/                           # ArgoCD Application manifests
+│   ├── platform/                   # ~43 infra apps
+│   └── workloads/                  # <svc>-dev.yaml, <svc>-prod.yaml
+├── manifests/argocd-project/       # the AppProject (sourceRepos/destinations/whitelist)
+├── services/<svc>/                 # our services — Kustomize, NOT Helm charts
+│   ├── base/                       # deployment/service/… (no ns, no image tag)
+│   ├── minicloud-1/{dev,prod}/     # env overlays: image tag + patches (≈ per-env values)
+│   └── kargo/                      # Kargo Project + Warehouse + Stages + ProjectConfig + verify
+├── helm-values/minicloud-1/        # values for THIRD-PARTY charts only
+└── manifests/                      # platform infra (network policies, quotas, ai, …)
+```
+
+### How this maps to the reference "microservice-helmcharts" layout
+
+A common tutorial layout centralises everything in the manifest repo (`argocd/application/{env}/`,
+`env/{env}/<svc>/values.yaml`, `kargo/<svc>-config/`, `service-charts/<svc>/`). We have every one of
+those building blocks — organised differently, on purpose:
+
+| Reference layout | Here | Why |
+|---|---|---|
+| `argocd/application/{dev,staging,prod}/` | `apps/{platform,workloads}/<svc>-{dev,prod}.yaml` | split by type, not env; 2-env |
+| `AppProject` (`craftisia-project.yaml`, `destinations: "*"`) | `manifests/argocd-project/00-project.yaml` | explicit allowlist, no `"*"` (hardened) |
+| `env/{env}/<svc>/values.yaml` (**Helm values** per env) | `services/<svc>/minicloud-1/{dev,prod}` (**Kustomize** overlays) | Kustomize for our services; Helm reserved for third-party charts |
+| `service-charts/<svc>/` (Helm chart **in the manifest repo**) | chart/source **in the service's own polyrepo** | true polyrepo — deploy config ≠ app source |
+| `kargo/<svc>-config/` (top-level) | `services/<svc>/kargo/` (**co-located** with the service) | everything for a service in one dir |
+| `.github/workflows/docker-ci.yml` (in the manifest repo) | CI **in each service polyrepo** | consistent with polyrepo |
+| `projectconfig.yaml` (promotion policies) | `services/<svc>/kargo/projectconfig.yaml` | identical concept |
+| `dev` / `staging` / `prod` stages | `dev` + `prod` stages (`sources.stages: [dev]` gate) | 2-env standard |
+
+**Kustomize-vs-Helm is a deliberate tool choice, not a gap:** `minicloud-1/dev/kustomization.yaml`
+(image tag + patches) does exactly what the reference's `env/dev/<svc>/values.yaml` does. We do **not**
+restructure the working 91-app GitOps repo to match a tutorial's Helm layout — that would be churn for
+zero benefit.
+
+---
+
+## Branch protection — enforced via GitHub Rulesets
+
+Enforced through **repository-level rulesets** (works on the free plan). One `main-protection` ruleset
+per repo:
 
 | Rule | Value |
 |---|---|
-| Pull request required | Yes — 0 approvals needed (self-merge allowed) |
-| Signed commits required | Yes — GPG key `FD6D39D681DEFA34` |
+| Pull request required | Yes (self-merge allowed; CODEOWNERS review required on protected paths in `minicloud-gitops`) |
+| Signed commits required | Yes — GPG key `FD6D39D681DEFA34` (Kargo PRs are squash-merged so GitHub signs the squash commit) |
 | Force push | Blocked |
+| Auto-delete head branch on merge | **On** (feature branches are short-lived by construction) |
 
-Direct push to `main` without a PR is rejected at the API level. The only exception is admin bypass (org owner), which should be used only in emergencies and leaves a visible audit trail.
+Direct push to `main` without a PR is rejected at the API level; the only exception is admin bypass
+(org owner), used only in emergencies, and it leaves a visible audit trail. There is **no**
+`staging-protection` ruleset anymore.
 
-### `staging-protection` ruleset (Category A repos only)
+**Why per-repo, not org-level:** org-level rulesets need the GitHub Team plan; the org is on free.
+Per-repo rulesets carry identical content, applied via the API in batch.
 
-| Rule | Value |
+---
+
+## CI/CD flow (per service)
+
+```
+feature branch ──PR──► main  (signed, PR-gated)
+        │
+        ▼  CI (build-only): test → Trivy CRITICAL → build → cosign sign → SBOM (syft)
+        │  dual-push:  Harbor :<sha> (dev registry)  +  ghcr :<sha> (prod, durable)
+        │  on a release-please release: crane adds the vX.Y.Z SemVer alias to the same digest
+        ▼
+      Kargo  ──auto-promote──► dev environment ──verify (smoke AnalysisRun)──►
+        │
+        ▼  dev-verified Freight ──CODEOWNERS PR──► prod environment (Argo CD syncs)
+```
+
+- **CI is build-only** (`push: [main]`). It no longer bumps overlays or smokes deploys — Kargo owns
+  promotion + dev verification. See [Kargo — Multi-Stage Promotion](./34-kargo-promotion.md).
+- **Image tags:** the **git SHA** is the canonical promotion identifier (Warehouses watch it, Freight =
+  a commit, overlays pin it). A **SemVer alias** (`vX.Y.Z`) is added to the same digest on a
+  release-please release (**dual-tagging** — SHA for machines, SemVer for humans).
+
+### Supply chain (on `main`)
+
+| Control | Applied |
 |---|---|
-| Pull request required | Yes — 0 approvals needed |
-| Required status check | `build-and-push` must pass |
-| Force push | Blocked |
-
-This gates promotion from `dev` to `staging` on CI passing — a broken image cannot reach the staging environment. The `dev` branch has no protection: direct push is allowed for fast iteration.
-
-### Summary table
-
-| Branch | Exists on | PR required | CI gate | Signed commits | Force push |
-|---|---|---|---|---|---|
-| `main` | All 14 repos | Yes | No¹ | Yes (GPG) | Blocked |
-| `staging` | Category A (9 repos) | Yes | `build-and-push` | No | Blocked |
-| `dev` | Category A (9 repos) | No | No | No | Allowed |
-
-¹ CI runs on PRs to `main` via `pull_request:` trigger, but it is not a hard merge gate on `main` itself — only on `staging`.
+| Trivy CRITICAL scan | Yes |
+| Cosign keyless sign (Sigstore/Fulcio) | Yes — Harbor **and** ghcr digests |
+| SBOM (CycloneDX via syft) + attached as OCI referrer | Yes |
+| GPG-signed GitOps commit | Yes (Kargo squash-merge → signed squash) |
 
 ---
 
-## Promotion Flow
-
-```
-dev branch
-  │  git push origin dev
-  │  → CI: build + push harbor.../image:dev-<sha>
-  │  → GitOps bump (platform-demo only)
-  │  → ArgoCD auto-syncs dev namespace
-  │
-  ▼  gh pr create --base staging --head dev
-     PR opened → CI runs (build-and-push must pass)
-     Self-merge once CI is green
-     │
-     ▼ staging branch
-          → CI: build + push harbor.../image:staging-<sha>  (cosign-signed)
-          → ArgoCD manual sync of staging overlay
-          │
-          ▼  gh pr create --base main --head staging
-               PR opened → CI runs
-               Fill PR template (change type, risk, ACPR ref)
-               Self-merge → change-record GHA creates [CHANGE] issue
-               │
-               ▼ main branch
-                    → CI: build + push harbor.../image:<sha>  (cosign + SBOM)
-                    → GitOps bump with GPG-signed commit
-                    → ArgoCD syncs prod overlay
-```
-
----
-
-## Supply Chain per Branch
-
-| Control | `dev` | `staging` | `main` |
-|---|---|---|---|
-| Trivy CRITICAL scan | Yes | Yes | Yes |
-| Cosign keyless sign | No | Yes | Yes |
-| SBOM (CycloneDX via syft) | No | No | Yes |
-| SBOM attached as OCI referrer | No | No | Yes |
-| GitOps signed commit (GPG) | Yes¹ | No | Yes |
-
-¹ `platform-demo` only — it uses Kustomize overlays on all 3 branches.
-
----
-
-## Image Tag Format
-
-```
-dev push     →  harbor.10.0.0.200.nip.io/library/<name>:dev-a1b2c3d
-staging push →  harbor.10.0.0.200.nip.io/library/<name>:staging-a1b2c3d
-main push    →  harbor.10.0.0.200.nip.io/library/<name>:a1b2c3d
-```
-
-The GitOps manifests always reference the internal Harbor URL so kubelet pulls are cluster-local. CI authenticates to Harbor over the Cloudflare Tunnel (`harbor.devandre.sbs`).
-
----
-
-## Typical Dev Workflow
+## Setting up a new repo (checklist)
 
 ```bash
-# 1. Start work on dev
-git checkout dev
-git pull origin dev
-
-# 2. Make changes, commit (no GPG signing required on dev)
-git add -p
-git commit -m "feat: describe what changed"
-git push origin dev
-# CI builds dev-<sha> and deploys to dev namespace automatically
-
-# 3. Promote to staging (when dev looks good)
-gh pr create --base staging --head dev --title "feat: describe what changed"
-# Wait for build-and-push CI check to pass, then self-merge
-gh pr merge <N> --merge
-
-# 4. Verify in staging namespace, then promote to production
-gh pr create --base main --head staging --title "feat: describe what changed"
-# Fill in PR body: change type checkbox, risk level, ACPR reference
-# Self-merge → change-record issue created automatically
-gh pr merge <N> --merge
-```
-
----
-
-## Setting Up a New Repo (Checklist)
-
-When creating a new image repo under `andrelair-platform`:
-
-```bash
-# 1. Create the repo and push initial code to main
-
-# 2. Create the dev and staging branches
-sha=$(gh api repos/andrelair-platform/<REPO>/git/ref/heads/main --jq '.object.sha')
-gh api repos/andrelair-platform/<REPO>/git/refs -X POST \
-  -f ref="refs/heads/dev" -f sha="$sha"
-gh api repos/andrelair-platform/<REPO>/git/refs -X POST \
-  -f ref="refs/heads/staging" -f sha="$sha"
-
-# 3. Apply main-protection ruleset
+# 1. Create the repo, push initial code to main.
+# 2. Enable auto-delete of merged branches:
+gh api -X PATCH repos/andrelair-platform/<REPO> -F delete_branch_on_merge=true
+# 3. Apply the main-protection ruleset (signed commits + PR + no force-push):
 gh api repos/andrelair-platform/<REPO>/rulesets -X POST --input /tmp/main-ruleset.json
-
-# 4. Apply staging-protection ruleset
-gh api repos/andrelair-platform/<REPO>/rulesets -X POST --input /tmp/staging-ruleset.json
+# 4. CI trigger = main only:
+#      on: { push: { branches: [main] }, pull_request: { branches: [main] } }
+# 5. If the service warrants Kargo (build it + dev AND prod + env-agnostic + immutable prod tag),
+#    add services/<svc>/kargo/ — see the Kargo guide "new service checklist".
 ```
 
-The ruleset JSON files are defined in the [Branch Protection Rulesets](#branch-protection--enforced-via-github-rulesets) section above. Save them to `/tmp/` from the values documented there before running.
-
-**CI workflow trigger block** — every image repo must declare:
-
-```yaml
-on:
-  push:
-    branches: [main, staging, dev]
-  pull_request:
-    branches: [main, staging]
-```
-
-This ensures:
-- Every push to any branch builds an image (enables Trivy + Harbor cache warming)
-- PRs to `staging` and `main` trigger CI so the `staging-protection` gate can evaluate `build-and-push`
-
-For **config/docs repos** (no Dockerfile): keep `main` only. Apply only the `main-protection` ruleset. No `dev`/`staging` branches needed.
+No `dev`/`staging` branches to create. An optional `dev` integration branch can exist but deploys
+nothing.
 
 ---
 
-## Why Not Org-Level Rulesets?
+## ACPR / DORA alignment
 
-GitHub org-level rulesets (which would let you define one ruleset applied to all repos at once) require the **GitHub Team plan**. The `andrelair-platform` org is on the free plan. Per-repo rulesets are used instead — identical content on each repo, applied via the API in batch. If the org upgrades to Team in the future, the per-repo rulesets can be deleted and replaced with a single org-level ruleset.
-
----
-
-## ACPR / DORA Alignment
-
-- Every merge to `main` produces a `[CHANGE]` issue (via `change-record.yml`) with metadata: who merged, when, what changed, risk level — satisfies **DORA Art.9 ICT change management**
-- Incident issue template covers **DORA Art.19** major incident classification
-- Separate `dev` / `staging` / `prod` environments satisfy **ACPR 2021-R-01 §4.2** environment segregation
-- GPG-signed commits on `main` provide non-repudiation of all production changes
-- Blocked force push on `main` and `staging` ensures commit history is immutable
+- Every merge to `main` produces a `[CHANGE]` issue (`change-record.yml`) — who/when/what/risk —
+  satisfying **DORA Art.9 ICT change management**.
+- Incident issue template covers **DORA Art.19** major-incident classification.
+- Separate `dev` / `prod` **environments** (namespaces/overlays) satisfy **ACPR 2021-R-01 §4.2**
+  environment segregation — segregation is by *environment*, not by branch.
+- GPG-signed commits + cosign-signed images + SBOM provide non-repudiation and supply-chain provenance
+  for every production change.
+- Blocked force-push on `main` keeps history immutable.
