@@ -279,5 +279,25 @@ Where the SemVer surfaces:
 Kargo's arrival removed **staging** platform-wide (overlays, `_staging-optional`,
 `environments.yaml`, the CI `promote-staging` job). Standard = **`dev` + `prod`**.
 
+### Environments are not git branches
+
+A frequent confusion: *"if there's a `dev` environment, there must be a `dev` branch that deploys it."*
+Here there isn't — and that's deliberate. The **environment** (`<svc>-dev` namespace + `minicloud-1/dev`
+overlay) is a real, permanent deploy target; the **git branch** is just how humans collaborate. They are
+decoupled:
+
+| Concept | What it is | How it's fed |
+|---|---|---|
+| **`dev` environment** | a live namespace/overlay (permanent) | **Kargo** auto-promotes the `main` build into it, then verifies it |
+| **`prod` environment** | a live namespace/overlay (permanent) | **Kargo** opens a CODEOWNERS-gated PR promoting the dev-verified Freight |
+| **`main` branch** | the trunk — the only deploy trigger | a merge builds `:<sha>` → Kargo takes over |
+| **`dev` branch** | an optional working/integration branch | **nothing** — pushing it no longer builds or deploys (CI is `push: [main]`-only) |
+
+This is **trunk-based delivery**: one branch (`main`) drives both environments through Kargo, instead of
+a branch-per-environment (`dev`→dev, `staging`→staging, `main`→prod), which the GitOps literature flags as
+an anti-pattern (environments should be overlays reconciled from Git, not long-lived branches you merge
+between). Old `staging` branches were purged (2026-09-04); `dev` branches are kept only as an integration
+convenience and deploy nothing.
+
 - **UI:** [kargo.10.0.0.200.nip.io](https://kargo.10.0.0.200.nip.io) (Tailscale + minicloud CA)
 - **Install:** `apps/platform/kargo.yaml` (Helm) + `apps/platform/kargo-projects.yaml` (ApplicationSet) + `apps/platform/kargo-retrieva.yaml` (dedicated).
