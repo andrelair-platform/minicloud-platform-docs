@@ -203,6 +203,27 @@ pick the variant → add `projectconfig.yaml` + `analysis-dev-smoke.yaml` (+ any
   limits — set them in Helm values / manifests or the Deployment is denied.
 - **Env-baked images** (or mutable `:latest` prod) can't be promoted — fix first.
 
+## SemVer alias (dual-tagging) — SHA for machines, SemVer for humans
+
+The **git SHA is the canonical promotion identifier**: Warehouses watch SHA tags, Freight = a
+commit, prod overlays pin the SHA. That is correct for continuous promotion — every commit is
+immutable, exactly traceable, and promotable with no release step. The trade-off is readability:
+`4846055` doesn't tell an operator *what* is in prod or whether prod is behind dev.
+
+**Dual-tagging** adds the human layer without touching the machine layer. When **release-please**
+cuts a release, the `release.yml` `dual-tag-semver` job uses `crane` to add the SemVer alias
+(`vX.Y.Z`) to the **same ghcr digest** that ci.yml already built for that commit — no rebuild, the
+SHA tag stays. One digest then carries both `<sha>` (what Kargo promotes) and `vX.Y.Z` (what a
+changelog / audit / on-call dashboard reads). The deploy pipeline keeps manipulating the SHA; only
+humans read the SemVer.
+
+- This is **not** SemVer-as-promotion-key: forcing a SemVer per commit would either bump patches
+  artificially on every merge or block auto-promotion waiting for a tag — friction the SHA avoids.
+- **Never back-fill** an old digest with a version it wasn't released as (false mapping) — the alias
+  only goes forward, on the fresh image a release builds.
+- Pilot: **platform-demo** (`.github/workflows/release.yml`); activates on the next release-please
+  release (the job is skipped when `release_created=false`).
+
 ## Two environments only
 
 Kargo's arrival removed **staging** platform-wide (overlays, `_staging-optional`,
