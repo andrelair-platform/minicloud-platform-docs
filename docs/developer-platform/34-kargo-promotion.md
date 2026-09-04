@@ -89,14 +89,19 @@ apps and all infra. **91 apps is not 91 promotion candidates** — the vast majo
 self-update by a Git version bump, not a multi-stage promotion.
 :::
 
-## Which services are wired (all 6 custom services)
+## Which services are wired (all 6 custom services — fully on Option 2)
 
-| Service | Warehouse | Stages | Notes |
+**All 6 are cut over to the target model** (below): Kargo is the sole dev promoter (auto-promotion),
+Kargo owns the dev→prod verification gate, and each CI is build-only. The dev **smoke variant**
+depends on the service's dev topology (see the variants table further down).
+
+| Service | Warehouse | Smoke variant | Notes |
 |---|---|---|---|
-| platform-demo | image (public ghcr) | dev + prod | reference; full canary promo demonstrated |
-| minicloud-plane / -agent / -crew | image (Internal ghcr + cred) | dev + prod | dev PRs squash-auto-merge |
-| ktayl-policy-service | image (Internal ghcr + cred) | dev + prod | migrated to ghcr/SHA; own prod Postgres |
-| **retrieva** | **git** (2 images) | **dev + prod** | frontend made **runtime-config** so one image serves all envs; builds on `main` only, Kargo owns dev→prod |
+| platform-demo | image (public ghcr) | **A** — KEDA interceptor + netpol | reference; full canary promo demonstrated |
+| ktayl-policy-service | image (Internal ghcr + cred) | **B** — via ingress-nginx | ghcr/SHA; own prod Postgres |
+| minicloud-agent / -crew | image (Internal ghcr + cred) | **C** — dev Service cross-ns | internal, no ingress |
+| minicloud-plane | image (Internal ghcr + cred) | **D** — cron scale-aware | pauses the KEDA cron scaler, smokes, resumes |
+| **retrieva** | **git** (2 images) | **C** — both dev Services cross-ns | runtime-config frontend; builds on `main` only; smoke verifies both images |
 
 ## For developers — how you work with it
 
@@ -124,11 +129,12 @@ self-update by a Git version bump, not a multi-stage promotion.
   prod namespace collides — see retrieva). The litmus test: **Kargo promotes one immutable
   artifact across stages.**
 
-## Auto-promotion & Kargo-owned dev verification (the target model)
+## Auto-promotion & Kargo-owned dev verification (the live model on all 6 services)
 
-By default here, promotions are **manual** (safe posture). The target model — piloted on
-**platform-demo** — makes Kargo the **sole promoter of dev** and moves **dev verification off
-the CI** into Kargo. Rationale: once Kargo owns promotion, having CI drive the dev deploy and
+This is the model **now live on all 6 custom services** (piloted on platform-demo, then rolled out).
+It makes Kargo the **sole promoter of dev** and moves **dev verification off the CI** into Kargo.
+(The earlier "safe posture" — manual promotions — is superseded for these services; only prod
+promotion stays manual, behind the CODEOWNERS PR gate.) Rationale: once Kargo owns promotion, having CI drive the dev deploy and
 then smoke it *synchronously in the same run* is a **sync-over-async anti-pattern**. CI should
 only **build & prove the artifact**; *"what qualifies a Freight for prod?"* → *"it was verified
 in dev"*, and that verification belongs to the deploy orchestrator.
