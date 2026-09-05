@@ -188,6 +188,40 @@ Key properties of the reference module:
   `backend/package.json` **and both** lockfiles, or CI (`Cannot find package`) or
   the image will break.
 
+### 7. Prompt Management (decoupled, label-routed) — mandatory
+
+Managed prompts live in the **dedicated Langfuse project**, not hardcoded in Git —
+so product/domain experts tweak them in the UI and roll out/back with **zero
+redeploy**, and every LLM call links to the exact prompt version.
+
+- **Decoupled deployment + Git fallback (no SPOF):** store system prompts / few-shot /
+  output schemas in Langfuse; keep the Git copy as the **seed + runtime fallback**.
+  Resolve Langfuse-first; if it's disabled/unreachable/absent, fall back to the
+  committed template. Prompt management must never take the app down.
+- **Dynamic label routing (one project, dev + prod):** pull by **label**, not a pinned
+  version, via a per-overlay **`LANGFUSE_PROMPT_LABEL`** (prod=`production`,
+  dev=`latest`; `canary` optional). Relabelling a version rolls out/back instantly.
+- **Mustache + typing:** template vars are `{{var}}`, compiled with `prompt.compile(vars)`;
+  declare the variable list in the prompt `config`. Keep the message **structure**
+  (history + user turn) in code and render the managed system text as a **literal**
+  message so compiled content isn't re-parsed by the chain framework.
+- **Trace-linked attribution:** pass the resolved Langfuse prompt object as `prompt`
+  on the generation → each answer links its prompt **version** (A/B + regression).
+- **Playground:** non-devs tweak templates + params against real trace data in the UI.
+
+```js
+// resolve (label-routed) → compile → build chain → link version
+const p = await getLangfusePrompt('retrieva-rag-system', { label: process.env.LANGFUSE_PROMPT_LABEL });
+const systemText = p ? p.compile({ context, responseInstruction })       // Langfuse (Mustache)
+                     : renderGitFallback({ context, responseInstruction }); // never a SPOF
+answerGen.update({ prompt: p });   // trace-linked prompt-version attribution
+```
+
+Seed a prompt once via the SDK (`langfuse.createPrompt({ name, type:'text', prompt,
+labels:['production'], config:{variables:[…]} })` — the newest version also gets
+`latest`). Reference: retrieva `config/promptManager.js` + `prompts/ragPrompt.js`
+(prompt `retrieva-rag-system`).
+
 ## Operate / verify / audit
 
 ```bash
