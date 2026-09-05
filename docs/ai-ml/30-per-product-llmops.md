@@ -218,16 +218,30 @@ platform `system.trace_log` reached **25 GiB** (1.06 B rows) on the 30 Gi PVC �
 the worker **dropped every trace** (LiteLLM + app-level) after max retries. The
 real Langfuse data was ~2 MiB.
 
-**Bound these logs with a `<ttl>` sub-element** in the ClickHouse config —
-`<trace_log><ttl>event_date + INTERVAL 3 DAY DELETE</ttl></trace_log>`. Neither
-`<trace_log remove="1"/>` nor `<trace_log><enabled>false</enabled></trace_log>`
-works: these logs are ON by ClickHouse **compiled-in default**, so removing/omitting
-the config node just falls back to the enabled default (`remove="1"` was confirmed
-*loaded* yet the tables kept logging). A `<ttl>` is applied on startup and caps each
-at 3 days (~1 GiB for trace_log). Most logs use `event_date`; `opentelemetry_span_log`
-uses `finish_date`. Immediate (no restart): `ALTER TABLE system.<log> MODIFY TTL
-event_date + INTERVAL 3 DAY` (persists on the PVC). Wired in
-`helm-values/minicloud-1/langfuse-values.yaml` (`clickhouse.extraOverrides`).
+**The fix has two halves — a config half and a live half:**
+
+- **Config (`clickhouse.extraOverrides`): disable the sampling query profiler** that
+  feeds `system.trace_log` (25 GiB, >80% of the fill) — a settings profile, so no
+  engine conflict:
+  ```xml
+  <clickhouse><profiles><default>
+    <query_profiler_real_time_period_ns>0</query_profiler_real_time_period_ns>
+    <query_profiler_cpu_time_period_ns>0</query_profiler_cpu_time_period_ns>
+  </default></profiles></clickhouse>
+  ```
+- **Live: `ALTER TABLE system.<log> MODIFY TTL event_date + INTERVAL 3 DAY`** for the
+  remaining smaller logs (text_log/metric_log/…). This persists on the PVC across
+  restarts, so it's the durable bound for those.
+
+**Do NOT** try to disable/bound these logs with `<trace_log remove="1"/>`,
+`<trace_log><enabled>false</enabled></trace_log>`, or a `<trace_log><ttl>…</ttl></trace_log>`
+sub-element in config. All three are wrong: the first two are no-ops (the logs are ON
+by ClickHouse **compiled-in default**, so removing the config node just falls back to
+the enabled default), and a **`<ttl>` sub-element crashes ClickHouse on startup**
+(`BAD_ARGUMENTS code 36: TTL should be specified inside 'engine'`) because the bitnami
+base config already defines each log's `<engine>` — that took CH into CrashLoopBackOff
+platform-wide. `MODIFY TTL` works *live* (the table already exists) but the same TTL in
+*config* does not.
 
 **Emergency cleanup of a 100%-full ClickHouse:** `TRUNCATE` itself fails (it needs
 to reserve 1 MiB) — use `DROP TABLE system.trace_log SYNC`, which unlinks parts
