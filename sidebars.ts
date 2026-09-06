@@ -443,6 +443,7 @@ const sidebars: SidebarsConfig = {
           label: '🏦 Insurance Platform',
           collapsed: false,
           items: [
+            'insurance-platform/ai-first-operating-model',
             'insurance-platform/business-applications-catalog',
             {
               type: 'category',
