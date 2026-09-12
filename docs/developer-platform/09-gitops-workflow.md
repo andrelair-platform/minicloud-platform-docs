@@ -6,6 +6,14 @@ sidebar_label: GitOps Workflow
 
 # GitOps Workflow — Service Onboarding & Promotion
 
+:::note Current standard (2026-09)
+Custom apps have since converged on a **single** pattern — the **GAP wrapper-chart** golden path
+(each app is a Helm chart depending on the shared `minicloud-app-deployment` library chart, promoted
+by Kargo via `yaml-update` on its values). For the current end-to-end picture see the
+**[Delivery Workflow](./delivery-workflow)** page. The "Combo 1 (Kustomize)" description below is the
+historical model, kept for context.
+:::
+
 This page describes the enterprise-grade GitOps strategy in use on the minicloud platform. It combines two complementary patterns:
 
 - **Combo 1 — ArgoCD + Kustomize** for internal apps (own source code, per-environment image promotion)

@@ -191,6 +191,7 @@ const sidebars: SidebarsConfig = {
             'developer-platform/gitops-workflow',
             'developer-platform/gitops-directory-patterns',
             'developer-platform/kargo-promotion',
+            'developer-platform/delivery-workflow',
             'developer-platform/helm-argocd-migration',
             'developer-platform/helm-vs-kustomize',
             'developer-platform/backstage-helm-kustomize',

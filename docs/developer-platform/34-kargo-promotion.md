@@ -10,6 +10,14 @@ sidebar_label: Kargo Promotion
 > **Detail with the code:** [`manifests/kargo/README.md`](https://github.com/andrelair-platform/minicloud-gitops/tree/main/manifests/kargo)
 > + the `.claude/rules/gitops.md` *Multi-stage promotion — Kargo* section.
 
+:::note Updated model (2026-09)
+Custom services moved to the **GAP wrapper-chart** golden path: Kargo now promotes by
+`yaml-update` on `services/<svc>/helm/values-{dev,prod}.yaml` (`minicloud-app-deployment.image.tag`),
+not `kustomize-set-image` on overlays. The current end-to-end picture — app repo → CI → Kargo →
+ArgoCD — is on the **[Delivery Workflow](./delivery-workflow)** page. The promotion *concepts* below
+still apply; the overlay-specific mechanics are superseded.
+:::
+
 ## Why
 
 Argo CD synchronises **one** environment from Git to the cluster. It deliberately does
