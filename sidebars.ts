@@ -383,6 +383,9 @@ const sidebars: SidebarsConfig = {
             'ai-ml/llmops-stack-assessment',
             'ai-ml/langfuse',
             'ai-ml/per-product-llmops',
+            'ai-ml/model-governance-matrix',
+            'ai-ml/dora-audit',
+            'ai-ml/annotation-workflow',
           ],
         },
         {

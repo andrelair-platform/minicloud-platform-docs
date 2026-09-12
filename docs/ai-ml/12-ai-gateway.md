@@ -41,10 +41,10 @@ Provider tiers are tagged with `model_info.access_group` (`onprem`/`eu`/`us`; un
 | # | Story | Outcome |
 |---|---|---|
 | **P0** #297-300 | Cloud IaC foundation | Repo **`minicloud-cloud`** (OpenTofu, single tool, split by scope) · state **S3+DynamoDB** (EU) · **root AWS key deactivated → scoped IAM users** (`minicloud-tofu` provisioning, `litellm-bedrock` runtime) + Azure **Service Principal** · **€15/provider budget alerts** (AWS Budgets + Azure Cost) |
-| **P1** #301-302 | Governance | **Model governance matrix** (per-model jurisdiction/residency/training-terms/max-class) + **4 data classes** P0-P3 → `minicloud-gitops/docs/ai-governance/model-governance-matrix.md` |
+| **P1** #301-302 | Governance | **Model governance matrix** (per-model jurisdiction/residency/training-terms/max-class) + **4 data classes** P0-P3 → [Model Governance Matrix](./40-model-governance-matrix.md) |
 | **P2** #303-304 | Cloud tier (EU) | **AWS Bedrock** `bedrock-mistral-large` (eu-west-1) + **Azure OpenAI** `azure-gpt-4.1-mini` (Sweden Central, Standard-regional) — both EU-resident, wired via LiteLLM, tested e2e |
 | **P3** #305-306 | Enforcement | `model_info.access_group` per model + **teams scoped to tiers** (`[onprem,eu,us]` → never untrusted P0/CN) + per-consumer budgets/tpm/rpm |
-| **P4** #307-309 | Obs & audit | **Residency recording rules** (`ai:litellm_*_by_tier`, `out_of_eu_ratio`) + Grafana *Residency & Governance FinOps* · compliance alerts (`AIPresidioGuardrailErrors`=critical→email+Slack, out-of-EU, SLO, error-spike) · **DORA audit doc** (`docs/ai-governance/dora-audit.md`) |
+| **P4** #307-309 | Obs & audit | **Residency recording rules** (`ai:litellm_*_by_tier`, `out_of_eu_ratio`) + Grafana *Residency & Governance FinOps* · compliance alerts (`AIPresidioGuardrailErrors`=critical→email+Slack, out-of-EU, SLO, error-spike) · **DORA audit doc** ([DORA Audit Trail](./41-dora-audit.md)) |
 | #310 | Embeddings fix | `nomic-embed-text` (dropped Ollama model) → **`mistral-embed`** (EU, 1024-dim) — restricted-doc (P3) embeddings now stay in the EU |
 
 ### Cost model
@@ -55,7 +55,7 @@ Provider tiers are tagged with `model_info.access_group` (`onprem`/`eu`/`us`; un
 - **DORA:** matrix = ICT third-party register; Langfuse per-call audit trail (retention **365d**); LiteLLM gateway = provider-swap-as-config exit strategy; on-cluster vLLM fallback.
 - **GDPR/ACPR:** PII masked pre-call (Presidio); restricted (P3) data confined to on-cluster/EU tiers.
 
-**Detailed governance docs** (in `minicloud-gitops/docs/ai-governance/`): `model-governance-matrix.md` · `dora-audit.md`.
+**Detailed governance docs:** [Model Governance Matrix](./40-model-governance-matrix.md) · [DORA Audit Trail](./41-dora-audit.md).
 
 ### Routing: two independent axes (design decision)
 
