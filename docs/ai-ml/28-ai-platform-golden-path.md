@@ -78,7 +78,7 @@ residency, FinOps). Nothing to wire.
 ### 6. Add an evaluation gate
 Provide a **golden set** and a threshold; reuse the **Ragas** eval pattern
 (`manifests/ai/16-rag-eval-job`) as a CI/PostSync gate. Grow the golden set with
-the [Langfuse annotation workflow](https://andrelair-platform.github.io/minicloud-platform-docs/docs/ai-governance/annotation-workflow).
+the [Langfuse annotation workflow](./42-annotation-workflow.md).
 
 ### 7. (optional) domain red-team
 The platform red-team gate (#312) already tests injection/jailbreak/PII/toxicity

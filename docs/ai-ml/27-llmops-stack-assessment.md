@@ -36,7 +36,7 @@ gate (injections, jailbreaks, PII-leak, prompt-extraction) — like the Ragas ev
 ### ✅ Gap 2 — Annotation & data curation (layer 7) — *CLOSED (#313)*
 No human-annotation tool (Argilla / Label Studio). Golden sets (Ragas eval, RAG)
 and dataset quality depend on hand-built sets with no human-in-the-loop. **Fix:**
-**delivered via Langfuse** (Annotation Queues + Scores + Datasets — already deployed) instead of Argilla, which needs ElasticSearch (too heavy for the CPU-only cluster). See `docs/ai-governance/annotation-workflow.md`.
+**delivered via Langfuse** (Annotation Queues + Scores + Datasets — already deployed) instead of Argilla, which needs ElasticSearch (too heavy for the CPU-only cluster). See the [annotation workflow](./42-annotation-workflow.md).
 
 ### ⚪ Gap 3 — Fine-tuning / alignment (layer 7) — *accepted, out of scope*
 Unsloth/Axolotl require a **GPU** → blocked by the infra (see
