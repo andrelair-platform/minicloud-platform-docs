@@ -8,6 +8,13 @@ sidebar_label: BMAD Workflow
 
 **BMAD** (Breakthrough Method of Agile AI-driven Development) is the story-authoring and sprint-management workflow for all ktayl-solution and platform development projects. It bridges Claude-assisted story writing, version-controlled story files in `minicloud-gitops`, and GitHub Issues — with full automation at every step.
 
+:::tip This page = the authoring + sync mechanics
+For the **enterprise operating model** — delivery paths (A/B/C/E), the full pre-code artefact chain
+(Brief → PRD → UX → Architecture → SPEC → Stories → Readiness), the five sign-off moments, and the
+governance gate — see [**BMAD Operating Model**](./bmad-operating-model.md). (Note: "Path A/B/C" on
+*this* page are sprint-*authoring* methods; the delivery *paths* there are sized by risk — different axis.)
+:::
+
 ---
 
 ## Why BMAD?
