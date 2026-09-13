@@ -187,11 +187,12 @@ const sidebars: SidebarsConfig = {
           label: 'GitOps Foundation',
           collapsed: true,
           items: [
+            'developer-platform/delivery-workflow',
+            'developer-platform/kargo-promotion',
+            'developer-platform/branch-strategy-cicd',
+            'developer-platform/gitops-directory-patterns',
             'platform-roadmap/phase-12-gitops',
             'developer-platform/gitops-workflow',
-            'developer-platform/gitops-directory-patterns',
-            'developer-platform/kargo-promotion',
-            'developer-platform/delivery-workflow',
             'developer-platform/helm-argocd-migration',
             'developer-platform/helm-vs-kustomize',
             'developer-platform/backstage-helm-kustomize',
@@ -203,7 +204,6 @@ const sidebars: SidebarsConfig = {
           collapsed: true,
           items: [
             'platform-roadmap/phase-13-cicd',
-            'developer-platform/branch-strategy-cicd',
             'developer-platform/ci-registry-migration',
             'developer-platform/custom-images',
             'platform-roadmap/phase-8-containers',

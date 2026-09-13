@@ -6,6 +6,13 @@ sidebar_position: 2
 
 # Standard Helm Chart Structure
 
+:::note Current minicloud standard
+Custom applications now use a **GAP wrapper chart** in `minicloud-gitops/services/<svc>/helm/`,
+depending on the shared `minicloud-app-deployment` library chart. Use
+[End-to-End Delivery Workflow](../developer-platform/delivery-workflow) as the canonical guide for
+new services. The generic chart structure below is kept as Helm background.
+:::
+
 Every application deployed on this platform uses a Helm chart. This page defines the **platform-approved standard chart layout** — what goes in it, how it is structured, and how `values.yaml` is organized for multi-environment support.
 
 ---

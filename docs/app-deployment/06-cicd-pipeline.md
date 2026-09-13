@@ -6,6 +6,13 @@ sidebar_position: 6
 
 # Full CI/CD Pipeline — Build → Scan → Package → Deploy
 
+:::caution Historical generic example
+The live minicloud flow does **not** use GitLab CI, app-owned packaged Helm charts, or CI-driven
+deployment promotion. Current custom services use GitHub Actions to build and prove images only;
+Kargo updates `minicloud-gitops`, and ArgoCD reconciles the cluster. Start with
+[End-to-End Delivery Workflow](../developer-platform/delivery-workflow) for the current standard.
+:::
+
 This is the complete GitLab CI pipeline that covers the entire deploy lifecycle: build the Docker image, scan it, package the Helm chart, push both to Harbor, then update the GitOps repo to trigger ArgoCD.
 
 ---

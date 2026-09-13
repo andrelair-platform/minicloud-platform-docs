@@ -50,9 +50,9 @@ This is the full technical documentation for a private cloud platform built on b
 | **Phase 9** | First workload deployment |
 | **Phase 10** | Ansible — infrastructure automation playbooks |
 | **Phase 11** | IaC — Terraform/OpenTofu + Crossplane |
-| **Phase 12** | GitOps — ArgoCD (auto-sync staging, manual production) |
-| **Phase 13** | CI/CD — GitHub Actions golden path |
-| **App Deployment Guide** | Helm charts, ArgoCD deploy, raw YAML, full CI/CD pipeline |
+| **Phase 12** | GitOps — ArgoCD app-of-apps, `minicloud-gitops` as desired state |
+| **Phase 13** | CI/CD — GitHub Actions build/prove, Kargo promotion, ArgoCD reconciliation |
+| **App Deployment Guide** | Current two-repo delivery flow, GAP wrapper charts, Kargo, and GitOps controls |
 | **Data Layer** | Kafka/Redpanda, ClickHouse, dbt, Apache Superset, OpenMetadata |
 | **Security Layer** | Authentik SSO, OPA/Gatekeeper, Falco, Cosign+SBOM, kube-bench |
 | **Phase 14** | Backup & DR — Velero + etcd snapshots |
