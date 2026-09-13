@@ -7,10 +7,10 @@ sidebar_label: Delivery Workflow
 
 > **What:** how a commit in an application repo becomes a running pod — the two-repo GitOps
 > model, the GAP wrapper-chart deployment artifact, and the Kargo-driven promotion path.
-> **Why it's its own page:** the earlier [GitOps Workflow](./gitops-workflow) and
-> [Kargo Promotion](./kargo-promotion) pages describe the pre-2026-09 multi-source/kustomize shape.
-> This page is the **current standard** (wrapper charts + single ArgoCD Helm source), verified
-> end-to-end on `platform-demo`.
+> **Why it's its own page:** the older [GitOps Workflow](./gitops-workflow) page is historical,
+> while [Kargo Promotion](./kargo-promotion) goes deep on promotion mechanics. This page is the
+> **current end-to-end standard** (wrapper charts + single ArgoCD Helm source), verified on
+> `platform-demo`.
 > **Chart internals:** the [Helm golden-path ADR](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/helm-golden-path.md)
 > and `.claude/rules/gitops.md` (*Helm golden path — GAP wrapper-chart*).
 
@@ -29,6 +29,24 @@ Delivery is split across **application repos** and the single **deployment repo*
 
 The application developer never edits infrastructure to ship a version; the deployment repo is the
 auditable source of truth for what is running.
+
+## Start here: what change are you making?
+
+Most delivery confusion comes from opening the right repo but the wrong layer. Use this routing table
+before editing anything:
+
+| Change | Edit where | Why |
+|---|---|---|
+| Application code, tests, API behavior, UI behavior | the application repo (`retrieva`, `platform-demo`, `ktayl-policy-service`, …) | this changes what the software is |
+| Image version promotion from dev to prod | normally Kargo; review the PR it opens in `minicloud-gitops` | promotion is an auditable Git change, not a local edit |
+| Replicas, resources, probes, env vars, ingress hosts, KEDA, Vault/ESO wiring | `minicloud-gitops/services/<svc>/helm/values*.yaml` or wrapper `templates/` | this changes how the app runs |
+| ArgoCD app source, namespace, project permissions | `minicloud-gitops/apps/` and `manifests/argocd-project/` | this changes what ArgoCD is allowed to reconcile |
+| Third-party platform tool config | `minicloud-gitops/helm-values/` | upstream chart plus local values is the platform-tool contract |
+| Cluster-wide policy, quota, RBAC, network rule | `minicloud-gitops/manifests/` | shared platform controls belong outside one service |
+| Bootstrap, OS, node prep, MAAS/k3s install | `minicloud-ansible` or `minicloud-opentofu` | these are below the GitOps application layer |
+
+The rule of thumb: **source repos produce artifacts; `minicloud-gitops` decides how artifacts and
+platform services run; ArgoCD is the only cluster writer for managed workloads.**
 
 ## The pipeline, end to end
 
@@ -73,6 +91,27 @@ auditable source of truth for what is running.
 
 **Division of labour:** CI *builds and proves* the artifact; **Kargo promotes** it (the one thing
 ArgoCD does not do); **ArgoCD deploys** it. Nothing writes to the cluster except ArgoCD.
+
+## Workflow for GitOps changes in `minicloud-gitops`
+
+For a GitOps-only change, the workflow is shorter than a full application release:
+
+1. Open `minicloud-gitops` and run `git status`.
+2. Identify the smallest owned path: `services/<svc>/helm/` for a custom app, `helm-values/` for a
+   third-party chart, or `manifests/` for a shared platform concern.
+3. Make the declarative change in Git. Do not patch the live cluster to make the desired state true.
+4. Render or diff locally when possible:
+   ```bash
+   cd services/<svc>/helm
+   helm dependency update .
+   helm template <svc> . -f values-dev.yaml
+   ```
+5. Open a PR. Dev-only Kargo PRs may auto-merge; prod paths and platform controls require CODEOWNERS
+   review.
+6. After merge, ArgoCD reconciles the change. Verify the relevant app is `Synced` and `Healthy`.
+
+Direct `kubectl apply`, `helm upgrade`, or manual ArgoCD sync is reserved for bootstrap, recovery, or
+documented break-glass work. The normal path is always **Git commit -> PR -> ArgoCD reconciliation**.
 
 ## The deployment artifact — a wrapper Helm chart
 
