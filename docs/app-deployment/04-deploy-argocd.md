@@ -164,7 +164,7 @@ spec:
           - $values/apps/myapp/values-staging.yaml
 
     # Source 2: Values files from GitOps repo
-    - repoURL: https://gitlab.local/platform/gitops-repo.git
+    - repoURL: https://github.com/andrelair-platform/minicloud-gitops.git
       targetRevision: main
       ref: values
 

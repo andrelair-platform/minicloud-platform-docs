@@ -4,245 +4,161 @@ title: Full CI/CD Pipeline
 sidebar_position: 6
 ---
 
-# Full CI/CD Pipeline — Build → Scan → Package → Deploy
+# Full CI/CD Pipeline - GitHub Actions -> Kargo -> ArgoCD
 
-:::caution Historical generic example
-The live minicloud flow does **not** use GitLab CI, app-owned packaged Helm charts, or CI-driven
-deployment promotion. Current custom services use GitHub Actions to build and prove images only;
-Kargo updates `minicloud-gitops`, and ArgoCD reconciles the cluster. Start with
-[End-to-End Delivery Workflow](../developer-platform/delivery-workflow) for the current standard.
-:::
+The live minicloud flow uses **GitHub Actions**, **Kargo**, and **ArgoCD**. GitLab was evaluated in
+the original roadmap and deferred; it is not part of the running platform.
 
-This is the complete GitLab CI pipeline that covers the entire deploy lifecycle: build the Docker image, scan it, package the Helm chart, push both to Harbor, then update the GitOps repo to trigger ArgoCD.
-
----
-
-## Pipeline Stages
+For the current custom-service path, CI does not deploy and does not edit GitOps state directly:
 
 ```text
-build     → docker build + push image to Harbor
-test      → unit tests inside container
-scan      → Trivy vulnerability scan (fail on CRITICAL)
-package   → helm package + push chart to Harbor OCI
-promote   → bump chart version in gitops repo → ArgoCD takes over
+application repo
+  -> GitHub Actions: test, build, scan, sign, SBOM
+  -> registry artifact: Harbor for dev, ghcr SHA for prod
+  -> Kargo: promote artifact by opening PRs in minicloud-gitops
+  -> ArgoCD: reconcile merged desired state to the cluster
 ```
+
+Start with [End-to-End Delivery Workflow](../developer-platform/delivery-workflow) for the full
+two-repo model.
 
 ---
 
-## Complete `.gitlab-ci.yml`
+## Responsibilities
+
+| Layer | Owns | Does not do |
+|---|---|---|
+| Application repo | source code, tests, Dockerfile, GitHub Actions workflow | Kubernetes runtime configuration |
+| GitHub Actions | build, unit tests, vulnerability scan, Cosign signing, SBOM generation, image push | environment promotion or cluster writes |
+| `minicloud-gitops` | ArgoCD apps, wrapper Helm charts, values, Kargo configs, shared controls | application source code |
+| Kargo | detects immutable artifacts, promotes Freight, opens GitOps PRs | direct Kubernetes deployment |
+| ArgoCD | renders Helm and reconciles the desired state | artifact selection or promotion policy |
+
+---
+
+## Application CI Workflow
+
+Each custom service keeps a workflow similar to this in its own repository:
 
 ```yaml
-# .gitlab-ci.yml
-stages:
-  - build
-  - test
-  - scan
-  - package
-  - promote
+name: ci
 
-variables:
-  HARBOR_URL: harbor.local
-  HARBOR_PROJECT: myteam
-  APP_NAME: myapp
-  CHART_PATH: ./chart
-  GITOPS_REPO: https://gitlab.local/platform/gitops-repo.git
-  IMAGE: $HARBOR_URL/$HARBOR_PROJECT/$APP_NAME
+on:
+  push:
+    branches: [main]
+  pull_request:
 
-# ── Stage 1: Build ──────────────────────────────────────────────────
-build-image:
-  stage: build
-  image: docker:24
-  services:
-    - docker:24-dind
-  before_script:
-    - docker login $HARBOR_URL -u $HARBOR_USER -p $HARBOR_PASSWORD
-  script:
-    - |
-      docker build \
-        --label "git.commit=$CI_COMMIT_SHA" \
-        --label "git.branch=$CI_COMMIT_BRANCH" \
-        --label "build.date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
-        -t $IMAGE:$CI_COMMIT_SHORT_SHA \
-        -t $IMAGE:latest-$CI_COMMIT_BRANCH \
-        .
-    - docker push $IMAGE:$CI_COMMIT_SHORT_SHA
-    - docker push $IMAGE:latest-$CI_COMMIT_BRANCH
-  only:
-    - main
-    - /^release\/.*/
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+  security-events: write
 
-# ── Stage 2: Test ───────────────────────────────────────────────────
-unit-tests:
-  stage: test
-  image: $IMAGE:$CI_COMMIT_SHORT_SHA
-  script:
-    - npm test                         # or pytest, go test, etc.
-  coverage: '/Lines\s*:\s*(\d+\.?\d*)%/'
-  artifacts:
-    reports:
-      junit: test-results/junit.xml
-      coverage_report:
-        coverage_format: cobertura
-        path: coverage/cobertura-coverage.xml
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-# ── Stage 3: Scan ───────────────────────────────────────────────────
-trivy-scan:
-  stage: scan
-  image:
-    name: aquasec/trivy:latest
-    entrypoint: [""]
-  script:
-    - trivy image \
-        --exit-code 1 \
-        --severity CRITICAL \
-        --no-progress \
-        --format table \
-        $IMAGE:$CI_COMMIT_SHORT_SHA
-  # Fail the pipeline if CRITICAL vulnerabilities are found
-  allow_failure: false
-  only:
-    - main
-    - /^release\/.*/
+      - name: Run tests
+        run: npm test
 
-# ── Stage 4: Package Helm Chart ─────────────────────────────────────
-package-chart:
-  stage: package
-  image: alpine/helm:3.14.0
-  before_script:
-    - helm registry login $HARBOR_URL -u $HARBOR_USER -p $HARBOR_PASSWORD
-  script:
-    # Set chart version = app version = semver from git tag or commit
-    - export CHART_VERSION=${CI_COMMIT_TAG:-"0.0.0-$CI_COMMIT_SHORT_SHA"}
-    - |
-      # Update Chart.yaml versions
-      sed -i "s/^version:.*/version: $CHART_VERSION/" $CHART_PATH/Chart.yaml
-      sed -i "s/^appVersion:.*/appVersion: \"$CHART_VERSION\"/" $CHART_PATH/Chart.yaml
-      # Update default image tag in values.yaml
-      sed -i "s/tag:.*/tag: \"$CI_COMMIT_SHORT_SHA\"/" $CHART_PATH/values.yaml
-    - helm dependency update $CHART_PATH
-    - helm package $CHART_PATH --destination ./dist
-    - helm push ./dist/$APP_NAME-$CHART_VERSION.tgz oci://$HARBOR_URL/charts
-  artifacts:
-    paths:
-      - dist/
-  only:
-    - main
-    - /^release\/.*/
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ghcr.io/andrelair-platform/myapp:${{ github.sha }}
 
-# ── Stage 5: Promote to GitOps Repo ─────────────────────────────────
-promote-staging:
-  stage: promote
-  image: alpine/git:latest
-  before_script:
-    - git config --global user.email "ci@platform.local"
-    - git config --global user.name "GitLab CI"
-  script:
-    - export CHART_VERSION=${CI_COMMIT_TAG:-"0.0.0-$CI_COMMIT_SHORT_SHA"}
-    # Clone gitops repo
-    - git clone https://ci-token:$GITOPS_TOKEN@gitlab.local/platform/gitops-repo.git /tmp/gitops
-    - cd /tmp/gitops
-    # Bump chart version in staging values
-    - |
-      sed -i "s/targetRevision:.*/targetRevision: \"$CHART_VERSION\"/" \
-        apps/$APP_NAME/application-staging.yaml
-    - |
-      sed -i "s/tag:.*/tag: \"$CI_COMMIT_SHORT_SHA\"/" \
-        apps/$APP_NAME/values-staging.yaml
-    - git add .
-    - git commit -m "chore: bump $APP_NAME staging to $CHART_VERSION [skip ci]"
-    - git push origin main
-  only:
-    - main
-  environment:
-    name: staging
-    url: https://$APP_NAME.staging.yourdomain.com
+      - name: Scan image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/andrelair-platform/myapp:${{ github.sha }}
+          severity: CRITICAL,HIGH
 
-promote-production:
-  stage: promote
-  image: alpine/git:latest
-  before_script:
-    - git config --global user.email "ci@platform.local"
-    - git config --global user.name "GitLab CI"
-  script:
-    - export CHART_VERSION=$CI_COMMIT_TAG
-    - git clone https://ci-token:$GITOPS_TOKEN@gitlab.local/platform/gitops-repo.git /tmp/gitops
-    - cd /tmp/gitops
-    - |
-      sed -i "s/targetRevision:.*/targetRevision: \"$CHART_VERSION\"/" \
-        apps/$APP_NAME/application-prod.yaml
-    - |
-      sed -i "s/tag:.*/tag: \"$CI_COMMIT_SHORT_SHA\"/" \
-        apps/$APP_NAME/values-prod.yaml
-    - git add .
-    - git commit -m "chore: bump $APP_NAME production to $CHART_VERSION [skip ci]"
-    - git push origin main
-  only:
-    - /^v\d+\.\d+\.\d+$/   # only on semver tags: v1.2.3
-  when: manual              # human approval before production
-  environment:
-    name: production
-    url: https://$APP_NAME.yourdomain.com
+      - name: Sign image
+        if: github.event_name == 'push'
+        run: cosign sign --yes ghcr.io/andrelair-platform/myapp:${{ github.sha }}
+
+      - name: Generate SBOM
+        if: github.event_name == 'push'
+        run: syft ghcr.io/andrelair-platform/myapp:${{ github.sha }} -o spdx-json=sbom.spdx.json
 ```
+
+Adapt the test command to the service stack (`npm test`, `pytest`, `go test ./...`, etc.). Keep the
+workflow build-only: no `kubectl`, no `helm upgrade`, and no direct commit to `minicloud-gitops`.
 
 ---
 
-## Required CI/CD Variables
+## GitOps Promotion
 
-Set these in GitLab → Settings → CI/CD → Variables:
-
-| Variable | Value | Protected | Masked |
-|---|---|---|---|
-| `HARBOR_USER` | `ci-robot` | ✅ | ✅ |
-| `HARBOR_PASSWORD` | `<robot token>` | ✅ | ✅ |
-| `GITOPS_TOKEN` | GitLab deploy token | ✅ | ✅ |
-
----
-
-## Release Workflow (Semantic Versioning)
-
-```bash
-# Feature ready for production
-git tag v1.3.0
-git push origin v1.3.0
-
-# GitLab CI triggers:
-#   build → test → scan → package → promote-production (manual)
-```
+Kargo watches the built artifact and creates **Freight**. For services using the GAP wrapper chart,
+promotion updates the image tag in:
 
 ```text
-v1.3.0 tag pushed
-    ↓
-CI builds image: harbor.local/myteam/myapp:<sha>
-CI packages chart: harbor.local/charts/myapp:1.3.0
-CI updates gitops-repo → values-prod.yaml
-    ↓
-ArgoCD detects change (OutOfSync)
-Release manager clicks SYNC in ArgoCD UI
-    ↓
-Production deploys v1.3.0
+minicloud-gitops/services/<svc>/helm/values-dev.yaml
+minicloud-gitops/services/<svc>/helm/values-prod.yaml
+```
+
+The normal promotion sequence is:
+
+```text
+1. Developer merges application code to main.
+2. GitHub Actions publishes a signed image and SBOM.
+3. Kargo Warehouse detects the new image or git commit.
+4. Kargo auto-promotes to dev and opens a dev PR.
+5. Dev-only PR auto-merges when path guards pass.
+6. ArgoCD syncs dev.
+7. Kargo runs dev verification.
+8. A verified Freight can be promoted to prod.
+9. Kargo opens a CODEOWNERS-gated prod PR.
+10. ArgoCD reconciles prod after the PR merges.
+```
+
+See [Kargo Promotion](../developer-platform/kargo-promotion) for Warehouse models, verification
+variants, and service-specific promotion behavior.
+
+---
+
+## GitOps Repository Layout
+
+The deployment repository is the source of truth for how services run:
+
+```text
+minicloud-gitops/
+|-- apps/                         # ArgoCD Applications
+|-- helm-values/                  # third-party chart values
+|-- manifests/                    # shared platform controls
+`-- services/
+    `-- <svc>/
+        |-- helm/                 # GAP wrapper chart + values
+        `-- kargo/                # Warehouse, Stages, ProjectConfig, verification
+```
+
+For custom services, edit the wrapper chart values or templates under `services/<svc>/helm/`. For
+platform tools such as Vault, Grafana, Harbor, and Authentik, edit `helm-values/`.
+
+---
+
+## Release Checks
+
+Before considering a deployment complete, verify:
+
+```text
+GitHub Actions workflow is green
+image exists in the expected registry with an immutable SHA tag
+Cosign signature and SBOM were produced
+Kargo Freight exists for the new artifact
+Kargo dev verification passed before prod promotion
+ArgoCD application is Synced and Healthy
+prod promotion PR passed CODEOWNERS review
 ```
 
 ---
 
-## Pipeline Visualization
+## Break-Glass Boundary
 
-```text
- build-image ──→ unit-tests ──→ trivy-scan ──→ package-chart ──→ promote-staging
-                                                                       │
-                                                       (on tag v*)     ↓
-                                                               promote-production
-                                                               [manual approval]
-```
-
----
-
-## Done When
-
-```text
-✔ Pipeline runs green on push to main
-✔ Image appears in Harbor with correct tag
-✔ Helm chart appears in Harbor OCI charts
-✔ gitops-repo staging values updated automatically
-✔ ArgoCD picks up change and syncs staging
-✔ Production deploy requires git tag + manual approval
-```
+Direct `kubectl apply`, `helm upgrade`, or manual cluster patching is reserved for bootstrap,
+recovery, or documented break-glass work. After any emergency change, reconcile the final desired
+state back into `minicloud-gitops` so ArgoCD remains authoritative.
