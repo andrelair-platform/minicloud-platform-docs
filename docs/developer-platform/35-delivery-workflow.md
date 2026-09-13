@@ -7,10 +7,10 @@ sidebar_label: Delivery Workflow
 
 > **What:** how a commit in an application repo becomes a running pod — the two-repo GitOps
 > model, the GAP wrapper-chart deployment artifact, and the Kargo-driven promotion path.
-> **Why it's its own page:** the older [GitOps Workflow](./gitops-workflow) page is historical,
-> while [Kargo Promotion](./kargo-promotion) goes deep on promotion mechanics. This page is the
-> **current end-to-end standard** (wrapper charts + single ArgoCD Helm source), verified on
-> `platform-demo`.
+> **Why it's its own page:** this is the **current end-to-end standard** for custom apps (wrapper
+> charts + single ArgoCD Helm source), verified on `platform-demo`. [Kargo Promotion](./kargo-promotion)
+> goes deep on promotion mechanics; [Third-Party Charts](./third-party-charts) covers upstream Helm
+> tools (Grafana/Vault/…), which follow a different (no-promotion) path.
 > **Chart internals:** the [Helm golden-path ADR](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/helm-golden-path.md)
 > and `.claude/rules/gitops.md` (*Helm golden path — GAP wrapper-chart*).
 
@@ -185,5 +185,5 @@ EOF
 
 ## Related
 
-- [GitOps Workflow](./gitops-workflow) · [Kargo Promotion](./kargo-promotion) · [Helm vs Kustomize](./helm-vs-kustomize) · [Argo Rollouts](./argo-rollouts) · [KEDA scale-to-zero](./keda-cron-scale-to-zero)
+- [Third-Party Charts](./third-party-charts) · [Kargo Promotion](./kargo-promotion) · [Helm vs Kustomize](./helm-vs-kustomize) · [Argo Rollouts](./argo-rollouts) · [KEDA scale-to-zero](./keda-cron-scale-to-zero)
 - Deployment repo: [`services/_template-helm/`](https://github.com/andrelair-platform/minicloud-gitops/tree/main/services/_template-helm) (scaffold) · [Helm golden-path ADR](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/helm-golden-path.md)

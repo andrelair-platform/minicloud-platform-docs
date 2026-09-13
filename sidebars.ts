@@ -192,7 +192,7 @@ const sidebars: SidebarsConfig = {
             'developer-platform/branch-strategy-cicd',
             'developer-platform/gitops-directory-patterns',
             'platform-roadmap/phase-12-gitops',
-            'developer-platform/gitops-workflow',
+            'developer-platform/third-party-charts',
             'developer-platform/helm-argocd-migration',
             'developer-platform/helm-vs-kustomize',
             'developer-platform/backstage-helm-kustomize',
