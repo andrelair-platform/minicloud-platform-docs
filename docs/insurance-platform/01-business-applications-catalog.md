@@ -13,9 +13,21 @@ This catalog is the **detailed per-app inventory** that hangs off that blueprint
 the blueprint's domain model is authoritative and this catalog is being reconciled to it.
 :::
 
-Complete catalog of all business applications planned or live for the **ktayl solution IS** — the simulated insurance company information system. This IS covers the same functional domains as a mid-sized French commercial insurer (B2B IARD, Vie & Prévoyance, International Programs).
+Complete catalog of all business applications planned or live for the **ktayl-solution IS** — the
+simulated commercial insurer's information system (B2B IARD / large risks). It covers the functional
+domains of a real French commercial insurer; the authoritative domain model is the
+[EA Blueprint](./enterprise-architecture-blueprint) (12 domains + 4 transversal layers).
 
-Each entry links to its GitHub issue in `andrelair-platform/platform-backlog`.
+:::warning Two-layer model — this IS is NOT the certification project
+The **ktayl-solution IS** is the **organisational/business context** (the "company" and its systems).
+The **RNCP39583 certification deliverable is Retrieva**, a *separate product* that runs on this
+infrastructure. So the apps below are **ktayl IS business systems**, **not** cert evidence, and they do
+not depend on Retrieva. (Legacy entries that called ktayl microservices "the certification project /
+BC02 evidence" are being corrected in this pass.)
+:::
+
+Each product now lives on its own **GitHub Project board** (per-product portfolio; the old
+`platform-backlog` aggregator was retired). Board numbers are shown in the domain map below.
 
 ---
 
@@ -23,17 +35,45 @@ Each entry links to its GitHub issue in `andrelair-platform/platform-backlog`.
 
 | Badge | Meaning |
 |---|---|
-| ✅ Live | Deployed and operational |
-| 🔨 Q1 2027 | Certification core — build October 2026 → March 2027 |
-| 🔨 Q2 2027 | Certification phase 2 — build April → September 2027 |
-| 📋 Backlog | Scoped, not yet scheduled |
-| 🔬 Research | Advanced / domain-depth — post-certification |
+| 🟢 Live | Deployed and operational |
+| 🟡 In progress / scaffolded | Has a home (repo/board), not yet built or deployed |
+| 🔴 Gap | No home yet — named in the EA Blueprint, board created when work starts |
+| 🔬 Research | Advanced / domain-depth — later |
+
+## Domain map — catalog → EA Blueprint (authoritative)
+
+Aligns this catalog's sections to the blueprint's 12 domains + 4 transversal layers, with the current
+board + status. See the [EA Blueprint](./enterprise-architecture-blueprint) for the gap analysis.
+
+| Blueprint domain / layer | Board | Status | Catalog section |
+|---|---|---|---|
+| 1 Distribution / CRM / Broker portal | #13 | 🟡 | §5 Distribution |
+| 2 Underwriting workbench | #12 | 🟡 | §2 Underwriting |
+| 3 Pricing / Rating | #12 | 🟡 | §2 / §6 |
+| 4 Policy Administration (PAS) | #6 | 🟢 | §1 Core |
+| 5 Claims | #11 | 🟡 | §1 / §3 |
+| 6 Risk Engineering / Prevention | — | 🔴 | *(gap — add when work starts)* |
+| 7 International Programs | — | 🔴 | §4b |
+| 8 Billing / Premium & Finance | #14 | 🟡 | §5 / §6 |
+| 9 Reinsurance (own domain) | — | 🔴 | §6 |
+| 10 Compliance / Legal | #15 | 🟡 | §7 |
+| 11 Data / Actuarial | #5 | 🟡 | §10 |
+| 12 Enterprise IT | #3/#4/#10/#16/#17 | 🟢 | §11 + platform docs |
+| L Documents (GED/OCR/IDP) | — | 🔴 | §8 |
+| L Integration (API/ESB/ETL/MFT/EDI) | — | 🔴 | *(gap — biggest)* |
+| L Master Data / MDM | #20 | 🟡 | *(new — `ktayl-mdm`)* |
+| L AI / Automation | #4 / #18 / #19 | 🟢 | §2a, §9, and the AI products |
+
+**AI products (the OWUI-split):** **ktayl Knowledge Assistant** (#18 — chat-over-docs, Open WebUI
+config) and **ktayl AI Ops Copilot** (#19 — beyond-OWUI structured decisions + authorized actions).
 
 ---
 
-## 1. Core Insurance Platform (GERAS equivalent)
+## 1. Core Insurance Platform (Policy Admin + Claims)
 
-The four microservices that form the ktayl-solution certification project. These are the primary BC02 evidence for RNCP39583.
+The core ktayl IS insurance services (blueprint domains **4 Policy Administration** + **5 Claims**).
+These are **ktayl business systems** — *not* certification evidence (the cert deliverable is Retrieva,
+a separate product; see the two-layer warning above).
 
 | App | Stack | Issue | Phase | Description |
 |---|---|---|---|---|
@@ -328,42 +368,48 @@ ktayl-ip-portal       ──► n8n (automated SO communication workflows)
 
 ---
 
-## Build Roadmap Summary
+## Build Roadmap — copilot-driven thin slice (authoritative)
+
+Per the [EA Blueprint](./enterprise-architecture-blueprint), we complete the IS **in the order that
+delivers value**, driven by the AI Ops Copilot's underwriting-v1 dependencies — **not** breadth-first.
 
 ```
-Q1 2027  →  ktayl-policy-service (Go)
-             ktayl-claims-service (Java 21)
-             ktayl-portal (Next.js 14) + RGAA audit
+NOW      →  ktayl-mdm (Master Data, thin slice)          #20  🟡  ← copilot dependency #1
+             Documents/IDP (submission-pack ingestion)    🔴  ← copilot dependency #2
+             exposure/accumulation Data (thin)            #5   🟡  ← copilot dependency #3
+             UW workbench (appetite, referral)            #12  🟡  ← copilot dependency #4
 
-Q2 2027  →  ktayl-ai-claims-assistant (Python/LangGraph)
-             ERPNext CRM + billing config
-             Paperless-ngx DMS
-             CLM-PAY-1 SEPA payment
-             Insurance attestation PDF
+THEN     →  ktayl-ai-copilot — underwriting v1            #19       (structured decisions + actions)
+             ktayl Knowledge Assistant                     #18       (OWUI config: cited staff Q&A)
 
-Q3 2027  →  ktayl-uwb-api + ktayl-uwb-ui (Underwriting Workbench)
-             underwriting-workflow (Temporal) + UW AI agents (CrewAI)
-             UW authority matrix + actuarial pricing engine
-             Premium collection lifecycle
-             ORIAS verification
-             SMS gateway + shared mailboxes
+NEXT     →  Claims (copilot v2) · Billing/Finance · Distribution/CRM
 
-Post-cert →  Reinsurance, actuarial, LOB extensions,
-             Data platform, MidPoint IGA, Contentieux
+LATER    →  Reinsurance · Risk Engineering · International Programs · Integration layer ·
+             Actuarial depth (reserving/cat) · Legal
 ```
+
+Legacy note: the previous Q1–Q3 2027 plan framed ktayl builds as "certification" work — corrected
+(cert = Retrieva, separate product). Live today: ktayl-policy-service, ERPNext, Nextcloud/OnlyOffice,
+Docuseal, Stalwart mail, Matrix/Element, the AI Platform.
 
 ---
 
-## IS Domain Coverage
+## IS Domain Coverage (aligned to the EA Blueprint)
 
-| Domain | ktayl-solution component |
-|---|---|
-| Claims & policy lifecycle | ktayl-claims-service + ktayl-policy-service |
-| Underwriting | ktayl-uwb-api + ktayl-uwb-ui + UW AI agents (#81) |
-| International Programs (GNP) | ktayl-ip-portal + IP bordereau module (#222) |
-| Customer portal | ktayl-portal (#202) |
-| Document management | Paperless-ngx (#76) |
-| Task & project management | Plane CE (live) |
-| CRM & partner management | ERPNext CRM (#53, #92) |
-| Data platform | Global Data Platform (#152) |
-| IAM & governance | Authentik + MidPoint IGA (#205) |
+| Blueprint domain / layer | Board | Status | Current component(s) |
+|---|---|---|---|
+| 4 Policy Administration (PAS) | #6 | 🟢 | ktayl-policy-service (live) |
+| 12 Enterprise IT | #3/#4/#10/#16/#17 | 🟢 | GitOps, AI Platform, Digital Workplace, ITSM, IAM (several live) |
+| L Master Data / MDM | #20 | 🟡 | ktayl-mdm (thin slice, in progress) |
+| L AI / Automation | #4/#18/#19 | 🟢 | AI Platform + Knowledge Assistant + AI Ops Copilot |
+| 2/3 Underwriting & Pricing | #12 | 🟡 | ktayl-underwriting (repo) |
+| 5 Claims | #11 | 🟡 | ktayl-claims (repo) |
+| 1 Distribution / CRM | #13 | 🟡 | ktayl-distribution (repo) + ERPNext CRM config |
+| 8 Billing / Finance | #14 | 🟡 | ktayl-finance (repo) + ERPNext |
+| 10 Compliance / Legal | #15 | 🟡 | ktayl-compliance (repo) |
+| 11 Data / Actuarial | #5 | 🟡 | Data Platform (minimal) |
+| 7 International Programs | — | 🔴 | gap — board when work starts |
+| 9 Reinsurance | — | 🔴 | gap |
+| 6 Risk Engineering | — | 🔴 | gap |
+| L Documents (GED/OCR/IDP) | — | 🔴 | Nextcloud storage only; IDP is a gap |
+| L Integration (API/ESB/ETL/MFT/EDI) | — | 🔴 | gap (biggest) |
