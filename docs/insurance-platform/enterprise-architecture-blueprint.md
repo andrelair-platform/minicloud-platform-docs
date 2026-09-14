@@ -142,23 +142,35 @@ business process → pain point → data/documents → existing systems
     → decision/task → automation opportunity → AI capability → measurable outcome
 ```
 
-## 5. Build order — copilot-driven thin slice (not breadth-first)
+## 5. Build order — business tools first; AI/automation last
 
-We complete the IS in the order that delivers value, driven by the copilot's **v1 = Underwriting**
-value chain, which exposes exactly which systems must exist:
+:::warning Corrected sequencing (2026-09-14)
+Build the **business tools (domains) first**; the **AI/automation layer comes last**. An earlier plan
+front-loaded the plumbing (*"MDM → Documents → Data → UW → Copilot thin slice"*) — that is **reversed**.
+The **AI Ops Copilot (#19)** is an automation *layer*: it only delivers value once real business
+systems exist to reason over and act on. **MDM (#20)** is a foundation, but only pays off once a
+consumer exists. So **#18 (Knowledge Assistant), #19 (AI Ops Copilot) and #20 (MDM) are PARKED** —
+their briefs are captured as plans, not the next thing to build.
+:::
+
+**The correct order:**
 
 ```
-Broker submission pack (emails/Excel/PDF/Word) → Documents/IDP      🔴 build (thin)
-Client/broker/risk/entity lookup                → Master Data/MDM    🔴 build (thin)
-Claims history + exposure/accumulation          → Data/Actuarial     🟡 extend (thin)
-Underwriting workbench (appetite, referral)     → #12                🟡 build
-Policy admin                                     → #6 policy-service  🟢 live
+1. Build a real BUSINESS DOMAIN end-to-end   (the thing that actually runs)
+2. MDM emerges as that first domain needs shared entities (client/broker/…)
+3. Documents/IDP + exposure-Data added as a domain needs them
+4. The AI Ops Copilot LAST — the capstone, once there are real systems to automate
 ```
 
-**Sequence:** stand up the *thin slice* of **Documents/IDP → MDM → exposure-Data → UW Workbench**
-that underwriting-v1 needs, then the **AI Ops Copilot** automates over them. Each missing domain gets
-its own board/repo **when its work starts** (portfolio discipline — no empty boards). Breadth-first
-(12 half-built domains) is explicitly rejected.
+**Why:** the copilot automates *over* systems — no systems, nothing to automate. MDM with no consumer
+is infrastructure with no payoff. So value comes from standing up domains, not from building the
+automation layer against stubs.
+
+**Next decision:** pick the first business domain to stand up. Policy Admin (#6) is already live;
+strong candidates are **GLPI/ITSM (#16)** (direction already locked, self-contained quick win) or
+**Underwriting (#12)** (highest insurance value). Each missing domain gets its board/repo **when its
+work starts** (portfolio discipline — no empty boards); breadth-first (12 half-built domains) is
+rejected too. The parked copilot/MDM/KA briefs remain valid plans for when the systems exist.
 
 ## 6. Governance
 
