@@ -133,10 +133,53 @@ CVE, or an app that genuinely can't read a mounted CA. **CVE hygiene** is better
 (auto-bump to the vendor's latest patched tag) + Trivy scanning than by an `apt upgrade` layer (which is
 non-reproducible — note the `apt-mark hold` workarounds in the baked images).
 
-**Status:** `trust-manager` + the `minicloud-ca-bundle` Bundle are wired in gitops
-(`apps/platform/trust-manager.yaml`, `manifests/cert-manager-config/`). Go-forward: **new apps use the
-runtime mount above**; the existing baked images (OnlyOffice, Open WebUI, Backstage) stay as-is
-(consistency > churn) and can migrate opportunistically.
+**Status:** ✅ **live and verified.** `trust-manager` + the `minicloud-ca-bundle` Bundle are wired in
+gitops (`apps/platform/trust-manager.yaml`, `helm-values/minicloud-1/trust-manager-values.yaml`,
+`manifests/cert-manager-config/02-trust-bundle-minicloud-ca.yaml`) — the CA ConfigMap **and** Secret are
+distributed across **all ~73 namespaces**. Go-forward: **new apps use the runtime mount below**; the
+existing baked images (OnlyOffice, Open WebUI, Backstage) stay as-is (consistency > churn) and can
+migrate opportunistically.
+
+### How it works, day-to-day (the lifecycle, jargon-free)
+
+**The core problem.** Your internal services talk to each other over TLS, but they use a **private**
+certificate authority (`minicloud-ca`) that stock software doesn't know about. By default, a stock
+container image (Node.js, Python, curl…) hitting an internal URL signed by your CA throws an
+*untrusted certificate* error.
+
+**The old way — baking.** You wrote a `Dockerfile`, used `ARG CA_CERT`, copied the private cert into the
+image's OS trust store, and built it. The pain: every CA rotation/expiry meant **rebuild the image →
+push to the registry → bump the manifest → redeploy** — and you maintained a whole GitHub repo just for
+that image wrapper.
+
+**The new way — runtime injection via `trust-manager`.** Instead of hiding the cert *inside* the image
+at build time, you hand it to the container **when it starts**. Think of `trust-manager` as an automated
+postal worker for the cluster:
+
+1. **The source** — `minicloud-ca` lives centrally in the cluster (the cert-manager Vault issuer).
+2. **The robot (`trust-manager`)** — it watches a `Bundle` resource. It grabs the `minicloud-ca`
+   certificate and **mirrors it into a clean `ConfigMap` named `minicloud-ca-bundle` in *every*
+   namespace** (plus a Secret of the same name). If the CA ever updates, the robot re-mirrors it to
+   every namespace automatically.
+3. **The application** — no custom Dockerfile, no private repo. You run the **stock upstream image**
+   (e.g. `onlyoffice/documentserver`) and tell Kubernetes two things in the Helm chart / deployment YAML:
+   - **Mount** the `minicloud-ca-bundle` ConfigMap into the pod as a file (e.g. at
+     `/etc/ssl/certs/minicloud-ca.crt`).
+   - **Set an env var** pointing the runtime at that file — `NODE_EXTRA_CA_CERTS=/etc/ssl/certs/minicloud-ca.crt`
+     for Node apps (equivalent flags for other runtimes, or drop it into the OS trust dir).
+
+   (See the copy-paste pod snippet earlier in this section.)
+
+**What this means going forward:**
+- **New apps** → use the vendor's stock image directly; just add the volume mount + env var for the CA
+  bundle. **Zero Dockerfiles, zero build pipelines, zero repo.**
+- **Certificate rotation** → `trust-manager` updates every ConfigMap; apps pick up the new cert on
+  their next pod restart. **No code changes, no image rebuilds.**
+
+**Wiring gotcha (learned in the spike):** the `Bundle` CR is **cluster-scoped**, so it must be in the
+ArgoCD AppProject `clusterResourceWhitelist` (`trust.cert-manager.io/Bundle`) — otherwise ArgoCD
+rejects it as "synchronization tasks are not valid" and nothing distributes. Same class as the
+PriorityClass whitelist gotcha.
 
 ---
 
