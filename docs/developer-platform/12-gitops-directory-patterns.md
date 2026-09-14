@@ -49,6 +49,61 @@ source repo* (the Backstage pattern).
 
 ---
 
+## Helm vs raw manifests — when to use which
+
+**Helm earns its place only when you need templating, parameterization, reuse, or a vendor's packaged
+chart. When none of those apply, raw manifests are simpler and more honest.**
+
+### What each buys you
+
+| | Helm (vendor chart or your wrapper chart) | Raw manifests |
+|---|---|---|
+| **Value** | templating, per-env parameterization, DRY, reuse of a shared library, vendor packaging | transparency — what you see is exactly what's applied; no `helm template` indirection |
+| **Cost** | indirection, a chart to configure/maintain, version pinning | no parameterization; copy-paste if it varies |
+| **Lifecycle** | Helm release mgmt — **but ArgoCD already gives sync/prune/rollback** | ArgoCD gives the same GitOps lifecycle |
+
+**Key insight:** ArgoCD already provides the deploy lifecycle (sync, prune, git-rollback), so Helm's
+*release-management* value is largely redundant here. **Helm is really about templating + packaging, not
+lifecycle.**
+
+### Worked example — why OnlyOffice is raw manifests
+
+`manifests/nextcloud/` (`10-onlyoffice`, `11-ingress`, `12-rbac`, `13-config-job`) is raw because
+**every reason to use Helm is absent**:
+
+1. **No good upstream chart worth adopting.** OnlyOffice's community chart is heavy/opinionated; for
+   ~4 objects (Deployment + Service + Ingress + RBAC + a config Job) it's less work to write them
+   plainly than to adopt + configure a bloated chart.
+2. **Small, static, single-instance.** No templating value — one instance, fixed config, effectively
+   one environment. Helm templating parameterizes *variation*; there's none to parameterize.
+3. **It's an adjunct, not a standalone product.** OnlyOffice lives under `nextcloud/` because it's
+   Nextcloud's document editor — deployed as part of that bundle, not as an independent app.
+4. **Transparency wins for a fixed workload.** Raw YAML = exactly what runs; no `helm template` render
+   step to reason about.
+
+### The rule of thumb (this platform's actual pattern)
+
+- **Vendor ships a real chart** (Grafana, Vault, Harbor, cert-manager, ERPNext) → **Helm**
+  (`helm-values/`). You'd never hand-write Grafana's hundreds of objects.
+- **Your own app that varies across dev/prod or reuses the shared library** (probes, netpol, rollout,
+  KEDA) → **your GAP wrapper chart** (`services/`). Templating + the library are the payoff.
+- **A small, static, single-instance workload, an adjunct to another app, or a supporting resource**
+  (netpol, quotas, RBAC, ESO, CRs, a tiny tool like `whoami`/`homer`) → **raw manifests**
+  (`manifests/`). Helm would add indirection for zero gain.
+
+**One-line test:** *"Is there real templating / reuse / packaging value?"* Yes → Helm. No → raw
+manifests, and let ArgoCD handle the lifecycle.
+
+### Honest nuance
+
+It's pragmatic, not dogmatic — a few things in `manifests/` *could* be charts and vice-versa; the
+platform optimizes for "least indirection that still does the job." The trap to avoid is
+**cargo-culting Helm onto a 3-object static app** just because "everything should be a chart" — that's
+complexity with no payoff. OnlyOffice is the correct call as raw manifests *today*; if it ever needed
+dev+prod variants or multiple instances, that would be the trigger to move it to a wrapper chart.
+
+---
+
 ## The two common patterns
 
 ### Pattern A — flat overlay per environment
