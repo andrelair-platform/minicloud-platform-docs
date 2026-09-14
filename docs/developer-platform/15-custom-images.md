@@ -32,6 +32,54 @@ edit source → commit → push → CI does the rest.
 
 ---
 
+## When does a vendor app get its own repo? (the Backstage pattern)
+
+A natural question: *"we have `minicloud-backstage`; should every end-user vendor app (GLPI, etc.)
+get a repo too?"* The honest answer from the evidence is **no — the discriminator is not
+"end-user-facing," it's "does it need a custom image or build."**
+
+Look at what actually has a repo vs not:
+
+| App | End-user-facing? | Custom image/build? | Has a repo? |
+|---|---|---|---|
+| Backstage | yes | **yes** (custom plugins, `yarn build`) | ✅ `minicloud-backstage` |
+| Open WebUI | yes | **yes** (`Dockerfile`: CA cert, French BM25) | ✅ `minicloud-open-webui` |
+| OnlyOffice | yes | **yes** (`Dockerfile`: CA cert, `NODE_EXTRA_CA_CERTS`) | ✅ `minicloud-onlyoffice` |
+| Grafana / Vault / Harbor / Loki / NATS | yes (mostly) | **no** (stock chart + values) | ❌ none — just `helm-values/` + `apps/` |
+| ERPNext | yes | no (stock chart) | ❌ config only |
+
+Grafana, Vault and Harbor are all end-user-facing, yet run **stock upstream images configured only via
+`helm-values/`** — so they need **no repo**. Backstage/Open WebUI/OnlyOffice have repos because they
+**bake a custom image** (plugins, CA trust, patches), which needs a `Dockerfile` + CI to be findable,
+upgradable and recoverable (see *The problem this solves* above).
+
+### The rule
+
+```
+Does the app need a custom image or build artifact
+(baked plugins, CA trust, a patch, compiled-from-source)?
+        │
+   ┌────┴────┐
+  YES        NO
+   │          │
+   ▼          ▼
+ own repo   NO repo —
+ (Dockerfile   just helm-values/<app>-values.yaml
+  + CI) +       + an apps/ Application pointing at
+ helm-values/   the stock upstream chart
+ + apps/
+```
+
+**So for GLPI:** it *does* typically need a custom image (internal-CA trust, ITIL plugins/marketplace
+extensions, PHP config) → it correctly has a home repo (`ktayl-itsm`) that owns the **Dockerfile +
+app-specific config**, while its **deployment config stays in gitops** (`helm-values/` for the chart +
+`manifests/ktayl-itsm/` for netpol/secrets + an `apps/` Application). If a future vendor app can run a
+**stock community chart unchanged**, it gets **no repo** — only `helm-values/` + `apps/`. Don't create
+a repo per app "for symmetry"; create one only when there's a custom image to own (the same discipline
+that keeps ~90 workloads from becoming ~90 repos).
+
+---
+
 ## Inventory
 
 ### Custom services (written from scratch)

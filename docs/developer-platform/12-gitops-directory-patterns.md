@@ -11,6 +11,44 @@ this platform, and the architectural reasoning behind it.
 
 ---
 
+## The four top-level directories (`minicloud-gitops`)
+
+Everything ArgoCD reconciles falls into one of four directories. The distinction is **what kind of
+input it is**, and it maps directly to the ArgoCD **source type**:
+
+| Directory | Holds | ArgoCD source | "When do I use it?" |
+|---|---|---|---|
+| **`helm-values/`** | `values.yaml` **overrides for third-party charts** (not k8s objects) | Helm (upstream chart + `valueFiles`) | Configuring a vendor chart you didn't write (Grafana, Vault, Harbor, cert-manager, ERPNext…) |
+| **`manifests/`** | **raw Kubernetes YAML / CRs** applied verbatim | directory (plain) | A raw object with no chart — NetworkPolicies, ResourceQuotas, RBAC, ExternalSecrets, Gatekeeper policies, ClusterIssuers, Kargo CRs, PriorityClasses, or a tiny standalone tool |
+| **`services/`** | **your own custom apps** as GAP wrapper Helm charts | Helm (local chart) | An application you build (image from your source) |
+| **`apps/`** | the **ArgoCD `Application` manifests** that wire the above to a namespace + sync policy | — | The glue: "sync *this* source → *this* namespace" |
+
+### `helm-values/` vs `manifests/` — the key distinction
+
+They answer two different questions:
+
+- **`helm-values/`** = *"how do I **configure** a chart someone else wrote?"* The files are **chart
+  input**, not Kubernetes resources (e.g. `mode: daemonset`, `image: &#123;repository, tag&#125;`).
+  ArgoCD runs `helm template <chart> -f helm-values/minicloud-1/<app>-values.yaml` and applies the render.
+- **`manifests/`** = *"what raw k8s objects do I apply directly?"* These **are** the resources
+  (a `NetworkPolicy`, a `ResourceQuota`, an `ExternalSecret`, a CR). No chart is involved.
+
+A single charted app often spans **both**: e.g. ERPNext has its chart knobs in
+`helm-values/minicloud-1/erpnext-values.yaml` **and** supporting raw objects (secrets, netpol) in
+`manifests/erpnext/`. Values = the chart's knobs; manifests = the extra objects the chart doesn't create.
+
+### Decision rule — where does *X* go?
+
+- Configuring a **vendor chart** → `helm-values/` (+ an `apps/` Application referencing it).
+- A **raw k8s object / policy / secret / quota / CR**, or a tiny tool with no chart → `manifests/`.
+- One of **your built apps** → `services/<svc>/helm/`.
+- The **Application** that ties a source to a namespace → `apps/`.
+
+See also: [Custom-Built Images](./custom-images) for *when a vendor app additionally earns its own
+source repo* (the Backstage pattern).
+
+---
+
 ## The two common patterns
 
 ### Pattern A — flat overlay per environment
