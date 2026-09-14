@@ -284,7 +284,7 @@ kubectl annotate app argo-cd -n argocd argocd.argoproj.io/refresh=hard --overwri
 |---|---|
 | `ssh controller "helm upgrade <tool> ..."` | Edit `helm-values/<tool>-values.yaml`, commit, push |
 | Values in controller `~/minicloud-ktaylorganisation/ansible/helm-values/` | Values in `minicloud-gitops/helm-values/` (version-controlled) |
-| No drift detection on third-party tools | ArgoCD detects and corrects drift on all 54 apps |
+| No drift detection on third-party tools | ArgoCD detects and corrects drift on all apps (~93 today) |
 | Manual coordination between Git state and cluster state | Git is the single source of truth; ArgoCD enforces it |
 
 ### How to change a Helm value

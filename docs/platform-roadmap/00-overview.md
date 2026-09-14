@@ -8,6 +8,14 @@ sidebar_position: 1
 
 From current bare-metal infra → full private cloud platform (production-grade).
 
+:::note This is a historical phase blueprint
+This page is the original phase-by-phase build log. Some phase rows capture point-in-time choices that
+have since been superseded — notably **Ollama → vLLM** (inference engine retired/replaced), earlier
+**k3s** versions (now **v1.36.3+k3s1**), and a **5-node** cluster (now **6 nodes / 44 cores / ~84 GiB**).
+For the current stack, see the [Production Stack Architecture](../developer-platform/production-stack-architecture)
+and the [Introduction](/).
+:::
+
 ---
 
 ## Final Target Architecture

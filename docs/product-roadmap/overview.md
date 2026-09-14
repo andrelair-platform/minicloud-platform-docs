@@ -5,9 +5,18 @@ sidebar_label: Overview
 
 # Organisation Product Roadmap
 
-Complete delivery timeline for the **ktayl solution IS** — the simulated insurance company information system built on the minicloud platform. Organised by quarter with dependency chains and ownership.
+Complete delivery timeline for the **ktayl-solution IS** — the simulated commercial-lines (IARD) insurer's information system built on the minicloud platform. Organised by quarter with dependency chains and ownership.
 
-**Full application catalogue →** [Business Applications Catalog](../insurance-platform/business-applications-catalog)
+**Full application catalogue →** [Business Applications Catalog](../insurance-platform/business-applications-catalog) · **Functional target + deployed reality →** [EA Blueprint](../insurance-platform/enterprise-architecture-blueprint)
+
+:::warning Planning view — authoritative status is the EA Blueprint
+This is a **planning timeline**; some "✅ Live" markers below are aspirational/predate the on-cluster
+audit. The **authoritative deployed status** (what actually runs) is the
+[EA Blueprint gap analysis](../insurance-platform/enterprise-architecture-blueprint) — as of 2026-09 only
+**Policy Admin** + the platform/AI foundations + ERPNext are truly deployed; most insurance domains are
+not yet running. Also: **this IS is *not* the certification** — the RNCP39583 deliverable is **Retrieva**
+(a separate product); the "cert core/phase" labels below are legacy and being retired.
+:::
 
 ---
 
@@ -15,12 +24,12 @@ Complete delivery timeline for the **ktayl solution IS** — the simulated insur
 
 | Badge | Meaning |
 |---|---|
-| ✅ Live | Deployed and operational |
-| 🔨 Q1 2027 | Certification core — October 2026 → March 2027 |
-| 🔨 Q2 2027 | Certification phase 2 — April → September 2027 |
-| 📋 Q3 2027 | Post-cert expansion — Underwriting, IP, Distribution |
+| ✅ Live | Deployed and operational (verify against the EA Blueprint) |
+| 🔨 Q1 2027 | Core build — October 2026 → March 2027 |
+| 🔨 Q2 2027 | Phase 2 — April → September 2027 |
+| 📋 Q3 2027 | Expansion — Underwriting, IP, Distribution |
 | 📋 Backlog | Scoped, not yet scheduled |
-| 🔬 Research | Advanced / domain-depth — post-certification |
+| 🔬 Research | Advanced / domain-depth |
 
 ---
 
@@ -29,8 +38,8 @@ Complete delivery timeline for the **ktayl solution IS** — the simulated insur
 All infrastructure underpinning every business application.
 
 ```
-5-node k3s (4× ThinkPad + 1× MacBook Pro)
-├── ArgoCD app-of-apps (54 applications)
+6-node k3s (5× ThinkPad + 1× MacBook Pro) — 44 cores / ~84 GiB
+├── ArgoCD app-of-apps (~93 applications)
 ├── Authentik OIDC (SSO for all apps)
 ├── Harbor registry (all CI images)
 ├── Vault (secrets, PKI)

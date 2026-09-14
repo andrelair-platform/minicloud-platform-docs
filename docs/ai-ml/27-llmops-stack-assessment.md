@@ -21,7 +21,7 @@ sidebar_label: LLMOps Stack Assessment
 | 5 | **Security & Guardrails** | **Presidio** (PII) + **LlamaGuard** + detect-secrets + prompt-injection detection | ✅ Strong |
 | 6 | **Vector Databases** | **Qdrant** (hybrid BM25 + HNSW + cross-encoder) | ✅ Covered (reference tool) |
 | 7 | **Data Management & Alignment** | **MLflow** (≈ W&B) + **Langfuse annotation** (queues/scores/datasets, #313) | ✅ Annotation covered · fine-tuning out of scope |
-| 8 | **Inference Engines** | **vLLM** (CPU on-cluster); Ollama → Ollama Cloud | ✅ Covered · **CPU-constrained** (see [Compute Constraints](compute-constraints)) |
+| 8 | **Inference Engines** | **vLLM** (CPU on-cluster) — the on-cluster engine (Ollama retired) | ✅ Covered · **CPU-constrained** (see [Compute Constraints](compute-constraints)) |
 
 **8/8 layers covered** (LiteLLM · Langfuse · Ragas · LlamaGuard · Qdrant · vLLM · MLflow), with red-teaming (#312) and annotation (#313) closed; fine-tuning delegated to managed cloud.
 

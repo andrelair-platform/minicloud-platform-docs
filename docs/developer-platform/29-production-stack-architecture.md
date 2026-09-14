@@ -6,7 +6,7 @@ sidebar_label: Production Stack Architecture ✅
 
 # Production Stack Architecture
 
-A complete view of the minicloud production platform — 5-node on-premises k3s cluster running Phase 0–90 workloads across infrastructure, security, observability, AI/ML, automation, and collaboration layers.
+A complete view of the minicloud production platform — **6-node** on-premises k3s cluster (44 cores / ~84 GiB) running Phase 0–90 workloads across infrastructure, security, observability, AI/ML, automation, and collaboration layers.
 
 :::tip Interactive diagram
 Open the full diagram in your browser for PNG/PDF export and zoom-level control:
@@ -20,9 +20,9 @@ Open the full diagram in your browser for PNG/PDF export and zoom-level control:
 
 | Dimension | Value |
 |-----------|-------|
-| Nodes | 4 ThinkPads + MacBook Pro 2012 (Ubuntu 22.04) |
-| k3s version | v1.36.3+k3s1 (all 5 nodes, upgraded 2026-08-13) |
-| ArgoCD apps | 78 live applications |
+| Nodes | 5 ThinkPads + MacBook Pro 2012 — 44 cores / ~84 GiB (1 control-plane + 5 workers) |
+| k3s version | v1.36.3+k3s1 (all 6 nodes) |
+| ArgoCD apps | ~93 live applications |
 | PrometheusRule objects | 53 (monitoring ns + podinfo) |
 | Grafana dashboards | 43+ |
 | GitOps repos | 11 (all → Harbor via Tailscale) |
@@ -47,6 +47,14 @@ Cloudflare Tunnel moved from a controller systemd service to a 2-replica Kuberne
 
 ### GitOps & Automation
 
+:::note Promotion is now Kargo-driven (staging retired)
+The flow below is the **historical** CI-drives-promotion shape. Since 2026-08, promotion is
+**trunk-based**: CI on `main` builds + proves one immutable artifact, **Kargo** promotes it
+`dev → prod` (CODEOWNERS-gated), and Argo CD deploys it. The `staging` environment/branch was
+removed. See the [Delivery Workflow](https://andrelair-platform.github.io/minicloud-platform-docs/developer-platform/delivery-workflow)
+and Kargo pages for the current model.
+:::
+
 ```
 Developer push → GitHub Actions (CI)
                     ├── Build → Trivy scan → Cosign sign → syft SBOM
@@ -59,7 +67,7 @@ Developer push → GitHub Actions (CI)
                                         └── promote-staging (needs both pass)
 ```
 
-ArgoCD manages 78 apps via the app-of-apps pattern from `minicloud-gitops`. All Helm values live in `helm-values/`, never in `minicloud-ansible/`.
+ArgoCD manages ~93 apps via the app-of-apps pattern from `minicloud-gitops`. All Helm values live in `helm-values/`, never in `minicloud-ansible/`.
 
 **Argo Rollouts** handles progressive delivery:
 - `platform-demo`: Canary 50% → AnalysisRun (Prometheus gates) → 100%

@@ -6,6 +6,13 @@ sidebar_position: 1
 
 # Phase 19 — Self-Hosted AI: Ollama + Open WebUI
 
+:::warning Historical — Ollama has been retired (replaced by vLLM)
+This page documents Phase 19 as it was built. **On-cluster inference has since migrated from Ollama to
+[vLLM](./inference-optimization)** (see also [Compute Constraints](./compute-constraints)). Open WebUI
+remains the chat frontend. Elsewhere in this section, "Ollama" refers to the historical inference
+target — the **governance/control patterns are engine-agnostic and still apply to vLLM**.
+:::
+
 The minicloud cluster gets its own LLM endpoint. **Ollama** runs the
 inference engine (Llama 3.2 3B on CPU); **Open WebUI** wraps it with a
 ChatGPT-style frontend. Together they deliver a tangible, useful AI

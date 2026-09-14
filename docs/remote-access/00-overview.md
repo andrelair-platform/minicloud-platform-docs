@@ -159,7 +159,7 @@ Expected: `HTTP/1.1 302 Found` (cert validated, redirect to login).
 | podinfo (demo) | `https://podinfo.10.0.0.200.nip.io` | none |
 | platform-demo (CI/CD demo) | `https://platform-demo.10.0.0.200.nip.io` | none |
 | whoami | `https://whoami.10.0.0.200.nip.io` | none |
-| Open WebUI chat (Ollama) | `https://chat.10.0.0.200.nip.io` | first-signup-becomes-admin |
+| Open WebUI chat (vLLM) | `https://chat.10.0.0.200.nip.io` | first-signup-becomes-admin |
 | NATS monitoring | `https://nats.10.0.0.200.nip.io` | none |
 | **MAAS UI** | `http://100.88.123.8:5240/MAAS` | MAAS admin login |
 | **MinIO console** | `http://100.88.123.8:9001` | `admin` / `cat ~/.minio-admin` (see [Velero/MinIO doc](../backup-dr/01-velero.md#4a-accessing-the-minio-console-from-outside-the-controller) for why the tailnet IP, not `10.0.0.1`) |
