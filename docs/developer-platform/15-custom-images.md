@@ -183,6 +183,40 @@ PriorityClass whitelist gotcha.
 
 ---
 
+## AI / MCP integration is separate from the image (and its repo)
+
+A common confusion: *"if I retire an app's image repo, can I still expose it to AI / MCP?"* **Yes —
+they are two independent layers.**
+
+```
+LAYER 1 — running the app (the container)
+  How the IMAGE is built (CA trust, CVE patches). Retire the baked image →
+  run the STOCK vendor image + runtime CA (trust-manager). The app's HTTP API is UNCHANGED.
+                    │  the app's HTTP API (over the network)
+                    ▼
+LAYER 2 — exposing it to AI / MCP (a separate component you write)
+  An MCP server / copilot tool that CALLS that API ("convert this PDF",
+  "generate a report from a template", "extract text"). A CLIENT of the app —
+  it does NOT live inside the app's image.
+```
+
+The app's API belongs to the app **regardless of how its image is built** — a stock image and a baked
+image expose the *same* endpoints. So:
+
+| Thing | Needs a repo? | Which repo |
+|---|---|---|
+| **Running the vendor app** | ❌ no (if the baked image is retired) | none — stock image + `helm-values/` + `apps/` |
+| **AI/MCP-enabling it** | ✅ yes — it's custom code | a **different, new** repo (or a tool module inside the consuming product), **not** the app's image repo |
+
+**Example — OnlyOffice.** Its editor/Conversion/Document-Builder APIs + plugin SDK are always
+available over the network. An "OnlyOffice → copilot" tool (e.g. *generate a policy PDF*, *convert a
+broker submission*) is a **Layer-2** component that lives with the **AI Ops Copilot** (#19) — or a
+standalone MCP server — and calls OnlyOffice's API. You can retire `minicloud-onlyoffice` (the image
+wrapper) and the AI integration is entirely unaffected, because it was never in that repo. **Running an
+app and AI-enabling an app are decoupled.**
+
+---
+
 ## Inventory
 
 ### Custom services (written from scratch)
