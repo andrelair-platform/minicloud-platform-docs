@@ -447,6 +447,7 @@ const sidebars: SidebarsConfig = {
           label: '🏦 Insurance Platform',
           collapsed: false,
           items: [
+            'insurance-platform/enterprise-architecture-blueprint',
             'insurance-platform/ai-first-operating-model',
             'insurance-platform/business-applications-catalog',
             {

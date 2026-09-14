@@ -6,6 +6,13 @@ sidebar_label: Business Applications Catalog
 
 # Business Applications Catalog
 
+:::note Authoritative model
+The functional target for the ktayl IARD insurer IS — the 12 domains + 4 transversal layers, gap
+analysis and build order — is the **[Enterprise Architecture Blueprint](./enterprise-architecture-blueprint)**.
+This catalog is the **detailed per-app inventory** that hangs off that blueprint; where the two differ,
+the blueprint's domain model is authoritative and this catalog is being reconciled to it.
+:::
+
 Complete catalog of all business applications planned or live for the **ktayl solution IS** — the simulated insurance company information system. This IS covers the same functional domains as a mid-sized French commercial insurer (B2B IARD, Vie & Prévoyance, International Programs).
 
 Each entry links to its GitHub issue in `andrelair-platform/platform-backlog`.
