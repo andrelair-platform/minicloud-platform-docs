@@ -71,33 +71,41 @@ not "where can we put a chatbot").
    MASTER DATA / RÉFÉRENTIELS (MDM) · AI / AUTOMATION
 ```
 
-## 3. Gap analysis — target vs current (as of 2026-09)
+## 3. Gap analysis — target vs **deployed reality** (verified on-cluster, 2026-09-14)
 
-Status: 🟢 live · 🟡 has a home (repo/board) but not built/deployed · 🔴 no home yet.
+This is the honest status from **what's actually running** (every Deployment/StatefulSet across all
+namespaces), not just what has a repo/board. Status: 🟢 deployed & serving · 🟡 partial (platform up or
+repo exists, business capability not built/configured) · 🔴 nothing running.
 
 ### The 12 domains
-| # | Domain | ktayl home (board) | Status |
-|---|---|---|---|
-| 1 | Distribution / CRM / Broker portal | #13 ktayl-distribution | 🟡 repo only |
-| 2 | Underwriting workbench | #12 ktayl-underwriting | 🟡 repo only |
-| 3 | Pricing / Rating engine | within #12 | 🟡 not explicit |
-| 4 | **Policy Administration (PAS)** | #6 ktayl-policy-service | 🟢 **live** |
-| 5 | Claims | #11 ktayl-claims | 🟡 repo only |
-| 6 | Risk Engineering / Prevention | — | 🔴 no home |
-| 7 | International Programs | — | 🔴 no home |
-| 8 | Billing / Premium & Finance | #14 ktayl-finance | 🟡 repo only |
-| 9 | Reinsurance (own domain) | folded in #14 | 🔴 no own home |
-| 10 | Compliance / Legal | #15 Regulatory & Compliance | 🟡 repo only (Legal thin) |
-| 11 | Data / Actuarial | #5 Data Platform | 🟡 minimal (no reserving/exposure/cat) |
-| 12 | Enterprise IT | #3/#4/#10/#16/#17 | 🟢 strongest (several live) |
+| # | Domain | Board | **Deployed reality** | Status |
+|---|---|---|---|---|
+| 1 | Distribution / CRM / Broker portal | #13 | ERPNext platform up (`erp/`) but **CRM not configured**; no broker portal | 🟡 platform only |
+| 2 | Underwriting workbench | #12 | nothing running (repo scaffold) | 🔴 |
+| 3 | Pricing / Rating engine | #12 | nothing running | 🔴 |
+| 4 | **Policy Administration (PAS)** | #6 | **`ktayl-policy-service` + `ktayl-postgres`** (ktayl + ktayl-prod) | 🟢 **live** |
+| 5 | Claims | #11 | nothing running (repo scaffold) | 🔴 |
+| 6 | Risk Engineering / Prevention | — | nothing | 🔴 |
+| 7 | International Programs | — | nothing | 🔴 |
+| 8 | Billing / Premium & Finance | #14 | ERPNext finance up, **insurance billing not configured** | 🟡 platform only |
+| 9 | Reinsurance | — | nothing | 🔴 |
+| 10 | Compliance / Legal | #15 | nothing (Presidio PII is a data tool, not a compliance system) | 🔴 |
+| 11 | Data / Actuarial | #5 | analytics stack (ClickHouse/dbt/Superset) **not deployed**; only MLflow up | 🔴 |
+| 12 | Enterprise IT | #3/#4/#10/#16/#17 | **very strong — see note below** (except ITSM/GLPI + CMDB) | 🟢 |
+
+**Enterprise IT (#12) deployed detail:** 🟢 IAM (Authentik) · M365-alt suite (Nextcloud, OnlyOffice,
+Stalwart mail, Matrix/Element, Jitsi, Docuseal, n8n) · cloud/k8s (ArgoCD, Kargo, cert-manager +
+trust-manager, ESO, Vault, Harbor, Cilium, Longhorn, KEDA, VPA, Velero) · observability
+(Prometheus/Grafana/Loki/Tempo) · security (Falco, Gatekeeper, Polaris, Trivy) · DevPortal (Backstage) ·
+project-mgmt (Plane CE). 🔴 **Not deployed: ITSM/GLPI (#16) + CMDB** (Plane covers project-mgmt, not helpdesk).
 
 ### The 4 transversal layers
-| Layer | ktayl state | Status |
-|---|---|---|
-| Documents (GED / OCR / IDP) | Nextcloud = storage only; Paperless planned | 🔴 no IDP capability |
-| Integration (API GW / ESB / events / ETL / MFT / EDI) | NATS + Temporal + n8n exist as platform bits; no insurance integration fabric | 🔴 biggest gap |
-| Master Data / Référentiels (MDM) | #20 ktayl-mdm | 🟡 thin slice in progress |
-| Data | #5 Data Platform | 🟡 partial (OLAP: ClickHouse/dbt/BI) |
+| Layer | Board | **Deployed reality** | Status |
+|---|---|---|---|
+| Documents (GED / OCR / IDP) | — | Nextcloud (storage) + OnlyOffice (edit) + **Docuseal** (e-sign) + **Docling + markitdown-proxy** (OCR/conversion) all **live**; missing a records-mgmt DMS + a structured IDP pipeline | 🟡 partial |
+| Integration (API-GW / ESB / ETL / MFT / EDI) | — | **NATS** (events) + **Temporal** (workflow) + **n8n** (low-code integration) **live** as primitives; missing the formal API-GW/ESB/ETL/MFT/EDI insurance fabric | 🟡 primitives only |
+| Master Data / Référentiels (MDM) | #20 | nothing running (repo scaffold, **parked** — see §5) | 🔴 |
+| Data | #5 | only MLflow; analytical Data Platform not deployed | 🔴 |
 
 :::info MDM (#20) vs Data Platform (#5) — different things, not a duplicate
 **MDM = operational OLTP** golden records + low-latency lookup (PostgreSQL), consumed by the copilot
@@ -105,11 +113,20 @@ and domain services *at transaction time* ("which client/broker/entity is this?"
 analytical OLAP** (Redpanda → ClickHouse → dbt → BI). **MDM *feeds* the Data Platform** via CDC
 (Debezium, `DATA-18i`) — it is a *source* for analytics, not the analytics platform. Keep them separate.
 :::
-| AI / Automation | #4 AI Platform + #18 Knowledge Assistant + #19 AI Ops Copilot | 🟢 being built |
+| AI / Automation | #4/#18/#19 | **very strong platform** — LiteLLM, Qdrant, RAG-ingest/Docling, Open WebUI, minicloud-agent, minicloud-crew-agent, Presidio, MLflow, Langfuse, vLLM, Flowise all **live**; but **zero insurance AI use-cases** deployed (#18/#19 parked) | 🟢 platform / 🔴 use-cases |
 
-**Summary:** PAS + Enterprise IT are the mature core. Most insurance domains have a *home* but are not
-*built*. **No home at all:** Risk Engineering, International Programs, standalone Reinsurance, MDM,
-Integration Layer, Documents/IDP.
+:::warning The headline finding
+**The PLATFORM (Enterprise IT) and AI foundations are mature and heavily deployed. The CORE INSURANCE
+BUSINESS is almost entirely NOT deployed — only Policy Admin (#4) actually runs.** ktayl has an
+excellent *technology substrate* but is **not yet a runnable *insurer*** (no underwriting, claims,
+billing, reinsurance, compliance, actuarial running). The gap is **the insurance business domains
+themselves** — which is exactly why the build order (§5) is *business tools first, AI/automation last*.
+:::
+
+**Deployed vs board (quick read):** deployed → Policy #6 🟢, ERPNext #8 🟡, AI Platform #4 🟢, GitOps #3 🟢,
+Digital Workplace #10 🟢. Board/repo only, nothing running → Underwriting #12, Claims #11, Distribution #13,
+Finance #14, Compliance #15, ITSM #16, Data Platform #5, MDM #20, Knowledge Assistant #18, AI Ops Copilot
+#19. (Retrieva #2 is a *separate product*, not ktayl.)
 
 ## 4. AI / Automation is a transversal *capability*, not a domain
 
