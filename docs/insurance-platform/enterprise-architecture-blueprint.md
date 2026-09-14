@@ -96,8 +96,15 @@ Status: 🟢 live · 🟡 has a home (repo/board) but not built/deployed · 🔴
 |---|---|---|
 | Documents (GED / OCR / IDP) | Nextcloud = storage only; Paperless planned | 🔴 no IDP capability |
 | Integration (API GW / ESB / events / ETL / MFT / EDI) | NATS + Temporal + n8n exist as platform bits; no insurance integration fabric | 🔴 biggest gap |
-| Master Data / Référentiels (MDM) | — | 🔴 no home |
-| Data | #5 Data Platform | 🟡 partial |
+| Master Data / Référentiels (MDM) | #20 ktayl-mdm | 🟡 thin slice in progress |
+| Data | #5 Data Platform | 🟡 partial (OLAP: ClickHouse/dbt/BI) |
+
+:::info MDM (#20) vs Data Platform (#5) — different things, not a duplicate
+**MDM = operational OLTP** golden records + low-latency lookup (PostgreSQL), consumed by the copilot
+and domain services *at transaction time* ("which client/broker/entity is this?"). **Data Platform =
+analytical OLAP** (Redpanda → ClickHouse → dbt → BI). **MDM *feeds* the Data Platform** via CDC
+(Debezium, `DATA-18i`) — it is a *source* for analytics, not the analytics platform. Keep them separate.
+:::
 | AI / Automation | #4 AI Platform + #18 Knowledge Assistant + #19 AI Ops Copilot | 🟢 being built |
 
 **Summary:** PAS + Enterprise IT are the mature core. Most insurance domains have a *home* but are not
