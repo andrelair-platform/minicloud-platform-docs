@@ -452,6 +452,14 @@ const sidebars: SidebarsConfig = {
             'insurance-platform/business-applications-catalog',
             {
               type: 'category',
+              label: 'Domain Playbooks',
+              collapsed: false,
+              items: [
+                'insurance-platform/underwriting-fde-playbook',
+              ],
+            },
+            {
+              type: 'category',
               label: 'Custom Services',
               collapsed: false,
               items: [
