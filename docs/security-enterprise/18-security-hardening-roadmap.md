@@ -265,7 +265,7 @@ All 5 nodes (set-hog, fast-skunk, fast-heron, star-kitten, swift-mac)
 
 ### Why it's heavyweight
 
-Wazuh Indexer (OpenSearch) requires ~4Gi RAM and ~50Gi disk for a 5-node cluster with 30-day retention. This pushes cluster memory close to its limit. Deploy after the +2 ThinkPads (roadmap issue #239) are provisioned.
+Wazuh Indexer (OpenSearch) requires ~4Gi RAM and ~50Gi disk for a cluster this size with 30-day retention. This pushes cluster memory close to its limit. One of the "+2 ThinkPads" (roadmap issue #239) — `loving-gannet` — is now provisioned (cluster is 6 nodes / 44 cores); deploy once headroom is confirmed.
 
 ### DORA requirements satisfied by Wazuh
 

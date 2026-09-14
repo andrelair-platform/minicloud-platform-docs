@@ -6,9 +6,9 @@ sidebar_position: 4
 
 # Hardware Used
 
-## Cluster Nodes — 4x Lenovo ThinkPad + 1x MacBook Pro
+## Cluster Nodes — 5x Lenovo ThinkPad + 1x MacBook Pro
 
-All four nodes run on Lenovo ThinkPad laptops with identical specs:
+The five ThinkPad nodes run on Lenovo ThinkPad laptops with (near-)identical specs; the sixth node, `swift-mac`, is a MacBook Pro 2012 (see its section below):
 
 ```text
 ✔ CPU: Intel Core i7 (8 cores)
@@ -84,6 +84,23 @@ All four nodes run on Lenovo ThinkPad laptops with identical specs:
 
 ---
 
+### loving-gannet — 10.0.0.9
+
+| Field | Value |
+|---|---|
+| Model | Lenovo ThinkPad (T490-class, 8-core i7) — *confirm exact model/serial on-box* |
+| CPU | Intel Core i7, 8 cores |
+| RAM | ~15.6 GiB |
+| Storage | ~512 GB SSD |
+| NIC | Intel I219-V |
+| Added | 2026-09 (5th ThinkPad; brings the cluster to 6 nodes) |
+
+:::note Fifth ThinkPad worker
+`loving-gannet` was added to grow worker capacity (one of the "+2 ThinkPads" from roadmap #239). It is a permanent k3s worker. Model/serial/firmware to be filled in from the physical machine.
+:::
+
+---
+
 ### swift-mac — 10.0.0.10
 
 | Field | Value |
@@ -105,7 +122,11 @@ Apple hardware uses a proprietary NetBoot protocol incompatible with standard PX
 
 ## Total Cluster Capacity
 
-Figures from `kubectl` node capacity (live, 2026-07-12):
+:::info Current totals (6 nodes)
+Since adding `loving-gannet` (2026-09), the cluster is **6 nodes → 44 cores / ~84 GiB RAM** (5× 8-core ThinkPad + 1× 4-core MacBook Pro), on **k3s v1.36.3+k3s1** (1 control-plane + 5 workers). The table below is the original **5-node** snapshot (2026-07-12) — add one 8-core / ~15.6 GiB ThinkPad row for the current picture.
+:::
+
+Figures from `kubectl` node capacity (5-node snapshot, 2026-07-12):
 
 | Resource | set-hog | fast-heron | fast-skunk | star-kitten | swift-mac | **Total** |
 |---|---|---|---|---|---|---|
@@ -181,12 +202,16 @@ GCP Custom Machine Types allow exact sizing — no over-provisioning required.
 
 | Resource | Value | Monthly Cost |
 |---|---|---|
-| Hardware (4× ThinkPad + MacBook Pro 2012) | 36 cores / ~68 GiB / ~2.3 TB | ~$0 (already owned) |
-| Electricity (~225 W total, 24/7) | 5× laptops at idle/load | ~$20–$35 / mo |
-| **Total bare-metal** | | **~$20–$35 / mo** |
+| Hardware (5× ThinkPad + MacBook Pro 2012) | 44 cores / ~84 GiB / ~2.8 TB | ~$0 (already owned) |
+| Electricity (~270 W total, 24/7) | 6× laptops at idle/load | ~$25–$40 / mo |
+| **Total bare-metal** | | **~$25–$40 / mo** |
+
+:::info Sizing note
+The GCP/AWS/Azure quotes above reflect the **original 5-node (36-core / 68 GiB)** research. Since adding `loving-gannet` the cluster is **6 nodes / 44 cores / ~84 GiB**, so the equivalent cloud bill — and therefore the spend avoided — scales up proportionally.
+:::
 
 :::tip Cost advantage
-Running bare-metal saves **~$1,265–$1,410 per month** versus the cheapest equivalent cloud option (AWS ~$1,301/mo). Over a year that is **$15,180–$16,920 in cloud spend avoided** — with full hardware control and zero egress fees.
+At the current 6-node / 44-core scale, running bare-metal avoids roughly **~$16,000–$19,000 / year** versus the cheapest equivalent always-on cloud option (~11× AWS `c6i.xlarge` for 44 vCPU-equivalent) — with full hardware control and zero egress fees.
 :::
 
 ### How to cut cloud costs by 30–70 %

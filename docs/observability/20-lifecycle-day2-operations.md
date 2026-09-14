@@ -60,7 +60,7 @@ reboot, it creates `/var/run/reboot-required`. kured detects this file,
 cordons the node, and reboots it — one node at a time, respecting the same
 PDB constraints as kubectl drain.
 
-Current cluster version: `v1.36.2+k3s1` (all 5 nodes, verified 2026-08-02).
+Current cluster version: `v1.36.3+k3s1` (all 6 nodes, verified 2026-09-14).
 
 ### Gap closed — ArgoCD auto-sync conflict during active upgrades
 
@@ -154,12 +154,12 @@ before resources are exhausted — giving 10 minutes of warning time.
 
 **swift-mac** (MacBook Pro 2012, 4 CPU / 8 GiB) is the capacity constraint
 node. At 73% RAM it is 12 points below NodeMemoryWarning. It hosts Longhorn
-storage and Ollama (GPU inference). Any new memory-intensive workload should
-avoid swift-mac by default.
+storage. Any new memory-intensive workload should avoid swift-mac by default.
+(LLM serving is on **vLLM**, not swift-mac; Ollama was retired.)
 
 ### Why there is no cluster autoscaler
 
-This is a 5-node bare-metal homelab on ThinkPad laptops. There is no cloud
+This is a 6-node bare-metal homelab on ThinkPad laptops. There is no cloud
 API to provision VMs. A cluster autoscaler is architecturally impossible
 for this environment — the VPA + ResourceQuotas + node resource alerts
 provide the equivalent signal: "a workload needs more resources."

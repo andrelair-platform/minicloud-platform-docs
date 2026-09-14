@@ -152,9 +152,9 @@ ssh -t controller "sudo ufw status verbose"
 
 ---
 
-## Lid-Switch Hardening — All Four Machines
+## Lid-Switch Hardening — All ThinkPad Machines
 
-All four ThinkPads run as always-on servers (AC power + Ethernet). By default Ubuntu 24.04 suspends on lid close. This was fixed on all machines.
+All ThinkPad cluster nodes run as always-on servers (AC power + Ethernet). By default Ubuntu 24.04 suspends on lid close. This was fixed on all machines. Apply the same fix to any newly added ThinkPad (e.g. `loving-gannet`, the 5th ThinkPad).
 
 ### Cluster nodes (set-hog, fast-skunk, fast-heron)
 

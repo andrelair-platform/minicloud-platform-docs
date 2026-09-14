@@ -13,11 +13,21 @@ slug: /
 
 ## What This Project Is
 
-This documentation covers a complete bare-metal infrastructure built locally using **MAAS (Metal as a Service)**, provisioning a 5-node cluster ready for Kubernetes and production workloads.
+This documentation covers a complete bare-metal infrastructure built locally using **MAAS (Metal as a Service)**, provisioning a **6-node** cluster ready for Kubernetes and production workloads.
 
 ```text
 Equivalent to: AWS EC2 + VPC + Auto Provisioning — but local.
 ```
+
+:::info Two layers — the platform *and* what runs on it
+This overview is the **infrastructure/platform** layer. On top of it run:
+- the **ktayl-solution insurance IS** — a simulated commercial-lines (IARD) insurer's information
+  system (12 business domains + 4 transversal layers). See the
+  **[Insurance Platform → EA Blueprint](./insurance-platform/enterprise-architecture-blueprint)**.
+- an **AI platform** (LLM gateway, RAG, agents, LLMOps) that the business layer builds on.
+- **Retrieva** — a *separate* product (RNCP39583 certification / DORA third-party-risk) that merely
+  *runs on* this infrastructure; it is **not** part of the ktayl IS.
+:::
 
 ---
 
@@ -25,19 +35,28 @@ Equivalent to: AWS EC2 + VPC + Auto Provisioning — but local.
 
 | Node | IP | Role | Hardware |
 |---|---|---|---|
-| set-hog | 10.0.0.2 | Control Plane | ThinkPad T15 Gen 1 |
-| fast-skunk | 10.0.0.4 | Worker | ThinkPad T490 |
-| fast-heron | 10.0.0.7 | Worker | ThinkPad T490 |
-| star-kitten | 10.0.0.8 | Worker | ThinkPad T490 |
-| swift-mac | 10.0.0.10 | Worker | MacBook Pro 13" 2012 |
+| set-hog | 10.0.0.2 | Control Plane | ThinkPad T15 Gen 1 (8-core / 16 GiB) |
+| fast-skunk | 10.0.0.4 | Worker | ThinkPad T490 (8-core / 16 GiB) |
+| fast-heron | 10.0.0.7 | Worker | ThinkPad T490 (8-core / 16 GiB) |
+| star-kitten | 10.0.0.8 | Worker | ThinkPad T490 (8-core / 16 GiB) |
+| loving-gannet | 10.0.0.9 | Worker | amd64 worker (8-core / 16 GiB) — *confirm model* |
+| swift-mac | 10.0.0.10 | Worker | MacBook Pro 13" 2012 (4-core / 8 GiB) |
 
 **MAAS Controller:** Ubuntu + dual NIC (WiFi → internet, Ethernet → 10.0.0.1)
+**Cluster totals:** 6 nodes · 44 cores · ~84 GiB RAM · k3s v1.36.3+k3s1 (1 control-plane + 5 workers).
 
 ---
 
 ## Complete Roadmap
 
 Each phase builds directly on the previous one — nothing requires something that hasn't been set up yet.
+
+:::note This is a historical log
+The phases below record *what was built and when* — some entries name tools since superseded (e.g.
+**Ollama → later retired in favour of vLLM**; earlier k3s versions; a 5-node cluster before
+`loving-gannet` was added). For the **current live state**, see [Current Stack (Live)](#current-stack-live)
+below. History is kept as-is; only the current-state sections are updated.
+:::
 
 | Phase | Topic | Key Technology | Status |
 |---|---|---|---|
@@ -108,11 +127,11 @@ Each phase builds directly on the previous one — nothing requires something th
 
 ```text
 ── INFRASTRUCTURE ──────────────────────────────────────────────────
-MAAS          → bare-metal provisioning (4 ThinkPads, PXE)
-k3s v1.36.2+k3s1 → Kubernetes cluster (1 control-plane + 4 workers, upgraded via system-upgrade-controller)
+MAAS          → bare-metal provisioning (ThinkPads via PXE, MacBook via USB)
+k3s v1.36.3+k3s1 → Kubernetes cluster (1 control-plane + 5 workers, upgraded via system-upgrade-controller)
 MetalLB       → load balancer IPs (10.0.0.200)
 Longhorn       → distributed block storage
-local-path     → NVMe-backed storage (Ollama model weights)
+local-path     → NVMe-backed storage (LLM model weights)
 Harbor        → private container registry (Trivy scanning)
 
 ── AUTOMATION & DELIVERY ───────────────────────────────────────────
@@ -161,19 +180,24 @@ OPA/Gatekeeper→ 9 admission policies, deny mode, 0 violations
 cert-manager  → internal PKI + cert observability PrometheusRules
 Cosign + syft → keyless image signing + CycloneDX SBOM in CI
 ESO + Vault KV→ all platform secrets in Vault (no plaintext in git)
-NetworkPolicy  → default-deny ingress/egress on all 23 namespaces
+NetworkPolicy  → default-deny ingress/egress (all namespaces)
 PSA           → enforce:restricted on 8 namespaces
 GPG commits   → signed commits + branch protection on critical repos
 UFW           → host firewall on controller + all cluster nodes
 HSTS + rate-limit → global HSTS, 20r/s public, 5r/s auth (NGINX ConfigMap)
 
 ── AI / ML ─────────────────────────────────────────────────────────
-LiteLLM       → OpenAI-compatible gateway (7 cloud providers + 2 local Ollama)
-Ollama        → local LLMs on NVMe (phi3-financial, llama3.2:3b/1b, phi3.5)
+LiteLLM       → OpenAI-compatible gateway (7 cloud providers + local vLLM)
+vLLM          → local LLM serving on NVMe (Ollama retired — see roadmap)
+Qdrant        → vector database (RAG embeddings)
+rag-ingest    → RAG pipeline: convert → chunk → embed (Docling + markitdown)
+Docling / markitdown → document OCR / conversion (PDF/Office → text)
+minicloud-agent / minicloud-crew-agent → LangGraph + CrewAI agents
 Valkey        → exact-match prompt cache (10 min TTL, ~80ms cache hit)
 Presidio      → PII/DLP pre-call guardrail (anonymizes before cloud APIs)
 detect_secrets→ credential scanner on all prompts
 Open WebUI    → chat interface (Authentik OIDC, CA bundle init container)
+MLflow        → ML experiment tracking
 Langfuse      → per-call traces with cost, model, department, latency
 
 ── DATA LAYER (future) ──────────────────────────────────────────────
@@ -188,14 +212,14 @@ OpenMetadata  → data catalog, lineage, governance
 
 ## CV / LinkedIn Summary
 
-- Designed and deployed a 5-node bare-metal Kubernetes platform (4× Lenovo ThinkPad + 1× MacBook Pro 2012, 36 cores / 68 GiB RAM / 2.3 TB) using MAAS (Metal as a Service), PXE provisioning for ThinkPads, and USB install for Apple hardware incompatible with standard PXE
-- Achieved **~$15,000–$17,000 / year in cloud cost avoidance** by running equivalent capacity on owned hardware at ~$20–35/mo electricity, versus $1,300–$1,430/mo for compute-optimized cloud equivalents (AWS 9× c6i.xlarge / Azure F32s_v2 + F4s_v2 / GCP N2 Custom 36 vCPU — On-Demand pricing, US regions)
+- Designed and deployed a 6-node bare-metal Kubernetes platform (Lenovo ThinkPads + 1× MacBook Pro 2012, 44 cores / ~84 GiB RAM) using MAAS (Metal as a Service), PXE provisioning for ThinkPads, and USB install for Apple hardware incompatible with standard PXE
+- Achieved **~$16,000–$19,000 / year in cloud cost avoidance** by running equivalent capacity on owned hardware at ~$20–35/mo electricity, versus compute-optimized cloud equivalents (~11× AWS c6i.xlarge / 44 vCPU-equivalent — On-Demand pricing, US regions)
 - Implemented full GitOps delivery pipeline: ArgoCD app-of-apps, GitHub Actions CI/CD, Cosign keyless image signing, CycloneDX SBOM, GPG-signed commits, and branch protection on critical repos
-- Built enterprise AI gateway (LiteLLM 1.90.3) routing across 7 cloud providers and 2 local Ollama nodes — with cloud fallback chain, circuit breaker (3 failures → 60 s cooldown), 3-tier department budget governance ($5/$30/$100 / 30 d), Valkey prompt cache, and Grafana cost dashboard backed by PostgreSQL SQL
+- Built enterprise AI gateway (LiteLLM 1.90.3) routing across 7 cloud providers and local vLLM serving — with cloud fallback chain, circuit breaker (3 failures → 60 s cooldown), 3-tier department budget governance ($5/$30/$100 / 30 d), Valkey prompt cache, and Grafana cost dashboard backed by PostgreSQL SQL
 - Deployed PII/DLP and credential guardrails: Microsoft Presidio anonymizes prompts before any cloud API receives them; detect_secrets blocks credential leakage at inference time
 - Implemented Langfuse LLM observability (ClickHouse + Valkey + PostgreSQL) tracing every AI Gateway call with token counts, cost, model, and department metadata
 - Enforced 9 OPA/Gatekeeper admission control policies in deny mode with 0 violations: no-root containers, no-privileged pods, approved registry only, resource limits required, TLS-only ingress, no LoadBalancer in dev, no hostPath, no latest tag, no privilege escalation
-- Applied defence-in-depth: default-deny NetworkPolicy on all 23 namespaces, PSA enforce:restricted on 8 namespaces, AES-CBC-256 secrets encryption at rest, k3s audit logs, SSH hardening + UFW default-deny on all 5 cluster nodes, HSTS globally, rate limiting, and Authentik forward-auth on internal dashboards
+- Applied defence-in-depth: default-deny NetworkPolicy across all namespaces, PSA enforce:restricted on 8 namespaces, AES-CBC-256 secrets encryption at rest, k3s audit logs, SSH hardening + UFW default-deny on all 6 cluster nodes, HSTS globally, rate limiting, and Authentik forward-auth on internal dashboards
 - Achieved zero-touch Vault auto-unseal via AWS KMS (scoped IAM policy, seal migration verified — pod deletion → 1/1 Ready in ~30 s with no human input)
 - Deployed External Secrets Operator with Vault KV v2 backend (9 ExternalSecrets — all platform credentials pulled from Vault; no plaintext secrets in git)
 - Implemented full backup & DR: Velero + MinIO (daily cluster backup), nightly DB dumps (pg_dump → MinIO), Vault raft snapshots, PrometheusRule alerts (VeleroBackupFailed, MinioDiskFull), and validated restore test

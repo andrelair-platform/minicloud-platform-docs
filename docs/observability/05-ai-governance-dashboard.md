@@ -341,7 +341,7 @@ Three constants are baked into the PromQL expressions:
 |---|---|---|
 | Time saved per query | 0.05 h (3 min) | Conservative estimate: AI answers a question in seconds that would take 3 min manual research |
 | Knowledge-worker cost | 35 €/h | French average for a mid-level analyst |
-| Platform cost | 50 €/month | Fixed: electricity + hardware amortisation for the 5-node ThinkPad cluster |
+| Platform cost | 50 €/month | Fixed: electricity + hardware amortisation for the 6-node cluster |
 
 **Net ROI formula:**
 ```

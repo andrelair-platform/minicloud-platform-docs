@@ -10,6 +10,13 @@ Building AI is straightforward. Securing it is not. The ktayl-solution AI platfo
 
 This section covers six threat categories and the controls implemented against each.
 
+:::note Inference engine: vLLM (Ollama retired)
+On-cluster inference migrated from **Ollama → [vLLM](./inference-optimization)**. Where pages in this
+section say "Ollama," read it as **the inference target** — the security controls (PII masking,
+grounding, sampling, content safety, etc.) sit in front of the engine and are **engine-agnostic**, so
+they apply unchanged to vLLM.
+:::
+
 ---
 
 ## Threat Landscape
