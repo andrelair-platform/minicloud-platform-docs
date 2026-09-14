@@ -33,12 +33,28 @@ Each product now lives on its own **GitHub Project board** (per-product portfoli
 
 ## Legend
 
-| Badge | Meaning |
+Two axes are used: **blueprint status** (in the domain map / coverage — current reality) and the
+per-app **build phase** (in the detailed tables — indicative timing).
+
+| Blueprint status (domain map / coverage) | Meaning |
 |---|---|
 | 🟢 Live | Deployed and operational |
 | 🟡 In progress / scaffolded | Has a home (repo/board), not yet built or deployed |
 | 🔴 Gap | No home yet — named in the EA Blueprint, board created when work starts |
+
+| Build phase (detailed tables) | Meaning |
+|---|---|
+| ✅ Live | Deployed |
+| 🔨 Qx 2027 | Targeted build window (indicative) |
+| 📋 Backlog | Scoped, not yet scheduled |
 | 🔬 Research | Advanced / domain-depth — later |
+
+:::note Authoritative build order
+The per-app 🔨 Qx phases are **indicative legacy estimates**. The authoritative sequence is the
+**[Build Roadmap](#build-roadmap--copilot-driven-thin-slice-authoritative)** below (copilot-driven thin
+slice). Claims-side AI (the old `ktayl-ai-claims-assistant`) is now delivered by the **AI Ops Copilot
+(#19)** as its v2 — treat that legacy row as superseded.
+:::
 
 ## Domain map — catalog → EA Blueprint (authoritative)
 
@@ -77,23 +93,23 @@ a separate product; see the two-layer warning above).
 
 | App | Stack | Issue | Phase | Description |
 |---|---|---|---|---|
-| **ktayl-policy-service** | Go | [#203](https://github.com/andrelair-platform/platform-backlog/issues/203) | 🔨 Q1 2027 | Policy lifecycle — create, amend, renew, cancel, document generation |
-| **ktayl-claims-service** | Java 21 / Spring Boot 3 | [#198](https://github.com/andrelair-platform/platform-backlog/issues/198) | 🔨 Q1 2027 | FNOL → investigation → settlement state machine, Spring Batch COREP bordereau |
-| **ktayl-ai-claims-assistant** | Python / LangGraph | [#200](https://github.com/andrelair-platform/platform-backlog/issues/200) | 🔨 Q2 2027 | AI triage, fraud scoring, human-in-loop via NATS events |
-| **ktayl-portal** | Next.js 14 / TS | [#202](https://github.com/andrelair-platform/platform-backlog/issues/202) | 🔨 Q1 2027 | Unified policyholder + broker portal (Authentik role-based views, SSR, RGAA) |
-| **RGAA 4.1 audit** | axe-core / Lighthouse CI | [#204](https://github.com/andrelair-platform/platform-backlog/issues/204) | 🔨 Q1 2027 | Accessibility audit on ktayl-portal — BC02 mandatory deliverable |
+| **ktayl-policy-service** | Go | #203 (archived) | 🔨 Q1 2027 | Policy lifecycle — create, amend, renew, cancel, document generation |
+| **ktayl-claims** | Java 21 / Spring Boot 3 | #198 (archived) | 🔨 Q1 2027 | FNOL → investigation → settlement state machine, Spring Batch COREP bordereau |
+| **ktayl-ai-claims-assistant** | Python / LangGraph | #200 (archived) | 🔨 Q2 2027 | AI triage, fraud scoring, human-in-loop via NATS events |
+| **ktayl-portal** | Next.js 14 / TS | #202 (archived) | 🔨 Q1 2027 | Unified policyholder + broker portal (Authentik role-based views, SSR, RGAA) |
+| **RGAA 4.1 audit** | axe-core / Lighthouse CI | #204 (archived) | 🔨 Q1 2027 | Accessibility audit on ktayl-portal — BC02 mandatory deliverable |
 
 **Integration topology:**
 ```
 ktayl-portal → ktayl-policy-service (Go REST)
-             → ktayl-claims-service (Java REST)
+             → ktayl-claims (Java REST)
              → ktayl-ai-claims-assistant (Python streaming)
 
-ktayl-claims-service → NATS JetStream claim.* events
+ktayl-claims → NATS JetStream claim.* events
 ktayl-ai-claims-assistant ← NATS consumer
 ktayl-policy-service → ERPNext HR (employee validation)
-ktayl-claims-service → Paperless-ngx DMS (document archive)
-ktayl-claims-service → ERPNext (premium accounting)
+ktayl-claims → Paperless-ngx DMS (document archive)
+ktayl-claims → ERPNext (premium accounting)
 ```
 
 ---
@@ -128,15 +144,15 @@ underwriting-workflow ── (Temporal, existing) state machine
   SUBMITTED → INTAKE → DOCS_EXTRACTED → DATA_VALIDATED
   → RISK_ASSESSED → AWAITING_DECISION → QUOTED → BOUND | DECLINED
       ↓
-ktayl-uwb-api ──────────── (NEW, Go) rules engine + authority routing
+ktayl-underwriting (API) ──────────── (NEW, Go) rules engine + authority routing
   IF revenue > €100M AND limit > €20M → senior_review
   IF industry = "chemical" AND hazard = "high" → specialist_review
   IF claims_freq > threshold → additional_UW_required
       ↓
-ktayl-uwb-ui ───────────── (NEW, React) Underwriter Workbench — single screen:
+ktayl-underwriting (UI) ───────────── (NEW, React) Underwriter Workbench — single screen:
   Client | Risk | Request | Claims history | AI findings | [ACCEPT] [MODIFY] [DECLINE]
       ↓
-ktayl-uwb-api (quote generation + pricing engine)
+ktayl-underwriting (API) (quote generation + pricing engine)
       ↓
 n8n ────────────────────── (existing) auto-generate broker communication
       ↓
@@ -153,29 +169,29 @@ Paperless-ngx ─────────── (#76) audit-trail document archi
 
 | App | Stack | Issue | Phase | Description |
 |---|---|---|---|---|
-| **ktayl-uwb-api** | Go | [#81](https://github.com/andrelair-platform/platform-backlog/issues/81) | 📋 Backlog | Risk data model, rules engine, authority routing, pricing engine, quote generation, ERPNext policy push |
-| **ktayl-uwb-ui** | React / TypeScript | [#81](https://github.com/andrelair-platform/platform-backlog/issues/81) | 📋 Backlog | Underwriter Workbench single-screen: client + risk + AI findings + decision buttons (ACCEPT / MODIFY / DECLINE) |
-| **underwriting-workflow** | Temporal (existing) | [#81](https://github.com/andrelair-platform/platform-backlog/issues/81) | 📋 Backlog | Long-running UW state machine in the existing Temporal cluster — new workflow type, no new infrastructure |
-| **UW AI agents** | Python / CrewAI (extend minicloud-crew-agent) | [#81](https://github.com/andrelair-platform/platform-backlog/issues/81) | 📋 Backlog | 3 specialized agents: Document (extract+classify), Risk (exposure+claims+anomaly), Compliance (KYC+sanctions+missing-docs) |
+| **ktayl-underwriting (API)** | Go | #81 (archived) | 📋 Backlog | Risk data model, rules engine, authority routing, pricing engine, quote generation, ERPNext policy push |
+| **ktayl-underwriting (UI)** | React / TypeScript | #81 (archived) | 📋 Backlog | Underwriter Workbench single-screen: client + risk + AI findings + decision buttons (ACCEPT / MODIFY / DECLINE) |
+| **underwriting-workflow** | Temporal (existing) | #81 (archived) | 📋 Backlog | Long-running UW state machine in the existing Temporal cluster — new workflow type, no new infrastructure |
+| **UW AI agents** | Python / CrewAI (extend minicloud-crew-agent) | #81 (archived) | 📋 Backlog | 3 specialized agents: Document (extract+classify), Risk (exposure+claims+anomaly), Compliance (KYC+sanctions+missing-docs) |
 | **UW broker intake** | n8n (existing) | — | 📋 Backlog | n8n workflows: broker email → doc routing → missing-info auto-request → status updates. No new service. |
 
 ### 2b. Underwriting Governance & Tooling
 
 | App | Stack | Issue | Phase | Description |
 |---|---|---|---|---|
-| **UW authority matrix** | Config / API (inside ktayl-uwb-api) | [#231](https://github.com/andrelair-platform/platform-backlog/issues/231) | 📋 Backlog | Binding authority levels per LOB, enforced routing, escalation chain |
-| **UW guidelines repository** | Versioned docs | [#230](https://github.com/andrelair-platform/platform-backlog/issues/230) | 📋 Backlog | LOB rules, prohibited sectors, capacity limits, pricing floors — UW Director approval |
-| **Technical UW committee** | Temporal workflow | [#232](https://github.com/andrelair-platform/platform-backlog/issues/232) | 📋 Backlog | L4 risk escalation, quorum management, digital vote, signed decision |
-| **Actuarial pricing engine** | Python / microservice | [#101](https://github.com/andrelair-platform/platform-backlog/issues/101) | 📋 Backlog | Statistical premium rating per LOB — replaces manual Excel tariff grids, feeds ktayl-uwb-api |
-| **Risk engineering assessment** | Form / PDF | [#208](https://github.com/andrelair-platform/platform-backlog/issues/208) | 📋 Backlog | On-site visit report, prevention scoring, UW integration |
+| **UW authority matrix** | Config / API (inside ktayl-underwriting (API)) | #231 (archived) | 📋 Backlog | Binding authority levels per LOB, enforced routing, escalation chain |
+| **UW guidelines repository** | Versioned docs | #230 (archived) | 📋 Backlog | LOB rules, prohibited sectors, capacity limits, pricing floors — UW Director approval |
+| **Technical UW committee** | Temporal workflow | #232 (archived) | 📋 Backlog | L4 risk escalation, quorum management, digital vote, signed decision |
+| **Actuarial pricing engine** | Python / microservice | #101 (archived) | 📋 Backlog | Statistical premium rating per LOB — replaces manual Excel tariff grids, feeds ktayl-underwriting (API) |
+| **Risk engineering assessment** | Form / PDF | #208 (archived) | 📋 Backlog | On-site visit report, prevention scoring, UW integration |
 
 ### 2c. Advanced / Research
 
 | App | Stack | Issue | Phase | Description |
 |---|---|---|---|---|
-| **Corporate risk intelligence agent** | Python / LangGraph | [#210](https://github.com/andrelair-platform/platform-backlog/issues/210) | 🔬 Research | Pre-UW due diligence for CAC40 B2B prospects (Pappers + OpenSanctions) |
-| **Algorithmic Cyber Underwriter** | Python / AI | [#150](https://github.com/andrelair-platform/platform-backlog/issues/150) | 🔬 Research | AI-driven cyber risk assessment, automated pricing decision support |
-| **COBOL actuarial rating engine** | GnuCOBOL + API wrapper | [#148](https://github.com/andrelair-platform/platform-backlog/issues/148) | 🔬 Research | Legacy rating engine demo — IBM z/OS credential, modern REST wrapper |
+| **Corporate risk intelligence agent** | Python / LangGraph | #210 (archived) | 🔬 Research | Pre-UW due diligence for CAC40 B2B prospects (Pappers + OpenSanctions) |
+| **Algorithmic Cyber Underwriter** | Python / AI | #150 (archived) | 🔬 Research | AI-driven cyber risk assessment, automated pricing decision support |
+| **COBOL actuarial rating engine** | GnuCOBOL + API wrapper | #148 (archived) | 🔬 Research | Legacy rating engine demo — IBM z/OS credential, modern REST wrapper |
 
 ---
 
@@ -183,11 +199,11 @@ Paperless-ngx ─────────── (#76) audit-trail document archi
 
 | App | Stack | Issue | Phase | Description |
 |---|---|---|---|---|
-| **Claims indemnification payment** | Go / SEPA | [#211](https://github.com/andrelair-platform/platform-backlog/issues/211) | 📋 Backlog | Outbound SEPA credit transfer to claimants + ERPNext accounting |
-| **Loss adjuster management** | Go / React | [#212](https://github.com/andrelair-platform/platform-backlog/issues/212) | 📋 Backlog | Approved panel registry, mission assignment, report reception, fee management |
-| **Subrogation management** | Go | [#214](https://github.com/andrelair-platform/platform-backlog/issues/214) | 📋 Backlog | Third-party recovery after indemnification (recours subrogatoire) |
-| **SIU fraud investigation** | Workflow + ALFA | [#217](https://github.com/andrelair-platform/platform-backlog/issues/217) | 📋 Backlog | Escalation when AI fraud score > 0.7, ALFA reporting to AGIRA |
-| **Contentieux / litigation** | Case management | [#226](https://github.com/andrelair-platform/platform-backlog/issues/226) | 📋 Backlog | Contested claims, legal proceedings, prescription tracking, lawyer management |
+| **Claims indemnification payment** | Go / SEPA | #211 (archived) | 📋 Backlog | Outbound SEPA credit transfer to claimants + ERPNext accounting |
+| **Loss adjuster management** | Go / React | #212 (archived) | 📋 Backlog | Approved panel registry, mission assignment, report reception, fee management |
+| **Subrogation management** | Go | #214 (archived) | 📋 Backlog | Third-party recovery after indemnification (recours subrogatoire) |
+| **SIU fraud investigation** | Workflow + ALFA | #217 (archived) | 📋 Backlog | Escalation when AI fraud score > 0.7, ALFA reporting to AGIRA |
+| **Contentieux / litigation** | Case management | #226 (archived) | 📋 Backlog | Contested claims, legal proceedings, prescription tracking, lawyer management |
 
 ---
 
@@ -200,11 +216,11 @@ LOB-specific modules extend the core policy and claims services with domain rule
 | App | Issue | Phase | Description |
 |---|---|---|---|
 | **IARD AUTO + HAB** | (ERPNext #50 ✅) | ✅ Live | Base IARD products configured in ERPNext (3 products: RC AUTO, MRH, PREV-IND) |
-| **Marine & Transport** | [#218](https://github.com/andrelair-platform/platform-backlog/issues/218) | 📋 Backlog | Cargo policies, Institute Clauses, voyage/open cover, international freight |
-| **Construction & Engineering** | [#219](https://github.com/andrelair-platform/platform-backlog/issues/219) | 📋 Backlog | TRC/TRM project policies, Bris de Machine, renewable energy |
-| **Financial Lines (D&O / RC Pro)** | [#220](https://github.com/andrelair-platform/platform-backlog/issues/220) | 📋 Backlog | RCMS/D&O claims-made, retroactive dates, discovery periods |
-| **Collaborateurs** | [#221](https://github.com/andrelair-platform/platform-backlog/issues/221) | 📋 Backlog | Group personal accident, business travel, Europ Assistance API |
-| **Alternative Risk Transfer** | [#223](https://github.com/andrelair-platform/platform-backlog/issues/223) | 🔬 Research | Captive management, parametric covers, risk financing |
+| **Marine & Transport** | #218 (archived) | 📋 Backlog | Cargo policies, Institute Clauses, voyage/open cover, international freight |
+| **Construction & Engineering** | #219 (archived) | 📋 Backlog | TRC/TRM project policies, Bris de Machine, renewable energy |
+| **Financial Lines (D&O / RC Pro)** | #220 (archived) | 📋 Backlog | RCMS/D&O claims-made, retroactive dates, discovery periods |
+| **Collaborateurs** | #221 (archived) | 📋 Backlog | Group personal accident, business travel, Europ Assistance API |
+| **Alternative Risk Transfer** | #223 (archived) | 🔬 Research | Captive management, parametric covers, risk financing |
 
 ### 4b. International Programs (IP) — GNP equivalent
 
@@ -222,7 +238,7 @@ ktayl-ip-portal ─────────── GNP equivalent: central coordi
         ├── Policy data sync ──→ Servicing Offices (local admitted insurers)
         │                        premium cession, reserve allocation
         │
-        ├── Claims data ◄─────── ktayl-claims-service (direct claims)
+        ├── Claims data ◄─────── ktayl-claims (direct claims)
         │                        + local SO claim notifications
         │
         ├── IP bordereaux ──────→ ERPNext (cession accounting écritures)
@@ -235,7 +251,7 @@ ktayl-ip-portal ─────────── GNP equivalent: central coordi
 **Integration topology:**
 ```
 ktayl-policy-service  ──► IP data model extension (master + local sub-policies)
-ktayl-claims-service  ──► ktayl-ip-portal (SO claim notifications inbound)
+ktayl-claims  ──► ktayl-ip-portal (SO claim notifications inbound)
 ktayl-ip-portal       ──► ERPNext (IP bordereau → accounting écritures)
 ktayl-ip-portal       ──► Paperless-ngx (SO documents archive)
 ktayl-ip-portal       ──► n8n (automated SO communication workflows)
@@ -243,10 +259,10 @@ ktayl-ip-portal       ──► n8n (automated SO communication workflows)
 
 | App | Stack | Issue | Phase | Description |
 |---|---|---|---|---|
-| **International Programs LOB** | Extension of ktayl-policy-service | [#222](https://github.com/andrelair-platform/platform-backlog/issues/222) | 📋 Backlog | IP data model in ktayl-policy-service: master policy + local admitted sub-policies, network cession amounts, SO registry |
-| **ktayl-ip-portal** | Go / React | [#222](https://github.com/andrelair-platform/platform-backlog/issues/222) | 📋 Backlog | GNP equivalent — Producing Office ↔ Servicing Office hub: policy sync, reserve/premium coordination, claims notification, network status. Roles: Viewer / User / Accountant |
-| **IP bordereau module** | ERPNext / Frappe | [#222](https://github.com/andrelair-platform/platform-backlog/issues/222) | 📋 Backlog | IP-specific cession bordereaux (distinct format from reinsurance #209): PO → SO premium cession, reserve transfers, accounting écritures in ERPNext PCG |
-| **SO claims feed** | Go (in ktayl-ip-portal) | [#222](https://github.com/andrelair-platform/platform-backlog/issues/222) | 📋 Backlog | Inbound claim data from Servicing Offices — mirrors GNP ↔ ICS (Claims@Global) interface. SO notifies PO of local claims against the master program |
+| **International Programs LOB** | Extension of ktayl-policy-service | #222 (archived) | 📋 Backlog | IP data model in ktayl-policy-service: master policy + local admitted sub-policies, network cession amounts, SO registry |
+| **ktayl-ip-portal** | Go / React | #222 (archived) | 📋 Backlog | GNP equivalent — Producing Office ↔ Servicing Office hub: policy sync, reserve/premium coordination, claims notification, network status. Roles: Viewer / User / Accountant |
+| **IP bordereau module** | ERPNext / Frappe | #222 (archived) | 📋 Backlog | IP-specific cession bordereaux (distinct format from reinsurance #209): PO → SO premium cession, reserve transfers, accounting écritures in ERPNext PCG |
+| **SO claims feed** | Go (in ktayl-ip-portal) | #222 (archived) | 📋 Backlog | Inbound claim data from Servicing Offices — mirrors GNP ↔ ICS (Claims@Global) interface. SO notifies PO of local claims against the master program |
 
 ---
 
@@ -254,17 +270,17 @@ ktayl-ip-portal       ──► n8n (automated SO communication workflows)
 
 | App | Stack | Issue | Phase | Description |
 |---|---|---|---|---|
-| **Commercial Insurance CRM** | ERPNext CRM | [#92](https://github.com/andrelair-platform/platform-backlog/issues/92) | 📋 Backlog | Pré-souscription, devis légal, équipes commerciales, AI churn & cross-sell |
-| **ERPNext CRM config** | Frappe | [#53](https://github.com/andrelair-platform/platform-backlog/issues/53) | 📋 Backlog | Prospect pipeline, devis lifecycle, renewal management, broker commissions |
-| **ERPNext billing** | Frappe | [#54](https://github.com/andrelair-platform/platform-backlog/issues/54) | 📋 Backlog | Premium invoicing, payment tracking, claims payment accounting |
-| **Premium collection lifecycle** | n8n + ERPNext | [#91](https://github.com/andrelair-platform/platform-backlog/issues/91) | 📋 Backlog | Underwriting trigger → SEPA mandate → online payment → suspension → AI default prediction |
-| **Insurance product factory** | Admin UI | [#103](https://github.com/andrelair-platform/platform-backlog/issues/103) | 📋 Backlog | Configure products without developer intervention |
-| **Insurance attestation PDF** | Python | [#116](https://github.com/andrelair-platform/platform-backlog/issues/116) | 📋 Backlog | Auto-generate certificates with QR verification at policy bind |
-| **ORIAS broker verification** | Python | [#104](https://github.com/andrelair-platform/platform-backlog/issues/104) | 📋 Backlog | Automated credential check before accepting business from a broker |
-| **Delegated underwriting authority** | Workflow | [#225](https://github.com/andrelair-platform/platform-backlog/issues/225) | 📋 Backlog | Broker binders, delegate register, capacity monitoring, annual audit |
-| **Co-insurance / pool management** | Go | [#224](https://github.com/andrelair-platform/platform-backlog/issues/224) | 📋 Backlog | Lead/following insurer, premium apportionment, co-insurer bordereau |
-| **Customer-facing AI chatbot** | Python / LangGraph | [#115](https://github.com/andrelair-platform/platform-backlog/issues/115) | 📋 Backlog | Policyholder + prospect assistant on devandre.sbs and ktayl-portal |
-| **e-Signature platform (Docuseal)** | Docker | [#75](https://github.com/andrelair-platform/platform-backlog/issues/75) | ✅ Live | Policy & contract signing, eIDAS-compliant |
+| **Commercial Insurance CRM** | ERPNext CRM | #92 (archived) | 📋 Backlog | Pré-souscription, devis légal, équipes commerciales, AI churn & cross-sell |
+| **ERPNext CRM config** | Frappe | #53 (archived) | 📋 Backlog | Prospect pipeline, devis lifecycle, renewal management, broker commissions |
+| **ERPNext billing** | Frappe | #54 (archived) | 📋 Backlog | Premium invoicing, payment tracking, claims payment accounting |
+| **Premium collection lifecycle** | n8n + ERPNext | #91 (archived) | 📋 Backlog | Underwriting trigger → SEPA mandate → online payment → suspension → AI default prediction |
+| **Insurance product factory** | Admin UI | #103 (archived) | 📋 Backlog | Configure products without developer intervention |
+| **Insurance attestation PDF** | Python | #116 (archived) | 📋 Backlog | Auto-generate certificates with QR verification at policy bind |
+| **ORIAS broker verification** | Python | #104 (archived) | 📋 Backlog | Automated credential check before accepting business from a broker |
+| **Delegated underwriting authority** | Workflow | #225 (archived) | 📋 Backlog | Broker binders, delegate register, capacity monitoring, annual audit |
+| **Co-insurance / pool management** | Go | #224 (archived) | 📋 Backlog | Lead/following insurer, premium apportionment, co-insurer bordereau |
+| **Customer-facing AI chatbot** | Python / LangGraph | #115 (archived) | 📋 Backlog | Policyholder + prospect assistant on devandre.sbs and ktayl-portal |
+| **e-Signature platform (Docuseal)** | Docker | #75 (archived) | ✅ Live | Policy & contract signing, eIDAS-compliant |
 
 ---
 
@@ -272,10 +288,10 @@ ktayl-ip-portal       ──► n8n (automated SO communication workflows)
 
 | App | Stack | Issue | Phase | Description |
 |---|---|---|---|---|
-| **Reinsurance management** | Go | [#102](https://github.com/andrelair-platform/platform-backlog/issues/102) | 📋 Backlog | Treaty configuration, cession calculation, monthly bordereau |
-| **Reinsurer bordereau portal** | Go / React | [#209](https://github.com/andrelair-platform/platform-backlog/issues/209) | 📋 Backlog | Monthly cession reporting to reinsurers (treaty + facultative) |
-| **Actuarial reserving tool** | Python | [#207](https://github.com/andrelair-platform/platform-backlog/issues/207) | 📋 Backlog | Claims triangle analysis, IBNR calculation, Solvency II technical provisions |
-| **Catastrophe modelling** | Python | [#215](https://github.com/andrelair-platform/platform-backlog/issues/215) | 🔬 Research | Nat cat aggregate exposure — flood, storm, earthquake — Solvency II SCR |
+| **Reinsurance management** | Go | #102 (archived) | 📋 Backlog | Treaty configuration, cession calculation, monthly bordereau |
+| **Reinsurer bordereau portal** | Go / React | #209 (archived) | 📋 Backlog | Monthly cession reporting to reinsurers (treaty + facultative) |
+| **Actuarial reserving tool** | Python | #207 (archived) | 📋 Backlog | Claims triangle analysis, IBNR calculation, Solvency II technical provisions |
+| **Catastrophe modelling** | Python | #215 (archived) | 🔬 Research | Nat cat aggregate exposure — flood, storm, earthquake — Solvency II SCR |
 
 ---
 
@@ -283,12 +299,12 @@ ktayl-ip-portal       ──► n8n (automated SO communication workflows)
 
 | App | Stack | Issue | Phase | Description |
 |---|---|---|---|---|
-| **ACPR COREP pipeline** | Spring Batch (in #198) | [#83](https://github.com/andrelair-platform/platform-backlog/issues/83) | 🔨 Q1 2027 | Automated COREP/XBRL/ORSA generation — embedded in ktayl-claims-service |
-| **AML/KYC compliance** | Python | [#113](https://github.com/andrelair-platform/platform-backlog/issues/113) | 📋 Backlog | Anti-money laundering — Code monétaire et financier Art. L561-2 |
-| **GDPR Art. 30 register** | ERPNext / doc | [#94](https://github.com/andrelair-platform/platform-backlog/issues/94) | 📋 Backlog | Registre des activités de traitement |
-| **GDPR workflow** | n8n | [#84](https://github.com/andrelair-platform/platform-backlog/issues/84) | 📋 Backlog | Right-to-be-forgotten, data access requests, audit trail |
-| **DDA/IDD training LMS** | Moodle | [#114](https://github.com/andrelair-platform/platform-backlog/issues/114) | 📋 Backlog | Mandatory 15h/year training per employee — ACPR requirement |
-| **IFRS 17 reporting** | ERPNext / dbt | [#206](https://github.com/andrelair-platform/platform-backlog/issues/206) | 🔬 Research | Insurance contract measurement + P&L disclosure |
+| **ACPR COREP pipeline** | Spring Batch (in #198) | #83 (archived) | 🔨 Q1 2027 | Automated COREP/XBRL/ORSA generation — embedded in ktayl-claims |
+| **AML/KYC compliance** | Python | #113 (archived) | 📋 Backlog | Anti-money laundering — Code monétaire et financier Art. L561-2 |
+| **GDPR Art. 30 register** | ERPNext / doc | #94 (archived) | 📋 Backlog | Registre des activités de traitement |
+| **GDPR workflow** | n8n | #84 (archived) | 📋 Backlog | Right-to-be-forgotten, data access requests, audit trail |
+| **DDA/IDD training LMS** | Moodle | #114 (archived) | 📋 Backlog | Mandatory 15h/year training per employee — ACPR requirement |
+| **IFRS 17 reporting** | ERPNext / dbt | #206 (archived) | 🔬 Research | Insurance contract measurement + P&L disclosure |
 
 ---
 
@@ -296,9 +312,9 @@ ktayl-ip-portal       ──► n8n (automated SO communication workflows)
 
 | App | Stack | Issue | Phase | Description |
 |---|---|---|---|---|
-| **Paperless-ngx DMS** | Docker + Longhorn | [#76](https://github.com/andrelair-platform/platform-backlog/issues/76) | 📋 Backlog | Long-term compliant document archive — replaces eFile/DOXIS |
+| **Paperless-ngx DMS** | Docker + Longhorn | #76 (archived) | 📋 Backlog | Long-term compliant document archive — replaces eFile/DOXIS |
 
-**Integration:** ktayl-claims-service archives settled claim documents → Paperless-ngx via API on settlement. ktayl-policy-service archives signed contracts at bind.
+**Integration:** ktayl-claims archives settled claim documents → Paperless-ngx via API on settlement. ktayl-policy-service archives signed contracts at bind.
 
 ---
 
@@ -306,12 +322,12 @@ ktayl-ip-portal       ──► n8n (automated SO communication workflows)
 
 | App | Stack | Issue | Phase | Description |
 |---|---|---|---|---|
-| **VoIP / telephony** | Asterisk + FreePBX | [#105](https://github.com/andrelair-platform/platform-backlog/issues/105) | 📋 Backlog | Insurance call center — claims intake + servicing queues |
-| **SMS gateway** | OVH SMS API | [#108](https://github.com/andrelair-platform/platform-backlog/issues/108) | 📋 Backlog | Payment reminders, dunning, claim status alerts |
-| **Global Address List** | Stalwart LDAP | [#227](https://github.com/andrelair-platform/platform-backlog/issues/227) | 📋 Backlog | Corporate address book — Authentik directory → email autocomplete |
-| **Shared mailboxes** | Stalwart IMAP ACL | [#228](https://github.com/andrelair-platform/platform-backlog/issues/228) | 📋 Backlog | Team inboxes: sinistres, production, comptabilité, courtiers, direction |
-| **Distribution lists** | Stalwart virtual aliases | [#229](https://github.com/andrelair-platform/platform-backlog/issues/229) | 📋 Backlog | Team mailing lists: sinistres@, production@, courtiers@, direction@ |
-| **minicloud Copilot** | n8n + LiteLLM + Qdrant + maubot | [#260](https://github.com/andrelair-platform/platform-backlog/issues/260) | 📋 Backlog | M365 Copilot equivalent — AI layer across mail, chat, meetings, docs and enterprise search. 5 connectors wiring existing services. See [minicloud Copilot](../ai-ml/minicloud-copilot) |
+| **VoIP / telephony** | Asterisk + FreePBX | #105 (archived) | 📋 Backlog | Insurance call center — claims intake + servicing queues |
+| **SMS gateway** | OVH SMS API | #108 (archived) | 📋 Backlog | Payment reminders, dunning, claim status alerts |
+| **Global Address List** | Stalwart LDAP | #227 (archived) | 📋 Backlog | Corporate address book — Authentik directory → email autocomplete |
+| **Shared mailboxes** | Stalwart IMAP ACL | #228 (archived) | 📋 Backlog | Team inboxes: sinistres, production, comptabilité, courtiers, direction |
+| **Distribution lists** | Stalwart virtual aliases | #229 (archived) | 📋 Backlog | Team mailing lists: sinistres@, production@, courtiers@, direction@ |
+| **minicloud Copilot** | n8n + LiteLLM + Qdrant + maubot | #260 (archived) | 📋 Backlog | M365 Copilot equivalent — AI layer across mail, chat, meetings, docs and enterprise search. 5 connectors wiring existing services. See [minicloud Copilot](../ai-ml/minicloud-copilot) |
 
 ---
 
@@ -319,12 +335,12 @@ ktayl-ip-portal       ──► n8n (automated SO communication workflows)
 
 | App | Stack | Issue | Phase | Description |
 |---|---|---|---|---|
-| **Global Data Platform** | ClickHouse + dbt + Metabase | [#152](https://github.com/andrelair-platform/platform-backlog/issues/152) | 📋 Backlog | Bronze/silver/gold data lake — analytical DB + ELT + self-service BI |
-| **Insurance KPI dashboard** | Grafana / Metabase | [#82](https://github.com/andrelair-platform/platform-backlog/issues/82) | 📋 Backlog | Claims ratio, loss ratio, premium volume, NPS |
-| **People Analytics** | Metabase | [#166](https://github.com/andrelair-platform/platform-backlog/issues/166) | 📋 Backlog | Workforce dashboards — headcount, turnover, absenteeism, salary cost |
-| **GCP BigQuery** | BigQuery (free tier) | [#168](https://github.com/andrelair-platform/platform-backlog/issues/168) | 📋 Backlog | Ad-hoc insurance analytics — 10GB storage + 1TB queries/month free |
-| **Data Lakehouse** | Apache Iceberg + Nessie | [#139](https://github.com/andrelair-platform/platform-backlog/issues/139) | 🔬 Research | Iceberg tables on MinIO + Nessie catalog + ClickHouse S3 |
-| **Domain-specific LLM fine-tune** | MLflow + vLLM | [#123](https://github.com/andrelair-platform/platform-backlog/issues/123) | 🔬 Research | French insurance & regulatory data — MLOps pipeline on minicloud |
+| **Global Data Platform** | ClickHouse + dbt + Metabase | #152 (archived) | 📋 Backlog | Bronze/silver/gold data lake — analytical DB + ELT + self-service BI |
+| **Insurance KPI dashboard** | Grafana / Metabase | #82 (archived) | 📋 Backlog | Claims ratio, loss ratio, premium volume, NPS |
+| **People Analytics** | Metabase | #166 (archived) | 📋 Backlog | Workforce dashboards — headcount, turnover, absenteeism, salary cost |
+| **GCP BigQuery** | BigQuery (free tier) | #168 (archived) | 📋 Backlog | Ad-hoc insurance analytics — 10GB storage + 1TB queries/month free |
+| **Data Lakehouse** | Apache Iceberg + Nessie | #139 (archived) | 🔬 Research | Iceberg tables on MinIO + Nessie catalog + ClickHouse S3 |
+| **Domain-specific LLM fine-tune** | MLflow + vLLM | #123 (archived) | 🔬 Research | French insurance & regulatory data — MLOps pipeline on minicloud |
 
 ---
 
@@ -334,8 +350,8 @@ ktayl-ip-portal       ──► n8n (automated SO communication workflows)
 |---|---|---|---|---|
 | **Authentik OIDC** | k3s (live) | — | ✅ Live | SSO, RBAC, SCIM — all apps |
 | **Vaultwarden** | k3s (live) | — | ✅ Live | Password manager — 15 IS credentials |
-| **MidPoint IGA** | Docker | [#205](https://github.com/andrelair-platform/platform-backlog/issues/205) | 📋 Backlog | Habilitation platform — access request → manager approval → Authentik SCIM |
-| **PAM (Teleport + Vault SSH)** | k3s | [#151](https://github.com/andrelair-platform/platform-backlog/issues/151) | 📋 Backlog | JIT privileged access, dynamic secrets, quarterly access review |
+| **MidPoint IGA** | Docker | #205 (archived) | 📋 Backlog | Habilitation platform — access request → manager approval → Authentik SCIM |
+| **PAM (Teleport + Vault SSH)** | k3s | #151 (archived) | 📋 Backlog | JIT privileged access, dynamic secrets, quarterly access review |
 | **GLPI** | Docker + PostgreSQL | — | 📋 Backlog | ITSM / service desk — ticketing, asset management, change management, internal service catalog |
 
 ---
