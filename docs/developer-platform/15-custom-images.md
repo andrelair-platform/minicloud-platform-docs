@@ -90,6 +90,56 @@ piece of genuine custom work its own referenceable home.
 
 ---
 
+## CA trust: bake vs runtime (the `trust-manager` decision)
+
+Most of the platform's "patched" images exist for **one reason: to trust the internal `minicloud-ca`**
+(so the app can verify TLS to other internal services). That is a *config* need, not a real artifact —
+and there are two ways to meet it:
+
+| Approach | Repo needed? | CA rotation | Trade-off |
+|---|---|---|---|
+| **Bake CA into a custom image** (`ARG CA_CERT` → `update-ca-certificates`) | ✅ yes (Dockerfile + CI) | **rebuild + repush every image** | self-contained + scannable, and doubles as work evidence — but a repo to maintain and a rotation rebuilds everything |
+| **Inject CA at runtime** (mount a ConfigMap + `NODE_EXTRA_CA_CERTS`) | ❌ no — `helm-values/` + `manifests/` only | **update one file, restart pods** | lighter, stock image, no repo — relies on the chart supporting a volume/env mount |
+
+### Recommendation
+
+**For CA trust alone, prefer runtime injection — and do it cluster-wide with `trust-manager`.** CA
+certs rotate; baking forces a rebuild of *every* image on each rotation, and couples a deploy-time infra
+detail into a build artifact (the same anti-pattern as baking `NEXT_PUBLIC_*`). Runtime injection keeps
+you on the **stock vendor image** (no repo), and rotation becomes "update one file."
+
+`trust-manager` (a cert-manager sub-project) distributes the CA to **every namespace** automatically as
+a ConfigMap + Secret `minicloud-ca-bundle` (key `ca.crt`). A new app then just:
+
+```yaml
+# pod spec (via the chart's values)
+volumes:
+  - name: ca
+    configMap:
+      name: minicloud-ca-bundle
+volumeMounts:
+  - name: ca
+    mountPath: /etc/ssl/certs/minicloud-ca.crt
+    subPath: ca.crt
+    readOnly: true
+env:
+  # Node apps; others just use the mounted file via the OS trust store
+  - name: NODE_EXTRA_CA_CERTS
+    value: /etc/ssl/certs/minicloud-ca.crt
+```
+
+**Bake a custom image only for a real artifact** — added binaries/plugins/code, a specific unpatched
+CVE, or an app that genuinely can't read a mounted CA. **CVE hygiene** is better handled by Renovate
+(auto-bump to the vendor's latest patched tag) + Trivy scanning than by an `apt upgrade` layer (which is
+non-reproducible — note the `apt-mark hold` workarounds in the baked images).
+
+**Status:** `trust-manager` + the `minicloud-ca-bundle` Bundle are wired in gitops
+(`apps/platform/trust-manager.yaml`, `manifests/cert-manager-config/`). Go-forward: **new apps use the
+runtime mount above**; the existing baked images (OnlyOffice, Open WebUI, Backstage) stay as-is
+(consistency > churn) and can migrate opportunistically.
+
+---
+
 ## Inventory
 
 ### Custom services (written from scratch)
