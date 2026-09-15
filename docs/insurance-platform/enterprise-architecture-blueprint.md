@@ -99,6 +99,18 @@ trust-manager, ESO, Vault, Harbor, Cilium, Longhorn, KEDA, VPA, Velero) · obser
 (Prometheus/Grafana/Loki/Tempo) · security (Falco, Gatekeeper, Polaris, Trivy) · DevPortal (Backstage) ·
 project-mgmt (Plane CE). 🔴 **Not deployed: ITSM/GLPI (#16) + CMDB** (Plane covers project-mgmt, not helpdesk).
 
+:::info Scope boundary — BYOD, no managed endpoints (deliberate)
+ktayl manages **no company computers, phones, or desk telephony** — employees use their own device,
+access is **browser-first**. So **endpoints / MDM-UEM (Intune-equivalent) / device hardening / hardware
+asset lifecycle / telephony are OUT of scope** within Enterprise IT for now. This is coherent with the
+digital workplace being all **SSO-gated web apps** (Authentik + MFA over Tailscale/Cloudflare) — an
+inherently **zero-trust / identity-is-the-perimeter** shape. Accepted risk (no remote wipe / device DLP)
+is offset by MFA + SSO + browser-first + app/gateway DLP (Presidio, default-deny egress). Consequently
+ITSM/CMDB (#16) scopes to **software/services/logical assets**, not a HW fleet, and IAM/IGA (#17) becomes
+the primary control. **Revisit** when real employees + PII-at-volume or a production DORA claim arrive
+(successor: Fleet/osquery or a UEM). Full decision: `.claude/rules/project-governance.md` *IS scope boundaries*.
+:::
+
 ### The 4 transversal layers
 | Layer | Board | **Deployed reality** | Status |
 |---|---|---|---|
