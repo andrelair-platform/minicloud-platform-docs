@@ -85,10 +85,10 @@ repo exists, business capability not built/configured) · 🔴 nothing running.
 | 3 | Pricing / Rating engine | #12 | nothing running | 🔴 |
 | 4 | **Policy Administration (PAS)** | #6 | **`ktayl-policy-service` + `ktayl-postgres`** (ktayl + ktayl-prod) | 🟢 **live** |
 | 5 | Claims | #11 | nothing running (repo scaffold) | 🔴 |
-| 6 | Risk Engineering / Prevention | — | nothing | 🔴 |
-| 7 | International Programs | — | nothing | 🔴 |
+| 6 | Risk Engineering / Prevention | #21 | nothing running (repo `ktayl-risk-engineering` scaffold) | 🔴 |
+| 7 | International Programs | #23 | nothing running (repo `ktayl-international-programs` scaffold) | 🔴 |
 | 8 | Billing / Premium & Finance | #14 | ERPNext finance up, **insurance billing not configured** | 🟡 platform only |
-| 9 | Reinsurance | — | nothing | 🔴 |
+| 9 | Reinsurance | #22 | nothing running (repo `ktayl-reinsurance` scaffold) | 🔴 |
 | 10 | Compliance / Legal | #15 | nothing (Presidio PII is a data tool, not a compliance system) | 🔴 |
 | 11 | Data / Actuarial | #5 | analytics stack (ClickHouse/dbt/Superset) **not deployed**; only MLflow up | 🔴 |
 | 12 | Enterprise IT | #3/#4/#10/#16/#17 | **very strong — see note below** (except ITSM/GLPI + CMDB) | 🟢 |
@@ -102,8 +102,8 @@ project-mgmt (Plane CE). 🔴 **Not deployed: ITSM/GLPI (#16) + CMDB** (Plane co
 ### The 4 transversal layers
 | Layer | Board | **Deployed reality** | Status |
 |---|---|---|---|
-| Documents (GED / OCR / IDP) | — | Nextcloud (storage) + OnlyOffice (edit) + **Docuseal** (e-sign) + **Docling + markitdown-proxy** (OCR/conversion) all **live**; missing a records-mgmt DMS + a structured IDP pipeline | 🟡 partial |
-| Integration (API-GW / ESB / ETL / MFT / EDI) | — | **NATS** (events) + **Temporal** (workflow) + **n8n** (low-code integration) **live** as primitives; missing the formal API-GW/ESB/ETL/MFT/EDI insurance fabric | 🟡 primitives only |
+| Documents (GED / OCR / IDP) | #24 | Nextcloud (storage) + OnlyOffice (edit) + **Docuseal** (e-sign) + **Docling + markitdown-proxy** (OCR/conversion) all **live**; missing a records-mgmt DMS + a structured IDP pipeline (repo `ktayl-dms` scaffold) | 🟡 partial |
+| Integration (API-GW / ESB / ETL / MFT / EDI) | #25 | **NATS** (events) + **Temporal** (workflow) + **n8n** (low-code integration) **live** as primitives; missing the formal API-GW/ESB/ETL/MFT/EDI insurance fabric (repo `ktayl-integration` scaffold) | 🟡 primitives only |
 | Master Data / Référentiels (MDM) | #20 | nothing running (repo scaffold, **parked** — see §5) | 🔴 |
 | Data | #5 | only MLflow; analytical Data Platform not deployed | 🔴 |
 
@@ -126,7 +126,9 @@ themselves** — which is exactly why the build order (§5) is *business tools f
 **Deployed vs board (quick read):** deployed → Policy #6 🟢, ERPNext #8 🟡, AI Platform #4 🟢, GitOps #3 🟢,
 Digital Workplace #10 🟢. Board/repo only, nothing running → Underwriting #12, Claims #11, Distribution #13,
 Finance #14, Compliance #15, ITSM #16, Data Platform #5, MDM #20, Knowledge Assistant #18, AI Ops Copilot
-#19. (Retrieva #2 is a *separate product*, not ktayl.)
+#19, **Risk Engineering #21, Reinsurance #22, International Programs #23, Documents/DMS #24, Integration
+#25** (boards + home repos created 2026-09-15 so the full IARD SI is represented; build not started).
+(Retrieva #2 is a *separate product*, not ktayl.)
 
 ## 4. AI / Automation is a transversal *capability*, not a domain
 
