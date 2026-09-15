@@ -384,6 +384,7 @@ const sidebars: SidebarsConfig = {
             'ai-ml/langfuse',
             'ai-ml/per-product-llmops',
             'ai-ml/model-governance-matrix',
+            'ai-ml/ai-act-gate',
             'ai-ml/dora-audit',
             'ai-ml/annotation-workflow',
           ],
@@ -450,6 +451,7 @@ const sidebars: SidebarsConfig = {
             'insurance-platform/enterprise-architecture-blueprint',
             'insurance-platform/ai-first-operating-model',
             'insurance-platform/business-applications-catalog',
+            'insurance-platform/regulatory-operating-model',
             {
               type: 'category',
               label: 'Domain Playbooks',
