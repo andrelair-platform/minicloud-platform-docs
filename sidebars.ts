@@ -577,7 +577,6 @@ const sidebars: SidebarsConfig = {
       label: '🎓 Certification RNCP39583',
       collapsed: false,
       items: [
-        'certification/cahier-des-charges-fonctionnel',
         'certification/sprint-log',
         'certification/retrospective-risk-register',
       ],

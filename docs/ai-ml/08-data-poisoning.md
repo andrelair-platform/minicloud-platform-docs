@@ -100,7 +100,7 @@ Langfuse trace (RAG response)
               doc_id:       "claims-docs/a3f7b91c2d..."
               source_doc:   "expert-assessment-claim-892.pdf"
               page_number:  4
-              uploaded_by:  "adjuster.martin@hdiseguros.fr"
+              uploaded_by:  "adjuster.martin@ktayl.fr"
               uploaded_at:  "2026-06-21T09:14:32Z"
               doc_hash:     "a3f7b91c2d4e5f6..."
 ```
@@ -193,7 +193,7 @@ Result: document-consistency-conflict WARNING in Langfuse
     new_sentence:      "La franchise dégât des eaux est de 2 500 €"
     existing_sentence: "La franchise applicable en cas de dégât des eaux est de 150 €"
     existing_doc:      "policy-wording-mrh-v12.pdf"
-    existing_uploaded_by: "team.platform@hdiseguros.fr"
+    existing_uploaded_by: "team.platform@ktayl.fr"
     topic_similarity:  0.91
     claim_similarity:  0.41
 ```
@@ -212,7 +212,7 @@ When a user gives 👍 to a response that the LLM-as-judge scored below 0.60 on 
 Event: feedback-quality-mismatch (WARNING)
   human_rating:   positive
   judge_score:    0.43
-  user:           adjuster.x@hdiseguros.fr
+  user:           adjuster.x@ktayl.fr
   interpretation: User rated positive a response the judge scored < 0.60
 ```
 

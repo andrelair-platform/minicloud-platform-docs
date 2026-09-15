@@ -158,7 +158,7 @@ ktayl-policy-service (Q1) ──► IP data model extension
 | **ktayl-uwb-ui** | React / TypeScript | [#81](https://github.com/andrelair-platform/platform-backlog/issues/81) | Underwriter Workbench single-screen — AI findings + decision buttons |
 | **UW AI agents** | Python / CrewAI | [#81](https://github.com/andrelair-platform/platform-backlog/issues/81) | Document + Risk + Compliance agents (extends minicloud-crew-agent) |
 | **underwriting-workflow** | Temporal | [#81](https://github.com/andrelair-platform/platform-backlog/issues/81) | State machine: SUBMITTED → INTAKE → EXTRACTED → ASSESSED → BOUND |
-| **ktayl-ip-portal** | Go / React | [#222](https://github.com/andrelair-platform/platform-backlog/issues/222) | GNP equivalent — PO ↔ SO hub, IP policy sync, reserve coordination |
+| **ktayl-ip-portal** | Go / React | [#222](https://github.com/andrelair-platform/platform-backlog/issues/222) | International programs portal — PO ↔ SO hub, IP policy sync, reserve coordination |
 | **IP bordereau module** | ERPNext / Frappe | [#222](https://github.com/andrelair-platform/platform-backlog/issues/222) | IP cession bordereaux → ERPNext accounting écritures |
 | **SO claims feed** | Go (in ip-portal) | [#222](https://github.com/andrelair-platform/platform-backlog/issues/222) | Inbound claim notifications from Servicing Offices |
 | **Premium collection lifecycle** | n8n + ERPNext | [#91](https://github.com/andrelair-platform/platform-backlog/issues/91) | UW trigger → SEPA mandate → online payment → suspension |
@@ -281,10 +281,10 @@ Quick-scan of IS domain items not yet scheduled. Full detail per item is in the 
 | 17 | Construction & Engineering LOB | LOB |
 | 18 | Financial Lines (D&O / RC Pro) LOB | LOB |
 | 19 | Collaborateurs LOB | LOB |
-| 20 | International Programs LOB (data model) | IP / GNP |
-| 21 | ktayl-ip-portal (GNP equivalent) | IP / GNP |
-| 22 | IP bordereau module (ERPNext) | IP / GNP |
-| 23 | SO claims feed | IP / GNP |
+| 20 | International Programs LOB (data model) | IP |
+| 21 | ktayl-ip-portal (international programs portal) | IP |
+| 22 | IP bordereau module (ERPNext) | IP |
+| 23 | SO claims feed | IP |
 | 24 | Commercial Insurance CRM | Distribution |
 | 25 | ERPNext CRM config | Distribution |
 | 26 | ERPNext billing | Distribution |
@@ -336,7 +336,7 @@ Quick-scan of IS domain items not yet scheduled. Full detail per item is in the 
 | Underwriting | 10 |
 | Distribution & Commercial | 10 |
 | Claims Extended | 5 |
-| IP / GNP | 4 |
+| International Programs | 4 |
 | Data & BI | 4 |
 | Communication | 5 |
 | LOB extensions | 4 |
@@ -357,7 +357,7 @@ Underwriting and Distribution are the two heaviest domains — together 20 of th
 | Policyholder / broker portal | ktayl-portal | 🔨 Q1 2027 |
 | AI claims assistant | ktayl-ai-claims-assistant | 🔨 Q2 2027 |
 | Underwriting (UWWB) | ktayl-uwb-api + ktayl-uwb-ui + UW AI agents | 📋 Q3 2027 |
-| International Programs (GNP) | ktayl-ip-portal + IP bordereau module | 📋 Q3 2027 |
+| International Programs | ktayl-ip-portal + IP bordereau module | 📋 Q3 2027 |
 | Document management (DMS) | Paperless-ngx | 🔨 Q2 2027 |
 | CRM & partner management | ERPNext CRM | 🔨 Q2 2027 |
 | Reinsurance | Reinsurance management + bordereau portal | 📋 Post-cert |

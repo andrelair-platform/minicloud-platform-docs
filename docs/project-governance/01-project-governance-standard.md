@@ -150,7 +150,7 @@ Every project document must include:
 
 | Project | Document | RACI status |
 |---------|----------|-------------|
-| ktayl Claims & Policy Platform | [CdCF — Certification RNCP39583](../certification/cahier-des-charges-fonctionnel) | ✅ Included |
+| ktayl Claims & Policy Platform | Project Governance section (RACI matrix) — certification artefacts live in Retrieva's own docs, not here | ✅ Included |
 
 ---
 

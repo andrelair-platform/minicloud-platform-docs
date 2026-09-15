@@ -17,7 +17,7 @@ sidebar_label: Delivery Workflow
 ## Two repositories, two responsibilities
 
 Delivery is split across **application repos** and the single **deployment repo**
-(`minicloud-gitops`). This mirrors the enterprise/HDI *Application Platform (GAP)* model.
+(`minicloud-gitops`). This mirrors an enterprise *Application Platform* (wrapper-chart) model.
 
 | | Application repo (e.g. `platform-demo`, `ktayl-policy-service`) | Deployment repo (`minicloud-gitops`) |
 |---|---|---|

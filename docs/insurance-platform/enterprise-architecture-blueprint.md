@@ -6,7 +6,7 @@ sidebar_label: 🏛 EA Blueprint (Insurer IS)
 # Enterprise Architecture Blueprint — the ktayl IARD Insurer IS
 
 > **This is the authoritative functional target for the ktayl-solution IS.** It models ktayl as a
-> real commercial-lines / large-risk **IARD** insurer (reference: HDI Global SE France), so every
+> real commercial-lines / large-risk **IARD** insurer, so every
 > product board, repo and roadmap item hangs off a named domain here. The detailed inventory lives in
 > the [Business Applications Catalog](./business-applications-catalog); the AI vision in the
 > [AI-First Operating Model](./ai-first-operating-model). **This page is the map.**
