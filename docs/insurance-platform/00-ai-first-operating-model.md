@@ -150,7 +150,7 @@ are instrumented, not hypothetical.
 ## Why this matters beyond a demo
 
 The end state: **one expert + an AI workforce manages the workload that previously required an
-entire operational team.** For a specialty insurer like HDI Global — document-heavy, broker-driven,
+entire operational team.** For a specialty commercial-lines insurer — document-heavy, broker-driven,
 expert-judgment-intensive — AI doesn't replace the expert; it removes the operational work
 *surrounding* the expert. That is a far stronger claim than "we use AI," and it is the strategic
 frame for both the platform and the **IA Integration Lab** thesis: *we design the AI operating

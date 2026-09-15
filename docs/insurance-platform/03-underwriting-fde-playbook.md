@@ -21,7 +21,7 @@ deliverable is **Retrieva**, a separate product. Underwriting appears nowhere in
 
 ## What the playbook covers
 
-ktayl is a **commercial-lines / large-risk IARD** insurer (reference: HDI Global SE France), so
+ktayl is a **commercial-lines / large-risk IARD** insurer, so
 underwriting means **technical underwriting of complex business risks** — judgement-heavy,
 document-heavy, referral-heavy. The full playbook walks the domain end-to-end:
 

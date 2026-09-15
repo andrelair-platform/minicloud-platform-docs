@@ -222,9 +222,9 @@ LOB-specific modules extend the core policy and claims services with domain rule
 | **Collaborateurs** | #221 (archived) | 📋 Backlog | Group personal accident, business travel, Europ Assistance API |
 | **Alternative Risk Transfer** | #223 (archived) | 🔬 Research | Captive management, parametric covers, risk financing |
 
-### 4b. International Programs (IP) — GNP equivalent
+### 4b. International Programs (IP)
 
-International Programs is operationally distinct from standard LOBs: it involves **two parties** (Producing Office = ktayl France and Servicing Office = local insurer abroad), a **master policy + local admitted sub-policies** structure, and **cross-entity data exchange** for premiums, reserves, claims and accounting — exactly what HDI's Global Network Portal (GNP) handles.
+International Programs is operationally distinct from standard LOBs: it involves **two parties** (Producing Office = ktayl France and Servicing Office = local insurer abroad), a **master policy + local admitted sub-policies** structure, and **cross-entity data exchange** for premiums, reserves, claims and accounting — exactly what a global-programme network portal handles.
 
 **Concept:**
 
@@ -233,7 +233,7 @@ ktayl France (Producing Office)
         │
         │  master policy terms, capacity, limits
         ↓
-ktayl-ip-portal ─────────── GNP equivalent: central coordination hub
+ktayl-ip-portal ─────────── international programs portal: central coordination hub
         │
         ├── Policy data sync ──→ Servicing Offices (local admitted insurers)
         │                        premium cession, reserve allocation
@@ -245,7 +245,6 @@ ktayl-ip-portal ─────────── GNP equivalent: central coordi
         │                        separate format from reinsurance bordereaux
         │
         └── Network status ─────  Viewer / User / Accountant role access
-                                  (mirrors GNP roles 1014444/1014445/1014446)
 ```
 
 **Integration topology:**
@@ -260,9 +259,9 @@ ktayl-ip-portal       ──► n8n (automated SO communication workflows)
 | App | Stack | Issue | Phase | Description |
 |---|---|---|---|---|
 | **International Programs LOB** | Extension of ktayl-policy-service | #222 (archived) | 📋 Backlog | IP data model in ktayl-policy-service: master policy + local admitted sub-policies, network cession amounts, SO registry |
-| **ktayl-ip-portal** | Go / React | #222 (archived) | 📋 Backlog | GNP equivalent — Producing Office ↔ Servicing Office hub: policy sync, reserve/premium coordination, claims notification, network status. Roles: Viewer / User / Accountant |
+| **ktayl-ip-portal** | Go / React | #222 (archived) | 📋 Backlog | International programs portal — Producing Office ↔ Servicing Office hub: policy sync, reserve/premium coordination, claims notification, network status. Roles: Viewer / User / Accountant |
 | **IP bordereau module** | ERPNext / Frappe | #222 (archived) | 📋 Backlog | IP-specific cession bordereaux (distinct format from reinsurance #209): PO → SO premium cession, reserve transfers, accounting écritures in ERPNext PCG |
-| **SO claims feed** | Go (in ktayl-ip-portal) | #222 (archived) | 📋 Backlog | Inbound claim data from Servicing Offices — mirrors GNP ↔ ICS (Claims@Global) interface. SO notifies PO of local claims against the master program |
+| **SO claims feed** | Go (in ktayl-ip-portal) | #222 (archived) | 📋 Backlog | Inbound claim data from Servicing Offices — the Producing Office ↔ Servicing Office claims interface. SO notifies PO of local claims against the master program |
 
 ---
 

@@ -218,7 +218,7 @@ HTTP 451 Unavailable For Legal Reasons
 
 "Pour exercer votre droit d'accès aux données personnelles (GDPR Art. 15),
  veuillez contacter notre Délégué à la Protection des Données :
- dpo@hdiseguros.fr — délai de réponse : 30 jours conformément au RGPD."
+ dpo@ktayl.fr — délai de réponse : 30 jours conformément au RGPD."
 ```
 
 **HTTP 451** is the correct status code for legally-mandated refusals (defined in RFC 7725). It communicates that this is a legal restriction, not a technical error, and is more informative than 403 or 400 for this use case.
