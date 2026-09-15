@@ -171,7 +171,22 @@ The two AI products realise this split cleanly (the "if Open WebUI already does 
 ```
 business process → pain point → data/documents → existing systems
     → decision/task → automation opportunity → AI capability → measurable outcome
+    → REGULATORY IMPACT → CONTROLS REQUIRED → AUDIT EVIDENCE → MONITORING
 ```
+
+:::info The regulatory tail is mandatory — compliance by design (insurance FDE standard)
+ktayl is a **regulated insurer**: a **Solvency II** spine + transversal EU/FR frameworks (DORA, GDPR,
+EU AI Act, IDD/DDA, AML/sanctions, IFRS 17, SFDR…). *(Insurer ≠ bank — CRR/CRD/PSD2 don't apply.)*
+**Regulation is not a silo** — one capability (e.g. an AI Underwriting Assistant) fires **AI Act + GDPR
++ DORA + Solvency II + IDD + Sanctions/AML + Outsourcing at once**, so the design lists **all** triggered
+frameworks and the **combined** control set. Controls are declared **at design time** (verified at the
+security/architecture gate), evidence accrues to the control library owned by **Regulatory & Compliance
+(#15)**, and every AI use case gets an **AI-Act risk tier** (controls spike the moment AI influences a
+decision about a person). Reference: the *Regulatory impact* section of the underwriting FDE playbook;
+standard: `bmad-compliance.md` *The regulatory layer*. Framework→domain ownership: Solvency II spans
+UW→Pricing→Claims→Reserves→Reinsurance→Finance (not just Finance); DORA → Enterprise IT + Retrieva;
+IDD → Distribution; IFRS 17 → Finance; AML/Sanctions → Compliance.
+:::
 
 ## 5. Build order — business tools first; AI/automation last
 
