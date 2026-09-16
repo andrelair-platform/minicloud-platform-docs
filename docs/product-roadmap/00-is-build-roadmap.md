@@ -47,6 +47,15 @@ Build **outward from what's already live** (Policy Admin #6). Sequenced by value
 | **3** | Data/Actuarial #5; Documents #24 / Integration #25 / MDM #20 **as a domain needs them** | insight + layers-on-demand |
 | **4** | AI/automation capstone: Knowledge Assistant #18 · AI Ops Copilot #19 | **LAST** — automates *over* real systems |
 
+:::warning Live-deadline item — Facturation électronique (jump the queue)
+The French **e-invoicing reform is already in effect (1 Sep 2026)** — a **deadline-driven compliance
+capability**, not deferrable like the rest of Phase 2/3. It's a **Finance #14** capability (extending
+ERPNext's existing `erpnext_facturx`), backed by an obligation in the register (Compliance #15) and PDP
+connectivity (Integration #25). Minimum immediate piece = **receiving** e-invoices via a PDP (universal,
+regardless of insurance's VAT-exemption). Scope needs Compliance confirmation (premiums are VAT-exempt →
+receiving + e-reporting apply; taxable B2B services must issue). See the obligations register.
+:::
+
 **Opportunistic quick win** (Enterprise-IT, not the value chain): GLPI/ITSM #16 — do when convenient.
 
 ## Track B — Governance & compliance (continuous, not a phase)
