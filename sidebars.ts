@@ -13,6 +13,7 @@ const sidebars: SidebarsConfig = {
       label: '🗓 Product Roadmap',
       collapsed: false,
       items: [
+        'product-roadmap/is-build-roadmap',
         'product-roadmap/overview',
         'platform-engineering/platform-backlog',
       ],
