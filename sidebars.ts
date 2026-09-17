@@ -328,6 +328,14 @@ const sidebars: SidebarsConfig = {
         },
         'observability/ai-governance-dashboard',
         'observability/lifecycle-day2-operations',
+        {
+          type: 'category',
+          label: 'Incidents',
+          collapsed: true,
+          items: [
+            'observability/incident-2026-09-16-swift-mac-outage',
+          ],
+        },
       ],
     },
 
