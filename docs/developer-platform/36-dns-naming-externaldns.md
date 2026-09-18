@@ -42,9 +42,12 @@ nip.io), plus the `external-dns.alpha.kubernetes.io/target` (tunnel) annotation 
 custom label is used (the shared library ingress emits only standard labels). It is idle until an org app
 adopts a `ktayl.devandre.sbs` host — the scaffold (`services/_template-helm`) carries the ready block.
 
-**Companion (follow-up):** a wildcard `*.ktayl.devandre.sbs` `cloudflared` ingress rule + wildcard cert
-for fully zero-touch public onboarding (controller-side, outside GitOps). Full design, guard table, and
-phased-migration plan are in the ADR linked above.
+**Companion (deferred to the first public org app):** fully zero-touch public onboarding also needs a
+wildcard `*.ktayl.devandre.sbs` `cloudflared` rule (free, controller-side) **and a Cloudflare edge
+cert** — and free Universal SSL only covers `devandre.sbs` + `*.devandre.sbs` (one level), so a 2-level
+`*.ktayl.devandre.sbs` needs Advanced Certificate Manager (~$10/mo) or a one-level name. No public org
+app exists yet, so this is deferred (need-first). ExternalDNS makes the DNS record regardless. Full
+design, guard table, and phased-migration plan are in the ADR linked above.
 
 ## Related
 - Delivery / wrapper-chart golden path: [Delivery Workflow](./delivery-workflow)
