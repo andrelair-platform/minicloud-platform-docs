@@ -42,6 +42,31 @@ sidebar_label: "PM: swift-mac outage (2026-09)"
   litellm restored (GC'd Postgres image re-pushed from a node's containerd cache).
 - **09-18** — mail webadmin **502** root-caused (stale Cilium state on the ingress controller) and fixed
   by a controller rolling-restart; a wrong keepalive change was made and reverted along the way.
+- **09-18** — Stalwart relay config verified **correct** (route + strategy), yet outbound + inbound mail
+  still fail; scoped the full mail-service impact (below).
+
+## Mail service (the "Outlook alternative") — verified capability scope
+
+Because a broken *outbound relay* is easily mistaken for "all mail is down," the actual per-capability
+status was verified (not assumed) on 2026-09-18. **The mail server is UP; the impact is delivery, not
+availability.**
+
+| Capability | Status | Evidence |
+|---|---|---|
+| Server up / all listeners open (SMTP 25, submission 587, IMAP 143, webadmin 8080) | ✅ working | pod `1/1 Running`; all ports accept |
+| Mailbox access (IMAP / JMAP / webmail) | ✅ working | listeners accept; users can read existing mail |
+| Webadmin (`mail.devandre.sbs`) | ✅ working | fixed (was 502 — stale Cilium ingress state) |
+| Accept mail into queue (submission :587) | ✅ working | test → `250 Message queued` |
+| Internal `@devandre.sbs` ↔ `@devandre.sbs` (local route) | ⚠️ accepted | recipient `250 OK` (mailbox exists); final landing unverified (queue viewer Enterprise-gated) |
+| **Send to external** (→ Gmail/customers, `ses-relay`) | ❌ **broken** | every through-Stalwart test undelivered; only SES-*direct* arrives (#1154) |
+| **Receive from external** (SES → S3 → `ses-inbound` → Stalwart :25) | ❌ **broken** | `ses-inbound` logs `Failed to process message: Connection unexpectedly closed`, one message stuck retrying since ~21:53, zero successful inbound deliveries (#1154) |
+
+**Verdict: degraded, not down.** Server + mailboxes + access function; **both external send and external
+receive are broken.** Same failure signature across paths (Stalwart accepts into queue on :587 but the
+delivery/processing machinery closes/resets connections — outbound to SES *and* inbound injection on :25),
+which points to a **Stalwart-side instability post-outage**, not the (verified-correct) config. Practical
+impact is low here (simulated IS; the "users" are essentially the owner), but for a real user it means
+**no email in or out of the org** — only internal + reading existing mail.
 
 ## Root causes
 
