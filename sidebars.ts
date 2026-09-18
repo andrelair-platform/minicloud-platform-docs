@@ -334,6 +334,7 @@ const sidebars: SidebarsConfig = {
           collapsed: true,
           items: [
             'observability/incident-2026-09-16-swift-mac-outage',
+            'observability/incident-2026-09-18-inbound-mail-stall',
           ],
         },
       ],
