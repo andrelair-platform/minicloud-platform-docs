@@ -484,6 +484,7 @@ const sidebars: SidebarsConfig = {
           label: 'Collaboration',
           collapsed: true,
           items: [
+            'developer-platform/digital-workplace-architecture',
             'developer-platform/matrix-synapse-element-web',
             'developer-platform/jitsi-meet',
             'developer-platform/nextcloud',
