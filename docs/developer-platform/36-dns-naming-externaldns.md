@@ -36,9 +36,11 @@ defaults to Tailscale-only.
 An org app's Ingress creates its own DNS record (the GitOps `Ingress → DNS` flow). Because the public
 plane rides Cloudflare Tunnel, ExternalDNS publishes **CNAMEs to the tunnel**, not A-records. It is
 scoped so it cannot misfire: **`--domain-filter=ktayl.devandre.sbs`** (can't touch the portfolio or
-`retrieva.online`), **`policy=upsert-only`** (never deletes), and **opt-in by label**
-(`external-dns=enabled`) so it is idle until an app opts in. An org app opts in with the label + the
-`external-dns.alpha.kubernetes.io/target` (tunnel) annotation on its Ingress.
+`retrieva.online`) and **`policy=upsert-only`** (never deletes). The **hostname is the opt-in** — an app
+is managed only when its Ingress host is under `ktayl.devandre.sbs` (a deliberate act; internal apps use
+nip.io), plus the `external-dns.alpha.kubernetes.io/target` (tunnel) annotation to make it a CNAME. No
+custom label is used (the shared library ingress emits only standard labels). It is idle until an org app
+adopts a `ktayl.devandre.sbs` host — the scaffold (`services/_template-helm`) carries the ready block.
 
 **Companion (follow-up):** a wildcard `*.ktayl.devandre.sbs` `cloudflared` ingress rule + wildcard cert
 for fully zero-touch public onboarding (controller-side, outside GitOps). Full design, guard table, and
