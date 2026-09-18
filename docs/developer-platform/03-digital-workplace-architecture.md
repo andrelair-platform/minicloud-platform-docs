@@ -40,10 +40,13 @@ Nextcloud Hub decision below for the trade-off.
   6.5.1 + Contacts 8.7.4 are enabled, CalDAV/CardDAV endpoints return 401 (healthy, auth-required) at
   `cloud.devandre.sbs/remote.php/dav`. Users can manage calendars/contacts in the Nextcloud UI and sync
   them to phone/desktop clients. *(An earlier draft of this doc wrongly listed these as a gap — corrected.)*
-- **Mail delivery is currently degraded** — see the
-  [swift-mac incident postmortem](../observability/incident-2026-09-16-swift-mac-outage): Stalwart is up
-  and mailboxes are readable, but external send **and** receive are broken (a Stalwart-side delivery
-  issue, tracked in gitops#1154). *This is a transport problem, not a workplace-architecture problem.*
+- **Mail delivery — resolved (2026-09-18).** During the swift-mac outage aftermath, external send **and**
+  receive were briefly broken. Root causes were **not** Stalwart: outbound needed SES-direct
+  ([swift-mac PM](../observability/incident-2026-09-16-swift-mac-outage)); inbound was a bug in the
+  `ses-inbound` bridge (relaying external recipients → Stalwart rate-limit storm), fixed in the bridge
+  ([inbound mail stall PM](../observability/incident-2026-09-18-inbound-mail-stall)). Mail is now working
+  both directions, with SPF+DKIM+DMARC aligned via a [custom MAIL FROM](./amazon-ses). *A transport
+  problem, since resolved — not a workplace-architecture problem.*
 
 ## Decision: Nextcloud Hub — evaluated, NOT adopted (2026-09-18)
 
