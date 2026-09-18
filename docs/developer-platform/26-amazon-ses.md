@@ -26,7 +26,7 @@ flowchart TB
 
     subgraph aws["AWS — eu-west-1"]
         ses["Amazon SES\nemail-smtp.eu-west-1.amazonaws.com:587\n(STARTTLS)"]
-        route53["Route 53 / DNS\nSPF · DKIM · DMARC\nfor devandre.sbs"]
+        route53["Cloudflare DNS\nSPF · DKIM · DMARC · MAIL FROM\nfor devandre.sbs"]
     end
 
     subgraph secrets["Secret Management"]
@@ -44,7 +44,7 @@ flowchart TB
     vault -->|"smtp-relay-*\nstalwart-admin-secret"| eso
     eso -->|"env vars\nSMTP_RELAY_*"| stalwart
 
-    route53 -.->|"SPF include:amazonses.com\nDKIM _domainkey\nDMARC p=none"| ses
+    route53 -.->|"SPF include:amazonses.com\nDKIM _domainkey\nDMARC p=quarantine\nMAIL FROM bounce.devandre.sbs"| ses
 
     style cluster fill:#1e3a5f,color:#fff
     style aws fill:#ff9900,color:#1a1a1a
@@ -68,15 +68,38 @@ flowchart TB
 
 ## DNS Configuration (devandre.sbs)
 
-Three DNS records form the email authentication chain:
+DNS for `devandre.sbs` is hosted on **Cloudflare** (managed via the CF API/console — not the OpenTofu
+repos). The email-authentication chain (current, verified 2026-09-18):
 
-| Record | Type | Value |
-|--------|------|-------|
-| `devandre.sbs` SPF | TXT | `v=spf1 include:amazonses.com -all` |
-| `*._domainkey.devandre.sbs` | CNAME | SES DKIM selector (AWS-managed rotation) |
-| `_dmarc.devandre.sbs` | TXT | `v=DMARC1; p=none; rua=mailto:admin@devandre.sbs` |
+| Record | Type | Value | Purpose |
+|--------|------|-------|---------|
+| `devandre.sbs` SPF | TXT | `v=spf1 include:amazonses.com ~all` | authorises SES to send for the domain |
+| `<selector>._domainkey.devandre.sbs` | CNAME | SES Easy DKIM → `<token>.dkim.amazonses.com` | signs `d=devandre.sbs` (DKIM alignment) |
+| `_dmarc.devandre.sbs` | TXT | `v=DMARC1; p=quarantine; pct=100; rua/ruf=mailto:kanmegnea@gmail.com` | policy (**quarantine**) + aggregate/forensic reports |
+| `bounce.devandre.sbs` | MX | `10 feedback-smtp.eu-west-1.amazonses.com` | **custom MAIL FROM** (SPF alignment) |
+| `bounce.devandre.sbs` | TXT | `v=spf1 include:amazonses.com ~all` | SPF for the custom MAIL FROM subdomain |
 
-SES verifies domain ownership and signs outgoing messages with DKIM. The `p=none` DMARC policy allows monitoring without rejecting mail — upgrade to `p=quarantine` after confirming clean delivery for 30 days.
+SES verifies domain ownership and signs outgoing messages with DKIM. DMARC is at **`p=quarantine`** —
+DMARC-*failing* mail is sent to spam, so keeping **both** alignment legs green (below) matters.
+
+### Custom MAIL FROM — SPF alignment (since 2026-09-18)
+
+By default SES uses `amazonses.com` as the envelope MAIL FROM, so **SPF aligns to `amazonses.com`, not
+`devandre.sbs`** — DMARC then passes on **DKIM alignment only** (one leg). Setting a **custom MAIL FROM
+domain** (`bounce.devandre.sbs`, SES identity → *Custom MAIL FROM* → "Réussite") makes the envelope
+sender a `devandre.sbs` subdomain, so **SPF aligns too** → DMARC passes on **both** legs → best inbox
+placement. Behaviour on MX failure = *use default* (falls back to `amazonses.com` so mail still sends).
+
+**Verify:** send a real message and in Gmail use *Show original* → expect `SPF: PASS bounce.devandre.sbs`,
+`DKIM: PASS devandre.sbs`, `DMARC: PASS`. Confirmed landing in inbox 2026-09-18.
+
+:::note Deliverability vs. auth
+`devandre.sbs` is a young, low-volume sending domain. With SPF+DKIM+DMARC all aligned, occasional spam
+placement of **terse/test** mail (empty subject, tiny body) is **reputation + content**, not an auth
+failure — it fades with real volume and marking "not spam". See the
+[inbound mail stall postmortem](../observability/incident-2026-09-18-inbound-mail-stall) for the related
+inbound fix, and the mail-auth posture is recorded in the platform memory index.
+:::
 
 ---
 
