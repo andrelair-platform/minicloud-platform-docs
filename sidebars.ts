@@ -190,6 +190,7 @@ const sidebars: SidebarsConfig = {
           items: [
             'developer-platform/delivery-workflow',
             'developer-platform/kargo-promotion',
+            'developer-platform/dns-naming-externaldns',
             'developer-platform/branch-strategy-cicd',
             'developer-platform/gitops-directory-patterns',
             'platform-roadmap/phase-12-gitops',
