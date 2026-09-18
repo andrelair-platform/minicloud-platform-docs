@@ -24,8 +24,8 @@ Tailscale / Cloudflare — an intentionally BYOD, zero-trust shape.
 | Teams — chat | **Matrix (Synapse) + Element** | federated chat |
 | Teams — video/meetings | **Jitsi Meet** | conferencing |
 | Outlook — mail (server) | **Stalwart** | SMTP/IMAP/JMAP mail server; SES outbound relay |
-| Outlook — calendar | **— (gap)** | see below |
-| Outlook — contacts | **— (gap)** | see below |
+| Outlook — calendar | **Nextcloud Calendar** | ✅ enabled (v6.5.1); CalDAV live at `/remote.php/dav` |
+| Outlook — contacts | **Nextcloud Contacts** | ✅ enabled (v8.7.4); CardDAV live |
 | E-signature | **Docuseal** | (not an M365 feature, but part of the workplace) |
 | Automation / flows (Power Automate) | **n8n** | low-code integration |
 | Identity (Entra ID / SSO) | **Authentik** | the sovereign workforce IdP |
@@ -36,10 +36,10 @@ Nextcloud Hub decision below for the trade-off.
 
 ## Gaps (honest)
 
-- **Calendar + Contacts (CalDAV/CardDAV)** — not currently deployed. This is the one genuine Outlook
-  capability missing. Nextcloud's Calendar + Contacts apps fill it cleanly and **do not depend on the
-  mail transport** — the lowest-cost, highest-value workplace add. (Nextcloud is already deployed, so
-  it's enabling apps, not new infra.)
+- **Calendar + Contacts** — **already deployed and working** (verified 2026-09-18): Nextcloud Calendar
+  6.5.1 + Contacts 8.7.4 are enabled, CalDAV/CardDAV endpoints return 401 (healthy, auth-required) at
+  `cloud.devandre.sbs/remote.php/dav`. Users can manage calendars/contacts in the Nextcloud UI and sync
+  them to phone/desktop clients. *(An earlier draft of this doc wrongly listed these as a gap — corrected.)*
 - **Mail delivery is currently degraded** — see the
   [swift-mac incident postmortem](../observability/incident-2026-09-16-swift-mac-outage): Stalwart is up
   and mailboxes are readable, but external send **and** receive are broken (a Stalwart-side delivery
@@ -65,8 +65,8 @@ reasonable default for a *greenfield* self-hosted workplace.
 4. **SSO already provides the "one login" unification** that Hub's main UX benefit promises — without a
    monolith.
 
-**What we DO take from the evaluation:** enable Nextcloud's **Calendar + Contacts** (the real gap),
-since Nextcloud is already running and those apps are independent of the mail transport.
+**What we DO take from the evaluation:** Nextcloud's **Calendar + Contacts** — which turned out to be
+**already enabled and working**, so the workplace already covers that Outlook capability with no work needed.
 
 **Revisit trigger:** reconsider full Hub consolidation if operational overhead of N separate tools
 becomes the bottleneck, or if a unified end-user UX becomes a hard requirement (e.g. real non-technical
