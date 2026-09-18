@@ -47,6 +47,14 @@ sidebar_label: "PM: swift-mac outage (2026-09)"
 
 ## Mail service (the "Outlook alternative") — verified capability scope
 
+:::note Superseded (2026-09-18)
+The inbound root cause below (an inferred *"Stalwart-side instability post-outage"*) was **wrong**.
+Later diagnosis showed the mail server was fully healthy; inbound stalled because the **`ses-inbound`
+bridge relayed external recipients**, tripping Stalwart's rate limiter. See the dedicated
+[inbound mail stall postmortem (2026-09-18)](./31-incident-2026-09-18-inbound-mail-stall.md) for the
+corrected root cause and fix (gitops #1165 + #1167). Outbound was resolved via SES-direct as noted.
+:::
+
 Because a broken *outbound relay* is easily mistaken for "all mail is down," the actual per-capability
 status was verified (not assumed) on 2026-09-18. **The mail server is UP; the impact is delivery, not
 availability.**
