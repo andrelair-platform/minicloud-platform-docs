@@ -462,6 +462,7 @@ const sidebars: SidebarsConfig = {
             'insurance-platform/enterprise-architecture-blueprint',
             'insurance-platform/ai-first-operating-model',
             'insurance-platform/business-applications-catalog',
+            'insurance-platform/hr-tooling',
             'insurance-platform/regulatory-operating-model',
             {
               type: 'category',
