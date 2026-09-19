@@ -17,13 +17,18 @@ Apache Airflow is the standard tool for scheduling and orchestrating data pipeli
 
 ## When to Use Airflow vs Temporal vs n8n
 
-| Tool | Best For |
-|---|---|
-| **n8n** | Event-driven API automations, quick integrations |
-| **Temporal** | Long-running business workflows, retries, sagas |
-| **Airflow** | Scheduled data pipelines, ETL, batch jobs, ML workflows |
+The canonical comparison (the "three orchestration shapes") lives in the
+[n8n doc](./n8n#three-orchestration-shapes--n8n-vs-temporal-vs-airflow). In short:
 
-On this cluster, Airflow primarily handles **data and ML workloads** — scheduled batch jobs, training pipelines, data ingestion — complementing Temporal and n8n.
+| Tool | Shape | Best For |
+|---|---|---|
+| **n8n** | event-driven integration | API automations, quick integrations (glue) |
+| **Temporal** | durable stateful workflow | long-running business processes, retries, sagas |
+| **Airflow** | scheduled batch DAG | time-driven data pipelines, ETL, batch, ML |
+
+Airflow's shape — **scheduled batch DAGs over data** — is why it is deferred: the analytical data
+platform (ClickHouse → dbt → BI) isn't built yet, so nothing needs cron-style DAG orchestration.
+When it is, Airflow (or Dagster) schedules the dbt DAGs; until then n8n + Temporal cover the live needs.
 
 ---
 
