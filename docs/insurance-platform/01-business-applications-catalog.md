@@ -359,7 +359,7 @@ ktayl-ip-portal       ──► n8n (automated SO communication workflows)
 
 | App | Category | Status |
 |---|---|---|
-| ERPNext (HR, PCG 2025, TSCA, Factur-X) | ERP / Finance | ✅ Live |
+| ERPNext (Finance: PCG 2025, TSCA, Factur-X ✅; **HR: payroll DSN/SEPA built, rest installed-but-empty** — see [HR Tooling](./hr-tooling)) | ERP / Finance | ✅ Live (Finance) · 🟡 HR skeleton |
 | Plane CE | Project management | ✅ Live |
 | Open WebUI + LiteLLM + vLLM | AI gateway | ✅ Live |
 | Langfuse + MLflow | AI observability | ✅ Live |
