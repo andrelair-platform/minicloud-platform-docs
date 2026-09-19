@@ -27,6 +27,7 @@ insurer), so most HR modules are *installed but empty* — a deliberate state, n
 | **Hiring / Recruitment** | Frappe HR Recruitment | 🟡 installed, unused | **Job Openings: 0** |
 | **Performance** | Frappe HR Appraisal | 🟡 installed, unused | **Appraisals: 0** |
 | **Leave / Attendance** | Frappe HR Leave + Attendance | 🟡 installed, unused | **Leave: 0, Attendance: 0** |
+| **Working-time (non-cadre) + alternance** | Frappe HR **Employee Checkin + Shift + Attendance**; alternance via Employment Type + "Formation/École" Leave Type + shared calendar | 🟡 installed, needs config | capability present in `hrms`; config task (`minicloud-erpnext#7`) |
 | **Employee engagement** (recognition/rewards + pulse/feedback) | **Frappe HR Energy Points** + **LimeSurvey** (eNPS/pulse); comms via Matrix/Jitsi/Nextcloud | 📋 backlog (need-first hold) | no mature FOSS all-in-one exists (category is SaaS) — see below |
 | **Mandatory training (IDD CPD)** | **Moodle** LMS | 📋 backlog (need-first hold) | not deployed — see below |
 | **Identity lifecycle (joiner/mover/leaver + access)** | **Authentik** SSO (live) + **MidPoint** IGA (planned #17) | ✅ SSO live · 📋 IGA planned | every app is SSO-gated |
@@ -87,6 +88,24 @@ commercial SaaS would break the self-hosted model + €-cap and send data off-cl
 operational value without a workforce. Tracked as a **design/portfolio capability**, revisit
 when there's a real workforce (same logic as Moodle + the BYOD boundary). Tracked:
 `ktayl-workplace#11` (board #10).
+
+## Working-time (non-cadre) & alternance — Frappe HR config, on a need-first hold
+
+Two French-labour-law functions — **both covered by the installed Frappe HR (`hrms`), needing
+configuration, not new tools:**
+
+- **Working-time for non-cadre.** French law requires *actual hours* recorded for non-cadre (and
+  cadres not au forfait-jours); cadres au forfait-jours count days. Config: **Employee Checkin**
+  (badgeuse/pointage) → **Shift Type / Assignment** (35h schedule, late/overtime flags) →
+  **Attendance** → heures supplémentaires as a **Salary Slip** component (via `erpnext_dsn`).
+  Model non-cadre = Shift-based (hourly, checkin-driven); cadre-forfait-jours = attendance-by-day.
+- **Alternance rhythm** (know when at university). No dedicated FOSS tool — model via
+  **Employment Type "Alternant/Apprenti"** + a **Leave Type "Formation/École"** for school
+  periods (visible in the team calendar, not counted as absence) + a shared calendar
+  (Nextcloud/ERPNext) + alternance payroll specifics (% SMIC by age/year) in the Salary Structure/DSN.
+
+**Need-first hold:** these are configuration/operational tasks with no value until a real
+workforce exists (1 employee today). Tracked: `minicloud-erpnext#7` (board #8).
 
 ## Related
 - ERPNext deployment + Frappe HR (source of truth): board #8, repo `minicloud-erpnext`.
