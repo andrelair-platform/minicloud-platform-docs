@@ -125,6 +125,29 @@ and domain services *at transaction time* ("which client/broker/entity is this?"
 analytical OLAP** (Redpanda → ClickHouse → dbt → BI). **MDM *feeds* the Data Platform** via CDC
 (Debezium, `DATA-18i`) — it is a *source* for analytics, not the analytics platform. Keep them separate.
 :::
+
+:::note Data Platform (#5) — why it is deferred + the build sequencing
+**Three laws of a data platform:** *use cases **drive** it · sources **constrain** it · technology
+comes **last**.* The generic **foundation** (medallion: ingest → raw → transform → curated → serve +
+cross-cutting governance/lineage/quality) is buildable source-agnostic, but the **data products**
+(Customer 360, Loss Ratio, Underwriting Mart) are impossible to build without their specific sources —
+a data product is a *contract over specific source fields*.
+
+**The ktayl twist — sources are our own domain services, and most aren't built yet.** Unlike a generic
+enterprise whose sources are external unknowns (SAP, mainframe, SharePoint, broker SFTP), **ktayl's
+sources are the domain microservices themselves**: Loss Ratio needs `ktayl-claims` + Policy + Finance;
+Customer 360 needs Claims ↔ Policy ↔ CRM joined (i.e. MDM). Today only Policy Admin (#6) + ERPNext (#8)
+run — Claims/#11, Underwriting/#12, Distribution/#13, Finance/#14 are board-only. **So #5 is 🔴 not
+because the tech is unchosen, but because the sources are unbuilt.** Building the OLAP layer now = a
+warehouse for empty warehouses.
+
+**Consequence for build order:** this is *why* §5 sequences **business domains first, Data Platform
+after** — the domain services *are* the sources. When the first domain ships (e.g. Claims), do **one
+thin vertical slice** end-to-end (that source → just-enough foundation → one data product, e.g. Loss
+Ratio), then generalize the ingestion framework from 2-3 real pipelines — never design a generic
+connector framework up-front for sources that never arrive (the classic "impressive data lake nobody
+uses"). Same need-first discipline as the rest of the IS: a capability with no inputs waits.
+:::
 | AI / Automation | #4/#18/#19 | **very strong platform** — LiteLLM, Qdrant, RAG-ingest/Docling, Open WebUI, minicloud-agent, minicloud-crew-agent, Presidio, MLflow, Langfuse, vLLM, Flowise all **live**; but **zero insurance AI use-cases** deployed (#18/#19 parked) | 🟢 platform / 🔴 use-cases |
 
 :::warning The headline finding
