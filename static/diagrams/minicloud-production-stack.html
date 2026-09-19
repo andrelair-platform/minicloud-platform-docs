@@ -63,7 +63,7 @@ svg { display: block; min-width: 1720px; }
         <button class="btn" onclick="dlpdf()">PDF</button>
       </div>
     </div>
-    <div class="subtitle">On-premises 6-node k3s cluster · 5 ThinkPads + MacBook Pro 2012 · GitOps · Observability · AI Platform · Phase 90 complete</div>
+    <div class="subtitle">Self-hosted enterprise IS — M365 / Google-Workspace alternative for business use · collaboration + business apps + AI · GitOps-operated on a 6-node k3s cluster (5 ThinkPads + MacBook Pro 2012) · Phase 90</div>
   </div>
 
   <div class="diagram-wrap" id="diagram-wrap">
@@ -153,7 +153,7 @@ svg { display: block; min-width: 1720px; }
     <!-- ═══════════════════════════════════════════════════════════ -->
     <rect x="160" y="22" width="1400" height="850" rx="10"
           fill="rgba(15,23,42,0.25)" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="8,4"/>
-    <text x="174" y="37" fill="#22d3ee" font-size="8.5" font-weight="700" letter-spacing="2">k3s CLUSTER  ·  v1.36.3+k3s1  ·  6 NODES  ·  ~90 ARGOCD APPS</text>
+    <text x="174" y="37" fill="#22d3ee" font-size="8.5" font-weight="700" letter-spacing="2">k3s CLUSTER  ·  v1.36.3+k3s1  ·  6 NODES  ·  95 ARGOCD APPS</text>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
     <!-- ACCESS LAYER (top strip inside cluster)                     -->
@@ -212,7 +212,7 @@ svg { display: block; min-width: 1720px; }
     <!-- ArgoCD -->
     <rect x="178" y="145" width="112" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fbbf24" stroke-width="1.5"/>
     <text x="234" y="164" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">ArgoCD</text>
-    <text x="234" y="179" fill="#94a3b8" font-size="7" text-anchor="middle">app-of-apps · 71 apps</text>
+    <text x="234" y="179" fill="#94a3b8" font-size="7" text-anchor="middle">app-of-apps · 95 apps</text>
 
     <!-- Harbor -->
     <rect x="300" y="145" width="116" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#fbbf24" stroke-width="1.5"/>
@@ -265,11 +265,11 @@ svg { display: block; min-width: 1720px; }
     <text x="297" y="447" fill="#94a3b8" font-size="7" text-anchor="middle">Gatekeeper · Falco runtime · kube-bench CIS</text>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- ZONE 2 — DEVELOPER PLATFORM                                -->
+    <!-- ZONE 2 — PLATFORM SERVICES                                 -->
     <!-- ═══════════════════════════════════════════════════════════ -->
     <rect x="436" y="124" width="258" height="436" rx="7"
           fill="rgba(96,165,250,0.04)" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="6,3"/>
-    <text x="448" y="138" fill="#60a5fa" font-size="7.5" font-weight="700" letter-spacing="1.5">DEVELOPER PLATFORM</text>
+    <text x="448" y="138" fill="#60a5fa" font-size="7.5" font-weight="700" letter-spacing="1.5">PLATFORM SERVICES</text>
 
     <!-- Backstage -->
     <rect x="446" y="145" width="112" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#60a5fa" stroke-width="1.5"/>
@@ -335,66 +335,79 @@ svg { display: block; min-width: 1720px; }
     <!-- ═══════════════════════════════════════════════════════════ -->
     <rect x="704" y="124" width="270" height="436" rx="7"
           fill="rgba(167,139,250,0.05)" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="6,3"/>
-    <text x="716" y="138" fill="#a78bfa" font-size="7.5" font-weight="700" letter-spacing="1.5">AI / ML PLATFORM</text>
+    <text x="716" y="138" fill="#a78bfa" font-size="7.5" font-weight="700" letter-spacing="1.5">AI / ML PLATFORM  ·  ai namespace</text>
 
     <!-- LiteLLM -->
-    <rect x="714" y="145" width="120" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
+    <rect x="714" y="145" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
     <text x="774" y="164" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">LiteLLM Proxy</text>
-    <text x="774" y="179" fill="#94a3b8" font-size="7" text-anchor="middle">virtual keys · routing</text>
+    <text x="774" y="178" fill="#94a3b8" font-size="7" text-anchor="middle">gateway · keys · routing</text>
 
-    <!-- vLLM (Ollama retired) -->
-    <rect x="844" y="145" width="120" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
+    <!-- vLLM -->
+    <rect x="844" y="145" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
     <text x="904" y="164" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">vLLM</text>
-    <text x="904" y="179" fill="#94a3b8" font-size="7" text-anchor="middle">Phi-3-mini (on-cluster CPU)</text>
+    <text x="904" y="178" fill="#94a3b8" font-size="7" text-anchor="middle">Phi-3-mini (CPU) · Ollama retired</text>
+
+    <!-- minicloud-agent -->
+    <rect x="714" y="191" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="774" y="210" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">minicloud-agent</text>
+    <text x="774" y="224" fill="#94a3b8" font-size="7" text-anchor="middle">LangGraph ReAct · MCP</text>
+
+    <!-- minicloud-crew-agent -->
+    <rect x="844" y="191" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="904" y="210" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">crew-agent</text>
+    <text x="904" y="224" fill="#94a3b8" font-size="7" text-anchor="middle">CrewAI 3-agent pipeline</text>
 
     <!-- Open WebUI -->
-    <rect x="714" y="199" width="120" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
-    <text x="774" y="218" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Open WebUI</text>
-    <text x="774" y="233" fill="#94a3b8" font-size="7" text-anchor="middle">chat UI · RAG · SSO</text>
+    <rect x="714" y="237" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="774" y="256" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Open WebUI</text>
+    <text x="774" y="270" fill="#94a3b8" font-size="7" text-anchor="middle">chat UI · RAG · SSO</text>
 
-    <!-- Langfuse -->
-    <rect x="844" y="199" width="120" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
-    <text x="904" y="218" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Langfuse</text>
-    <text x="904" y="233" fill="#94a3b8" font-size="7" text-anchor="middle">LLM traces · evals</text>
+    <!-- Flowise -->
+    <rect x="844" y="237" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="904" y="256" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Flowise</text>
+    <text x="904" y="270" fill="#94a3b8" font-size="7" text-anchor="middle">visual LLM flow builder</text>
 
-    <!-- markitdown-proxy -->
-    <rect x="714" y="253" width="120" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
-    <text x="774" y="272" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">markitdown-proxy</text>
-    <text x="774" y="287" fill="#94a3b8" font-size="7" text-anchor="middle">PDF/Office → Markdown</text>
+    <!-- docling + markitdown -->
+    <rect x="714" y="283" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="774" y="302" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">docling · markitdown</text>
+    <text x="774" y="316" fill="#94a3b8" font-size="7" text-anchor="middle">PDF/Office/img → Markdown</text>
 
     <!-- rag-ingest -->
-    <rect x="844" y="253" width="120" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
-    <text x="904" y="272" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">rag-ingest</text>
-    <text x="904" y="287" fill="#94a3b8" font-size="7" text-anchor="middle">chunk → embed → store</text>
+    <rect x="844" y="283" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="904" y="302" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">rag-ingest</text>
+    <text x="904" y="316" fill="#94a3b8" font-size="7" text-anchor="middle">convert→chunk→embed</text>
 
-    <!-- pgvector -->
-    <rect x="714" y="307" width="250" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
-    <text x="839" y="326" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">pgvector / ragdb</text>
-    <text x="839" y="341" fill="#94a3b8" font-size="7" text-anchor="middle">768-dim nomic-embed-text vectors · PostgreSQL</text>
+    <!-- Qdrant -->
+    <rect x="714" y="329" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="774" y="348" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Qdrant</text>
+    <text x="774" y="362" fill="#94a3b8" font-size="7" text-anchor="middle">vector DB · RAG collections</text>
 
-    <!-- AI Metrics separator -->
-    <line x1="714" y1="363" x2="964" y2="363" stroke="#a78bfa" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.5"/>
-    <text x="716" y="374" fill="#a78bfa" font-size="7" font-weight="600" letter-spacing="1">AI OBSERVABILITY METRICS</text>
+    <!-- Presidio -->
+    <rect x="844" y="329" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="904" y="348" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Presidio</text>
+    <text x="904" y="362" fill="#94a3b8" font-size="7" text-anchor="middle">PII/DLP guardrail</text>
 
-    <!-- TTFT + Tokens -->
-    <rect x="714" y="379" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#7c3aed" stroke-width="1.5"/>
-    <text x="774" y="396" fill="#c4b5fd" font-size="8.5" font-weight="600" text-anchor="middle">TTFT · Tokens/s</text>
-    <text x="774" y="411" fill="#64748b" font-size="7" text-anchor="middle">Langfuse traces</text>
+    <!-- MLflow -->
+    <rect x="714" y="375" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="774" y="394" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">MLflow</text>
+    <text x="774" y="408" fill="#94a3b8" font-size="7" text-anchor="middle">experiments · registry</text>
 
-    <!-- Cost/Token -->
-    <rect x="844" y="379" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#7c3aed" stroke-width="1.5"/>
-    <text x="904" y="396" fill="#c4b5fd" font-size="8.5" font-weight="600" text-anchor="middle">Cost/Request</text>
-    <text x="904" y="411" fill="#64748b" font-size="7" text-anchor="middle">LiteLLM Prometheus</text>
+    <!-- Langfuse -->
+    <rect x="844" y="375" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="904" y="394" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Langfuse</text>
+    <text x="904" y="408" fill="#94a3b8" font-size="7" text-anchor="middle">LLM traces · evals · cost</text>
 
-    <!-- LLM Error Rate -->
-    <rect x="714" y="427" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#7c3aed" stroke-width="1.5"/>
-    <text x="774" y="444" fill="#c4b5fd" font-size="8.5" font-weight="600" text-anchor="middle">LLM Error Rate</text>
-    <text x="774" y="459" fill="#64748b" font-size="7" text-anchor="middle">success/fail counters</text>
+    <!-- postgresql-ai + Valkey -->
+    <rect x="714" y="421" width="250" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="839" y="440" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">postgresql-ai  ·  Valkey (litellm-cache)</text>
+    <text x="839" y="454" fill="#94a3b8" font-size="7" text-anchor="middle">app DB (pgvector legacy) · prompt cache</text>
 
-    <!-- Embed Latency -->
-    <rect x="844" y="427" width="120" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#7c3aed" stroke-width="1.5"/>
-    <text x="904" y="444" fill="#c4b5fd" font-size="8.5" font-weight="600" text-anchor="middle">Embed Latency</text>
-    <text x="904" y="459" fill="#64748b" font-size="7" text-anchor="middle">nomic-embed-text p95</text>
+    <!-- AI Observability -->
+    <line x1="714" y1="469" x2="964" y2="469" stroke="#a78bfa" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.5"/>
+    <text x="716" y="480" fill="#a78bfa" font-size="7" font-weight="600" letter-spacing="1">AI OBSERVABILITY</text>
+    <rect x="714" y="485" width="250" height="40" rx="5" fill="rgba(15,23,42,0.85)" stroke="#7c3aed" stroke-width="1.5"/>
+    <text x="839" y="502" fill="#c4b5fd" font-size="8" font-weight="600" text-anchor="middle">Langfuse traces · LiteLLM Prometheus</text>
+    <text x="839" y="516" fill="#64748b" font-size="7" text-anchor="middle">TTFT · tokens/s · cost/req · error rate · embed latency</text>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
     <!-- ZONE 4 — CI/CD PIPELINE                                    -->
@@ -670,17 +683,17 @@ svg { display: block; min-width: 1720px; }
     <!-- ArgoCD → Argo Rollouts -->
     <line x1="234" y1="189" x2="234" y2="199" stroke="#fbbf24" stroke-width="1" marker-end="url(#arr-yellow)" opacity="0.6"/>
 
-    <!-- LiteLLM → Ollama -->
+    <!-- LiteLLM → vLLM -->
     <line x1="834" y1="167" x2="844" y2="167" stroke="#a78bfa" stroke-width="1.2" marker-end="url(#arr-purple)" opacity="0.6"/>
 
-    <!-- LiteLLM → Groq (external) -->
+    <!-- LiteLLM → cloud providers (external) -->
     <line x1="964" y1="167" x2="1568" y2="210" stroke="#a78bfa" stroke-width="1" stroke-dasharray="5,3" marker-end="url(#arr-purple)" opacity="0.5"/>
 
     <!-- Open WebUI → LiteLLM -->
-    <line x1="774" y1="199" x2="774" y2="189" stroke="#a78bfa" stroke-width="1" marker-end="url(#arr-purple)" opacity="0.5"/>
+    <line x1="774" y1="237" x2="774" y2="185" stroke="#a78bfa" stroke-width="1" marker-end="url(#arr-purple)" opacity="0.4"/>
 
-    <!-- rag-ingest → pgvector -->
-    <line x1="904" y1="297" x2="964" y2="321" stroke="#a78bfa" stroke-width="1" marker-end="url(#arr-purple)" opacity="0.5"/>
+    <!-- rag-ingest → Qdrant -->
+    <line x1="904" y1="323" x2="800" y2="329" stroke="#a78bfa" stroke-width="1" marker-end="url(#arr-purple)" opacity="0.5"/>
 
     <!-- Prometheus → Grafana (in obs zone) -->
     <line x1="396" y1="656" x2="406" y2="656" stroke="#34d399" stroke-width="1.2" marker-end="url(#arr-emerald)" opacity="0.7"/>
@@ -708,7 +721,7 @@ svg { display: block; min-width: 1720px; }
     <div class="card">
       <div class="card-title" style="color:#fbbf24">GITOPS &amp; AUTOMATION</div>
       <ul class="card-list">
-        <li><span>ArgoCD 3.x</span> — app-of-apps, 71 apps, SSA=false for Rollout apps</li>
+        <li><span>ArgoCD 3.x</span> — app-of-apps, 95 apps, SSA=false for Rollout apps</li>
         <li><span>Harbor</span> — registry, Cosign signing, SBOM attestation, Trivy CVE scan</li>
         <li><span>Argo Rollouts</span> — platform-demo (Canary 50%), minicloud-plane (BlueGreen)</li>
         <li><span>KEDA</span> — event-driven scale on NATS JetStream queue length</li>
@@ -734,14 +747,14 @@ svg { display: block; min-width: 1720px; }
     <div class="card">
       <div class="card-title" style="color:#a78bfa">AI / ML PLATFORM</div>
       <ul class="card-list">
-        <li><span>LiteLLM</span> — proxy, virtual keys, routing, Prometheus metrics, cost tracking</li>
-        <li><span>vLLM</span> — Phi-3-mini on-cluster (CPU); <em>Ollama retired</em>. Cloud embeddings via LiteLLM (OpenAI text-embedding-3-small, 1536-dim)</li>
-        <li><span>Open WebUI</span> — custom image, sitecustomize.py Prometheus instrumentation</li>
-        <li><span>Langfuse</span> — LLM traces, TTFT, tokens/s, prompt eval, ClickHouse + PG backend</li>
-        <li><span>markitdown-proxy</span> — PDF/images→Docling, Office→MarkItDown, port 8000</li>
-        <li><span>rag-ingest</span> — convert→chunk→embed→pgvector pipeline, port 8001</li>
-        <li><span>pgvector (ragdb)</span> — PostgreSQL 768-dim vectors for nomic-embed-text</li>
-        <li><span>Groq</span> — llama-3.1-8b-instant fallback for phi3-financial (25/25 CI eval)</li>
+        <li><span>LiteLLM</span> — OpenAI-compatible gateway: virtual keys, routing, Prometheus cost metrics; cloud providers + local vLLM</li>
+        <li><span>vLLM</span> — Phi-3-mini on-cluster (CPU); <em>Ollama retired</em></li>
+        <li><span>minicloud-agent / crew-agent</span> — LangGraph ReAct (research-agent) + CrewAI 3-agent (deep-research-agent), both in ai ns</li>
+        <li><span>Qdrant</span> — vector DB (qdrant.ai.svc:6333), RAG collections; used by Open WebUI + Retrieva</li>
+        <li><span>rag-ingest + docling/markitdown</span> — convert→chunk→embed→Qdrant (PDF/Office/images), ports 8000/8001</li>
+        <li><span>Presidio</span> — PII/DLP pre-call guardrail (analyzer + anonymizer)</li>
+        <li><span>Open WebUI · Flowise · MLflow</span> — chat UI (RAG/SSO), visual flow builder, ML tracking/registry</li>
+        <li><span>Langfuse</span> — LLM traces, TTFT, tokens/s, cost, evals (ClickHouse + PG); Valkey prompt cache</li>
       </ul>
     </div>
     <div class="card">
