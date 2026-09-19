@@ -27,6 +27,7 @@ insurer), so most HR modules are *installed but empty* — a deliberate state, n
 | **Hiring / Recruitment** | Frappe HR Recruitment | 🟡 installed, unused | **Job Openings: 0** |
 | **Performance** | Frappe HR Appraisal | 🟡 installed, unused | **Appraisals: 0** |
 | **Leave / Attendance** | Frappe HR Leave + Attendance | 🟡 installed, unused | **Leave: 0, Attendance: 0** |
+| **Employee engagement** (recognition/rewards + pulse/feedback) | **Frappe HR Energy Points** + **LimeSurvey** (eNPS/pulse); comms via Matrix/Jitsi/Nextcloud | 📋 backlog (need-first hold) | no mature FOSS all-in-one exists (category is SaaS) — see below |
 | **Mandatory training (IDD CPD)** | **Moodle** LMS | 📋 backlog (need-first hold) | not deployed — see below |
 | **Identity lifecycle (joiner/mover/leaver + access)** | **Authentik** SSO (live) + **MidPoint** IGA (planned #17) | ✅ SSO live · 📋 IGA planned | every app is SSO-gated |
 | **Employee IT support** | **GLPI** ITSM (planned #16) | 📋 planned | helpdesk/tickets |
@@ -66,6 +67,26 @@ capability** (demonstrates the IDD-CPD control for RNCP/interviews), with a **re
 real employees + PII at volume, a real audit, or a production compliance claim — the same
 logic as the [BYOD scope boundary](../insurance-platform/regulatory-operating-model).
 Tracked: `ktayl-workplace#10` (board #10, Digital Workplace).
+
+## Employee engagement — planned, on a need-first hold
+
+**Goal:** keep employees motivated/satisfied/committed — communication + recognition/rewards +
+feedback/pulse (the Culture Amp / Lattice / Officevibe category).
+
+**Honest landscape:** dedicated engagement platforms are **overwhelmingly commercial SaaS**;
+there is **no mature drop-in FOSS all-in-one**. The self-hosted, on-model composition is:
+- **Recognition / rewards** → **Frappe HR Energy Points** (gamified points/leaderboard) +
+  Employee Feedback (already installed in `hrms`, unused).
+- **Feedback / pulse / eNPS** → **LimeSurvey** (self-hosted; anonymous, longitudinal, reporting).
+- **Communication / social / meetings** → **Matrix + Element, Jitsi, Nextcloud** (already live).
+
+This is as close to a Culture-Amp-equivalent as FOSS offers while staying self-hosted; a
+commercial SaaS would break the self-hosted model + €-cap and send data off-cluster.
+
+**Why it is NOT deployed (need-first gate):** 1 employee → an engagement platform has no
+operational value without a workforce. Tracked as a **design/portfolio capability**, revisit
+when there's a real workforce (same logic as Moodle + the BYOD boundary). Tracked:
+`ktayl-workplace#11` (board #10).
 
 ## Related
 - ERPNext deployment + Frappe HR (source of truth): board #8, repo `minicloud-erpnext`.
