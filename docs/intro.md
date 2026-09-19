@@ -37,10 +37,14 @@ This overview is the **infrastructure/platform** layer. On top of it run:
 |---|---|---|---|
 | set-hog | 10.0.0.2 | Control Plane | ThinkPad T15 Gen 1 (8-core / 16 GiB) |
 | fast-skunk | 10.0.0.4 | Worker | ThinkPad T490 (8-core / 16 GiB) |
-| fast-heron | 10.0.0.7 | Worker | ThinkPad T490 (8-core / 16 GiB) |
-| star-kitten | 10.0.0.8 | Worker | ThinkPad T490 (8-core / 16 GiB) |
-| loving-gannet | 10.0.0.9 | Worker | amd64 worker (8-core / 16 GiB) — *confirm model* |
-| swift-mac | 10.0.0.10 | Worker | MacBook Pro 13" 2012 (4-core / 8 GiB) |
+| fast-heron | 10.0.0.7 | Worker · storage | ThinkPad T490 (8-core / 16 GiB) |
+| star-kitten | 10.0.0.8 | Worker · AI | ThinkPad T490 (8-core / 16 GiB) |
+| loving-gannet | 10.0.0.9 | Worker · storage | ThinkPad T490 (20N4000BFR) (8-core / 16 GiB) |
+| swift-mac | 10.0.0.10 | Worker · storage | MacBook Pro 13" 2012 (4-core / 8 GiB) |
+
+> **Node roles** (live labels): `set-hog` = control-plane; `fast-skunk` = plain worker;
+> `fast-heron`/`loving-gannet`/`swift-mac` = **storage** (Longhorn replica-holding);
+> `star-kitten` = **AI** (LLM/GPU-class workloads).
 
 **MAAS Controller:** Ubuntu + dual NIC (WiFi → internet, Ethernet → 10.0.0.1)
 **Cluster totals:** 6 nodes · 44 cores · ~84 GiB RAM · k3s v1.36.3+k3s1 (1 control-plane + 5 workers).
