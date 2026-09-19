@@ -25,7 +25,7 @@ Open the full diagram in your browser for PNG/PDF export and zoom-level control:
 | ArgoCD apps | ~93 live applications |
 | PrometheusRule objects | 53 (monitoring ns + podinfo) |
 | Grafana dashboards | 43+ |
-| GitOps repos | 11 (all → Harbor via Tailscale) |
+| GitOps repos | 11 (dev images → Harbor via Tailscale; prod images → ghcr.io, SHA-tagged) |
 | Phases complete | 0–90 |
 
 ---
@@ -84,9 +84,9 @@ ArgoCD manages ~93 apps via the app-of-apps pattern from `minicloud-gitops`. All
 | cert-manager | Let's Encrypt (public) + minicloud CA (internal) |
 | Vaultwarden | Timshel fork 1.34.1-6, SSO via Authentik |
 | NetworkPolicies | default-deny-ingress on all namespaces |
-| kube-bench | k3s-CIS-1.7: 16/16 PASS on all 4 workers |
+| kube-bench | k3s-CIS-1.7: 16/16 PASS on all workers |
 | Chaos Mesh | Fault injection for Game Day reliability testing |
-| cosign + SBOM | Supply-chain: every staging/prod image is signed + has SBOM attached |
+| cosign + SBOM | Supply-chain: every prod image (ghcr.io) is signed + has SBOM attached |
 
 ### AI / ML Platform
 
@@ -207,7 +207,7 @@ The observability stack uses five complementary tools:
 - **Velero off-site (weekly):** Cloudflare R2 `minicloud-velero-offsite` bucket (72h TTL)
 - **kine SQLite (daily):** `sqlite3 .backup` → MinIO `k3s-backup/` + controller timer → `db-backups/kine/`
 
-**multipathd gotcha (all 5 nodes):** IET VIRTUAL-DISK devices blacklisted in `/etc/multipath.conf` to prevent Longhorn iSCSI volumes from being claimed as `mpatha`.
+**multipathd gotcha (all 6 nodes):** IET VIRTUAL-DISK devices blacklisted in `/etc/multipath.conf` to prevent Longhorn iSCSI volumes from being claimed as `mpatha`.
 
 ---
 
@@ -220,11 +220,12 @@ The observability stack uses five complementary tools:
 | fast-skunk | 10.0.0.4 | k3s worker | General workloads, NVMe-first boot (BIOS) |
 | fast-heron | 10.0.0.7 | k3s worker | Vault pinned (nodeSelector) |
 | star-kitten | 10.0.0.8 | k3s worker (ai,worker) | Jitsi JVB pinned (hostNetwork), vLLM inference |
+| loving-gannet | 10.0.0.9 | k3s worker (storage,worker) | ThinkPad T490, Longhorn replica-holding (added after original build) |
 | swift-mac | 10.0.0.10 | k3s worker (storage,worker) | MacBook Pro 13" 2012, Ubuntu 22.04, Longhorn preferred |
 
 **Boot order:** Controller (30s) → cluster nodes (2 min) → Tailscale on Mac.
 
-**NVMe boot fix (2026-08-13):** All 4 ThinkPads boot NVMe-first. fast-skunk via BIOS; fast-heron/star-kitten/set-hog via `efibootmgr --create`.
+**NVMe boot fix (2026-08-13):** All 5 ThinkPads boot NVMe-first. fast-skunk via BIOS; fast-heron/star-kitten/set-hog/loving-gannet via `efibootmgr --create`.
 
 **Power failure recovery:** NAT is automated (`restore-cluster-nat.service` on controller — no manual step needed). MinIO requires a manual restart after disk-full events (caches error state in memory):
 ```bash
@@ -239,7 +240,7 @@ ssh controller "docker restart minio"
 
 **Why app-of-apps?** Single ArgoCD application (`minicloud-gitops`) owns everything. New services are added by dropping an `apps/<name>.yaml` file — no manual ArgoCD config.
 
-**Why Harbor vs ghcr.io?** All custom images stay on-premises via Tailscale. Air-gap-capable registry with Cosign signature verification, SBOM storage, and CVE scanning in a single tool.
+**Why a hybrid Harbor + ghcr.io registry?** Since 2026-08-27 the split is deliberate: **dev/ephemeral images live in Harbor** (on-premises via Tailscale — air-gap-capable, Trivy CVE scanning, keep-10 retention + daily GC to bound controller disk), while **prod images live in ghcr.io** (free, durable, off local disk, SHA-tagged + Cosign-signed with SBOM attached). This keeps the controller's disk budget bounded without giving up supply-chain guarantees on production artifacts.
 
 **Why OTel Collector instead of Promtail?** Stack-agnostic — only the exporter block changes when swapping backends. OTTL transforms handle cardinality normalization and label extraction without coupling to Loki's scrape config format.
 

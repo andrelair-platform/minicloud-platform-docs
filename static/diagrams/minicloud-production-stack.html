@@ -63,7 +63,7 @@ svg { display: block; min-width: 1720px; }
         <button class="btn" onclick="dlpdf()">PDF</button>
       </div>
     </div>
-    <div class="subtitle">On-premises 5-node k3s cluster · 4 ThinkPads + MacBook Pro 2012 · GitOps · Observability · AI Platform · Phase 80 complete</div>
+    <div class="subtitle">On-premises 6-node k3s cluster · 5 ThinkPads + MacBook Pro 2012 · GitOps · Observability · AI Platform · Phase 90 complete</div>
   </div>
 
   <div class="diagram-wrap" id="diagram-wrap">
@@ -153,7 +153,7 @@ svg { display: block; min-width: 1720px; }
     <!-- ═══════════════════════════════════════════════════════════ -->
     <rect x="160" y="22" width="1400" height="850" rx="10"
           fill="rgba(15,23,42,0.25)" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="8,4"/>
-    <text x="174" y="37" fill="#22d3ee" font-size="8.5" font-weight="700" letter-spacing="2">k3s CLUSTER  ·  v1.36.2+k3s1  ·  5 NODES  ·  71 ARGOCD APPS</text>
+    <text x="174" y="37" fill="#22d3ee" font-size="8.5" font-weight="700" letter-spacing="2">k3s CLUSTER  ·  v1.36.3+k3s1  ·  6 NODES  ·  ~90 ARGOCD APPS</text>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
     <!-- ACCESS LAYER (top strip inside cluster)                     -->
@@ -342,10 +342,10 @@ svg { display: block; min-width: 1720px; }
     <text x="774" y="164" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">LiteLLM Proxy</text>
     <text x="774" y="179" fill="#94a3b8" font-size="7" text-anchor="middle">virtual keys · routing</text>
 
-    <!-- Ollama -->
+    <!-- vLLM (Ollama retired) -->
     <rect x="844" y="145" width="120" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
-    <text x="904" y="164" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">Ollama</text>
-    <text x="904" y="179" fill="#94a3b8" font-size="7" text-anchor="middle">phi4-mini · nomic-embed</text>
+    <text x="904" y="164" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">vLLM</text>
+    <text x="904" y="179" fill="#94a3b8" font-size="7" text-anchor="middle">Phi-3-mini (on-cluster CPU)</text>
 
     <!-- Open WebUI -->
     <rect x="714" y="199" width="120" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#a78bfa" stroke-width="1.5"/>
@@ -432,10 +432,10 @@ svg { display: block; min-width: 1720px; }
     <text x="1182" y="344" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">rollout-gate</text>
     <text x="1182" y="359" fill="#94a3b8" font-size="7" text-anchor="middle">polls Healthy/Degraded</text>
 
-    <!-- promote-staging -->
+    <!-- promote (Kargo dev→prod; staging retired) -->
     <rect x="994" y="379" width="248" height="44" rx="5" fill="rgba(15,23,42,0.85)" stroke="#34d399" stroke-width="1.5"/>
-    <text x="1118" y="398" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">promote-staging</text>
-    <text x="1118" y="413" fill="#94a3b8" font-size="7" text-anchor="middle">needs: [rollout-gate, canary-load] · GPG PR</text>
+    <text x="1118" y="398" fill="#f1f5f9" font-size="9" font-weight="600" text-anchor="middle">promote (Kargo dev→prod)</text>
+    <text x="1118" y="413" fill="#94a3b8" font-size="7" text-anchor="middle">CI proves · Kargo promotes · CODEOWNERS PR</text>
 
     <!-- Regression Detection -->
     <line x1="994" y1="435" x2="1242" y2="435" stroke="#34d399" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.5"/>
@@ -594,49 +594,56 @@ svg { display: block; min-width: 1720px; }
     <text x="180" y="756" fill="#64748b" font-size="7.5" font-weight="700" letter-spacing="1.5">HARDWARE  ·  MAAS PROVISIONED  ·  UBUNTU 22.04  ·  AUTO-RESTART ON POWER FAILURE (except swift-mac)</text>
 
     <!-- MAAS Controller -->
-    <rect x="178" y="762" width="215" height="80" rx="5" fill="rgba(15,23,42,0.85)" stroke="#475569" stroke-width="1.5"/>
-    <text x="285" y="780" fill="#94a3b8" font-size="8.5" font-weight="600" text-anchor="middle">MAAS Controller</text>
-    <text x="285" y="794" fill="#64748b" font-size="7" text-anchor="middle">ThinkPad X390 · Ubuntu 22.04</text>
-    <text x="285" y="807" fill="#64748b" font-size="7" text-anchor="middle">100.88.123.8 · 98G NVMe</text>
-    <text x="285" y="820" fill="#64748b" font-size="7" text-anchor="middle">NAT · MinIO · Promtail · Cloudflared</text>
-    <text x="285" y="833" fill="#475569" font-size="7" text-anchor="middle">node_exporter :9100</text>
+    <rect x="178" y="762" width="207" height="80" rx="5" fill="rgba(15,23,42,0.85)" stroke="#475569" stroke-width="1.5"/>
+    <text x="282" y="780" fill="#94a3b8" font-size="8.5" font-weight="600" text-anchor="middle">MAAS Controller</text>
+    <text x="282" y="794" fill="#64748b" font-size="7" text-anchor="middle">ThinkPad X390 · Ubuntu 22.04</text>
+    <text x="282" y="807" fill="#64748b" font-size="7" text-anchor="middle">100.88.123.8 · 98G NVMe</text>
+    <text x="282" y="820" fill="#64748b" font-size="7" text-anchor="middle">NAT · MinIO · Promtail · Cloudflared</text>
+    <text x="282" y="833" fill="#475569" font-size="7" text-anchor="middle">node_exporter :9100</text>
 
     <!-- set-hog -->
-    <rect x="403" y="762" width="215" height="80" rx="5" fill="rgba(15,23,42,0.85)" stroke="#22d3ee" stroke-width="1.5"/>
-    <text x="510" y="780" fill="#22d3ee" font-size="8.5" font-weight="600" text-anchor="middle">set-hog</text>
-    <text x="510" y="794" fill="#64748b" font-size="7" text-anchor="middle">k3s CONTROL PLANE · 10.0.0.2</text>
-    <text x="510" y="807" fill="#64748b" font-size="7" text-anchor="middle">ThinkPad · Kine/SQLite etcd</text>
-    <text x="510" y="820" fill="#64748b" font-size="7" text-anchor="middle">scheduler + ctrl-mgr socat proxy</text>
-    <text x="510" y="833" fill="#475569" font-size="7" text-anchor="middle">hostNetwork metrics :10269 :10267</text>
+    <rect x="399" y="762" width="207" height="80" rx="5" fill="rgba(15,23,42,0.85)" stroke="#22d3ee" stroke-width="1.5"/>
+    <text x="503" y="780" fill="#22d3ee" font-size="8.5" font-weight="600" text-anchor="middle">set-hog</text>
+    <text x="503" y="794" fill="#64748b" font-size="7" text-anchor="middle">k3s CONTROL PLANE · 10.0.0.2</text>
+    <text x="503" y="807" fill="#64748b" font-size="7" text-anchor="middle">ThinkPad · Kine/SQLite etcd</text>
+    <text x="503" y="820" fill="#64748b" font-size="7" text-anchor="middle">scheduler + ctrl-mgr socat proxy</text>
+    <text x="503" y="833" fill="#475569" font-size="7" text-anchor="middle">hostNetwork metrics :10269 :10267</text>
 
     <!-- fast-skunk -->
-    <rect x="628" y="762" width="215" height="80" rx="5" fill="rgba(15,23,42,0.85)" stroke="#475569" stroke-width="1.5"/>
-    <text x="735" y="780" fill="#94a3b8" font-size="8.5" font-weight="600" text-anchor="middle">fast-skunk</text>
-    <text x="735" y="794" fill="#64748b" font-size="7" text-anchor="middle">k3s worker · 10.0.0.4</text>
-    <text x="735" y="807" fill="#64748b" font-size="7" text-anchor="middle">ThinkPad X390</text>
-    <text x="735" y="820" fill="#64748b" font-size="7" text-anchor="middle">general workloads</text>
+    <rect x="620" y="762" width="207" height="80" rx="5" fill="rgba(15,23,42,0.85)" stroke="#475569" stroke-width="1.5"/>
+    <text x="724" y="780" fill="#94a3b8" font-size="8.5" font-weight="600" text-anchor="middle">fast-skunk</text>
+    <text x="724" y="794" fill="#64748b" font-size="7" text-anchor="middle">k3s worker · 10.0.0.4</text>
+    <text x="724" y="807" fill="#64748b" font-size="7" text-anchor="middle">ThinkPad X390</text>
+    <text x="724" y="820" fill="#64748b" font-size="7" text-anchor="middle">general workloads</text>
 
     <!-- fast-heron -->
-    <rect x="853" y="762" width="215" height="80" rx="5" fill="rgba(15,23,42,0.85)" stroke="#475569" stroke-width="1.5"/>
-    <text x="960" y="780" fill="#94a3b8" font-size="8.5" font-weight="600" text-anchor="middle">fast-heron</text>
-    <text x="960" y="794" fill="#64748b" font-size="7" text-anchor="middle">k3s worker · 10.0.0.7</text>
-    <text x="960" y="807" fill="#64748b" font-size="7" text-anchor="middle">ThinkPad</text>
-    <text x="960" y="820" fill="#64748b" font-size="7" text-anchor="middle">Vault pinned (nodeSelector)</text>
+    <rect x="841" y="762" width="207" height="80" rx="5" fill="rgba(15,23,42,0.85)" stroke="#475569" stroke-width="1.5"/>
+    <text x="945" y="780" fill="#94a3b8" font-size="8.5" font-weight="600" text-anchor="middle">fast-heron</text>
+    <text x="945" y="794" fill="#64748b" font-size="7" text-anchor="middle">k3s worker · 10.0.0.7</text>
+    <text x="945" y="807" fill="#64748b" font-size="7" text-anchor="middle">ThinkPad · storage</text>
+    <text x="945" y="820" fill="#64748b" font-size="7" text-anchor="middle">Vault pinned (nodeSelector)</text>
 
     <!-- star-kitten -->
-    <rect x="1078" y="762" width="215" height="80" rx="5" fill="rgba(15,23,42,0.85)" stroke="#475569" stroke-width="1.5"/>
-    <text x="1185" y="780" fill="#94a3b8" font-size="8.5" font-weight="600" text-anchor="middle">star-kitten</text>
-    <text x="1185" y="794" fill="#64748b" font-size="7" text-anchor="middle">k3s worker · 10.0.0.8</text>
-    <text x="1185" y="807" fill="#64748b" font-size="7" text-anchor="middle">ThinkPad</text>
-    <text x="1185" y="820" fill="#64748b" font-size="7" text-anchor="middle">Jitsi JVB pinned (hostNetwork)</text>
+    <rect x="1062" y="762" width="207" height="80" rx="5" fill="rgba(15,23,42,0.85)" stroke="#475569" stroke-width="1.5"/>
+    <text x="1166" y="780" fill="#94a3b8" font-size="8.5" font-weight="600" text-anchor="middle">star-kitten</text>
+    <text x="1166" y="794" fill="#64748b" font-size="7" text-anchor="middle">k3s worker · 10.0.0.8</text>
+    <text x="1166" y="807" fill="#64748b" font-size="7" text-anchor="middle">ThinkPad · AI</text>
+    <text x="1166" y="820" fill="#64748b" font-size="7" text-anchor="middle">Jitsi JVB pinned · vLLM inference</text>
+
+    <!-- loving-gannet -->
+    <rect x="1283" y="762" width="207" height="80" rx="5" fill="rgba(15,23,42,0.85)" stroke="#475569" stroke-width="1.5"/>
+    <text x="1387" y="780" fill="#94a3b8" font-size="8.5" font-weight="600" text-anchor="middle">loving-gannet</text>
+    <text x="1387" y="794" fill="#64748b" font-size="7" text-anchor="middle">k3s worker · 10.0.0.9</text>
+    <text x="1387" y="807" fill="#64748b" font-size="7" text-anchor="middle">ThinkPad T490 · storage</text>
+    <text x="1387" y="820" fill="#64748b" font-size="7" text-anchor="middle">Longhorn replica-holding</text>
 
     <!-- swift-mac -->
-    <rect x="1303" y="762" width="230" height="80" rx="5" fill="rgba(15,23,42,0.85)" stroke="#475569" stroke-width="1.5"/>
-    <text x="1418" y="780" fill="#94a3b8" font-size="8.5" font-weight="600" text-anchor="middle">swift-mac</text>
-    <text x="1418" y="794" fill="#64748b" font-size="7" text-anchor="middle">k3s worker · 10.0.0.10</text>
-    <text x="1418" y="807" fill="#64748b" font-size="7" text-anchor="middle">MacBook Pro 13" 2012 · Ubuntu 22.04</text>
-    <text x="1418" y="820" fill="#64748b" font-size="7" text-anchor="middle">Longhorn storage preferred</text>
-    <text x="1418" y="833" fill="#475569" font-size="7" text-anchor="middle">no Apple SMC auto-restart</text>
+    <rect x="1504" y="762" width="207" height="80" rx="5" fill="rgba(15,23,42,0.85)" stroke="#475569" stroke-width="1.5"/>
+    <text x="1608" y="780" fill="#94a3b8" font-size="8.5" font-weight="600" text-anchor="middle">swift-mac</text>
+    <text x="1608" y="794" fill="#64748b" font-size="7" text-anchor="middle">k3s worker · 10.0.0.10</text>
+    <text x="1608" y="807" fill="#64748b" font-size="7" text-anchor="middle">MacBook Pro 2012 · storage</text>
+    <text x="1608" y="820" fill="#64748b" font-size="7" text-anchor="middle">Longhorn preferred</text>
+    <text x="1608" y="833" fill="#475569" font-size="7" text-anchor="middle">no Apple SMC auto-restart</text>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
     <!-- CONNECTION ARROWS                                           -->
@@ -707,7 +714,7 @@ svg { display: block; min-width: 1720px; }
         <li><span>KEDA</span> — event-driven scale on NATS JetStream queue length</li>
         <li><span>VPA</span> — Off mode: langfuse-clickhouse, Prometheus; Auto: backstage, litellm</li>
         <li><span>Reloader</span> — auto-restart: homer, litellm, searxng, backstage on ConfigMap change</li>
-        <li><span>system-upgrade-controller</span> — k3s v1.36.2+k3s1 all 5 nodes via Plans</li>
+        <li><span>system-upgrade-controller</span> — k3s v1.36.3+k3s1 all 6 nodes via Plans</li>
         <li><span>Velero + Kopia</span> — daily 03:00, TTL 7d, MinIO bucket, itemOperationTimeout 8h</li>
       </ul>
     </div>
@@ -721,14 +728,14 @@ svg { display: block; min-width: 1720px; }
         <li><span>Gatekeeper OPA</span> — 9 constraints: BlockNetRaw, BlockCapabilities, RequireSeccomp</li>
         <li><span>Falco</span> — runtime syscall monitoring, DaemonSet</li>
         <li><span>Vaultwarden</span> — Timshel fork 1.34.1-6, SSO via Authentik, 15 creds migrated</li>
-        <li><span>kube-bench</span> — k3s-CIS-1.7: 16/16 PASS on all 4 workers</li>
+        <li><span>kube-bench</span> — k3s-CIS-1.7: 16/16 PASS on all workers</li>
       </ul>
     </div>
     <div class="card">
       <div class="card-title" style="color:#a78bfa">AI / ML PLATFORM</div>
       <ul class="card-list">
         <li><span>LiteLLM</span> — proxy, virtual keys, routing, Prometheus metrics, cost tracking</li>
-        <li><span>Ollama</span> — phi4-mini (chat), nomic-embed-text 768-dim (RAG embeddings)</li>
+        <li><span>vLLM</span> — Phi-3-mini on-cluster (CPU); <em>Ollama retired</em>. Cloud embeddings via LiteLLM (OpenAI text-embedding-3-small, 1536-dim)</li>
         <li><span>Open WebUI</span> — custom image, sitecustomize.py Prometheus instrumentation</li>
         <li><span>Langfuse</span> — LLM traces, TTFT, tokens/s, prompt eval, ClickHouse + PG backend</li>
         <li><span>markitdown-proxy</span> — PDF/images→Docling, Office→MarkItDown, port 8000</li>
@@ -747,7 +754,7 @@ svg { display: block; min-width: 1720px; }
         <li><span>rollout-gate</span> — polls Rollout phase, HTTP smoke probe, 8min timeout</li>
         <li><span>Prometheus gates</span> — success-rate≥95%, p95≤500ms, or vector fallback</li>
         <li><span>RolloutAutoRollback</span> — argo_rollout_info{phase="Degraded"}→email in 1min</li>
-        <li><span>promote-staging</span> — needs: [rollout-gate, canary-load], GPG-signed PR</li>
+        <li><span>promote (Kargo)</span> — dev→prod, CODEOWNERS-gated GPG-signed PR (staging retired)</li>
       </ul>
     </div>
     <div class="card">
@@ -796,7 +803,8 @@ svg { display: block; min-width: 1720px; }
         <li><span>set-hog</span> — k3s control-plane, 10.0.0.2, Kine/SQLite, socat proxy for metrics</li>
         <li><span>fast-skunk</span> — k3s worker, 10.0.0.4, general workloads</li>
         <li><span>fast-heron</span> — k3s worker, 10.0.0.7, Vault nodeSelector pinned</li>
-        <li><span>star-kitten</span> — k3s worker, 10.0.0.8, Jitsi JVB hostNetwork pinned</li>
+        <li><span>star-kitten</span> — k3s worker, 10.0.0.8, Jitsi JVB hostNetwork pinned, vLLM inference</li>
+        <li><span>loving-gannet</span> — k3s worker, 10.0.0.9, ThinkPad T490, Longhorn replica-holding</li>
         <li><span>swift-mac</span> — k3s worker, 10.0.0.10, MacBook Pro 13" 2012, Longhorn preferred, no SMC auto-restart</li>
         <li><span>Boot order</span> — controller (30s) → cluster nodes (2min) → Tailscale on Mac</li>
         <li><span>Power failure recovery</span> — iptables-restore + FORWARD rules manually on controller</li>
