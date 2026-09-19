@@ -68,7 +68,10 @@ Each phase builds directly on the previous one — nothing requires something th
 The phases below record *what was built and when* — some entries name things since **superseded**, and
 are flagged inline with **⚠️** where a reader might otherwise take them as current. Known supersessions:
 **Ollama → retired in favour of vLLM**; **Flannel → migrated to Cilium** (Phase 22 since executed);
-earlier k3s versions; "4-node" / "23-namespace" counts predate the current **6-node** cluster
+**`staging` environment retired (2026-08-30) → the standard is now exactly two environments, `dev` + `prod`**;
+**ArgoCD image-bump promotion → Kargo** (multi-stage `dev → prod`, CODEOWNERS-gated PR); **Harbor is now
+dev-only → prod images live on ghcr.io** (SHA-tagged, hybrid registry); earlier k3s versions;
+"4-node" / "23-namespace" counts predate the current **6-node** cluster
 (`loving-gannet` added) and its ~74 namespaces. For the authoritative **current live state**, see
 [Current Stack (Live)](#current-stack-live) below. History is kept as-is; only the current-state
 sections are updated.
@@ -107,7 +110,7 @@ sections are updated.
 | **28** | Runtime threat detection — Falco 0.44.1 DaemonSet (3/3 nodes) via modern_ebpf driver (BPF CO-RE, kernel 6.8, no headers). 2 live detections: `Contact K8S API Server From Container` (Vault pod, MITRE T1565) + `Read sensitive file untrusted` (cat /etc/shadow). Two install gotchas: Squid proxy for falcoctl + inotify exhaustion on control-plane. | Falco, eBPF, BPF CO-RE | ✅ Done |
 | **29** | CIS Kubernetes Benchmark — kube-bench v0.9.4 scored against k3s-cis-1.8. Control-plane: 49 PASS / 6 FAIL / 55 WARN. All 6 FAILs are k3s false positives (kube-bench scans kubelet CLI args; k3s configures these through config file + auto-provisioned certs). Verified: anonymous-auth disabled (401), read-only-port closed. Gatekeeper + Vault already satisfy 4 of the WARN items. | kube-bench, CIS Benchmark | ✅ Done |
 | **30** | Supply chain security — Cosign keyless signing (GitHub OIDC → Sigstore Fulcio CA, no key management) + syft CycloneDX SBOM generation integrated into platform-demo GHA CI. Signatures and SBOM attached as OCI referrers on ghcr.io. Gatekeeper `K8sAllowedRegistries` policy (warn): 116 violations audited across Helm workloads; platform-demo compliant (Harbor proxy prefix). Full chain: GHAS → Cosign/SBOM → Harbor Trivy → Gatekeeper → Falco. | Cosign, syft, Sigstore, OCI referrers | ✅ Done |
-| **56** | Multi-environment namespaces — namespace-based isolation (`{team}-{env}` convention) for `insurance` and `collab` teams across dev/staging/prod. ArgoCD ApplicationSet matrix generator creates 6 apps automatically. Per-env ResourceQuota (dev: 500m/1Gi, staging: 1/2Gi, prod: none) + LimitRange defaults. 15 Cloudflare Tunnel routes for env-prefixed public subdomains. CI pipeline yq bug fixed (Deployment-only targeting) + Harbor push via crane. | ArgoCD ApplicationSet, Kustomize, ResourceQuota, LimitRange | ✅ Done |
+| **56** | Multi-environment namespaces — namespace-based isolation (`{team}-{env}` convention) for `insurance` and `collab` teams across dev/staging/prod. ArgoCD ApplicationSet matrix generator creates 6 apps automatically. Per-env ResourceQuota (dev: 500m/1Gi, staging: 1/2Gi, prod: none) + LimitRange defaults. 15 Cloudflare Tunnel routes for env-prefixed public subdomains. CI pipeline yq bug fixed (Deployment-only targeting) + Harbor push via crane. **⚠️ Since superseded — `staging` retired (2026-08-30); the standard is now exactly two environments (`dev` + `prod`). The `{team}-{env}` ApplicationSet matrix was replaced by per-service Kustomize overlays (`base` + `minicloud-1/{dev,prod}`), now migrating to Helm wrapper charts (GAP golden path); promotion is via **Kargo** (`dev → prod`, CODEOWNERS-gated PR), not the matrix generator.** | ArgoCD ApplicationSet, Kustomize, ResourceQuota, LimitRange | ✅ Done |
 | **57** | Nextcloud 33 + Authentik OIDC — on-cluster document collaboration; `user_oidc` 8.10.1 auto-provisions users from Authentik; available at `cloud.devandre.sbs`. | Nextcloud, user_oidc, Authentik | ✅ Done |
 | **58** | Vault GitOps migration + CoreDNS completions — Vault adopted into ArgoCD app-of-apps (multi-source Helm); all 12 `*.devandre.sbs` hostnames resolve in-cluster via CoreDNS `coredns-custom` ConfigMap. | ArgoCD multi-source, CoreDNS | ✅ Done |
 | **59** | External Secrets Operator + Vault KV — ESO 0.10.7, ClusterSecretStore `vault-backend` (Kubernetes auth), 9 ExternalSecrets (all platform credentials pulled from Vault KV v2 into cluster Secrets). | ESO, Vault KV v2 | ✅ Done |
@@ -148,13 +151,14 @@ k3s v1.36.3+k3s1 → Kubernetes cluster (1 control-plane + 5 workers, upgraded v
 MetalLB       → load balancer IPs (10.0.0.200)
 Longhorn       → distributed block storage
 local-path     → NVMe-backed storage (LLM model weights)
-Harbor        → private container registry (Trivy scanning)
+Harbor        → dev/ephemeral container registry (Trivy scanning); prod images live on ghcr.io (SHA-tagged, cosign-signed)
 
 ── AUTOMATION & DELIVERY ───────────────────────────────────────────
 Ansible       → infrastructure automation
 OpenTofu      → IaC for MAAS resources
 ArgoCD        → GitOps app-of-apps (AppProject with explicit whitelist)
-GitHub Actions→ CI/CD (cosign-signed, GPG-signed bump commits)
+Kargo         → multi-stage promotion (dev → prod, CODEOWNERS-gated PR; 6 custom services)
+GitHub Actions→ CI/CD (cosign-signed, GPG-signed; dual-push Harbor + ghcr.io)
 ESO           → External Secrets Operator (9 ExternalSecrets ← Vault)
 
 ── PLATFORM SERVICES ───────────────────────────────────────────────
@@ -188,7 +192,7 @@ Falco Sidekick→ Falco → Alertmanager pipeline
 Polaris       → workload quality scorer
 Langfuse      → LLM observability (ClickHouse + Valkey, traces every AI call)
 Tailscale     → remote access VPN
-Cloudflare Tunnel → public access (*.devandre.sbs, no Tailscale)
+Cloudflare Tunnel → public access for business/employee apps (*.devandre.sbs); operator tools are Tailscale-only (3-tier access model)
 
 ── SECURITY LAYER ──────────────────────────────────────────────────
 Authentik     → SSO / OIDC (16 dept groups, 16 demo personas, MFA enforced)
