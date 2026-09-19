@@ -225,6 +225,7 @@ const sidebars: SidebarsConfig = {
             'app-deployment/per-env-isolation',
             'app-deployment/gitops-repo-patterns',
             'app-deployment/enterprise-gitops-controls',
+            'app-deployment/third-party-app-integration',
             'platform-roadmap/phase-9-workload',
           ],
         },
