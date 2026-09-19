@@ -55,11 +55,23 @@ This overview is the **infrastructure/platform** layer. On top of it run:
 
 Each phase builds directly on the previous one — nothing requires something that hasn't been set up yet.
 
+**How to read this table:**
+
+| Column | What it means |
+|---|---|
+| **Phase** | The build step's number, in the order it was implemented (each builds on the ones before). A few later entries are named by theme (e.g. *AI Gateway*, *Security gaps*) rather than a number. |
+| **Topic** | *What* was built in that phase + the key decisions/results (and anything deliberately deferred). |
+| **Key Technology** | The main tools/components introduced in that phase. |
+| **Status** | Delivery state — ✅ Done (built + verified) · 🔜 planned/next. |
+
 :::note This is a historical log
-The phases below record *what was built and when* — some entries name tools since superseded (e.g.
-**Ollama → later retired in favour of vLLM**; earlier k3s versions; a 5-node cluster before
-`loving-gannet` was added). For the **current live state**, see [Current Stack (Live)](#current-stack-live)
-below. History is kept as-is; only the current-state sections are updated.
+The phases below record *what was built and when* — some entries name things since **superseded**, and
+are flagged inline with **⚠️** where a reader might otherwise take them as current. Known supersessions:
+**Ollama → retired in favour of vLLM**; **Flannel → migrated to Cilium** (Phase 22 since executed);
+earlier k3s versions; "4-node" / "23-namespace" counts predate the current **6-node** cluster
+(`loving-gannet` added) and its ~74 namespaces. For the authoritative **current live state**, see
+[Current Stack (Live)](#current-stack-live) below. History is kept as-is; only the current-state
+sections are updated.
 :::
 
 | Phase | Topic | Key Technology | Status |
@@ -86,7 +98,7 @@ below. History is kept as-is; only the current-state sections are updated.
 | **19** | Self-hosted AI — Ollama (CPU, llama3.2:3b, ~13 TPS) + Open WebUI chat. MLflow + Kubeflow deferred. **⚠️ Ollama since retired → replaced by vLLM (see Current Stack).** | Ollama *(retired)*, Open WebUI | ✅ Done |
 | **20** | Reliability & chaos engineering — 3 validation experiments on podinfo: PodChaos (0 ms downtime under 5 pod kills), NetworkChaos (200 ms latency injection + clean recovery), StressChaos (contained cgroup OOM, 0 node-mate restarts). NodeChaos / dashboard Ingress / automated GameDays deferred. | Chaos Mesh | ✅ Done |
 | **21** | Logs (Loki single-binary, Promtail DaemonSet, Grafana datasource) + Alertmanager 3-tier routing tree + in-cluster webhook receiver + custom `PodinfoAvailabilityLost` rule. End-to-end alert validated via Chaos Mesh kill-both-replicas → webhook receives FIRING JSON. **Jaeger / distributed tracing deferred** — no multi-service topology to trace. | Loki, Promtail, Alertmanager | ✅ Done |
-| **22** | eBPF networking — **migration runbook authored, execution deferred to fresh-cluster rebuild**. cilium CLI installed on controller; dry-run helm values captured. Senior scope-reduction call: 111 live pods + 22 phases of validated infrastructure on top of Flannel make hot CNI swap not worth it at our cluster scale. | Cilium, Hubble | ✅ Done |
+| **22** | eBPF networking — **migration runbook authored, execution deferred to fresh-cluster rebuild**. cilium CLI installed on controller; dry-run helm values captured. Senior scope-reduction call: 111 live pods + 22 phases of validated infrastructure on top of Flannel make hot CNI swap not worth it at our cluster scale. **⚠️ Since executed — Cilium is now the live CNI (Flannel retired); Cilium + cilium-envoy DaemonSets run 6/6.** | Cilium, Hubble | ✅ Done |
 | **23** | Enterprise SSO — Authentik as IdP; 11/13 apps on SSO. 5 via native OIDC (ArgoCD, Grafana, Harbor, MinIO, Open WebUI), 5 via forward-auth Outpost (Homer, podinfo, platform-demo, whoami, NATS). Backstage + MAAS deferred. | Authentik, OIDC, forward-auth | ✅ Done |
 | **24** | Backstage custom image — org-owned build (bcec03f); Authentik OIDC SSO; Kubernetes, ArgoCD, TechDocs, Grafana plugins; published to Harbor. | Backstage, crane, Harbor, Authentik | ✅ Done |
 | **25** | Public access via Cloudflare Tunnel — `*.devandre.sbs` live (10/10 apps, no Tailscale). Authentik OIDC issuers migrated to `auth.devandre.sbs`. Forward-auth extended to `devandre.sbs` cookie domain. `originServerName` per cloudflared rule to fix TLS SNI on IP origin. UFW host firewall on controller. All smoke tests green. | Cloudflare Tunnel, cloudflared, Authentik forward-auth, UFW | ✅ Done |
