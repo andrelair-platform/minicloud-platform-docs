@@ -140,6 +140,12 @@ items it adds to the roadmap, and where we **deliberately differ** (our stack �
   underwriting side.)
 - **Analytics warehouse + BI (§9)** — OLTP → CDC/ETL → warehouse → **Metabase** (not Power BI) → the
   **Data / Actuarial #5** track. The **warehouse layer is the main not-yet-built piece** this surfaces.
+- **Semantic / metrics layer on the data platform (§9 extension)** — a governed metrics layer
+  (self-hosted **Cube** or the **dbt semantic layer**) over the warehouse, so **one** definition of each
+  business metric (loss ratio · claim frequency · open high-value claims · average settlement) is consumed
+  **identically** by **Metabase** *and* the **Claims Copilot AI tools**. The AI then queries **governed
+  metrics, not raw SQL** — which reinforces §12 (structured-vs-document split) and closes the "the LLM
+  invents its own numbers" risk. → **Data / Actuarial #5** (build alongside the warehouse).
 - **Resilience drills (§21)** — retries / DLQ / idempotency / circuit-breakers → fold into each domain's
   **NFR gate** (Track B), not a standalone project.
 
@@ -155,12 +161,28 @@ items it adds to the roadmap, and where we **deliberately differ** (our stack �
 | "Atlas Insurance Group" | **ktayl-solution** | one fictional carrier — don't introduce a second brand |
 
 **Maturity ladder (§22) → our tracks:** L1–L2 (core + modern platform + auth) = **foundations, live**;
-L3 (CDC→events) + L5 (RAG/agent) = **Claims #11**; L4 (warehouse/BI) = **Data #5**; L6 (K8s/IaC/CI/obs)
-= **live**; L7 (audit/masking/resilience/DR) = **Track B gate, continuous**.
+L3 (CDC→events) + L5 (RAG/agent) = **Claims #11**; L4 (warehouse/BI + semantic layer) = **Data #5**;
+L6 (K8s/IaC/CI/obs) = **live**; L7 (enterprise hardening) = **already the platform's standing posture**
+(table below), applied per domain at the Track-B gate.
+
+### Level 7 — Enterprise hardening (§22 L7) — mostly already live
+The point where "a project becomes portfolio-level enterprise-architecture work" — and for us it's **not
+future work**, it's the standing posture every new domain inherits and re-proves at its NFR/security gate.
+| Hardening capability | Our implementation | Status |
+|---|---|---|
+| **Audit** | change-records (ITIL/DORA, one per prod PR) + app audit trails + Langfuse AI traces | ✅ live |
+| **Secrets management** | Vault + External Secrets Operator (ESO); no secrets in Git | ✅ live |
+| **Data masking** | Presidio PII masking (pre-LLM) + gateway/app DLP + default-deny egress netpols | ✅ live (per domain) |
+| **Resilience** | canary/BlueGreen Rollouts + health-gate auto-abort; retries / idempotency / DLQ in services; Longhorn replicas | ✅ live / per-service |
+| **Load testing** | k6 in CI (smoke + load) | ✅ live (extend per domain) |
+| **Backup / recovery** | Velero + MinIO; kine/SQLite control-plane backup; Longhorn volume backups | ✅ live |
+| **Security testing** | Trivy image scan · cosign + SBOM · Gatekeeper / Polaris policy · CSPM IAM audit · SAST | ✅ live |
+| **Architecture documentation** | Docusaurus (org + per-repo) · C4 · ADR logs · threat models · NFR registers | ✅ live |
 
 **Bottom line:** the blueprint validates that the three-track IS *is* an enterprise-modernization platform.
-The only genuinely new backlog it surfaces is the **warehouse/BI layer (#5)** and the **event-driven
-risk/fraud service (#11 post-v1)** — everything else is already live or already planned.
+The only genuinely new backlog it surfaces is the **warehouse/BI + semantic layer (#5)** and the
+**event-driven risk/fraud service (#11 post-v1)** — **everything else, including all of Level 7, is already
+live or already planned.**
 
 ---
 
