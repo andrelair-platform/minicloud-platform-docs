@@ -98,6 +98,72 @@ governance gate (any AI in it gets an AI-Act tier) → deploy → next slice. Ev
 **Where to start Track A.** Recommended: **Underwriting #12** (value + playbook ready + feeds the live
 PAS). Once chosen, the recipe above repeats per domain and the roadmap stops feeling ad-hoc.
 
+## Alignment check — the "Enterprise Claims & Risk Intelligence" reference blueprint
+
+A widely-circulated portfolio blueprint (*"Atlas Insurance — Enterprise Claims & Risk Intelligence
+Platform"*) describes the **exact** pattern this IS is built on: an **Oracle legacy core you must not
+replace**, modernized *around* with domain APIs, CDC/events, a modern data + AI platform, and
+enterprise-grade identity / observability / DevOps. It is **not a new project** — it's a checklist we can
+grade ourselves against. Below: what we already support, what the Claims build delivers, the genuinely new
+items it adds to the roadmap, and where we **deliberately differ** (our stack ≠ the blueprint's defaults).
+
+### What we already support (live foundations)
+| Blueprint capability (§) | Our equivalent | Status |
+|---|---|---|
+| Kubernetes platform (§17) | k3s, 6-node | ✅ live |
+| CI/CD (§18) | GitHub Actions + Argo CD + Kargo | ✅ live |
+| IaC (§19) | OpenTofu (MAAS/AWS) + Helm/Kustomize | ✅ live |
+| Observability (§16) | OTel + Prometheus + Grafana + Loki + Tempo | ✅ live |
+| OAuth/OIDC + RBAC (§14) | **Authentik** (not Keycloak/Entra) | ✅ live |
+| Audit (§15) | change-records + app audit + Langfuse AI traces | ✅ live |
+| Event bus (§7) | **NATS** (not Kafka) | ✅ live |
+| Modern app DB (§6) | PostgreSQL | ✅ live |
+| RAG pipeline (§10–11) | markitdown / rag-ingest → **Qdrant** → LiteLLM | ✅ live |
+| Structured-vs-document AI split (§12) | RAG for docs · SQL-tools for data | ✅ pattern set |
+| Secrets / least-privilege (§14) | Vault + ESO + default-deny netpols | ✅ live |
+
+### What the Claims build delivers (Track A — Claims #11, planned; PR #6 merged)
+| Blueprint capability (§) | Where in our plan |
+|---|---|
+| Oracle legacy core, don't replace (§2, §4) | **GlobalCore** on Oracle Free (ADR-002) |
+| Controlled domain APIs around Oracle (§5) | the ACL — stories S003 / S004 |
+| Oracle CDC → events (§7) | **Debezium → NATS** — S005 (not GoldenGate/Kafka) |
+| CQRS read-model (§6) | Postgres read-model — S006 |
+| Structured AI tool (§12) + identity propagation (§14) | governed SQL-tool — S007, threat-model **T8** |
+| Claims Copilot agent (§13) | v1 = read-only tool; **full multi-tool agent = AI Ops Copilot #19 (capstone, parked)** |
+| Bounded Oracle→Postgres migration (§20) | ADR-007 footnote (later, non-critical only) |
+
+### Net-new items this blueprint adds to the roadmap
+- **Event-driven Risk / Fraud scoring service (§8)** — a NATS consumer of `CLAIM_CREATED` / `…_CHANGED`
+  writing a `risk_assessment` table in Postgres → a **Claims #11 post-v1 capability** (fraud/SIU lane),
+  **not** a new board. (Distinct from **Risk Engineering #21**, which is *physical* risk/prevention on the
+  underwriting side.)
+- **Analytics warehouse + BI (§9)** — OLTP → CDC/ETL → warehouse → **Metabase** (not Power BI) → the
+  **Data / Actuarial #5** track. The **warehouse layer is the main not-yet-built piece** this surfaces.
+- **Resilience drills (§21)** — retries / DLQ / idempotency / circuit-breakers → fold into each domain's
+  **NFR gate** (Track B), not a standalone project.
+
+### Deliberate divergences (our stack, not the blueprint's)
+| Blueprint default | We use | Why |
+|---|---|---|
+| Kafka | **NATS** | already the platform backbone; lighter, sufficient here |
+| GoldenGate | **Debezium** | open-source, zero licence |
+| Power BI | **Metabase** (+ Grafana for ops) | self-hosted, no SaaS |
+| Keycloak / Entra ID | **Authentik** | already the org IdP |
+| pgvector | **Qdrant** (pgvector available) | our RAG store |
+| Policy on Oracle | **Policy already modern** (`ktayl-policy-service` #6) | only **Claims** wraps the Oracle legacy |
+| "Atlas Insurance Group" | **ktayl-solution** | one fictional carrier — don't introduce a second brand |
+
+**Maturity ladder (§22) → our tracks:** L1–L2 (core + modern platform + auth) = **foundations, live**;
+L3 (CDC→events) + L5 (RAG/agent) = **Claims #11**; L4 (warehouse/BI) = **Data #5**; L6 (K8s/IaC/CI/obs)
+= **live**; L7 (audit/masking/resilience/DR) = **Track B gate, continuous**.
+
+**Bottom line:** the blueprint validates that the three-track IS *is* an enterprise-modernization platform.
+The only genuinely new backlog it surfaces is the **warehouse/BI layer (#5)** and the **event-driven
+risk/fraud service (#11 post-v1)** — everything else is already live or already planned.
+
+---
+
 ## Where the detail lives
 - **Domain map (what exists):** [EA Blueprint](../insurance-platform/enterprise-architecture-blueprint)
 - **Per-domain deep-dive:** FDE playbooks (e.g. [Underwriting](../insurance-platform/underwriting-fde-playbook))
