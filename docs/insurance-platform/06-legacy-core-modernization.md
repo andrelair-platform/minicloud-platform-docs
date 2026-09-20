@@ -1,140 +1,121 @@
 ---
 id: legacy-core-modernization
-title: Legacy-Core Modernization (Strangler Fig)
+title: Legacy-Core Modernization (GlobalCore + the strangler)
 sidebar_label: Legacy-Core Modernization
 ---
 
-# Legacy-Core Modernization — the Oracle legacy & the strangler
+# Legacy-Core Modernization — the Oracle legacy (GlobalCore) & the strangler
 
-:::note Status — PROPOSAL for validation (no build yet)
-This is the **documentation alignment** for the legacy-core spine of the ktayl IS. Nothing is built:
-no Oracle image is pulled, no `ktayl-legacy-core` repo exists, no code. The gates are:
-**align docs (this + the EA blueprint) → validate → Path-C planning set → validate → build.**
-This is **ktayl-solution IS** work (the business/org context), **not** the Retrieva certification product.
+:::note Status — direction aligned; build gated
+This is the **documentation alignment** for the legacy spine of the ktayl IS. The legacy engine
+(**GlobalCore**) is already built (Java 8 / SOAP / batch); it is **evolving to Oracle + the Claims
+domain**. No Claims wrap is built yet. Gates: **align docs → validate → Claims Path-C planning
+([`ktayl-claims/docs/`](https://github.com/andrelair-platform/ktayl-claims/tree/main/docs)) → validate →
+build.** This is **ktayl-solution IS** work (business/org context), **not** the Retrieva certification.
 :::
 
-## 1. Why a legacy core at all
+## 1. Why a legacy core — and where it sits
 
-A real IARD insurer's information system is **not** 16 clean greenfield microservices. It is a
-**legacy core that still works** — an old, authoritative, PL/SQL-heavy claims/policy system — with a
-**modern platform grown around it** that wraps it, intercepts its changes, and gradually *strangles*
-it, but rarely rips-and-replaces it. Full replacement almost never happens; **the wrapping is the
-steady state**. This is the **Strangler Fig + Anti-Corruption Layer (ACL)** pattern (Fowler), and it is
-already a stated ktayl principle (*"Strangler Fig / ACL / event interception for legacy"*) — it just
-never had a legacy artifact to apply to.
+A real IARD insurer's IS is **not** all greenfield. It runs a **legacy core that still works** (old,
+authoritative, stored-procedure-heavy, SOAP/batch) and grows a **modern platform around it** that wraps,
+intercepts and *strangles* it — but rarely replaces it (**Strangler Fig + Anti-Corruption Layer**). This is
+the ktayl IS's **Track C (Modernization Practice Lab)** on the
+[IS Build Roadmap](../product-roadmap/is-build-roadmap), and — crucially — it is pointed at a **real,
+needed domain** so the wrapping *delivers value*, not a throwaway.
 
-Standing up a deliberate legacy core is what turns the ktayl IS from *"I built some modern insurance
-services"* into *"I modernized a real enterprise with a legacy Oracle heart"* — which is exactly how
-HDI (and most insurers, banks, telecoms) actually operate, and a materially stronger architecture story.
+**Two deliberate choices:**
+1. **Policy is already modern** (the live `ktayl-policy-service`, #6), so **the legacy is NOT policy** —
+   wrapping a legacy policy core would just re-deliver what we already have.
+2. **The legacy delivers a domain we NEED but haven't built — Claims (#11).** Wrapping the legacy *is* how
+   we deliver modern Claims. The practice lab (Track C) and the real business domain (Track A) reinforce
+   each other instead of competing.
 
-## 2. What the legacy is (the decision)
+## 2. GlobalCore — the legacy engine (on Oracle)
 
-**The legacy = a GERAS-style Claims + legacy-Policy core**, on Oracle, holding the authoritative
-historical book, with business logic in **PL/SQL**. **`ktayl-claims` (#11)** becomes its modern
-**Anti-Corruption Layer / strangler**. This resolves cleanly because:
+The legacy is **GlobalCore** (`globalcore-legacy`) — a deliberately-legacy carrier we own and **freeze**,
+so wrapping it teaches the real modernization architecture. Its authentic-legacy traits are the point:
 
-- `ktayl-claims` is an empty scaffold today → no modern service to conflict with.
-- **GERAS** is the real anchor for "legacy claims" (an HDI legacy claims system).
-- **`ktayl-policy-service`** stays the *modern* PAS (live, Go/Postgres) and simply **reads the legacy**
-  for the historical policy book via the ACL — the two coexist, exactly like reality.
-- It yields one coherent narrative: *a modern GitOps + AI platform strangling a legacy Oracle insurance core.*
+| Trait | How it shows up | Why it matters |
+|---|---|---|
+| **Oracle** | the system-of-record runs on **Oracle** (Free edition) with **PL/SQL** stored procedures | real Oracle experience — the HDI-relevant skill; rules live in the DB, not the app |
+| **SOAP/XML only** | the only API is `/ws` (WSDL) — no REST, no JSON | forces an ACL translator (SOAP→JSON) |
+| **Batch, not real-time** | a create lands `pending`; a **nightly batch** activates it | you design around async issuance (batch→events) |
+| **Cryptic shared schema** | ≤8-char columns, codes not enums (`STATCD` P/A/L/C…) | the ugly representation the ACL must hide |
+| **Outside k8s** | plain Docker container on the controller | legacy isn't cloud-native; the modern platform reaches *out* to it |
+| **FROZEN** | you never add modern capability *inside* it | the constraint that forces a real wrap, not an edit |
 
-### The legacy schema (indicative — real, not a toy)
-
-The legacy must actually behave like a legacy: it runs, holds the authoritative data, and carries real
-business logic in PL/SQL that you must **understand before wrapping** (you do not edit its internals).
-
-```
-Tables:   CUSTOMER · POLICY (legacy book) · CLAIM · CLAIM_TRANSACTION
-          CLAIM_RESERVE · PAYMENT · BROKER · PRODUCT
-PL/SQL:   PKG_CLAIMS · PKG_POLICIES · PKG_PAYMENTS
-          PROC_CREATE_CLAIM · FUNC_CALCULATE_RESERVE · TRG_CLAIM_AUDIT
-```
-
-Some business rules live in PL/SQL, some in the wrapping service — the point is the boundary is explicit
-and the legacy is **frozen** (wrapped, intercepted, strangled — not refactored).
+**Evolution (from the current build):** GlobalCore v0 is Java 8 / SOAP / batch on **PostgreSQL-pretending-
+to-be-Oracle**, domain = Policy. It evolves to (a) **real Oracle** (Free edition + PL/SQL), and (b) the
+**Claims domain** (claims · reserves · payments + supporting refs) — the needed, unbuilt capability. Policy
+data stays as a supporting reference (coverage lookups), but the **wrapped/delivered domain is Claims**.
 
 ## 3. How Oracle runs — the image & placement
 
-**No standalone Oracle infrastructure.** One container, official Free edition — the old XE lineage,
-zero licensing cost, a single self-contained instance (which is what a wrapped legacy core looks like
-from the outside anyway).
+**No standalone Oracle infrastructure** — one Free-edition container (the old XE lineage; zero licence).
 
-- **Image:** `container-registry.oracle.com/database/free:latest-lite` (the `-lite` tag). Community
-  mirror `gvenzl/oracle-free` (Docker Hub) is the fallback if the registry terms-acceptance/login is
-  inconvenient.
-- **Placement — deliberately OUTSIDE Kubernetes**, as a Docker container on the controller (next to
-  MinIO). This is *more* correct, not a compromise:
-  - **Realism:** mirrors "legacy core on traditional infra, modern platform on k8s" — the exact
-    enterprise shape this whole spine is about.
-  - **Resource pragmatism:** keeps ~2 GB Oracle + its storage off the k3s cluster (no Longhorn PVC, no
-    dependency on the storage layer that has been the platform's reliability pain).
-  - Modern services in k8s reach it at `controller-ip:1521` **through the ACL** — a clean, realistic
-    "cross the boundary to the legacy" hop, governed by NetworkPolicy egress.
-- **Sizing gate (to settle in the Path-C architecture):** the controller disk is tight (98 G, MinIO
-  ~33 G, prior disk-full cascades). Oracle Free needs a few GB — size it and gate it, or place the
-  container on a worker node's local disk (still plain Docker, still outside k3s) if the controller is
-  too tight.
+- **Image:** `container-registry.oracle.com/database/free:latest-lite` (community mirror `gvenzl/oracle-free`
+  as fallback). GlobalCore (Java 8 / Spring) connects via Oracle JDBC.
+- **Placement — OUTSIDE Kubernetes**, as Docker containers on the controller (GlobalCore + its Oracle,
+  like MinIO). Realistic ("legacy on traditional infra, modern platform on k8s") and keeps Oracle off the
+  constrained k3s cluster (no Longhorn). The modern ACL reaches GlobalCore's SOAP + Oracle at
+  `controller-ip`.
+- **Sizing gate:** the controller disk is tight (98 G, MinIO ~33 G, prior disk-full cascades). Oracle Free
+  needs a few GB — size + gate it, or place the containers on a worker node's local disk (still outside k3s).
+- Oracle creds → **Vault** (`secret/platform/oracle-legacy`) → ESO → the ACL; a **least-privilege app
+  user**, never SYS/SYSTEM, never in Git.
 
-Connection facts (Free image): port `1521`, service `FREEPDB1` (pluggable) / `FREE` (container),
-`ORACLE_PWD` sets `SYS`/`SYSTEM`/`PDBADMIN`. Credentials go to **Vault** (`secret/platform/oracle-legacy`)
-→ ESO → the ACL service — never in Git or images.
+## 4. The wrap — how Claims #11 delivers the domain
 
-## 4. The integration seams (how the modern layer wraps it)
+`ktayl-claims` (#11) is the modern Claims capability, built **as the ACL/strangler** over GlobalCore. Three
+seams, matching GlobalCore's authentic-legacy interfaces:
 
-Three seams, all already native to the platform:
+1. **SOAP → JSON translation (the ACL API).** The modern claims API calls GlobalCore's SOAP for writes
+   (create claim → `pending`), translating the cryptic XML (codes, ≤8-char fields) into clean JSON. No app,
+   portal or AI speaks SOAP or touches Oracle directly.
+2. **Batch → events.** A create is only official after the nightly batch flips it active. The ACL models
+   this async issuance and, via **CDC (Debezium on Oracle → NATS)**, turns legacy changes into domain events
+   (`CLAIM_CREATED`, `CLAIM_STATUS_CHANGED`, `RESERVE_ADJUSTED`) so consumers react instead of polling.
+3. **Read-model + governed AI.** A **Postgres read-model** (CQRS-lite) projects the events to power a modern
+   claims workbench (reads never hit the legacy). AI reaches claims **only via approved SQL-tools behind the
+   ACL** (identity-propagated, PII-masked) + **RAG** for documents — never the LLM on Oracle.
 
-1. **Anti-Corruption-Layer APIs** — `ktayl-claims` (#11) exposes clean REST/OpenAPI (`GET /claims/{id}`,
-   `POST /claims`, `PATCH /claims/{id}/status`, …) over the legacy. No app, portal, or AI touches Oracle
-   directly; everything goes through the ACL, where authz/audit/rate-limits/PII controls live.
-2. **CDC (Debezium → NATS)** — a Debezium connector captures legacy changes and publishes domain events
-   (`CLAIM_STATUS_CHANGED`, `POLICY_ENDORSED`, `PAYMENT_RECEIVED`) to **NATS** (the existing backbone —
-   **not** Kafka; Debezium Server sinks to NATS). Consumers (risk, analytics, notifications) **react**
-   instead of polling Oracle. This is a new **platform capability** (`ktayl-integration` / IS Foundations),
-   valuable independently of Oracle.
-3. **AI access, governed** — the AI reaches **structured legacy data only via approved SQL-tools behind
-   the ACL** (never the LLM emitting SQL at Oracle), and **documents via RAG** (Qdrant). The human's
-   identity is propagated into every tool call (Authentik) — the AI can never become an authz bypass
-   (threat-model T7). PII is Presidio-masked before any LLM call.
+## 5. How it fits the roadmap (Track A × Track C)
 
-## 5. Per-domain re-alignment (what changes for the existing scaffolds)
+| Piece | Track | State |
+|---|---|---|
+| **GlobalCore** (`globalcore-legacy`) — Oracle/SOAP/batch legacy | C (practice lab) | built ✅, evolving to Oracle + Claims |
+| **ktayl-claims #11** — the modern wrap that delivers Claims | A (business) | scaffold → Path-C planning done |
+| **ktayl-integration #25** — the ACL/CDC wrapper capability | foundations | wrapper spec authored |
+| **GenApp (M1–M4)** — the *real* IBM COBOL core, optional advanced track | C | forked, study-now |
+| Policy #6, Underwriting #12, distribution, finance… | A | modern greenfield (NOT wrapped) |
 
-| Domain / repo | Role in the spine |
-|---|---|
-| **`ktayl-legacy-core`** (new) | the Oracle legacy system-of-record (GERAS-style claims + legacy policy book) |
-| **`ktayl-claims` #11** | the **ACL / strangler** over the legacy; new claims capability built modern |
-| **`ktayl-policy-service`** (live) | modern PAS; reads the legacy for the historical book via the ACL |
-| **`ktayl-underwriting` #12** | modern; binds into the modern PAS (unchanged) |
-| **`ktayl-integration` #25** | hosts the **CDC (Debezium→NATS)** capability + the ACL egress patterns |
-| distribution/finance/risk/reinsurance/compliance | net-new modern; consume via ACL APIs + NATS events |
-| **Data Platform #5** | OLAP/BI reads through CDC/ACL — never the legacy directly (OLTP↔OLAP split) |
-| **AI Ops Copilot #19** | LAST — orchestrates ACL tools + RAG once domains hold real data |
+The wrapping skill built here (SOAP→JSON, batch→events, ACL, CDC, legacy comprehension) **feeds back into
+Track A** whenever a real domain must integrate with something legacy — the whole point of Track C.
 
 ## 6. Build sequence (gated)
 
 ```
-now      Underwriting #12 thin slice (in flight — don't interrupt)
-  →      align docs (EA blueprint §2b + this doc)   ← YOU VALIDATE HERE
-  →      ktayl-legacy-core Path-C planning set (brief/PRD/architecture/threat-model/ADRs)  ← validate
-  →      build: Oracle Free container + legacy schema/PL/SQL  →  ktayl-claims ACL  →  CDC→NATS
-  →      strangler domains + Data Platform #5
-  →      AI Ops Copilot #19 (the "Claims Copilot") — the capstone, last
+now      Underwriting #12 thin slice (greenfield, in flight — don't interrupt)
+  →      align docs (EA §2b + this + the wrapper spec)         ← YOU VALIDATE HERE
+  →      ktayl-claims Path-C planning set (brief/PRD/arch/threat/ADRs) aligned to GlobalCore+Oracle+Claims  ← validate
+  →      evolve GlobalCore: Oracle (Free) + PL/SQL + the Claims domain (frozen, outside k8s)
+  →      build ktayl-claims: ACL (SOAP→JSON) → CDC(Debezium→NATS) → read-model → workbench
+  →      governed AI read-tools · then the AI Ops Copilot (#19) LAST
 ```
 
-**Three validation gates before any Oracle runs.** No image is pulled and no repo is created until the
-`ktayl-legacy-core` Path-C planning set is written and validated — same discipline as Underwriting #12.
+**Validation gates before any Oracle/Claims build.** No Oracle is stood up and no Claims code is written
+until this alignment + the Claims Path-C set are validated — same discipline as Underwriting #12.
 
 ## 7. Governance & compliance
 
-Path-C (new product + a security/architecture boundary — a legacy datastore, CDC, cross-boundary AI
-access) → the **architecture + security review gates** apply. Compliance-by-design lands in the Path-C
-threat model: legacy connection secrets (Vault/ESO), default-deny egress to `controller-ip:1521`, PII
-masking before AI, identity propagation, and an audit trail on every ACL + AI action. Evidence accrues to
-the **Regulatory & Compliance #15** control library. This blueprint spine is **BC01 (piloter)** evidence;
-the wrapping design is **BC02/BC03**.
+Path-C (a legacy datastore, CDC, cross-boundary AI) → **architecture + security review gates**.
+Compliance-by-design in the Claims threat model: legacy creds (Vault/ESO), least-privilege Oracle user,
+default-deny egress to the controller only, PII masking before AI, identity propagation, audit on every ACL
++ AI action. Evidence → **Regulatory & Compliance #15** control library. Cert: BC01 (spine) / BC02–BC03 (wrap).
 
 ## References
 
-- [Enterprise Architecture Blueprint](./enterprise-architecture-blueprint) §2b — the spine in the IS model
-- [Business Applications Catalog](./business-applications-catalog) — per-app inventory
-- Pattern origin: Strangler Fig + Anti-Corruption Layer (Fowler); ktayl principle *Strangler Fig / ACL / event interception*
+- [Enterprise Architecture Blueprint §2b](./enterprise-architecture-blueprint) — the spine in the IS model
+- [IS Build Roadmap](../product-roadmap/is-build-roadmap) — Track C (Modernization Practice Lab)
+- Wrapper initiative spec: `ktayl-integration/docs/legacy-wrapper-initiative-spec.md`
+- Legacy engine: `globalcore-legacy` · Claims wrap: `ktayl-claims` (#11)
