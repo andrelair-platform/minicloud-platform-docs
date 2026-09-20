@@ -71,6 +71,49 @@ not "where can we put a chatbot").
    MASTER DATA / RÉFÉRENTIELS (MDM) · AI / AUTOMATION
 ```
 
+## 2b. Modernization architecture — the legacy core & the strangler
+
+The target above is **not** built as 16 clean greenfield microservices — that isn't how a real IARD
+insurer's IS exists. A real insurer runs a **legacy core that still works** (an old, authoritative,
+PL/SQL-heavy claims/policy system) with a **modern platform grown around it** that wraps, intercepts and
+gradually *strangles* it — but rarely replaces it. This is the **Strangler Fig + Anti-Corruption Layer**
+pattern, and it is the ktayl IS's architectural spine. It is what makes this a credible enterprise-
+modernization system rather than a set of new apps.
+
+```
+┌─ LEGACY CORE (system of record — "the old system that still works") ─────┐
+│  ktayl-legacy-core · Oracle Database Free, OUTSIDE k8s (traditional infra) │
+│  GERAS-style Claims + legacy Policy book + Customer/Payment + PL/SQL logic │
+│  Wrapped, never rip-and-replaced. Authoritative for the historical book.   │
+└───────────────┬───────────────────────────────────────────────────────────┘
+                │  CDC (Debezium → NATS)  +  Anti-Corruption-Layer APIs
+┌───────────────┴─── STRANGLER / ACL (modern services wrap the legacy) ──────┐
+│  ktayl-claims (#11)          = the ACL/strangler over legacy claims         │
+│  ktayl-policy-service (live) = modern PAS; reads legacy for the old book    │
+│  ktayl-underwriting (#12)    = binds into the modern PAS                    │
+└───────────────┬───────────────────────────────────────────────────────────┘
+                │  clean domain events on NATS
+┌───────────────┴─── MODERN PLATFORM (net-new capability, never touches legacy)┐
+│  distribution/CRM · finance/billing · risk · reinsurance · compliance · …   │
+│  Postgres per service · Authentik SSO · GitOps/Kargo                         │
+└───────────────┬───────────────────────────────────────────────────────────┘
+                │  consume ONLY via ACL APIs + events (never raw legacy SQL)
+┌───────────────┴─── DATA + AI (read-through the ACL) ───────────────────────┐
+│  Data Platform (#5, OLAP/BI)   ·   AI: RAG(docs) + approved SQL-tools(data)  │
+│  AI Ops Copilot (#19) — LAST, once domains hold real data                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**The alignment rules (every domain inherits these):**
+1. **The legacy core is the authoritative old book; nothing writes around it** — modern services reach it only through the ACL.
+2. **Modern services are the strangler** — each new domain either wraps a legacy capability (explicit boundary) or is net-new.
+3. **CDC-over-polling** — legacy changes become NATS events (Debezium); consumers react, they don't poll Oracle.
+4. **AI reaches structured data only via approved SQL-tools behind the ACL; documents via RAG** — never the LLM on Oracle, never an identity bypass.
+5. **Legacy runs on traditional infra (outside k8s)** — Oracle Free as a container on the controller, mirroring "legacy core + modern k8s platform" and keeping it off the constrained cluster.
+
+Full detail — the Oracle Free image + placement, the GERAS schema, the CDC/ACL seams, and the per-domain
+re-alignment — is in **[Legacy-Core Modernization](./legacy-core-modernization)**.
+
 ## 3. Gap analysis — target vs **deployed reality** (verified on-cluster, 2026-09-14)
 
 This is the honest status from **what's actually running** (every Deployment/StatefulSet across all
@@ -84,7 +127,8 @@ repo exists, business capability not built/configured) · 🔴 nothing running.
 | 2 | Underwriting workbench | #12 | nothing running (repo scaffold) | 🔴 |
 | 3 | Pricing / Rating engine | #12 | nothing running | 🔴 |
 | 4 | **Policy Administration (PAS)** | #6 | **`ktayl-policy-service` + `ktayl-postgres`** (ktayl + ktayl-prod) | 🟢 **live** |
-| 5 | Claims | #11 | nothing running (repo scaffold) | 🔴 |
+| 5 | Claims | #11 | nothing running (repo scaffold) — planned as the **ACL/strangler** over the legacy core (§2b) | 🔴 |
+| — | **Legacy core** (GERAS-style claims/legacy-policy, Oracle) | new | not built — the deliberate legacy system-of-record all modern claims/policy wrap (§2b, [Legacy-Core Modernization](./legacy-core-modernization)) | 🔴 planned |
 | 6 | Risk Engineering / Prevention | #21 | nothing running (repo `ktayl-risk-engineering` scaffold) | 🔴 |
 | 7 | International Programs | #23 | nothing running (repo `ktayl-international-programs` scaffold) | 🔴 |
 | 8 | Billing / Premium & Finance | #14 | ERPNext finance up, **insurance billing not configured** | 🟡 platform only |
@@ -235,11 +279,13 @@ their briefs are captured as plans, not the next thing to build.
 is infrastructure with no payoff. So value comes from standing up domains, not from building the
 automation layer against stubs.
 
-**Next decision:** pick the first business domain to stand up. Policy Admin (#6) is already live;
-strong candidates are **GLPI/ITSM (#16)** (direction already locked, self-contained quick win) or
-**Underwriting (#12)** (highest insurance value). Each missing domain gets its board/repo **when its
-work starts** (portfolio discipline — no empty boards); breadth-first (12 half-built domains) is
-rejected too. The parked copilot/MDM/KA briefs remain valid plans for when the systems exist.
+**Next decisions (in flight):** **Underwriting (#12)** is planned (BMAD set done, binds the live PAS) and
+is the current build. In parallel, the **legacy-core spine (§2b)** is being aligned: stand up the
+GERAS-style **`ktayl-legacy-core`** (Oracle Free, outside k8s) and wrap it with **`ktayl-claims` (#11)**
+as its ACL/strangler — this is what makes the IS a real enterprise-modernization system rather than a set
+of greenfield apps. Each missing domain gets its board/repo **when its work starts** (portfolio discipline
+— no empty boards); breadth-first (12 half-built domains) is rejected. The parked copilot/MDM/KA briefs
+remain valid plans for when the systems exist. Detail: [Legacy-Core Modernization](./legacy-core-modernization).
 
 ## 6. Governance
 

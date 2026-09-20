@@ -461,6 +461,7 @@ const sidebars: SidebarsConfig = {
           collapsed: false,
           items: [
             'insurance-platform/enterprise-architecture-blueprint',
+            'insurance-platform/legacy-core-modernization',
             'insurance-platform/ai-first-operating-model',
             'insurance-platform/business-applications-catalog',
             'insurance-platform/hr-tooling',
