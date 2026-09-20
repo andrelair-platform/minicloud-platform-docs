@@ -460,6 +460,7 @@ const sidebars: SidebarsConfig = {
           label: '🏦 Insurance Platform',
           collapsed: false,
           items: [
+            'insurance-platform/architecture-at-a-glance',
             'insurance-platform/enterprise-architecture-blueprint',
             'insurance-platform/legacy-core-modernization',
             'insurance-platform/ai-first-operating-model',
