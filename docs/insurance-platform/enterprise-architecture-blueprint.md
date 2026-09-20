@@ -73,46 +73,58 @@ not "where can we put a chatbot").
 
 ## 2b. Modernization architecture — the legacy core & the strangler
 
-The target above is **not** built as 16 clean greenfield microservices — that isn't how a real IARD
-insurer's IS exists. A real insurer runs a **legacy core that still works** (an old, authoritative,
-PL/SQL-heavy claims/policy system) with a **modern platform grown around it** that wraps, intercepts and
-gradually *strangles* it — but rarely replaces it. This is the **Strangler Fig + Anti-Corruption Layer**
-pattern, and it is the ktayl IS's architectural spine. It is what makes this a credible enterprise-
-modernization system rather than a set of new apps.
+The target above is **not** all clean greenfield microservices — that isn't how a real IARD insurer's IS
+exists. A real insurer runs a **legacy core that still works** (an old, authoritative, stored-procedure-
+heavy system on **Oracle**, SOAP interfaces, nightly batch) with a **modern platform grown around it** that
+wraps, intercepts and gradually *strangles* it — but rarely replaces it. This is the **Strangler Fig +
+Anti-Corruption Layer** pattern. On the ktayl IS it is delivered as **Track C (Modernization Practice Lab)**
+of the [IS Build Roadmap](../product-roadmap/is-build-roadmap), and it produces a **real, needed business
+domain** rather than a throwaway.
+
+**Where the legacy sits — a deliberate choice.** Policy Administration is **already modern** (the live
+`ktayl-policy-service`, #6), so the legacy is **not** policy. The legacy is a domain we **need but haven't
+built** — **Claims (#11)** — so that wrapping it *delivers* a real capability. The legacy engine is
+**GlobalCore** (`globalcore-legacy`): a deliberately-legacy carrier we own — **Java 8 · SOAP · nightly
+batch · stored procedures · Oracle · outside k8s · frozen** — evolved to hold the Claims domain.
 
 ```
-┌─ LEGACY CORE (system of record — "the old system that still works") ─────┐
-│  ktayl-legacy-core · Oracle Database Free, OUTSIDE k8s (traditional infra) │
-│  GERAS-style Claims + legacy Policy book + Customer/Payment + PL/SQL logic │
-│  Wrapped, never rip-and-replaced. Authoritative for the historical book.   │
-└───────────────┬───────────────────────────────────────────────────────────┘
-                │  CDC (Debezium → NATS)  +  Anti-Corruption-Layer APIs
-┌───────────────┴─── STRANGLER / ACL (modern services wrap the legacy) ──────┐
-│  ktayl-claims (#11)          = the ACL/strangler over legacy claims         │
-│  ktayl-policy-service (live) = modern PAS; reads legacy for the old book    │
-│  ktayl-underwriting (#12)    = binds into the modern PAS                    │
-└───────────────┬───────────────────────────────────────────────────────────┘
+┌─ LEGACY CORE (system of record — the domain we NEED, delivered via a legacy) ┐
+│  GlobalCore (globalcore-legacy) · Oracle · Java 8 / SOAP / batch / PL/SQL     │
+│  OUTSIDE k8s (traditional infra) · FROZEN — wrapped, never modified           │
+│  Holds the CLAIMS domain (claims · reserves · payments) + supporting refs     │
+└───────────────┬───────────────────────────────────────────────────────────────┘
+                │  ACL translates SOAP→JSON + async batch→events (CDC/Debezium → NATS)
+┌───────────────┴─── STRANGLER / ACL (the modern wrap = delivers the domain) ────┐
+│  ktayl-claims (#11) = the modern Claims capability, built AS the ACL/strangler │
+│    over GlobalCore — SOAP→JSON, batch→events, read-model, workbench, AI tools  │
+└───────────────┬───────────────────────────────────────────────────────────────┘
                 │  clean domain events on NATS
-┌───────────────┴─── MODERN PLATFORM (net-new capability, never touches legacy)┐
-│  distribution/CRM · finance/billing · risk · reinsurance · compliance · …   │
-│  Postgres per service · Authentik SSO · GitOps/Kargo                         │
-└───────────────┬───────────────────────────────────────────────────────────┘
-                │  consume ONLY via ACL APIs + events (never raw legacy SQL)
-┌───────────────┴─── DATA + AI (read-through the ACL) ───────────────────────┐
-│  Data Platform (#5, OLAP/BI)   ·   AI: RAG(docs) + approved SQL-tools(data)  │
-│  AI Ops Copilot (#19) — LAST, once domains hold real data                    │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌───────────────┴─── MODERN PLATFORM (greenfield — NOT wrapped) ─────────────────┐
+│  ktayl-policy-service (#6, live PAS) · underwriting #12 · distribution ·        │
+│  finance · reinsurance · compliance — Postgres per service · Authentik · Kargo  │
+└───────────────┬───────────────────────────────────────────────────────────────┘
+                │  consume ONLY via ACL APIs + events (never raw legacy access)
+┌───────────────┴─── DATA + AI (read-through the ACL) ───────────────────────────┐
+│  Data Platform (#5, OLAP/BI)   ·   AI: RAG(docs) + approved SQL-tools(data)     │
+│  AI Ops Copilot (#19) — LAST, once domains hold real data                       │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**The alignment rules (every domain inherits these):**
-1. **The legacy core is the authoritative old book; nothing writes around it** — modern services reach it only through the ACL.
-2. **Modern services are the strangler** — each new domain either wraps a legacy capability (explicit boundary) or is net-new.
-3. **CDC-over-polling** — legacy changes become NATS events (Debezium); consumers react, they don't poll Oracle.
-4. **AI reaches structured data only via approved SQL-tools behind the ACL; documents via RAG** — never the LLM on Oracle, never an identity bypass.
-5. **Legacy runs on traditional infra (outside k8s)** — Oracle Free as a container on the controller, mirroring "legacy core + modern k8s platform" and keeping it off the constrained cluster.
+**The alignment rules:**
+1. **The legacy is the authoritative record for its domain; nothing writes around it** — modern code reaches it only through the ACL (SOAP + CDC).
+2. **The legacy delivers a domain we need but haven't built** (Claims) — not a duplicate of something already modern (Policy is modern; don't wrap it).
+3. **The legacy is FROZEN** — you wrap/intercept/strangle it (SOAP→JSON, batch→events), you never add modern capability *inside* it.
+4. **CDC-over-polling** — legacy changes become NATS events (Debezium); consumers react.
+5. **AI reaches structured data only via approved SQL-tools behind the ACL; documents via RAG** — never the LLM on the legacy, never an identity bypass.
+6. **Legacy runs on traditional infra (outside k8s)** — GlobalCore + Oracle as containers on the controller, mirroring "legacy core + modern k8s platform" and keeping Oracle off the constrained cluster.
 
-Full detail — the Oracle Free image + placement, the GERAS schema, the CDC/ACL seams, and the per-domain
-re-alignment — is in **[Legacy-Core Modernization](./legacy-core-modernization)**.
+> **Most domains are still greenfield-modern** (underwriting #12, distribution, finance, …). The legacy
+> spine is **one deliberate initiative** (Claims via GlobalCore), not the shape of every domain — it exists
+> to build the real legacy-integration skill that modernizing enterprises need.
+
+Full detail — the Oracle + GlobalCore evolution, the SOAP/batch wrap, the CDC/ACL seams — is in
+**[Legacy-Core Modernization](./legacy-core-modernization)** and the wrapper initiative spec
+(`ktayl-integration/docs/legacy-wrapper-initiative-spec.md`).
 
 ## 3. Gap analysis — target vs **deployed reality** (verified on-cluster, 2026-09-14)
 
@@ -127,8 +139,8 @@ repo exists, business capability not built/configured) · 🔴 nothing running.
 | 2 | Underwriting workbench | #12 | nothing running (repo scaffold) | 🔴 |
 | 3 | Pricing / Rating engine | #12 | nothing running | 🔴 |
 | 4 | **Policy Administration (PAS)** | #6 | **`ktayl-policy-service` + `ktayl-postgres`** (ktayl + ktayl-prod) | 🟢 **live** |
-| 5 | Claims | #11 | nothing running (repo scaffold) — planned as the **ACL/strangler** over the legacy core (§2b) | 🔴 |
-| — | **Legacy core** (GERAS-style claims/legacy-policy, Oracle) | new | not built — the deliberate legacy system-of-record all modern claims/policy wrap (§2b, [Legacy-Core Modernization](./legacy-core-modernization)) | 🔴 planned |
+| 5 | Claims | #11 | scaffold — planned as the modern **ACL/strangler** that wraps **GlobalCore** to deliver Claims (§2b) | 🔴 |
+| — | **Legacy core** — GlobalCore (`globalcore-legacy`) | Track C | Java 8 / SOAP / batch **built ✅**; evolving to **Oracle + the Claims domain** as the deliberate legacy the modern Claims wrap delivers (§2b, [Legacy-Core Modernization](./legacy-core-modernization)) | 🟡 built, evolving |
 | 6 | Risk Engineering / Prevention | #21 | nothing running (repo `ktayl-risk-engineering` scaffold) | 🔴 |
 | 7 | International Programs | #23 | nothing running (repo `ktayl-international-programs` scaffold) | 🔴 |
 | 8 | Billing / Premium & Finance | #14 | ERPNext finance up, **insurance billing not configured** | 🟡 platform only |
@@ -280,12 +292,12 @@ is infrastructure with no payoff. So value comes from standing up domains, not f
 automation layer against stubs.
 
 **Next decisions (in flight):** **Underwriting (#12)** is planned (BMAD set done, binds the live PAS) and
-is the current build. In parallel, the **legacy-core spine (§2b)** is being aligned: stand up the
-GERAS-style **`ktayl-legacy-core`** (Oracle Free, outside k8s) and wrap it with **`ktayl-claims` (#11)**
-as its ACL/strangler — this is what makes the IS a real enterprise-modernization system rather than a set
-of greenfield apps. Each missing domain gets its board/repo **when its work starts** (portfolio discipline
-— no empty boards); breadth-first (12 half-built domains) is rejected. The parked copilot/MDM/KA briefs
-remain valid plans for when the systems exist. Detail: [Legacy-Core Modernization](./legacy-core-modernization).
+is the current greenfield build. In parallel, the **legacy spine (§2b, Track C)** is being aligned: evolve
+**GlobalCore** (`globalcore-legacy`) to **Oracle + the Claims domain**, and build **`ktayl-claims` (#11)**
+as the modern **ACL/strangler that delivers Claims by wrapping it** (SOAP→JSON, batch→events). Policy stays
+modern (live PAS) — the legacy is the domain we *need but haven't built* (Claims), not a duplicate. Each
+missing domain gets its board/repo **when its work starts** (portfolio discipline — no empty boards).
+The parked copilot/MDM/KA briefs remain valid plans. Detail: [Legacy-Core Modernization](./legacy-core-modernization).
 
 ## 6. Governance
 
