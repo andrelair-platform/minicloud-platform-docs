@@ -465,6 +465,7 @@ const sidebars: SidebarsConfig = {
             'insurance-platform/legacy-core-modernization',
             'insurance-platform/ai-first-operating-model',
             'insurance-platform/business-applications-catalog',
+            'insurance-platform/business-operations-tooling',
             'insurance-platform/hr-tooling',
             'insurance-platform/regulatory-operating-model',
             {
