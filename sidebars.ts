@@ -62,6 +62,7 @@ const sidebars: SidebarsConfig = {
             'remote-access/tailscale',
             'remote-access/cloudflare-tunnel',
             'remote-access/homer-dashboard',
+            'remote-access/onboarding-a-colleague',
           ],
         },
         {
