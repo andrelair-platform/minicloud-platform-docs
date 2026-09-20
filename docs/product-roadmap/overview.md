@@ -3,20 +3,37 @@ title: Product Roadmap
 sidebar_label: Overview
 ---
 
-# Organisation Product Roadmap
+# Organisation Product Roadmap (detailed backlog)
 
-Complete delivery timeline for the **ktayl-solution IS** — the simulated commercial-lines (IARD) insurer's information system built on the minicloud platform. Organised by quarter with dependency chains and ownership.
+The detailed backlog behind the **ktayl-solution IS** — the simulated commercial-lines (IARD) insurer's
+information system on the minicloud platform. **This is the inventory view;** for the *shape* of the plan
+start with the two pages below.
 
-**Full application catalogue →** [Business Applications Catalog](../insurance-platform/business-applications-catalog) · **Functional target + deployed reality →** [EA Blueprint](../insurance-platform/enterprise-architecture-blueprint)
+**Start here →** [🗺 Architecture at a Glance](../insurance-platform/architecture-at-a-glance) · **What to build next (the 3 tracks) →** [🧭 IS Build Roadmap](../product-roadmap/is-build-roadmap) · **Full catalogue →** [Business Applications Catalog](../insurance-platform/business-applications-catalog) · **Functional target + deployed reality →** [EA Blueprint](../insurance-platform/enterprise-architecture-blueprint)
 
-:::warning Planning view — authoritative status is the EA Blueprint
-This is a **planning timeline**; some "✅ Live" markers below are aspirational/predate the on-cluster
-audit. The **authoritative deployed status** (what actually runs) is the
-[EA Blueprint gap analysis](../insurance-platform/enterprise-architecture-blueprint) — as of 2026-09 only
-**Policy Admin** + the platform/AI foundations + ERPNext are truly deployed; most insurance domains are
-not yet running. Also: **this IS is *not* the certification** — the RNCP39583 deliverable is **Retrieva**
-(a separate product); the "cert core/phase" labels below are legacy and being retired.
+:::warning Read this before the tables — the framing changed
+1. **This IS is *not* the certification.** The RNCP39583 deliverable is **Retrieva** (a separate product
+   that only *runs on* this platform). The old "CERT core/phase" quarter labels are **retired** — work is
+   now organised by the **three-track model** (see [IS Build Roadmap](./is-build-roadmap)), **not** by cert quarters.
+2. **Product boards are authoritative, not this page.** Each domain has its own GitHub Project (#2–#25);
+   there is **no roll-up**. The `platform-backlog#NNN` issue links below are **legacy** (old Project #1,
+   deleted 2026-09-10) — kept only as a historical inventory; live tracking is on each product board.
+3. **Authoritative deployed status = the EA Blueprint gap analysis.** As of 2026-09 only **Policy Admin
+   #6** + the platform/AI foundations + ERPNext truly run; most insurance domains are not yet deployed.
 :::
+
+## Build-ready now (design done → implementation can start)
+
+Three domains have passed their design pass (readiness gate PASS) and can be built today:
+
+| Domain | Board | What it is | Design |
+|---|---|---|---|
+| **Claims #11** | #11 | modern Claims built **AS the ACL/strangler** over the **GlobalCore** legacy (Oracle + SOAP + batch), Java 21 + Spring Boot, CDC→NATS, read-model, governed AI tool | `ktayl-claims/docs/` — Path-C set, gate PASS |
+| **Underwriting & Pricing #12** | #12 | underwriting workbench + rating, binds the live PAS | `ktayl-underwriting/docs/` — Path-C set, gate PASS |
+| **ITSM (GLPI) #16** | #16 | IT service desk + BYOD-scoped CMDB + SLAs (closes the one run-the-system gap) | `ktayl-itsm/docs/` — Path-B set, gate PASS |
+
+Everything below is the **broader inventory** — most items are epic-scoped and need their own design pass
+(the [per-domain recipe](./is-build-roadmap#how-they-interlock-one-repeatable-recipe-per-domain)) before build.
 
 ---
 
@@ -25,11 +42,14 @@ not yet running. Also: **this IS is *not* the certification** — the RNCP39583 
 | Badge | Meaning |
 |---|---|
 | ✅ Live | Deployed and operational (verify against the EA Blueprint) |
-| 🔨 Q1 2027 | Core build — October 2026 → March 2027 |
-| 🔨 Q2 2027 | Phase 2 — April → September 2027 |
-| 📋 Q3 2027 | Expansion — Underwriting, IP, Distribution |
-| 📋 Backlog | Scoped, not yet scheduled |
-| 🔬 Research | Advanced / domain-depth |
+| 🟢 Build-ready | Design pass done (gate PASS) — implementation can start |
+| 🔨 Near-term | Next in the Track-A / Track-C sequence |
+| 📋 Backlog | Epic-scoped; needs its design pass before build |
+| 🔬 Research | Advanced / domain-depth, no committed date |
+
+> The old **quarter labels (Q1/Q2/Q3 "CERT")** are retired — sequencing now follows the
+> [three tracks + per-domain recipe](./is-build-roadmap), not cert quarters. The tables below keep their
+> original grouping as a **historical inventory**; treat the badges above as the current status vocabulary.
 
 ---
 
@@ -55,80 +75,84 @@ All infrastructure underpinning every business application.
 
 ---
 
-## Roadmap Timeline
+## The value chain (Track A build order)
+
+Sequencing follows the insurance value chain + the legacy spine, **not** cert quarters:
 
 ```
-                         NOW
-                          │
-          ┌───────────────┼───────────────────────────────────┐
-          │               │                                   │
-     Oct 2026        Apr 2027                            Oct 2027+
-          │               │                                   │
-    ┌─────▼─────┐  ┌──────▼──────┐  ┌────────▼────────┐  ┌──▼──────────┐
-    │  Q1 2027  │  │   Q2 2027   │  │    Q3 2027      │  │  Post-cert  │
-    │   CERT    │  │   CERT P2   │  │   UW + IP + Dist│  │  IS Expan.  │
-    └───────────┘  └─────────────┘  └─────────────────┘  └─────────────┘
+   FOUNDATIONS (live): platform #3 · AI #4 · digital workplace #10 · Policy Admin #6 · ERPNext #8
+        │
+   TRACK A — value chain:
+   Distribution #13 → Underwriting #12 → Policy Admin #6 (LIVE) → Claims #11 → Billing #14 → Reinsurance #22
+        │                 (🟢 build-ready)                          (🟢 build-ready)
+   TRACK C — legacy spine (parallel): GlobalCore (Oracle/SOAP/batch) ──wrapped by──► Claims #11 ACL
+   TRACK B — governance gate: every build clears regulatory impact · AI-Act tier · NFR/security/resilience
+   RUN-THE-SYSTEM: ITSM (GLPI) #16 🟢 build-ready — IT service desk + CMDB
 ```
+
+Full explanation: [🧭 IS Build Roadmap](./is-build-roadmap). Cross-cutting completeness pieces —
+the **[Enterprise Document Platform #24](../insurance-platform/business-applications-catalog)**, the
+**[Operations Workbench](./is-build-roadmap#business-operations-completeness--the-back-office-layer)** (AI-native
+back-office task-inbox), the **[semantic/metrics layer](./is-build-roadmap#net-new-items-this-blueprint-adds-to-the-roadmap)**
+(Data #5), and the **Level-7 hardening** posture — are named on the IS Build Roadmap.
 
 ---
 
-## Q1 2027 — Certification Core (RNCP39583 BC02)
+## Core lifecycle build (Policy · Claims · portal)
 
-Primary evidence for the RNCP39583 certification. Four microservices + accessibility audit.
+> The four services below were previously grouped as "Certification Core" — **that framing is retired**
+> (the cert is Retrieva). They remain the **core policy/claims lifecycle** of the IS. **Note the corrected
+> Claims design:** Claims is delivered by **wrapping the GlobalCore legacy** (ACL/strangler), not a
+> standalone COREP state machine. Issue links are legacy `platform-backlog` refs (historical).
 
 **Dependency chain:**
 ```
 ERPNext HR (✅ live)
-      └──► ktayl-policy-service (Go)  ────────────────────┐
-                │                                          │
-                └──► ktayl-claims-service (Java 21)        │
-                              │                            │
-                              └──► ACPR COREP pipeline     │
-                                                           ▼
-Authentik OIDC (✅ live) ──────────────────► ktayl-portal (Next.js 14)
+      └──► ktayl-policy-service (Go, ✅ LIVE #6) ──────────┐
+                                                            │
+GlobalCore legacy (Oracle/SOAP/batch, Track C) ──ACL──► ktayl-claims (#11, Java 21 + Spring Boot)
+                                                            │
+Authentik OIDC (✅ live) ──────────────────► ktayl-portal (Next.js)
                                                     │
-                                                    └──► RGAA 4.1 audit
+                                                    └──► RGAA 4.1 accessibility audit
 ```
 
-| Deliverable | Stack | Issue | Description |
+| Deliverable | Stack | Board / issue | Description |
 |---|---|---|---|
-| **ktayl-policy-service** | Go | [#203](https://github.com/andrelair-platform/platform-backlog/issues/203) | Policy lifecycle: create, amend, renew, cancel, document generation |
-| **ktayl-claims-service** | Java 21 / Spring Boot 3 | [#198](https://github.com/andrelair-platform/platform-backlog/issues/198) | FNOL → investigation → settlement state machine + COREP bordereau |
-| **ktayl-portal** | Next.js 14 / TypeScript | [#202](https://github.com/andrelair-platform/platform-backlog/issues/202) | Unified policyholder + broker portal, Authentik role-based views, SSR |
-| **RGAA 4.1 accessibility audit** | axe-core / Lighthouse CI | [#204](https://github.com/andrelair-platform/platform-backlog/issues/204) | Mandatory BC02 deliverable on ktayl-portal |
-| **ACPR COREP pipeline** | Spring Batch (in claims-service) | [#83](https://github.com/andrelair-platform/platform-backlog/issues/83) | Automated COREP/XBRL/ORSA generation |
+| **ktayl-policy-service** | Go | **#6 · ✅ live** | Policy lifecycle: create, amend, renew, cancel, document generation |
+| **ktayl-claims** | Java 21 / Spring Boot | **#11 · 🟢 build-ready** | modern Claims built **AS the ACL/strangler** over GlobalCore (SOAP→JSON, batch→events/CDC→NATS, read-model, workbench, governed AI tool) |
+| **ktayl-portal** | Next.js / TypeScript | `platform-backlog#202` | Unified policyholder + broker portal, Authentik role-based views, SSR |
+| **RGAA 4.1 accessibility audit** | axe-core / Lighthouse CI | `platform-backlog#204` | Accessibility audit on the portal |
+| **ACPR COREP pipeline** | Spring Batch | `platform-backlog#83` | Automated COREP/XBRL/ORSA generation (a Finance/Compliance capability) |
 
 ---
 
-## Q2 2027 — Certification Phase 2
-
-AI layer, billing, and supporting infrastructure that complete the certification scope.
+## AI, billing & documents
 
 **Dependency chain:**
 ```
-ktayl-claims-service (Q1)
-      └──► ktayl-ai-claims-assistant (Python/LangGraph) ──► NATS JetStream (✅ live)
-      └──► Paperless-ngx DMS  ──► claims document archive
-      └──► CLM-PAY-1 SEPA payment  ──► ERPNext accounting (✅ live)
+ktayl-claims (#11)
+      └──► claims AI tool (governed SQL-tool, read-only) ──► NATS JetStream (✅ live)
+      └──► Enterprise Document Platform (#24) ──► claims document archive + RAG
+      └──► SEPA payment ──► ERPNext accounting (✅ live)
 
 ERPNext CRM + billing config ──► premium invoicing + renewal
-Insurance attestation PDF  ──► QR-code verification at bind
 ```
 
-| Deliverable | Stack | Issue | Description |
+| Deliverable | Stack | Board / issue | Description |
 |---|---|---|---|
-| **ktayl-ai-claims-assistant** | Python / LangGraph | [#200](https://github.com/andrelair-platform/platform-backlog/issues/200) | AI triage, fraud scoring, human-in-loop via NATS events |
-| **ERPNext CRM config** | Frappe | [#53](https://github.com/andrelair-platform/platform-backlog/issues/53) | Prospect pipeline, devis lifecycle, renewal management, broker commissions |
-| **ERPNext billing** | Frappe | [#54](https://github.com/andrelair-platform/platform-backlog/issues/54) | Premium invoicing, payment tracking, claims payment accounting |
-| **Paperless-ngx DMS** | Docker + Longhorn | [#76](https://github.com/andrelair-platform/platform-backlog/issues/76) | Compliant document archive — policy contracts + settled claim documents |
-| **Claims indemnification SEPA** | Go / SEPA | [#211](https://github.com/andrelair-platform/platform-backlog/issues/211) | Outbound SEPA credit transfer to claimants + ERPNext entries |
-| **Insurance attestation PDF** | Python | [#116](https://github.com/andrelair-platform/platform-backlog/issues/116) | Auto-generate certificates with QR verification at policy bind |
+| **Claims governed AI tool** | Python / LiteLLM | #11 (story S007) | read-only SQL-tool + RAG, PII-masked, identity-scoped (full copilot = #19, parked) |
+| **ERPNext CRM config** | Frappe | `platform-backlog#53` | Prospect pipeline, devis lifecycle, renewal, broker commissions |
+| **ERPNext billing** | Frappe | `platform-backlog#54` | Premium invoicing, payment tracking, claims payment accounting |
+| **Enterprise Document Platform** | Nextcloud/OnlyOffice/Docuseal/Docling live + Paperless-ngx backlog | **#24** | DMS + the parse→chunk→metadata→embed→vector-DB ingestion pipeline (see [catalog §8](../insurance-platform/business-applications-catalog)) |
+| **Claims indemnification SEPA** | Go / SEPA | `platform-backlog#211` | Outbound SEPA credit transfer to claimants + ERPNext entries |
+| **Insurance attestation PDF** | Python | `platform-backlog#116` | Auto-generate certificates with QR verification at policy bind |
 
 ---
 
-## Q3 2027 — Underwriting, International Programs & Distribution
+## Underwriting, International Programs & Distribution
 
-The three major IS gaps closed in this phase. See dedicated pages for architecture detail.
+Major IS domains. Underwriting **#12 is build-ready**; see dedicated pages for architecture detail.
 
 **Dependency chain:**
 ```
@@ -168,9 +192,10 @@ ktayl-policy-service (Q1) ──► IP data model extension
 
 ---
 
-## Post-Certification — IS Expansion
+## Later — IS Expansion
 
-After RNCP39583 is complete. No fixed dates — ordered by IS priority.
+Beyond the core lifecycle + build-ready domains. No fixed dates — ordered by IS priority (each still
+needs its own design pass before build).
 
 ### Claims Extended
 
@@ -313,7 +338,7 @@ Quick-scan of IS domain items not yet scheduled. Full detail per item is in the 
 | 49 | GCP BigQuery | Data & BI |
 | 50 | MidPoint IGA | IAM |
 | 51 | PAM (Teleport + Vault SSH) | IAM |
-| 52 | GLPI | IAM / IT Ops |
+| 52 | GLPI ITSM 🟢 **build-ready** (#16 design pass done — CMDB + incident/SLA) | IT Ops |
 | 53 | Distribution lists (Stalwart virtual aliases) | Communication |
 
 ### 8 Research items (🔬)
@@ -351,22 +376,24 @@ Underwriting and Distribution are the two heaviest domains — together 20 of th
 
 ## IS Domain Coverage Map
 
-| IS Domain | Component | Status |
-|---|---|---|
-| Claims & policy lifecycle | ktayl-claims-service + ktayl-policy-service | 🔨 Q1 2027 |
-| Policyholder / broker portal | ktayl-portal | 🔨 Q1 2027 |
-| AI claims assistant | ktayl-ai-claims-assistant | 🔨 Q2 2027 |
-| Underwriting (UWWB) | ktayl-uwb-api + ktayl-uwb-ui + UW AI agents | 📋 Q3 2027 |
-| International Programs | ktayl-ip-portal + IP bordereau module | 📋 Q3 2027 |
-| Document management (DMS) | Paperless-ngx | 🔨 Q2 2027 |
-| CRM & partner management | ERPNext CRM | 🔨 Q2 2027 |
-| Reinsurance | Reinsurance management + bordereau portal | 📋 Post-cert |
-| Actuarial | Reserving tool + pricing engine | 📋 Post-cert |
-| Compliance (ACPR/COREP) | Spring Batch in claims-service | 🔨 Q1 2027 |
-| Regulatory (AML/KYC, GDPR) | Python + n8n workflows | 📋 Post-cert |
-| Data platform & BI | ClickHouse + Metabase + dbt | 📋 Post-cert |
-| IAM & governance | Authentik (✅) + MidPoint IGA | ✅ / Post-cert |
-| ERP & finance | ERPNext PCG 2025 + TSCA | ✅ Live |
-| AI platform | LiteLLM + vLLM + agents + RAG | ✅ Live |
-| Communication | Stalwart + Matrix + Jitsi | ✅ Live |
-| e-Signature | Docuseal | ✅ Live |
+| IS Domain | Board | Component | Status |
+|---|---|---|---|
+| Policy administration (PAS) | #6 | ktayl-policy-service (Go) | ✅ **Live** |
+| Claims (via legacy wrap) | #11 | ktayl-claims ACL over **GlobalCore** (Oracle/SOAP/batch) | 🟢 Build-ready |
+| Underwriting & Pricing | #12 | uw workbench + rating (binds PAS) | 🟢 Build-ready |
+| ITSM / IT service desk | #16 | GLPI (incident/request/SLA + CMDB) | 🟢 Build-ready |
+| Legacy core (Track C) | — | GlobalCore (`globalcore-legacy`), evolving to Oracle + Claims | 🟡 built, evolving |
+| Policyholder / broker portal | #13 | ktayl-portal (Next.js) | 📋 Backlog |
+| Enterprise Document Platform | #24 | Nextcloud/OnlyOffice/Docuseal/Docling live; Paperless-ngx + IDP pipeline backlog | 🟡 partial |
+| International Programs | #23 | ktayl-ip-portal + bordereau | 📋 Backlog |
+| CRM & partner management | #13 | ERPNext CRM | 🟡 platform only |
+| Billing / Finance | #14 | ERPNext billing (insurance config) | 🟡 platform only |
+| Reinsurance | #22 | treaty/fac + bordereau portal | 📋 Backlog |
+| Data / Actuarial + BI | #5 | ClickHouse + dbt + Metabase + **semantic layer** | 📋 Backlog (sources-gated) |
+| Compliance / Regulatory | #15 | AML/KYC, GDPR, ACPR/COREP, DORA | 📋 Backlog |
+| Operations Workbench (back-office) | — | AI-native cross-domain task-inbox | 📋 named, need-first |
+| IAM & governance | #17 | Authentik (✅) + MidPoint IGA | ✅ / 📋 |
+| ERP & finance | #8 | ERPNext PCG 2025 + TSCA + Factur-X | ✅ Live |
+| AI platform | #4 | LiteLLM + vLLM + agents + RAG | ✅ Live |
+| Communication | #10 | Stalwart + Matrix + Jitsi | ✅ Live |
+| e-Signature | #10 | Docuseal | ✅ Live |
