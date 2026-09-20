@@ -10,6 +10,10 @@ sidebar_label: 🏛 EA Blueprint (Insurer IS)
 > product board, repo and roadmap item hangs off a named domain here. The detailed inventory lives in
 > the [Business Applications Catalog](./business-applications-catalog); the AI vision in the
 > [AI-First Operating Model](./ai-first-operating-model). **This page is the map.**
+>
+> **New here? Start with [🗺 Architecture at a Glance](./architecture-at-a-glance)** — the whole IS on one
+> screen (value chain · legacy spine · shared platforms · foundations) with a reading path. This page is
+> the detailed functional target behind it.
 
 :::note Two-layer model — do not conflate
 **ktayl-solution IS** = the insurer's own information system (this blueprint). **Retrieva** is a
@@ -170,7 +174,7 @@ the primary control. **Revisit** when real employees + PII-at-volume or a produc
 ### The 4 transversal layers
 | Layer | Board | **Deployed reality** | Status |
 |---|---|---|---|
-| Documents (GED / OCR / IDP) | #24 | Nextcloud (storage) + OnlyOffice (edit) + **Docuseal** (e-sign) + **Docling + markitdown-proxy** (OCR/conversion) all **live**; missing a records-mgmt DMS + a structured IDP pipeline (repo `ktayl-dms` scaffold) | 🟡 partial |
+| **Enterprise Document Platform** (GED / OCR / IDP) | #24 | Nextcloud (storage) + OnlyOffice (edit) + **Docuseal** (e-sign) + **Docling + markitdown-proxy → Qdrant** (OCR/parse/embed → RAG) all **live**; missing a records-mgmt DMS (Paperless-ngx) + the structured IDP pipeline as a product (repo `ktayl-dms` scaffold). Full spec: [Business Applications Catalog §8](./business-applications-catalog) | 🟡 partial |
 | Integration (API-GW / ESB / ETL / MFT / EDI) | #25 | **NATS** (events) + **Temporal** (workflow) + **n8n** (low-code integration) **live** as primitives; missing the formal API-GW/ESB/ETL/MFT/EDI insurance fabric (repo `ktayl-integration` scaffold) | 🟡 primitives only |
 | Master Data / Référentiels (MDM) | #20 | nothing running (repo scaffold, **parked** — see §5) | 🔴 |
 | Data | #5 | only MLflow; analytical Data Platform not deployed | 🔴 |

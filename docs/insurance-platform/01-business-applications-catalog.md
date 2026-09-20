@@ -307,13 +307,70 @@ ktayl-ip-portal       ──► n8n (automated SO communication workflows)
 
 ---
 
-## 8. Document Management
+## 8. Enterprise Document Platform (DMS + document-AI)  · #24
+
+The **unstructured** half of the IS: every policy wording, procedure, manual, guideline, contract and
+broker agreement — stored, governed, and made **AI-queryable**. Two complementary capabilities:
+a **records DMS** (store/archive/e-sign) and a **document-AI ingestion pipeline** (parse→embed→search)
+that feeds RAG. It is a **transversal layer (#24)** — every domain (Underwriting, Claims, Compliance,
+Distribution) consumes it.
+
+### 8a. The document corpus (what lives here)
+
+Enterprise documents are first-class content, e.g.:
+
+```
+Cyber Insurance Policy.pdf        Claims Handling Procedure.pdf
+Fraud Investigation Manual.pdf    European Claims Guidelines.pdf
+Broker Agreement.pdf              Ransomware Coverage Guide.pdf
+```
+
+### 8b. Ingestion pipeline (document → vector DB)
+
+The pipeline that turns a document into retrievable, cited knowledge — **already live substrate**
+(`markitdown-proxy` + `rag-ingest` → **Qdrant**):
+
+```
+Documents
+   ↓  Parsing        (Docling / markitdown — PDF, Office, scans/OCR)
+   ↓  Chunking       (semantic chunks + overlap)
+   ↓  Metadata       (typed tags — see below — for filtered retrieval + access control)
+   ↓  Embedding      (via LiteLLM; French BM25 + dense)
+   ↓  Vector DB      (Qdrant collection, per corpus)
+   →  RAG service    (grounded, cited Q&A — never invents; cites source + version)
+```
+
+**Metadata schema** (drives filtered retrieval **and** authorization — a restricted doc never surfaces
+to an unauthorized user):
+
+```json
+{
+  "document_type": "policy_wording",
+  "product": "cyber",
+  "country": "FR",
+  "version": "2026.1",
+  "classification": "internal"
+}
+```
+
+`document_type` ∈ `policy_wording · procedure · manual · guideline · contract · broker_agreement · endorsement · regulatory`.
+`classification` ∈ `public · internal · confidential · restricted` — enforced at retrieval (RBAC), and PII
+is **Presidio-masked before any LLM** (AI-Act + GDPR).
+
+### 8c. Records DMS (store · archive · sign)
 
 | App | Stack | Issue | Phase | Description |
 |---|---|---|---|---|
-| **Paperless-ngx DMS** | Docker + Longhorn | #76 (archived) | 📋 Backlog | Long-term compliant document archive — replaces eFile/DOXIS |
+| **Nextcloud** (storage) + **OnlyOffice** (edit) | k8s | live | 🟢 Live | primary document storage + collaborative editing |
+| **Docuseal** (e-sign) | k8s | live | 🟢 Live | signature workflows (contracts, broker agreements) |
+| **Docling + markitdown-proxy** (OCR/convert) | k8s (`ai` ns) | live | 🟢 Live | parsing/OCR front of the ingestion pipeline |
+| **Paperless-ngx DMS** (GED/retention) | Docker + Longhorn | #76 (archived) | 📋 Backlog | long-term compliant document archive w/ retention — replaces eFile/DOXIS |
+| **Structured IDP pipeline** | rag-ingest + Qdrant | `ktayl-dms` #24 | 📋 Backlog | the governed 8b pipeline as a first-class product (collections per corpus, metadata contract, re-index) |
 
-**Integration:** ktayl-claims archives settled claim documents → Paperless-ngx via API on settlement. ktayl-policy-service archives signed contracts at bind.
+**Integration:** Underwriting reads submission-pack documents via IDP → structured fields; Claims archives
+settled-claim docs on settlement; Policy Service archives signed contracts at bind; the **AI Copilot /
+Knowledge Assistant** answer over the vector DB (8b) with citations. DMS = the **document** side; structured
+business data stays in the domain services (queried via SQL-tools, **not** dumped into the vector DB).
 
 ---
 
