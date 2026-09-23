@@ -578,6 +578,7 @@ const sidebars: SidebarsConfig = {
         'backup-dr/dr-runbook',
         'reliability/chaos-mesh',
         'reliability/phase81-chaos-game-day',
+        'reliability/cluster-stability-assessment',
       ],
     },
 
