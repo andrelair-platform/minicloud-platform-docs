@@ -592,16 +592,6 @@ const sidebars: SidebarsConfig = {
       ],
     },
 
-    // ── Certification RNCP ───────────────────────────────────────────
-    {
-      type: 'category',
-      label: '🎓 Certification RNCP39583',
-      collapsed: false,
-      items: [
-        'certification/retrospective-risk-register',
-      ],
-    },
-
     // ── IS Governance ────────────────────────────────────────────────
     {
       type: 'category',
