@@ -144,6 +144,34 @@ is blocked on prerequisites the owner must supply**: an OCI tenancy, an API key 
 module + budget alert + `tofu apply` follow (see the ADR's *Apply plan*).
 :::
 
+## 4. External observability anchor → detect total-site failure
+
+**Goal:** a failure signal that leaves the single failure domain. The in-cluster monitoring stack
+(Prometheus/Grafana/Alertmanager) and CoreDNS all run *inside* the site — so a control-plane-node,
+LAN, ISP or power loss takes the monitors down **with** the platform, and no alert escapes. A cluster
+cannot report its own death; the fix is a black-box probe from **outside**.
+
+**Design:** a small always-free external heartbeat probes the public URLs (through Cloudflare → tunnel →
+ingress → app) on a schedule, records state, alerts on the UP→DOWN transition, and serves a **public
+status page** that stays up even when all six laptops are down. It covers the failure scenarios the
+in-cluster stack structurally cannot — control-plane-node down, DNS down, ingress-node down, total
+site/power loss. It is a **read-only observer with zero coupling** to the platform (its exit test is a
+true no-op on the cluster), so it can never become a new SPOF.
+
+Two hosting options were weighed — reuse the OCI DR node (Option A, simplest) vs **AWS serverless**
+(Lambda + EventBridge + DynamoDB + CloudFront — recommended, because a monitor's value is *independence*
+and hosting it on the DR target couples the two most safety-critical externals). This anchors on the
+**always-free tier** per the 3-tier free model now codified in `cloud-adoption.md` (permanent architecture
+→ always-free only; 12-month tiers + credits are second-copies and bursts, each with a written exit test).
+
+:::note 🟡 Decision proposed, provisioning not started — 2026-09-26
+ADR written: [minicloud-cloud `adr-0002-external-heartbeat-status-page`](https://github.com/andrelair-platform/minicloud-cloud/blob/main/docs/adr-0002-external-heartbeat-status-page.md)
+— design + option analysis + security items + exit test recorded. **Awaiting owner approval** of the
+option (B recommended), a public hostname (`status.devandre.sbs`), and the probe target list; then the
+Lambda handler + `aws-heartbeat.tf` + `tofu plan` follow. €0 steady-state (AWS always-free), inside the
+existing €15 AWS budget.
+:::
+
 ---
 
 ## Summary — the 9.5 checklist
