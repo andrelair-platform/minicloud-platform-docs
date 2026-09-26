@@ -173,6 +173,9 @@ scp /srv/backups/k3s/${LATEST} ubuntu@10.0.0.2:/tmp/k3s-restore.db
 sudo systemctl stop k3s
 sudo cp /var/lib/rancher/k3s/server/db/state.db /var/lib/rancher/k3s/server/db/state.db.bak
 sudo cp /tmp/k3s-restore.db /var/lib/rancher/k3s/server/db/state.db
+# CRITICAL: remove the stale WAL/SHM — else SQLite replays the old WAL OVER the
+# restored DB and you get an inconsistent control plane. See Scenario G.
+sudo rm -f /var/lib/rancher/k3s/server/db/state.db-wal /var/lib/rancher/k3s/server/db/state.db-shm
 sudo systemctl start k3s
 
 # Verify cluster is back
@@ -224,6 +227,87 @@ cat ~/.vault-unseal-key-2 | kubectl exec -i -n vault vault-0 -- \
 ### Step 6 — Restore databases if PV data is lost
 
 Follow Scenario D for each database. Database dumps are in MinIO `db-backups/`, which survives cluster loss (MinIO runs on the controller, not in-cluster).
+
+---
+
+## Scenario G — Control-Plane (set-hog) Rebuild + Kine Restore
+
+**The targeted single-node control-plane recovery** — use this, not Scenario F, when
+**only `set-hog` is lost/corrupt** (the 5 workers are fine). `set-hog` is the sole k3s
+server on an **embedded SQLite (kine)** datastore, so it is a single point of failure;
+this is how you bring it back and have the workers rejoin **without re-provisioning them**.
+Estimated RTO: **20–40 min** (Case A ~5 min).
+
+:::danger Preserve the cluster token — this is the make-or-break prerequisite
+The workers rejoin only if `set-hog` comes back with the **same cluster token**
+(`/var/lib/rancher/k3s/server/token`) — the cluster CA is derived from it. If `set-hog`'s
+disk dies and the token was **not** backed up off-node, every worker must be re-joined with
+a new token (Scenario B ×5). **Gap to close (P0-1 follow-up):** back the token up to Vault
+(`secret/platform/k3s-server-token`) now, while the cluster is healthy —
+`sudo cat /var/lib/rancher/k3s/server/token` → Vault. Same for `/etc/rancher/k3s/config.yaml`.
+:::
+
+**Facts (verified 2026-09-26):** k3s **`v1.36.3+k3s1`** · datastore = embedded **SQLite**
+(`/var/lib/rancher/k3s/server/db/state.db` + `-wal`/`-shm`) · config
+`/etc/rancher/k3s/config.yaml` (Cilium: `flannel-backend: none`, `disable-kube-proxy`,
+`disable: servicelb,traefik`). Note the `etcd-snapshot-*` lines in that config are **inert**
+on a SQLite datastore (k3s only snapshots embedded *etcd*) — which is exactly why the custom
+kine backups exist. **Verified restorable backups (both off-set-hog, survive its loss):**
+- controller systemd timer → MinIO `db-backups/kine/kine-*.db.gz` (daily, self-integrity-checked)
+- in-cluster CronJob → MinIO `k3s-backup/k3s-state-*.db.gz`
+
+### Case A — kine DB corrupt, set-hog otherwise healthy (in-place restore, ~5 min)
+
+```bash
+# On the controller: pull the latest VERIFIED kine backup (integrity_check runs at backup time)
+LATEST=$(~/.local/bin/mc ls minilocal/db-backups/kine/ | tail -1 | awk '{print $NF}')
+~/.local/bin/mc cp minilocal/db-backups/kine/${LATEST} /tmp/${LATEST}
+gunzip -f /tmp/${LATEST}                                   # → /tmp/kine-YYYYMMDD-HHMMSS.db
+python3 -c "import sqlite3;print(sqlite3.connect('/tmp/${LATEST%.gz}').execute('PRAGMA integrity_check').fetchone())"  # expect ('ok',)
+scp /tmp/${LATEST%.gz} ubuntu@10.0.0.2:/tmp/kine-restore.db
+
+# On set-hog: stop, swap, REMOVE THE WAL/SHM, start
+sudo systemctl stop k3s
+sudo cp /var/lib/rancher/k3s/server/db/state.db /var/lib/rancher/k3s/server/db/state.db.bak.$(date +%s)
+sudo cp /tmp/kine-restore.db /var/lib/rancher/k3s/server/db/state.db
+sudo rm -f /var/lib/rancher/k3s/server/db/state.db-wal /var/lib/rancher/k3s/server/db/state.db-shm  # ← mandatory
+sudo systemctl start k3s
+```
+
+### Case B — set-hog disk/OS died (full CP node rebuild, ~20–40 min)
+
+```bash
+# 1. Re-image set-hog via MAAS (same IP 10.0.0.2). If the token/config were backed up to Vault,
+#    fetch them; otherwise you must re-join all workers afterwards (Scenario B).
+
+# 2. Reinstall the SAME k3s version + config + token so the workers' node-token stays valid:
+sudo mkdir -p /etc/rancher/k3s
+#   restore /etc/rancher/k3s/config.yaml (from Vault/backup)
+#   restore the server token BEFORE first start:
+sudo mkdir -p /var/lib/rancher/k3s/server
+#   place the preserved token at /var/lib/rancher/k3s/server/token
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.36.3+k3s1 sh -s - server
+
+# 3. Now restore the kine DB exactly as in Case A (stop k3s → swap state.db → rm -f *-wal *-shm → start).
+
+# 4. Workers rejoin automatically (they point at https://10.0.0.2:6443 with the derived node-token).
+#    Any that don't: re-join per Scenario B with K3S_TOKEN=<preserved server token>.
+```
+
+### Verify (both cases)
+
+```bash
+kubectl --context minicloud get nodes                      # all 6 Ready within a few minutes
+kubectl --context minicloud get pods -A | grep -vE 'Running|Completed'
+ssh controller "minicloud-recovery-check"                  # full platform health sweep
+```
+
+:::note WAL-replay caveat (why the `rm -f *-wal *-shm` is mandatory)
+The live WAL has been observed at ~200 MB (checkpoints don't truncate while kine holds a
+reader). On an **unclean** set-hog loss, a large WAL means longer/edgier replay. Restoring a
+**verified** snapshot and deleting the stale WAL/SHM sidesteps replay entirely — you start from
+a known-good, checkpointed DB. Never restore `state.db` while leaving the old WAL in place.
+:::
 
 ### Step 7 — Verify platform
 
