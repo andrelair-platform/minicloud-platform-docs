@@ -261,9 +261,9 @@ encryption-config) next to `state.db` (gitops `01-k3s-sqlite-backup.yaml`), offs
 `disable: servicelb,traefik`). Note the `etcd-snapshot-*` lines in that config are **inert**
 on a SQLite datastore (k3s only snapshots embedded *etcd*) — which is exactly why the custom
 kine backups exist. **Verified restorable backups (all off-set-hog, survive its loss):**
-- controller systemd timer → MinIO `db-backups/kine/kine-*.db.gz` (daily, self-integrity-checked)
-- in-cluster CronJob → MinIO `k3s-backup/k3s-state-*.db.gz` (state) **+ `k3s-backup/k3s-bootstrap-*.tar.gz`
-  (token + encryption-config — the bootstrap material Case B needs)**
+- controller systemd timer → MinIO `db-backups/kine/kine-*.db.gz` (daily, self-integrity-checked; **not** age-encrypted — an in-place same-node restore, Case A)
+- in-cluster CronJob → MinIO `k3s-backup/k3s-state-*.db.gz.age` (state) **+ `k3s-backup/k3s-bootstrap-*.tar.gz.age`
+  (token + encryption-config — the bootstrap material Case B needs)**, both **age-encrypted** client-side (see Case B)
 
 :::tip Rehearsal-proven (2026-09-27)
 Restoring the latest backup into a throwaway k3s brought the control plane up serving the **real
@@ -294,6 +294,15 @@ sudo systemctl start k3s
 **Rehearsal-proven procedure. The order matters: stage the datastore + token + encryption-config
 BEFORE k3s ever starts, and do NOT restore `tls/` (k3s regenerates it from the datastore CA).**
 
+:::info Backups are age-encrypted at rest (client-side, asymmetric)
+Both objects in `minilocal/k3s-backup/` are `age`-encrypted: `k3s-state-*.db.gz.age` and
+`k3s-bootstrap-*.tar.gz.age`. The backup job holds only the **public** recipient key, so a compromised
+set-hog cannot decrypt its own offsite backups. Restore needs the **private identity**, which lives in
+Vault `secret/platform/k3s-backup-age` **and** a Vaultwarden break-glass copy (so a control-plane
+rebuild isn't blocked on Vault being down). Fetch it into `/tmp/age-id` on set-hog first (step 2b);
+delete it when done. **Never print or commit the identity.**
+:::
+
 ```bash
 # 1. Re-image set-hog via MAAS (same IP 10.0.0.2). Install the SAME k3s version but DO NOT start it yet:
 curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.36.3+k3s1 INSTALL_K3S_SKIP_START=true sh -s - server
@@ -307,10 +316,20 @@ B=$(~/.local/bin/mc ls minilocal/k3s-backup/ | grep k3s-bootstrap-| tail -1 | aw
 ~/.local/bin/mc cp minilocal/k3s-backup/$S /tmp/$S && ~/.local/bin/mc cp minilocal/k3s-backup/$B /tmp/$B
 scp /tmp/$S /tmp/$B ubuntu@10.0.0.2:/tmp/
 
-# 3. ON set-hog: stage the datastore + bootstrap material. NOTE what is and ISN'T restored:
-sudo gunzip -c /tmp/$S > /var/lib/rancher/k3s/server/db/state.db     # the datastore
+# 2b. ON set-hog: stage the age PRIVATE identity (from Vault; or Vaultwarden break-glass if Vault is down).
+#     This is the ONLY key that can decrypt the backups — handle it out-of-band, never echo it.
+VAULT_TOKEN=$(cat ~/.vault-root-token)   # or the break-glass copy
+/usr/bin/curl -sk --cacert ~/minicloud-ca.crt -H "X-Vault-Token: $VAULT_TOKEN" \
+  "https://vault.10.0.0.200.nip.io/v1/secret/data/platform/k3s-backup-age" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['data']['identity'])" > /tmp/age-id
+chmod 600 /tmp/age-id
+#   If Vault is down (worst case), paste the Vaultwarden break-glass identity into /tmp/age-id by hand.
+
+# 3. ON set-hog: DECRYPT + stage the datastore + bootstrap material. NOTE what is and ISN'T restored.
+#    The state object is gzip-INSIDE-age → decrypt, then gunzip; the bootstrap is tar.gz-INSIDE-age → decrypt, then tar.
+age -d -i /tmp/age-id /tmp/$S | gunzip -c | sudo tee /var/lib/rancher/k3s/server/db/state.db >/dev/null
 sudo rm -f /var/lib/rancher/k3s/server/db/state.db-wal /var/lib/rancher/k3s/server/db/state.db-shm
-sudo tar xzf /tmp/$B -C /var/lib/rancher/k3s/server                  # → token + cred/encryption-config.json
+age -d -i /tmp/age-id /tmp/$B | sudo tar xz -C /var/lib/rancher/k3s/server  # → token + cred/encryption-config.json
 #   ↑ the token restores BYTE-EXACT (the tar preserves it; never `echo`/`cat`-capture it).
 #   ↑ NO tls/ is restored — k3s regenerates every cert from the datastore CA on start. If a stale
 #     tls/ dir exists from the k3s install, remove it: sudo rm -rf /var/lib/rancher/k3s/server/tls
@@ -318,6 +337,7 @@ sudo tar xzf /tmp/$B -C /var/lib/rancher/k3s/server                  # → token
 # 4. Start k3s. It decrypts the datastore bootstrap with the token, regenerates tls/, and comes up.
 sudo systemctl start k3s
 sudo k3s kubectl get nodes    # the 6 nodes appear; workers rejoin on their own (same derived node-token)
+shred -u /tmp/age-id          # 5. destroy the private identity on set-hog once the cluster is up
 ```
 
 :::warning Why NOT `tls/` (the counter-intuitive bit — rehearsal v3)
