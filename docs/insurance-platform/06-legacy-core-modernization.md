@@ -111,7 +111,7 @@ until this alignment + the Claims Path-C set are validated — same discipline a
 Path-C (a legacy datastore, CDC, cross-boundary AI) → **architecture + security review gates**.
 Compliance-by-design in the Claims threat model: legacy creds (Vault/ESO), least-privilege Oracle user,
 default-deny egress to the controller only, PII masking before AI, identity propagation, audit on every ACL
-+ AI action. Evidence → **Regulatory & Compliance #15** control library. Cert: BC01 (spine) / BC02–BC03 (wrap).
++ AI action. Evidence → **Regulatory & Compliance #15** control library.
 
 ## References
 

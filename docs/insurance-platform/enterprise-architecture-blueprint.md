@@ -11,6 +11,12 @@ sidebar_label: 🏛 EA Blueprint (Insurer IS)
 > the [Business Applications Catalog](./business-applications-catalog); the AI vision in the
 > [AI-First Operating Model](./ai-first-operating-model). **This page is the map.**
 >
+> **Fine-grained target + the *why*:** the [Capability Map & Registry](./capability-map) breaks the IS
+> into 19 domains → ~150 capabilities (each mapped to our system, status, criticality, RTO/RPO) and frames
+> priority against the **four existential industry problems** (insurability · margin · systemic
+> accumulation · legacy/talent). Foundations: [System of Record](./system-of-record) ·
+> [Canonical Data Model](./canonical-data-model).
+>
 > **New here? Start with [🗺 Architecture at a Glance](./architecture-at-a-glance)** — the whole IS on one
 > screen (value chain · legacy spine · shared platforms · foundations) with a reading path. This page is
 > the detailed functional target behind it.
@@ -307,6 +313,7 @@ The parked copilot/MDM/KA briefs remain valid plans. Detail: [Legacy-Core Modern
 
 - Each domain/layer = a **product board** (one Project per product; see the GitHub Projects rules).
   New boards are created **when work starts**, not pre-emptively.
-- This blueprint is **BC01 (piloter) governance evidence** for the ktayl IS. It is reviewed at
-  architecture gates and kept current as domains move 🔴→🟡→🟢.
+- This blueprint is the **EA governance artefact** for the ktayl IS — reviewed at architecture gates
+  and kept current as domains move 🔴→🟡→🟢. *(It documents the insurer's business IS — the organisational
+  context. It is not a certification deliverable; the RNCP cert is the separate Retrieva product.)*
 - Detailed per-app inventory + sprint state: [Business Applications Catalog](./business-applications-catalog).

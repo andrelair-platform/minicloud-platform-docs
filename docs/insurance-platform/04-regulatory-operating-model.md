@@ -60,4 +60,3 @@ HR AI, autonomous decisions) where **GDPR Art. 22** often bites harder than the 
 
 The register + gate are **governance (cheap, done now)**; actual **controls are implemented per
 capability as each domain is built** (business-tools-first). The map fills itself in as domains stand up.
-Cert evidence: **BC01 (piloter)** + **BC02/BC03 (concevoir · déployer & sécuriser)**.

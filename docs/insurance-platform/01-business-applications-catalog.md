@@ -97,7 +97,7 @@ a separate product; see the two-layer warning above).
 | **ktayl-claims** | Java 21 / Spring Boot 3 | #198 (archived) | 🔨 Q1 2027 | FNOL → investigation → settlement state machine, Spring Batch COREP bordereau |
 | **ktayl-ai-claims-assistant** | Python / LangGraph | #200 (archived) | 🔨 Q2 2027 | AI triage, fraud scoring, human-in-loop via NATS events |
 | **ktayl-portal** | Next.js 14 / TS | #202 (archived) | 🔨 Q1 2027 | Unified policyholder + broker portal (Authentik role-based views, SSR, RGAA) |
-| **RGAA 4.1 audit** | axe-core / Lighthouse CI | #204 (archived) | 🔨 Q1 2027 | Accessibility audit on ktayl-portal — BC02 mandatory deliverable |
+| **RGAA 4.1 audit** | axe-core / Lighthouse CI | #204 (archived) | 🔨 Q1 2027 | Accessibility audit on ktayl-portal (RGAA 4.1 — good practice for a public-facing portal) |
 
 **Integration topology:**
 ```
