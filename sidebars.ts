@@ -576,6 +576,7 @@ const sidebars: SidebarsConfig = {
         'backup-dr/database-backup',
         'backup-dr/disk-management',
         'backup-dr/dr-runbook',
+        'backup-dr/dr-rto-rpo-matrix',
         'reliability/chaos-mesh',
         'reliability/phase81-chaos-game-day',
         'reliability/cluster-stability-assessment',
