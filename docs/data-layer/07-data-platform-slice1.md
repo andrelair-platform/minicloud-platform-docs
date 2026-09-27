@@ -14,7 +14,12 @@ slice of the ktayl IS Data Platform (#5).
 :::
 
 > Two-layer model: this is the **ktayl-solution IS** analytics platform, not Retrieva.
-> Detailed code + runbook lives with the code: **[`data-platform/README.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/data-platform/README.md)**. This page is the map.
+>
+> **Detailed docs (the library):** [ktayl-data-platform docs site](https://andrelair-platform.github.io/ktayl-data-platform/) —
+> architecture, system design (C4 + NFRs + threat model), design patterns, and data model.
+> **Code** (dbt + ingest + Metabase provisioner): [`andrelair-platform/ktayl-data-platform`](https://github.com/andrelair-platform/ktayl-data-platform).
+> **Deployment** (k8s manifests, CronJobs, ArgoCD): [`minicloud-gitops/manifests/data-platform/`](https://github.com/andrelair-platform/minicloud-gitops/tree/main/manifests/data-platform)
+> — the CronJobs git-clone the code repo at runtime (deployment-vs-code separation). This page is the map.
 
 ## The doctrine (why light-first, why one slice)
 
@@ -66,8 +71,10 @@ kubectl exec -n data-platform dp-postgres-1 -- psql -U postgres -d analytics -c 
   "SELECT * FROM business.policy_portfolio;"
 ```
 
-Metabase one-time UI setup (add the `analytics` DB source, expose the `business` schema, build the
-dashboard) is in the [in-repo README](https://github.com/andrelair-platform/minicloud-gitops/blob/main/data-platform/README.md#metabase--one-time-ui-setup-sso-is-a-follow-up-internal-tailscale-gated-for-now).
+Metabase is provisioned as code by the idempotent `metabase/provision_dashboard.py` in the
+[ktayl-data-platform repo](https://github.com/andrelair-platform/ktayl-data-platform); the access model
+(Authentik forward-auth at the ingress) is covered on the
+[docs site](https://andrelair-platform.github.io/ktayl-data-platform/).
 
 ## Gotchas + hardening TODOs
 
