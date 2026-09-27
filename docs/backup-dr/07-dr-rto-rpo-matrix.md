@@ -44,7 +44,7 @@ not a measured restore — those are the gaps to close.
 | Redis (harbor/nextcloud/langfuse/plane) | caches | — (none) | n/a | recreate | n/a — **ephemeral** |
 
 *RTO estimates assume the primary site is up and the restore target exists; a full site loss adds the
-DR-node / rebuild time (see Scenario F/G in the [DR Runbook](./dr-runbook.md)).*
+DR-node / rebuild time (see Scenario F/G in the [DR Runbook](./04-dr-runbook.md)).*
 
 ## Honest DR posture + the gaps to close (priority order)
 
@@ -63,5 +63,5 @@ To reach level 5 (regularly-tested DR), the ordered gaps:
 - Every PVC is offsited (Velero → R2) and the **R2 BSL is `Available`** again (P0-2b).
 - Synapse restore is **continuously proven** (drill + alert).
 - Control-plane (kine) backups are **integrity-checked at write time** + have a rehearsable
-  [rebuild runbook](./dr-runbook.md) (Scenario G).
+  [rebuild runbook](./04-dr-runbook.md) (Scenario G).
 - authentik-cnpg has **continuous WAL PITR + a streaming replica** (RPO minutes) — the best-protected DB.
