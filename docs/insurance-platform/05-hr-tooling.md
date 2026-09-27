@@ -63,8 +63,8 @@ course tracks + completion reporting → the 15 h/year evidence + certificates f
 
 **Why it is NOT deployed (need-first gate):** the IS has 1 employee — standing up a
 heavyweight LMS to track "mandatory workforce training" with no workforce would consume
-scarce cluster resources for no operational value. It is tracked as a **design / cert-evidence
-capability** (demonstrates the IDD-CPD control for RNCP/interviews), with a **revisit trigger**:
+scarce cluster resources for no operational value. It is tracked as a **design capability**
+(demonstrates the IDD-CPD training control), with a **revisit trigger**:
 real employees + PII at volume, a real audit, or a production compliance claim — the same
 logic as the [BYOD scope boundary](../insurance-platform/regulatory-operating-model).
 Tracked: `ktayl-workplace#10` (board #10, Digital Workplace).

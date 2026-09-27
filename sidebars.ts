@@ -463,6 +463,9 @@ const sidebars: SidebarsConfig = {
           items: [
             'insurance-platform/architecture-at-a-glance',
             'insurance-platform/enterprise-architecture-blueprint',
+            'insurance-platform/capability-map',
+            'insurance-platform/canonical-data-model',
+            'insurance-platform/system-of-record',
             'insurance-platform/legacy-core-modernization',
             'insurance-platform/ai-first-operating-model',
             'insurance-platform/business-applications-catalog',
