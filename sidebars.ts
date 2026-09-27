@@ -350,6 +350,7 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: [
         'data-layer/data-layer-overview',
+        'data-layer/data-platform-slice1',
         'data-layer/kafka-redpanda',
         'data-layer/clickhouse',
         'data-layer/dbt',

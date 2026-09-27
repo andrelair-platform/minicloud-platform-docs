@@ -4,8 +4,12 @@ title: Data Layer Overview
 sidebar_position: 1
 ---
 
-:::caution Not yet deployed — planned for a future phase
-The **entire Data Layer** (Kafka/Redpanda → ClickHouse → dbt → Superset → OpenMetadata) is planned but **has not been deployed** on this cluster. All pages in this section are design references.
+:::info Status — Slice 1 is LIVE; the heavy stack is still design-reference
+**[Data Platform — Slice 1](./data-platform-slice1) is deployed and proven** (2026-09-27): a *light-first*
+implementation (**dbt + CNPG Postgres + Metabase**) delivering the `policy_portfolio` data product from the
+live policy service. The **heavier stack on the other pages** (Kafka/Redpanda → ClickHouse → Superset →
+OpenMetadata) remains **planned / need-first-deferred** — those pages are design references for the future
+target, not what runs today. Build order: thin vertical slices per live source, not a big OLAP cluster up-front.
 :::
 
 
