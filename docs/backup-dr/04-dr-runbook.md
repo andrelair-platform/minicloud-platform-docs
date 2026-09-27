@@ -238,13 +238,21 @@ server on an **embedded SQLite (kine)** datastore, so it is a single point of fa
 this is how you bring it back and have the workers rejoin **without re-provisioning them**.
 Estimated RTO: **20–40 min** (Case A ~5 min).
 
-:::danger Preserve the cluster token — this is the make-or-break prerequisite
-The workers rejoin only if `set-hog` comes back with the **same cluster token**
-(`/var/lib/rancher/k3s/server/token`) — the cluster CA is derived from it. If `set-hog`'s
-disk dies and the token was **not** backed up off-node, every worker must be re-joined with
-a new token (Scenario B ×5). **Gap to close (P0-1 follow-up):** back the token up to Vault
-(`secret/platform/k3s-server-token`) now, while the cluster is healthy —
-`sudo cat /var/lib/rancher/k3s/server/token` → Vault. Same for `/etc/rancher/k3s/config.yaml`.
+:::danger The datastore alone is NOT enough — three things beyond `state.db` (rehearsal-proven 2026-09-27)
+A live rehearsal (restore into a throwaway k3s) proved a from-scratch rebuild needs, besides the
+kine `state.db`, the bootstrap pieces that are **not in the datastore and not regenerable**:
+1. **The cluster `token`, BYTE-EXACT.** k3s encrypts the datastore bootstrap with it; the CA is
+   derived from it. A one-byte difference — e.g. a **stripped trailing newline** (`$(cat token)` gives
+   108 bytes, the file is 109) — fails with `fatal: bootstrap data already found and encrypted with
+   different token`. Copy the *file*, don't shell-capture it.
+2. **`cred/encryption-config.json`** (+ `encryption-state.json`) — the secrets-at-rest key. Without it
+   restored secrets are unreadable: `identity transformer tried to read encrypted data`.
+3. **Do NOT restore `tls/`.** k3s regenerates all certs from the datastore CA on start; restoring the
+   old `tls/` trips `fatal: certs newer than datastore, could cause a cluster outage`.
+
+**Gap closed:** the in-cluster backup now ships `k3s-bootstrap-<date>.tar.gz` (token +
+encryption-config) next to `state.db` (gitops `01-k3s-sqlite-backup.yaml`), offsited to R2. Also keep
+`/etc/rancher/k3s/config.yaml` handy (it's small + reproducible from `minicloud-ansible`).
 :::
 
 **Facts (verified 2026-09-26):** k3s **`v1.36.3+k3s1`** · datastore = embedded **SQLite**
@@ -252,9 +260,16 @@ a new token (Scenario B ×5). **Gap to close (P0-1 follow-up):** back the token 
 `/etc/rancher/k3s/config.yaml` (Cilium: `flannel-backend: none`, `disable-kube-proxy`,
 `disable: servicelb,traefik`). Note the `etcd-snapshot-*` lines in that config are **inert**
 on a SQLite datastore (k3s only snapshots embedded *etcd*) — which is exactly why the custom
-kine backups exist. **Verified restorable backups (both off-set-hog, survive its loss):**
+kine backups exist. **Verified restorable backups (all off-set-hog, survive its loss):**
 - controller systemd timer → MinIO `db-backups/kine/kine-*.db.gz` (daily, self-integrity-checked)
-- in-cluster CronJob → MinIO `k3s-backup/k3s-state-*.db.gz`
+- in-cluster CronJob → MinIO `k3s-backup/k3s-state-*.db.gz` (state) **+ `k3s-backup/k3s-bootstrap-*.tar.gz`
+  (token + encryption-config — the bootstrap material Case B needs)**
+
+:::tip Rehearsal-proven (2026-09-27)
+Restoring the latest backup into a throwaway k3s brought the control plane up serving the **real
+cluster** — all **6 nodes Ready, 78 namespaces, 138 deployments** — from `state.db` + the byte-exact
+`token` (tls regenerated from the datastore). Re-run this rehearsal after any change to the restore path.
+:::
 
 ### Case A — kine DB corrupt, set-hog otherwise healthy (in-place restore, ~5 min)
 
@@ -276,23 +291,40 @@ sudo systemctl start k3s
 
 ### Case B — set-hog disk/OS died (full CP node rebuild, ~20–40 min)
 
+**Rehearsal-proven procedure. The order matters: stage the datastore + token + encryption-config
+BEFORE k3s ever starts, and do NOT restore `tls/` (k3s regenerates it from the datastore CA).**
+
 ```bash
-# 1. Re-image set-hog via MAAS (same IP 10.0.0.2). If the token/config were backed up to Vault,
-#    fetch them; otherwise you must re-join all workers afterwards (Scenario B).
+# 1. Re-image set-hog via MAAS (same IP 10.0.0.2). Install the SAME k3s version but DO NOT start it yet:
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.36.3+k3s1 INSTALL_K3S_SKIP_START=true sh -s - server
+sudo systemctl stop k3s 2>/dev/null || true
+sudo mkdir -p /etc/rancher/k3s /var/lib/rancher/k3s/server/db
+#   restore /etc/rancher/k3s/config.yaml (from minicloud-ansible)
 
-# 2. Reinstall the SAME k3s version + config + token so the workers' node-token stays valid:
-sudo mkdir -p /etc/rancher/k3s
-#   restore /etc/rancher/k3s/config.yaml (from Vault/backup)
-#   restore the server token BEFORE first start:
-sudo mkdir -p /var/lib/rancher/k3s/server
-#   place the preserved token at /var/lib/rancher/k3s/server/token
-curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.36.3+k3s1 sh -s - server
+# 2. Fetch the latest state + bootstrap backups from MinIO (both survive set-hog's loss):
+S=$(~/.local/bin/mc ls minilocal/k3s-backup/ | grep k3s-state-   | tail -1 | awk '{print $NF}')
+B=$(~/.local/bin/mc ls minilocal/k3s-backup/ | grep k3s-bootstrap-| tail -1 | awk '{print $NF}')
+~/.local/bin/mc cp minilocal/k3s-backup/$S /tmp/$S && ~/.local/bin/mc cp minilocal/k3s-backup/$B /tmp/$B
+scp /tmp/$S /tmp/$B ubuntu@10.0.0.2:/tmp/
 
-# 3. Now restore the kine DB exactly as in Case A (stop k3s → swap state.db → rm -f *-wal *-shm → start).
+# 3. ON set-hog: stage the datastore + bootstrap material. NOTE what is and ISN'T restored:
+sudo gunzip -c /tmp/$S > /var/lib/rancher/k3s/server/db/state.db     # the datastore
+sudo rm -f /var/lib/rancher/k3s/server/db/state.db-wal /var/lib/rancher/k3s/server/db/state.db-shm
+sudo tar xzf /tmp/$B -C /var/lib/rancher/k3s/server                  # → token + cred/encryption-config.json
+#   ↑ the token restores BYTE-EXACT (the tar preserves it; never `echo`/`cat`-capture it).
+#   ↑ NO tls/ is restored — k3s regenerates every cert from the datastore CA on start. If a stale
+#     tls/ dir exists from the k3s install, remove it: sudo rm -rf /var/lib/rancher/k3s/server/tls
 
-# 4. Workers rejoin automatically (they point at https://10.0.0.2:6443 with the derived node-token).
-#    Any that don't: re-join per Scenario B with K3S_TOKEN=<preserved server token>.
+# 4. Start k3s. It decrypts the datastore bootstrap with the token, regenerates tls/, and comes up.
+sudo systemctl start k3s
+sudo k3s kubectl get nodes    # the 6 nodes appear; workers rejoin on their own (same derived node-token)
 ```
+
+:::warning Why NOT `tls/` (the counter-intuitive bit — rehearsal v3)
+Restoring the old `tls/` fails with `fatal: certs newer than datastore, could cause a cluster outage`.
+k3s owns cert generation from the datastore CA; hand-restoring certs fights it. Restore only
+`state.db` + `token` + `encryption-config.json`; let k3s do the rest.
+:::
 
 ### Verify (both cases)
 
