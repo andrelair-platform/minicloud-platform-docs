@@ -5,9 +5,9 @@ import type * as Preset from '@docusaurus/preset-classic';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'Mini Cloud Platform',
-  tagline: 'Bare-metal infrastructure — MAAS, Kubernetes, GitOps',
-  favicon: 'img/favicon.ico',
+  title: 'minicloud',
+  tagline: 'A self-hosted enterprise information system — the platform and the applications running on it',
+  favicon: 'img/favicon.png',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
@@ -65,23 +65,29 @@ const config: Config = {
   ],
 
   themeConfig: {
-    // Replace with your project's social card
-    image: 'img/docusaurus-social-card.jpg',
+    // minicloud social card (LinkedIn/OG preview)
+    image: 'img/minicloud-social-card.png',
     colorMode: {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'Mini Cloud Platform',
+      title: 'minicloud',
       logo: {
-        alt: 'Mini Cloud Platform',
-        src: 'img/logo.svg',
+        alt: 'minicloud',
+        src: 'img/minicloud-logo.svg',
       },
       items: [
         {
           type: 'docSidebar',
-          sidebarId: 'tutorialSidebar',
+          sidebarId: 'platformSidebar',
           position: 'left',
-          label: 'Documentation',
+          label: 'Platform',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'isSidebar',
+          position: 'left',
+          label: 'Information System',
         },
         {
           to: '/blog',
@@ -116,7 +122,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Mini Cloud Platform. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} minicloud — André Kanmegne. Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,
