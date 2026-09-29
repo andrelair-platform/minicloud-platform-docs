@@ -12,7 +12,6 @@ const sidebars: SidebarsConfig = {
   // ══════════════════════════════════════════════════════════════════
   platformSidebar: [
 
-    {type: 'doc', id: 'intro', label: '🗺 Overview'},
     {type: 'doc', id: 'developer-platform/production-stack-architecture', label: '🏛 Production Stack Architecture'},
     {type: 'doc', id: 'platform-engineering/platform-backlog', label: '🗓 Platform Backlog'},
 
