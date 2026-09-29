@@ -485,8 +485,6 @@ const sidebars: SidebarsConfig = {
   // ══════════════════════════════════════════════════════════════════
   isSidebar: [
 
-    {type: 'doc', id: 'intro', label: '🗺 Overview'},
-
     // ── Business Applications ────────────────────────────────────────
     {
       type: 'category',
