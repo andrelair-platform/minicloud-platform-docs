@@ -95,6 +95,11 @@ const config: Config = {
           position: 'left',
         },
         {
+          href: 'https://www.devandre.sbs',
+          label: 'Portfolio',
+          position: 'right',
+        },
+        {
           type: 'localeDropdown',
           position: 'right',
         },
@@ -119,6 +124,15 @@ const config: Config = {
             {label: 'Kubernetes (k3s)', to: '/platform-roadmap/phase-1-kubernetes'},
             {label: 'GitOps (ArgoCD)', to: '/platform-roadmap/phase-12-gitops'},
             {label: 'Monitoring', to: '/platform-roadmap/phase-8-monitoring'},
+          ],
+        },
+        {
+          title: 'André Kanmegne',
+          items: [
+            {label: 'Portfolio', href: 'https://www.devandre.sbs'},
+            {label: 'Blog', to: '/blog'},
+            {label: 'GitHub', href: 'https://github.com/AndreLiar'},
+            {label: 'LinkedIn', href: 'https://www.linkedin.com/in/andre-kanmegne-dev'},
           ],
         },
       ],
