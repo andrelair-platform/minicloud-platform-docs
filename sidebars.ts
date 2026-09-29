@@ -487,6 +487,7 @@ const sidebars: SidebarsConfig = {
               collapsed: false,
               items: [
                 'insurance-platform/ktayl-policy-service',
+                'insurance-platform/ktayl-underwriting',
               ],
             },
           ],
