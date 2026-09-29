@@ -1,6 +1,7 @@
 ---
 id: production-stack-architecture
 title: Production Stack Architecture
+image: /img/minicloud-social-card.png
 sidebar_label: Production Stack Architecture ✅
 ---
 
