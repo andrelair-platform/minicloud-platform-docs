@@ -7,7 +7,7 @@ description: >
   ancrée dans un vrai cluster bare-metal, pas dans la théorie. Ce que vous possédez, ce qui casse, et ce que vous apprenez.
 tags: [kubernetes, k3s, bare-metal, platform-engineering, devops, control-plane, eks, gke]
 date: 2026-07-26
-image: /img/docusaurus-social-card.jpg
+image: /img/minicloud-social-card.png
 ---
 
 La plupart des comparatifs Kubernetes sont écrits par des gens qui n'ont utilisé que des services managés. Celui-ci est écrit par quelqu'un qui a un ThinkPad nommé `set-hog` posé sur un bureau, en train de faire tourner le serveur d'API en ce moment même.

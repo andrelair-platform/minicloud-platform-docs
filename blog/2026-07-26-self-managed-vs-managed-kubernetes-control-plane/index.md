@@ -7,7 +7,7 @@ description: >
   grounded in a real bare-metal cluster, not theory. What you own, what breaks, and what you learn.
 tags: [kubernetes, k3s, bare-metal, platform-engineering, devops, control-plane, eks, gke]
 date: 2026-07-26
-image: /img/docusaurus-social-card.jpg
+image: /img/minicloud-social-card.png
 ---
 
 Most Kubernetes comparisons are written by people who have only used managed services. This one is written by someone who has a ThinkPad named `set-hog` sitting on a desk running the API server right now.

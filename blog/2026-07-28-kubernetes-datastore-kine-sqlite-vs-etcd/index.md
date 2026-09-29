@@ -8,7 +8,7 @@ description: >
   with how EKS, GKE, and AKS manage the same problem invisibly.
 tags: [kubernetes, k3s, etcd, kine, sqlite, backup, platform-engineering, bare-metal, eks, gke, aks]
 date: 2026-07-28
-image: /img/docusaurus-social-card.jpg
+image: /img/minicloud-social-card.png
 ---
 
 Every Kubernetes tutorial mentions etcd. The architecture diagrams show a three-node etcd cluster with Raft consensus, leader election, and peer replication. If you run EKS, GKE, or AKS, that cluster exists somewhere — you just can never see it.

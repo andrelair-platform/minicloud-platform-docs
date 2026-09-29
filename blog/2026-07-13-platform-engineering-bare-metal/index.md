@@ -8,7 +8,7 @@ description: >
   about real platform engineering along the way.
 tags: [kubernetes, platform-engineering, devops, k3s, gitops, bare-metal]
 date: 2026-07-13
-image: /img/docusaurus-social-card.jpg
+image: /img/minicloud-social-card.png
 ---
 
 Most cloud platforms hide the infrastructure from you. MAAS provisioning, PXE boot sequences, NIC bonding, storage backends, certificate chains — all of it abstracted behind a few CLI flags or a dashboard. That abstraction is valuable in production, but it can also keep engineers at arm's length from the system they're supposed to understand deeply.
