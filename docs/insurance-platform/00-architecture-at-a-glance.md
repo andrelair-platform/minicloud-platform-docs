@@ -1,5 +1,6 @@
 ---
 id: architecture-at-a-glance
+image: /img/ktayl-is-card.png
 title: Architecture at a Glance — read this first
 sidebar_label: 🗺 Architecture at a Glance (start here)
 sidebar_position: 0
