@@ -1,0 +1,38 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B1220"/>
+      <stop offset="1" stop-color="#0F2A43"/>
+    </linearGradient>
+    <linearGradient id="mc" x1="150" y1="180" x2="420" y2="470" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#34D399"/>
+      <stop offset="1" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <!-- accent bar -->
+  <rect x="0" y="0" width="12" height="630" fill="#10B981"/>
+
+  <!-- cloud icon (scaled from 120x100 art, ~2.6x) at left -->
+  <g transform="translate(120,210) scale(2.6)">
+    <path d="M40 84 C24 84 14 72 20 58 C10 47 20 30 36 35 C41 19 66 18 72 34 C90 28 104 45 94 60 C104 70 96 86 82 84 Z" fill="url(#mc)"/>
+    <g stroke="#ffffff" stroke-width="3" stroke-linecap="round">
+      <line x1="42" y1="66" x2="58" y2="50"/>
+      <line x1="58" y1="50" x2="78" y2="62"/>
+      <line x1="42" y1="66" x2="78" y2="62"/>
+    </g>
+    <g fill="#ffffff">
+      <circle cx="42" cy="66" r="6"/>
+      <circle cx="58" cy="50" r="6"/>
+      <circle cx="78" cy="62" r="6"/>
+    </g>
+  </g>
+
+  <!-- text -->
+  <text x="470" y="290" font-family="Helvetica, Arial, sans-serif" font-size="120" font-weight="700" fill="#FFFFFF" letter-spacing="-2">minicloud</text>
+  <text x="474" y="352" font-family="Helvetica, Arial, sans-serif" font-size="42" font-weight="600" fill="#34D399">Enterprise Kubernetes Platform</text>
+  <text x="474" y="410" font-family="Helvetica, Arial, sans-serif" font-size="28" fill="#94A3B8">6-node bare-metal · GitOps · Observability · AI Platform</text>
+
+  <!-- footer -->
+  <text x="120" y="590" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#64748B">andrelair-platform.github.io/minicloud-platform-docs</text>
+</svg>

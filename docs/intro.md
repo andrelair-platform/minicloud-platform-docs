@@ -1,33 +1,30 @@
 ---
 id: intro
-title: Mini Cloud Platform
+title: minicloud
 sidebar_position: 1
 slug: /
 ---
 
-# Mini Cloud Platform — Bare-Metal Infrastructure
+# minicloud — a self-hosted enterprise information system
 
-> **Private datacenter-equivalent infrastructure** — built from scratch with MAAS, k3s, ArgoCD, and GitOps.
+> Built from scratch on bare metal: a **platform** (MAAS, k3s, GitOps, observability, AI) **and the applications running on it** (a simulated insurer's information system).
 
 ---
 
-## What This Project Is
+## Two pillars — pick your layer
 
-This documentation covers a complete bare-metal infrastructure built locally using **MAAS (Metal as a Service)**, provisioning a **6-node** cluster ready for Kubernetes and production workloads.
+This documentation is organised in **two layers** that mirror how the system really works: an application layer running **on top of** an infrastructure layer. Use the top navigation.
+
+- **🏗 Platform** — *minicloud*: the infrastructure & engineering that runs everything — MAAS bare-metal, k3s, networking, storage, GitOps/CI-CD, security, observability, and the AI platform. **You're reading the Platform overview.**
+- **🏢 Information System** — *ktayl-solution*: the business system that runs **on** the platform — a simulated commercial-lines (IARD) insurer's IS (business applications, insurance domains, data platform, governance). → Start at the **[Insurance Platform → EA Blueprint](./insurance-platform/enterprise-architecture-blueprint)**.
+
+:::note Keep the two layers distinct
+The **platform** (minicloud) and the **information system** (ktayl-solution) are deliberately separate: the IS *runs on and benefits from* the platform, but they are not the same thing — that separation is the point. Also distinct: **Retrieva** — a *separate* product (RNCP39583 certification / DORA third-party-risk) that merely *runs on* this infrastructure; it is **not** part of the ktayl IS.
+:::
 
 ```text
-Equivalent to: AWS EC2 + VPC + Auto Provisioning — but local.
+The platform alone is equivalent to: AWS EC2 + VPC + auto-provisioning — but local, on owned hardware.
 ```
-
-:::info Two layers — the platform *and* what runs on it
-This overview is the **infrastructure/platform** layer. On top of it run:
-- the **ktayl-solution insurance IS** — a simulated commercial-lines (IARD) insurer's information
-  system (12 business domains + 4 transversal layers). See the
-  **[Insurance Platform → EA Blueprint](./insurance-platform/enterprise-architecture-blueprint)**.
-- an **AI platform** (LLM gateway, RAG, agents, LLMOps) that the business layer builds on.
-- **Retrieva** — a *separate* product (RNCP39583 certification / DORA third-party-risk) that merely
-  *runs on* this infrastructure; it is **not** part of the ktayl IS.
-:::
 
 ---
 

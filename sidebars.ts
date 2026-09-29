@@ -1,23 +1,20 @@
 import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 
+/**
+ * Two-pillar navigation mirroring the two-layer model:
+ *   platformSidebar → minicloud, the PLATFORM (infra, delivery, ops, AI platform)
+ *   isSidebar       → ktayl-solution, the INFORMATION SYSTEM running ON the platform
+ * Same categories/IDs as before — only split across the two pillars (nothing dropped).
+ */
 const sidebars: SidebarsConfig = {
-  tutorialSidebar: [
+  // ══════════════════════════════════════════════════════════════════
+  //  PLATFORM (minicloud) — the infrastructure & engineering
+  // ══════════════════════════════════════════════════════════════════
+  platformSidebar: [
 
-    // ── Platform Overview ────────────────────────────────────────────
-    {type: 'doc', id: 'intro', label: '🗺 Platform Overview'},
+    {type: 'doc', id: 'intro', label: '🗺 Overview'},
     {type: 'doc', id: 'developer-platform/production-stack-architecture', label: '🏛 Production Stack Architecture'},
-
-    // ── Product Roadmap ──────────────────────────────────────────────
-    {
-      type: 'category',
-      label: '🗓 Product Roadmap',
-      collapsed: false,
-      items: [
-        'product-roadmap/is-build-roadmap',
-        'product-roadmap/overview',
-        'platform-engineering/platform-backlog',
-      ],
-    },
+    {type: 'doc', id: 'platform-engineering/platform-backlog', label: '🗓 Platform Backlog'},
 
     // ── Infrastructure ───────────────────────────────────────────────
     {
@@ -343,22 +340,7 @@ const sidebars: SidebarsConfig = {
       ],
     },
 
-    // ── Data Platform ────────────────────────────────────────────────
-    {
-      type: 'category',
-      label: '🗄 Data Platform',
-      collapsed: true,
-      items: [
-        'data-layer/data-layer-overview',
-        'data-layer/data-platform-slice1',
-        'data-layer/kafka-redpanda',
-        'data-layer/clickhouse',
-        'data-layer/dbt',
-        'data-layer/openmetadata',
-      ],
-    },
-
-    // ── AI & ML ──────────────────────────────────────────────────────
+    // ── AI & ML (AI Platform) ────────────────────────────────────────
     {
       type: 'category',
       label: '🤖 AI & ML',
@@ -451,11 +433,65 @@ const sidebars: SidebarsConfig = {
       ],
     },
 
+    // ── Automation & Workflows ───────────────────────────────────────
+    {
+      type: 'category',
+      label: '⚡ Automation & Workflows',
+      collapsed: true,
+      items: [
+        'automation/n8n',
+        'automation/temporal',
+        'automation/airflow',
+        'event-driven/keda',
+        'event-driven/nats',
+      ],
+    },
+
+    // ── Backup, DR & Reliability ─────────────────────────────────────
+    {
+      type: 'category',
+      label: '💾 Backup, DR & Reliability',
+      collapsed: true,
+      items: [
+        'backup-dr/velero',
+        'backup-dr/longhorn-backup',
+        'backup-dr/etcd-backup',
+        'backup-dr/database-backup',
+        'backup-dr/disk-management',
+        'backup-dr/dr-runbook',
+        'backup-dr/dr-rto-rpo-matrix',
+        'reliability/chaos-mesh',
+        'reliability/phase81-chaos-game-day',
+        'reliability/cluster-stability-assessment',
+      ],
+    },
+
+    // ── Engineering Standards ─────────────────────────────────────────
+    {
+      type: 'category',
+      label: '🧪 Engineering Standards',
+      collapsed: false,
+      items: [
+        'engineering-standards/testing-strategy',
+        'engineering-standards/bmad-operating-model',
+        'engineering-standards/bmad-workflow',
+      ],
+    },
+
+  ],
+
+  // ══════════════════════════════════════════════════════════════════
+  //  INFORMATION SYSTEM (ktayl-solution) — the business running on it
+  // ══════════════════════════════════════════════════════════════════
+  isSidebar: [
+
+    {type: 'doc', id: 'intro', label: '🗺 Overview'},
+
     // ── Business Applications ────────────────────────────────────────
     {
       type: 'category',
       label: '🏢 Business Applications',
-      collapsed: true,
+      collapsed: false,
       items: [
         {
           type: 'category',
@@ -555,36 +591,29 @@ const sidebars: SidebarsConfig = {
       ],
     },
 
-    // ── Automation & Workflows ───────────────────────────────────────
+    // ── IS Build Roadmap ─────────────────────────────────────────────
     {
       type: 'category',
-      label: '⚡ Automation & Workflows',
+      label: '🗓 IS Build Roadmap',
       collapsed: true,
       items: [
-        'automation/n8n',
-        'automation/temporal',
-        'automation/airflow',
-        'event-driven/keda',
-        'event-driven/nats',
+        'product-roadmap/is-build-roadmap',
+        'product-roadmap/overview',
       ],
     },
 
-    // ── Backup, DR & Reliability ─────────────────────────────────────
+    // ── Data Platform ────────────────────────────────────────────────
     {
       type: 'category',
-      label: '💾 Backup, DR & Reliability',
+      label: '🗄 Data Platform',
       collapsed: true,
       items: [
-        'backup-dr/velero',
-        'backup-dr/longhorn-backup',
-        'backup-dr/etcd-backup',
-        'backup-dr/database-backup',
-        'backup-dr/disk-management',
-        'backup-dr/dr-runbook',
-        'backup-dr/dr-rto-rpo-matrix',
-        'reliability/chaos-mesh',
-        'reliability/phase81-chaos-game-day',
-        'reliability/cluster-stability-assessment',
+        'data-layer/data-layer-overview',
+        'data-layer/data-platform-slice1',
+        'data-layer/kafka-redpanda',
+        'data-layer/clickhouse',
+        'data-layer/dbt',
+        'data-layer/openmetadata',
       ],
     },
 
@@ -592,7 +621,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: '📐 Project Governance',
-      collapsed: false,
+      collapsed: true,
       items: [
         'project-governance/project-governance-standard',
       ],
@@ -605,18 +634,6 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: [
         'developer-platform/is-governance-scrumban-prince2',
-      ],
-    },
-
-    // ── Engineering Standards ─────────────────────────────────────────
-    {
-      type: 'category',
-      label: '🧪 Engineering Standards',
-      collapsed: false,
-      items: [
-        'engineering-standards/testing-strategy',
-        'engineering-standards/bmad-operating-model',
-        'engineering-standards/bmad-workflow',
       ],
     },
 
