@@ -15,8 +15,10 @@ slug: /
 
 This documentation is organised in **two layers** that mirror how the system really works: an application layer running **on top of** an infrastructure layer. Use the top navigation.
 
-- **🏗 Platform** — *minicloud*: the infrastructure & engineering that runs everything — MAAS bare-metal, k3s, networking, storage, GitOps/CI-CD, security, observability, and the AI platform. **You're reading the Platform overview.**
-- **🏢 Information System** — *ktayl-solution*: the business system that runs **on** the platform — a simulated commercial-lines (IARD) insurer's IS (business applications, insurance domains, data platform, governance). → Start at the **[Insurance Platform → EA Blueprint](./insurance-platform/enterprise-architecture-blueprint)**.
+- **🏗 Platform** — *minicloud*: the infrastructure & engineering that runs everything — MAAS bare-metal, k3s, networking, storage, GitOps/CI-CD, security, observability, and the AI platform. → Start at **[Production Stack Architecture](./developer-platform/production-stack-architecture)**.
+- **🏢 Information System** — *ktayl-solution*: the business system that runs **on** the platform — a simulated commercial-lines (IARD) insurer's IS (business applications, insurance domains, data platform, governance). → Start at **[Insurance Platform → Architecture at a Glance](./insurance-platform/architecture-at-a-glance)**.
+
+*(This page is the neutral home — reach it any time via the minicloud logo.)*
 
 :::note Keep the two layers distinct
 The **platform** (minicloud) and the **information system** (ktayl-solution) are deliberately separate: the IS *runs on and benefits from* the platform, but they are not the same thing — that separation is the point. Also distinct: **Retrieva** — a *separate* product (RNCP39583 certification / DORA third-party-risk) that merely *runs on* this infrastructure; it is **not** part of the ktayl IS.
