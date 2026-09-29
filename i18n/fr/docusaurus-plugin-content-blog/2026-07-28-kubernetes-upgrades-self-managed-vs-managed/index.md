@@ -8,7 +8,7 @@ description: >
   cluster k3s bare-metal de 5 nœuds. Chaque décision documentée, chaque piège inclus.
 tags: [kubernetes, k3s, upgrades, platform-engineering, devops, eks, gke, aks, system-upgrade-controller, gitops]
 date: 2026-07-28
-image: /img/docusaurus-social-card.jpg
+image: /img/minicloud-social-card.png
 ---
 
 Une mise à jour Kubernetes n'est jamais un simple changement de numéro de version. Il y a un drain de nœud, un échange de binaire, une migration de plan de contrôle, une séquence d'éviction de pods, et — si vous êtes en bare-metal — personne à appeler quand ça tourne mal.

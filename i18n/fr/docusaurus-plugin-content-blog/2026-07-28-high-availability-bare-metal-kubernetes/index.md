@@ -9,7 +9,7 @@ description: >
   sur EKS, GKE et AKS.
 tags: [kubernetes, k3s, high-availability, bare-metal, platform-engineering, longhorn, argo-rollouts, nginx, metallb, chaos-engineering, eks, gke, aks]
 date: 2026-07-28
-image: /img/docusaurus-social-card.jpg
+image: /img/minicloud-social-card.png
 ---
 
 « Haute disponibilité » est l'un de ces termes dont tout le monde s'accorde à dire qu'il compte et que presque personne ne définit précisément. Sur un fournisseur Kubernetes managé, vous cochez une case pour le multi-AZ et vous passez à autre chose. Sur un cluster auto-géré, vous prenez six décisions d'architecture indépendantes, chacune avec son propre mode de défaillance, son compromis et son coût opérationnel.

@@ -8,7 +8,7 @@ description: >
   control plane management, security posture, upgrades, and what each model teaches you.
 tags: [kubernetes, k3s, openshift, okd, platform-engineering, devops, cncf, security, gitops, bare-metal]
 date: 2026-07-29
-image: /img/docusaurus-social-card.jpg
+image: /img/minicloud-social-card.png
 ---
 
 OpenShift Container Platform is an opinionated enterprise Kubernetes distribution. My minicloud cluster is a 5-node k3s stack assembled component by component from CNCF projects. After going through the full build — GitOps, observability, secrets, registry, OIDC, ingress, storage replication, chaos testing, security patching, upgrades — I can say with some precision what the difference actually is.

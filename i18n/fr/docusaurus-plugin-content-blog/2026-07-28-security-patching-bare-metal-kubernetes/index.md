@@ -10,7 +10,7 @@ description: >
   couche se compare à EKS, GKE et AKS.
 tags: [kubernetes, k3s, security, patching, cve, renovate, kured, cis, bare-metal, platform-engineering, eks, gke, aks, devops]
 date: 2026-07-28
-image: /img/docusaurus-social-card.jpg
+image: /img/minicloud-social-card.png
 ---
 
 Les fournisseurs Kubernetes managés font paraître le patch de sécurité simple. Vous activez l'auto-mise à jour sur GKE, vous cliquez « mettre à jour le groupe de nœuds » sur EKS, et la CVE disparaît. Ce qui se passe réellement, c'est que le fournisseur patche l'image OS, remplace le nœud, valide le binaire, et restaure vos workloads — le tout dans le temps qu'il faut pour rafraîchir la console AWS.

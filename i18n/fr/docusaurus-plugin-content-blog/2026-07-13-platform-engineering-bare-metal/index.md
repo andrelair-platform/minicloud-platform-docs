@@ -8,7 +8,7 @@ description: >
   sur l'ingénierie de plateforme réelle en chemin.
 tags: [kubernetes, platform-engineering, devops, k3s, gitops, bare-metal]
 date: 2026-07-13
-image: /img/docusaurus-social-card.jpg
+image: /img/minicloud-social-card.png
 ---
 
 La plupart des plateformes cloud vous cachent l'infrastructure. Provisioning MAAS, séquences de boot PXE, agrégation de cartes réseau, backends de stockage, chaînes de certificats — tout est abstrait derrière quelques flags CLI ou un tableau de bord. Cette abstraction a de la valeur en production, mais elle peut aussi tenir les ingénieurs à distance des systèmes qu'ils sont censés comprendre en profondeur.

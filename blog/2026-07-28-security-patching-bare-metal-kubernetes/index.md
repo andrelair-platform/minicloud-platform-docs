@@ -10,7 +10,7 @@ description: >
   EKS, GKE, and AKS.
 tags: [kubernetes, k3s, security, patching, cve, renovate, kured, cis, bare-metal, platform-engineering, eks, gke, aks, devops]
 date: 2026-07-28
-image: /img/docusaurus-social-card.jpg
+image: /img/minicloud-social-card.png
 ---
 
 Managed Kubernetes providers make security patching look simple. You enable auto-upgrade on GKE, you click "update node group" on EKS, and the CVE goes away. What actually happens is that the provider patches the OS image, replaces the node, validates the binary, and restores your workloads — all in the time it takes to refresh the AWS console.

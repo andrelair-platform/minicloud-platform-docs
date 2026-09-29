@@ -7,7 +7,7 @@ description: >
   et pourquoi k3s a battu kubeadm, microk8s, RKE2 et k0s pour ce matériel spécifique.
 tags: [kubernetes, k3s, bare-metal, platform-engineering, devops, homelab]
 date: 2026-07-16
-image: /img/docusaurus-social-card.jpg
+image: /img/minicloud-social-card.png
 ---
 
 Le matériel était provisionné. MAAS avait démarré quatre ThinkPads en PXE et cloud-init avait écrit les clés SSH et les noms d'hôte. La question suivante était : **comment faire tourner concrètement Kubernetes sur cinq laptops ?**

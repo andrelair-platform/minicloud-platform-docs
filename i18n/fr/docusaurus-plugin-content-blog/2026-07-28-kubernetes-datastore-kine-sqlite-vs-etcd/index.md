@@ -8,7 +8,7 @@ description: >
   cluster bare-metal, et le compare à la façon dont EKS, GKE et AKS gèrent le même problème de manière invisible.
 tags: [kubernetes, k3s, etcd, kine, sqlite, backup, platform-engineering, bare-metal, eks, gke, aks]
 date: 2026-07-28
-image: /img/docusaurus-social-card.jpg
+image: /img/minicloud-social-card.png
 ---
 
 Chaque tutoriel Kubernetes mentionne etcd. Les schémas d'architecture montrent un cluster etcd à trois nœuds avec consensus Raft, élection de leader et réplication entre pairs. Si vous utilisez EKS, GKE ou AKS, ce cluster existe quelque part — vous ne pourrez simplement jamais le voir.

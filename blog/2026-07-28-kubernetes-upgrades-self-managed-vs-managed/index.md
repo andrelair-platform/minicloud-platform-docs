@@ -8,7 +8,7 @@ description: >
   5-node bare-metal k3s cluster. Every decision documented, every gotcha included.
 tags: [kubernetes, k3s, upgrades, platform-engineering, devops, eks, gke, aks, system-upgrade-controller, gitops]
 date: 2026-07-28
-image: /img/docusaurus-social-card.jpg
+image: /img/minicloud-social-card.png
 ---
 
 A Kubernetes upgrade is never just changing a version number. There is a node drain, a binary swap, a control plane migration, a pod eviction sequence, and — if you are running bare-metal — nobody to call when it goes wrong.
