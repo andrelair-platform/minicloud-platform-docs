@@ -6,13 +6,27 @@ sidebar_label: Legacy-Core Modernization
 
 # Legacy-Core Modernization — the Oracle legacy (GlobalCore) & the strangler
 
-:::note Status — direction aligned; build gated
-This is the **documentation alignment** for the legacy spine of the ktayl IS. The legacy engine
-(**GlobalCore**) is already built (Java 8 / SOAP / batch); it is **evolving to Oracle + the Claims
-domain**. No Claims wrap is built yet. Gates: **align docs → validate → Claims Path-C planning
-([`ktayl-claims/docs/`](https://github.com/andrelair-platform/ktayl-claims/tree/main/docs)) → validate →
-build.** This is **ktayl-solution IS** work (business/org context), **not** the Retrieva certification.
+:::note Status — BUILT & LIVE on dev (2026-09-29); sections below partially superseded
+The strangler is no longer planned — it is **built end-to-end on dev**. The section-by-section detail below
+(esp. §2–§3 "on Oracle") describes the earlier *direction* and is **partially superseded** by *What's live*
+just under here. This is **ktayl-solution IS** work (business/org context), **not** the Retrieva certification.
 :::
+
+## What's live (2026-09-29) — Slices A–D of the Claims strangler
+
+The modern **Claims** capability (`ktayl-claims`, #11) is built **AS the Anti-Corruption Layer** over a
+frozen legacy core, and the full modernization pattern runs on dev:
+
+| Slice | What it delivers | Live proof |
+|---|---|---|
+| **A — Legacy core** | **GlobalCore** SOAP service (Java/Spring) + its DB as **Docker containers on the controller, outside k3s**. **The DB is MySQL 8** (binlog + GTID), a *simulated stand-in for an Oracle-era legacy* — not real Oracle (ADR-002 amended: Oracle XE too heavy; the **strangler/ACL/CDC pattern** was the point, and MySQL→Postgres makes the CDC pipeline genuinely **cross-engine**). | SOAP `FindPolicy`/`CreateClaim`/`Reserve`/`Settle` + faults; rows in MySQL `gc_claim`. |
+| **B — ACL writes (SOAP)** | The ACL calls GlobalCore's **SOAP** for commands (`createClaim`/`reserve`/`settle`) under the `soap` profile, translating cryptic XML → clean JSON, authority-checked server-side. | FNOL via the ACL → `CLM-2026-000005` created in the legacy; authority + coverage guards enforced. |
+| **C — CDC (Debezium → NATS)** | **Debezium Server** tails the MySQL binlog → **NATS JetStream** stream `CLAIMS_CDC` (`claims-cdc.globalcore.*`), zero legacy change. | A live FNOL emits a `gc_claim` CDC event on the bus within &lt;1s. |
+| **D — CQRS read-model** | An in-process **CDC projector** (durable JetStream consumer) projects claim changes into a **CNPG Postgres** read-model; `GET /api/claims/{id}` reads that (eventually consistent), while commands keep authoritative read-your-writes via the legacy (ADR-008). | `GET` reads from the read-model; a fresh FNOL is reflected in &lt;2s; unknown → 404. |
+
+**Detailed design + decisions:** [`ktayl-claims/docs/architecture/adr`](https://github.com/andrelair-platform/ktayl-claims/blob/main/docs/architecture/adr/000-index.md)
+(ADR-001 strangler · ADR-002 legacy=MySQL simulated · ADR-003 SOAP+CDC · ADR-004/008 CQRS read-model). The
+"on Oracle" wording in §2–§3 below is the superseded earlier plan.
 
 ## 1. Why a legacy core — and where it sits
 
