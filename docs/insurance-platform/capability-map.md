@@ -46,15 +46,52 @@ model. They reconcile — the 19 just split what the 12 bundled:
 
 | Status | Count | % | Where |
 |---|---|---|---|
-| 🟢 LIVE | 22 | 15% | Policy, IAM, AI platform, parts of Finance |
-| 🟡 PARTIAL | 34 | 23% | ERPNext finance, compliance/DORA, integration primitives, DMS storage |
-| 🟡 SCAFFOLD | 40 | 27% | Underwriting, Claims, Risk-Eng, Reinsurance, International, ITSM |
-| 🔴 GAP | 54 | 36% | Submission, CRM/MDM, Pricing, Billing, Data Platform, Channels |
+| 🟢 LIVE | 22 | 15% | Policy, **Claims (prod)**, IAM, AI platform, **Data Platform (Metabase BI)**, parts of Finance |
+| 🟡 PARTIAL | 34 | 23% | **Underwriting (live on dev)**, ERPNext finance, compliance/DORA, integration primitives, DMS storage |
+| 🟡 SCAFFOLD | 40 | 27% | Risk-Eng, Reinsurance, International, ITSM |
+| 🔴 GAP | 54 | 36% | Submission, CRM/MDM, Pricing, Billing (insurance), Channels |
 
 **~15% of the insurer's capabilities are live.** The GAPs cluster exactly where P1/P2 bite (pricing,
-portfolio, data, prevention). Criticality mix: **31 Critical · 80 High · 39 Medium**.
+portfolio, prevention). Criticality mix: **31 Critical · 80 High · 39 Medium**.
+
+> **Updated 2026-09-30 (verified against the running cluster):** since the last registry count, **Claims**
+> promoted to **prod** (GlobalCore strangler shipped), the **Data Platform (Metabase BI, Slice 1)** came
+> live, and **Underwriting** is **live on dev** — so the live/partial mix slightly understates reality; the
+> exact counts await a registry re-count. Stage-by-stage live-vs-planned is in [§3.1](#31-contract-lifecycle-coverage--the-b2b-industrial-policy-end-to-end) below.
 
 Per-domain status is in the [EA Blueprint gap analysis](./enterprise-architecture-blueprint); per-capability detail (owner, data, API, pain, AI potential, priority score) is in the registry spreadsheet.
+
+### 3.1 Contract lifecycle coverage — the B2B industrial policy end-to-end
+
+Corporate insurance is a **risk-engineering process**, not a product sale — *the insurer prices the
+**exposure**, and the submission dossier IS that exposure*. This walks the full industrial-policy lifecycle
+(`courtier → submission → underwriting → quote → bind → policy → billing → vie du contrat → renouvellement`)
+and marks what actually runs. 🟢 prod · 🔵 dev only · 🟡 partial · ⚪ planned (verified 2026-09-30).
+
+| Lifecycle stage | System / domain | Board | Status |
+|---|---|---|---|
+| Courtier / relationship | Distribution & CRM | #13 | ⚪ planned (no CRM) |
+| **Submission / appel d'offres** (dossier d'exposition) | **Submission Hub** | — | ⚪ **not built — no board even exists** (the #1 front-door gap) |
+| Underwriting — analyse · rating · capacité · T&C | **ktayl-underwriting** | #12 | 🔵 **live on dev** (intake→appetite→rating→quote→bind) |
+| Pricing (dedicated) + portfolio analytics | Pricing & Portfolio | #04/#12 | ⚪ planned |
+| Capacité (traité / facultative) | Reinsurance & Captive | #22 | ⚪ scaffold |
+| **Quote** | ktayl-underwriting | #12 | 🔵 live on dev |
+| Négociation courtier ↔ assureur | Broker portal | #13/#15 | ⚪ planned |
+| **Binding** (→ écrit la police) | ktayl-underwriting → PAS | #12 | 🔵 live on dev |
+| **Police / Policy** | **ktayl-policy-service** | #6 | 🟢 **live prod** |
+| **Facturation de la prime** (échéances · IPT · commissions) | Insurance Billing | #14 | ⚪ planned — ERPNext is *general* finance, **not** insurance billing |
+| Vie — avenants / endorsements | ktayl-policy-service | #6 | 🟡 live prod (depth partial) |
+| Vie — certificates | Policy / International | #6/#23 | ⚪ planned |
+| Vie — Risk Engineering (continu) | Risk Engineering | #21 | 🟡 scaffold |
+| Vie — **sinistres / Claims** | **ktayl-claims** (GlobalCore ACL) | #11 | 🟢 **live prod** |
+| **Renouvellement annuel** | UW / Policy renewal | #12/#6 | ⚪ planned |
+
+**Verdict:** no single tool spans the lifecycle end-to-end. It is **live in the middle** — `Underwriting
+(dev) → Policy (prod) → Claims (prod)` — while the **front door (Submission)**, the **financial tail
+(insurance Billing, Renewal)** and the **prevention layer (Risk Engineering, Exposure/CAT/Accumulation)**
+are gaps. The highest-leverage next build is the **Submission Hub**: it is the entry point of the whole
+corporate flow and feeds the already-live Underwriting workbench — and it is exactly the "prices-the-
+exposure" capability (P1/P2). See the [roadmap](#5-the-order--problem-prioritised-roadmap) (Stage C).
 
 ## 4. Resilience by design — DORA RTO/RPO tiers (business-capability layer)
 
@@ -79,7 +116,7 @@ We are **past the tech foundation and the AI platform** already, so the backlog 
 - **Stage B — unlock P1/P2/P3 analytics:** **Data Platform** (keystone) + **MDM** (Customer/Entity/Broker).
 - **Stage C — operational core + AI showcase (P2 + P4):** **Submission Hub** → **Underwriting Workbench** + **Pricing Engine** (UW Copilot lands here).
 - **Stage D — the P1/P3 differentiators:** **Risk Engineering** (prevention → P1) + **Exposure/Accumulation/CAT** (reuse the Retrieva graph → P3).
-- **Stage E — the rest of the core + channels:** Claims (via the GlobalCore legacy strangler), Insurance Billing, International/DIC-DIL, Reinsurance, Actuarial; then Broker + Client portals.
+- **Stage E — the rest of the core + channels:** Insurance Billing, International/DIC-DIL, Reinsurance, Actuarial; then Broker + Client portals. *(Claims — via the GlobalCore legacy strangler — has since **shipped and is LIVE in prod**.)*
 
 > This refines — does not replace — the blueprint's *business-tools-first, AI-last* build order. The
 > difference is the **problem lens**: within "business tools first," build the ones that move P1/P2/P3

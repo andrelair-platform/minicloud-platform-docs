@@ -67,7 +67,7 @@ board + status. See the [EA Blueprint](./enterprise-architecture-blueprint) for 
 | 2 Underwriting workbench | #12 | 🟡 | §2 Underwriting |
 | 3 Pricing / Rating | #12 | 🟡 | §2 / §6 |
 | 4 Policy Administration (PAS) | #6 | 🟢 | §1 Core |
-| 5 Claims | #11 | 🟡 | §1 / §3 |
+| 5 Claims | #11 | 🟢 | §1 / §3 |
 | 6 Risk Engineering / Prevention | — | 🔴 | *(gap — add when work starts)* |
 | 7 International Programs | — | 🔴 | §4b |
 | 8 Billing / Premium & Finance | #14 | 🟡 | §5 / §6 |
@@ -93,8 +93,8 @@ a separate product; see the two-layer warning above).
 
 | App | Stack | Issue | Phase | Description |
 |---|---|---|---|---|
-| **ktayl-policy-service** | Go | #203 (archived) | 🔨 Q1 2027 | Policy lifecycle — create, amend, renew, cancel, document generation |
-| **ktayl-claims** | Java 21 / Spring Boot 3 | #198 (archived) | 🔨 Q1 2027 | FNOL → investigation → settlement state machine, Spring Batch COREP bordereau |
+| **ktayl-policy-service** | Go | #203 (archived) | ✅ **Live (prod)** | Policy lifecycle — create, amend, renew, cancel, document generation |
+| **ktayl-claims** | Java 21 / Spring Boot 3 | #198 (archived) | ✅ **Live (prod)** | Delivered as the **legacy-core wrap** (ADR-008/009): ACL over GlobalCore (SOAP writes + Debezium CDC → NATS) + CQRS read-model (CNPG) + Angular adjuster workbench |
 | **ktayl-ai-claims-assistant** | Python / LangGraph | #200 (archived) | 🔨 Q2 2027 | AI triage, fraud scoring, human-in-loop via NATS events |
 | **ktayl-portal** | Next.js 14 / TS | #202 (archived) | 🔨 Q1 2027 | Unified policyholder + broker portal (Authentik role-based views, SSR, RGAA) |
 | **RGAA 4.1 audit** | axe-core / Lighthouse CI | #204 (archived) | 🔨 Q1 2027 | Accessibility audit on ktayl-portal (RGAA 4.1 — good practice for a public-facing portal) |
@@ -115,6 +115,15 @@ ktayl-claims → ERPNext (premium accounting)
 ---
 
 ## 2. Underwriting
+
+:::note Superseded by the live build — Underwriting is Python/FastAPI, live on dev
+The §2a/§2b architecture below is the **pre-build plan** (a Go API + React UI + Temporal + CrewAI agents).
+The domain is actually delivered as **`ktayl-underwriting`** — a **Python 3.12 / FastAPI modular monolith
++ Next.js workbench**, **live on dev** (`intake → appetite/eligibility → rating → quote → bind` into the
+live [Policy Service](./ktayl-policy-service), emitting a `bound-risk` event). See
+[ktayl-underwriting](./ktayl-underwriting) (ADR-007). The two built components are corrected in the table
+below; the remaining rows (Temporal workflow, CrewAI agents, n8n intake, governance tooling) stay planned.
+:::
 
 ### 2a. AI Underwriting Assistant (core system)
 
@@ -169,8 +178,8 @@ Paperless-ngx ─────────── (#76) audit-trail document archi
 
 | App | Stack | Issue | Phase | Description |
 |---|---|---|---|---|
-| **ktayl-underwriting (API)** | Go | #81 (archived) | 📋 Backlog | Risk data model, rules engine, authority routing, pricing engine, quote generation, ERPNext policy push |
-| **ktayl-underwriting (UI)** | React / TypeScript | #81 (archived) | 📋 Backlog | Underwriter Workbench single-screen: client + risk + AI findings + decision buttons (ACCEPT / MODIFY / DECLINE) |
+| **ktayl-underwriting (API)** | **Python 3.12 / FastAPI** | #81 (archived) | 🟡 **Live on dev** | Modular monolith: submission intake → appetite/eligibility → rating → quote → **bind** into live Policy Service; emits `bound-risk` event (ADR-007) |
+| **ktayl-underwriting (UI)** | **Next.js / React** | #81 (archived) | 🟡 **Live on dev** | Underwriter workbench (task inbox): referral triage + explainable rating breakdown + bind + audit trail |
 | **underwriting-workflow** | Temporal (existing) | #81 (archived) | 📋 Backlog | Long-running UW state machine in the existing Temporal cluster — new workflow type, no new infrastructure |
 | **UW AI agents** | Python / CrewAI (extend minicloud-crew-agent) | #81 (archived) | 📋 Backlog | 3 specialized agents: Document (extract+classify), Risk (exposure+claims+anomaly), Compliance (KYC+sanctions+missing-docs) |
 | **UW broker intake** | n8n (existing) | — | 📋 Backlog | n8n workflows: broker email → doc routing → missing-info auto-request → status updates. No new service. |
