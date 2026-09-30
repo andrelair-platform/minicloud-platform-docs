@@ -117,6 +117,32 @@ If you take one thing from this, take this. What makes the harness actually impr
 
 Every guardrail in this post traces back to a real, dated incident. That feedback loop is the difference between a harness that is *documentation* and a harness that is an *engineering discipline*. It's also, not coincidentally, exactly what a compliance framework like DORA wants to see: not "we wrote a policy," but "an incident produced a control, and here's the evidence."
 
+## Update: the harness becomes an AI-native SDLC
+
+Writing this post clarified something. The five components above are the *static* harness — they govern a single session. The next move was to close the loop around the whole software lifecycle, so the agent isn't just safe *within* a task but is wired into planning, review, testing and maintenance. Anthropic's Applied AI team frames this as an **AI-native SDLC** — twelve "plays" across plan → design → build → test → deploy → maintain. I ran the gap analysis against my own platform and shipped the missing pieces. Three of them extend the ideas above in ways worth pulling out.
+
+### Guardrails, one layer earlier: hooks at the keystroke
+
+The guardrails in section 3 are all *server-side* — Gatekeeper denies a bad manifest at the API server, CODEOWNERS blocks a bad merge in Git. They're excellent, but they catch the mistake *after* the agent has already produced it. A **Claude Code hook** moves the same "make it impossible" discipline one layer earlier — to the moment the agent tries to act.
+
+A hook is a small script the harness runs *before* a tool call, and it can allow, block, or ask. Mine refuse — deterministically, before execution — an agent trying to `rm -rf /`, force-push to `main`, run a manual `argocd app sync` (the exact anti-pattern from section 5), `kubectl delete namespace`, pipe a `curl` straight into a shell, or write a secret or a `CLAUDE.md` into a repo. Crucially they **fail open** — a bug in a guard can never wedge the agent — and they use first-token dispatch so that a `grep "argocd app sync"` isn't mistaken for the real command. This is the client-side twin of the server-side gate: defence in depth, with the cheapest, earliest catch sitting right at the agent's fingertips.
+
+### The harness now tests itself — and closes its own loop
+
+Two moves complete the picture, and both are just this post's own theses applied *to the harness itself*.
+
+First, **the harness is code, so it gets tests.** The rules, hooks and skills steer every session; a careless edit to a guard is exactly the silent regression the "evidence over assertion" section warns about. So the hooks now ship with a 36-case allow/block matrix that runs in CI on every change to the agent config. The harness regression-tests itself.
+
+Second, **the maintenance loop is now automated** — the meta-pattern below (incident → memory → rule → backstop) turned into a running system. A deterministic detector on the controller watches production metrics as *control bands*: it learns each signal's normal range from its own rolling history and escalates only a real statistical outlier — 1σ logs, 2σ writes an `intent.md` (the same idea-capture artifact that starts every piece of work), 3σ opens a GitHub issue. No model runs in that loop — detection is 100% deterministic and free — and the *diagnosis* is a human triggering the agent on the resulting `intent.md`. A production signal now re-enters the development loop on its own.
+
+And here is the part I like most, because it is the whole thesis of this post in a single episode. To verify the loop I triggered a **real** failure on a live band — a deliberately broken deployment. The detector was *supposed* to catch it, and didn't quite: my "rollout failed" query matched the phases `Degraded|Error`, but Argo Rollouts reports a deadline-exceeded failure as `Timeout`. The monitor that watches for broken deploys would have **silently missed the most common broken deploy.** A synthetic test would never have found that; only firing a real breach did. I fixed the query, added a regression test so it can't come back, and the corrected band opened the issue for real — *evidence over assertion*, applied to the very thing whose job is to enforce evidence over assertion.
+
+### Distribute once, not per-repo
+
+The last practical piece: all of it — hooks, skills, the review and intent-capture commands, the verifier/researcher sub-agents — is packaged as a single **Claude Code plugin** and installed once, so it applies in every repository automatically instead of drifting across twenty copies. The reference implementation stays version-controlled and CODEOWNERS-gated in the platform repo; the plugin is only the distribution layer. Fix a guard in one place, and `claude plugin update` carries it everywhere.
+
+The through-line is deliberate: none of this needed a bigger model or a metered API bill. The deterministic parts run in CI or on the controller for free; the model's judgement runs on the plan I already pay for, invoked by a human at the gates that actually need judgement. The harness got materially stronger and the marginal cost was roughly zero — which is, again, the point.
+
 ## Why this matters beyond my lab
 
 The uncomfortable truth of agentic AI in 2026 is that **the model is rarely the bottleneck** — the harness is. A frontier model with a weak harness produces confident, plausible, unverified work that fails in exactly the places mocks hide. A modest model with a strong harness — persistent memory, structural guardrails, an independent verification gate, and a deterministic control plane — produces work you can actually put in front of production.
