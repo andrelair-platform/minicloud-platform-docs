@@ -19,6 +19,12 @@ sidebar_position: 0
 this platform — it is not a ktayl business app and appears nowhere below.
 :::
 
+:::info Status legend (what's live vs not) — verified against the running cluster 2026-09-30
+🟢 **live in prod** · 🔵 **live on dev only** · 🟡 **partial** (some pieces live) · ⚪ **planned** (not built yet).
+Only the tagged domains/platforms actually run; untagged arrows are the value-chain pipeline, not a status claim.
+The authoritative box-by-box status is the [table under the picture](#whats-live-vs-planned).
+:::
+
 ## The one picture
 
 Read it **top-down**: people → the apps they touch → the insurance value chain (the business) → the
@@ -37,7 +43,7 @@ legacy core that one domain wraps → the shared Data/AI/**Document** platforms 
                                                  │  every call: OIDC · RBAC · audit
    ══════════════ BUSINESS VALUE CHAIN (the insurer itself — Track A) ══════════════
         DISTRIBUTION ─► UNDERWRITING ─► POLICY ADMIN ─► CLAIMS ─► BILLING ─► REINSURANCE
-           #13             #12          #6 (LIVE)        #11 (LIVE)  #14         #22
+        ⚪ #13          🔵 #12          🟢 #6            🟢 #11      ⚪ #14      ⚪ #22
         broker/CRM      workbench      contracts       FNOL→      premium     treaty/
         submissions     rating/quote   endorsements    settle     finance     cessions
                                           │                │
@@ -61,12 +67,34 @@ legacy core that one domain wraps → the shared Data/AI/**Document** platforms 
         │ warehouse · BI    │ RAG (docs) + SQL-tools  │ parse→chunk→metadata→embed │
         │ semantic/metrics  │ (data) · Copilot (last) │ →vector DB · GED · e-sign  │
         └───────────────────┴────────────────────────┴───────────────────────────┘
-        also transversal: INTEGRATION (#25 · API-GW/events/ETL) · MDM (#20 · golden records)
+        also transversal: 🟡 INTEGRATION (#25 · API-GW/events/ETL) · ⚪ MDM (#20 · golden records)
    ══════════════ FOUNDATIONS (live) + GOVERNANCE (continuous — Track B) ══════════════
      k3s · GitOps (ArgoCD/Kargo) · IaC (OpenTofu) · Observability (OTel/Prom/Grafana/Tempo)
      Identity (Authentik) · Secrets (Vault/ESO) · Supply-chain (cosign/SBOM/Trivy)
      GOVERNANCE gate every domain clears: regulatory impact · AI-Act tier · NFR + security + resilience
 ```
+
+## What's live vs planned
+
+The single source of truth for the picture above — every box, with its **verified** status (checked against
+the running cluster on 2026-09-30, not the roadmap). 🟢 prod · 🔵 dev only · 🟡 partial · ⚪ planned.
+
+| Box | Status | Note |
+|---|---|---|
+| **Policy Admin #6** | 🟢 prod | the first live core system (dev+prod) |
+| **Claims #11** — ACL + Debezium CDC + CQRS read-model + adjuster workbench | 🟢 prod | the legacy-spine wrap, live end-to-end (dev+prod) |
+| **Underwriting #12** | 🔵 dev | intake→rating→quote→bind + workbench UI live on dev; prod promotion pending |
+| **Distribution / CRM #13 · Billing #14 · Reinsurance #22** | ⚪ planned | scaffold / no app yet |
+| **Data / Actuarial #5** | 🟡 partial | Metabase BI + CNPG live (Slice 1); warehouse / semantic layer / actuarial planned |
+| **AI / Automation #4 · #18 · #19** | 🟢 prod | LiteLLM · Langfuse · Qdrant · RAG · LangGraph/CrewAI agents — mature |
+| **Enterprise Document #24** | 🟡 partial | e-sign + storage + RAG ingest live (Docuseal/Nextcloud); records-mgmt DMS planned |
+| **Integration #25** | 🟡 partial | NATS / Temporal / n8n engines live; API + event catalogue + BPM/approvals planned |
+| **MDM #20** | ⚪ planned | golden records parked — the keystone gap for cross-domain (customer) analytics |
+| **Foundations** — k3s · GitOps (ArgoCD/Kargo) · Observability · Identity · Secrets · Supply-chain | 🟢 prod | mature |
+
+> **Reading the value chain honestly:** it is live **at both ends** (Policy + Claims in prod) with the
+> operational **middle** (Underwriting on dev; Pricing/Billing planned) still in progress — not a fully
+> running end-to-end insurer yet.
 
 ## The three tracks (why nothing is scattered)
 
@@ -104,6 +132,8 @@ So the docs aren't a pile of apps — they're **one architecture, three tracks, 
 | **Regulation & compliance-by-design** | [Regulatory Operating Model](./regulatory-operating-model) |
 | **A worked domain (deep-dive)** | [Underwriting FDE Playbook](./underwriting-fde-playbook) · [Policy Service](./ktayl-policy-service) · [Legacy-Core Modernization / Claims](./legacy-core-modernization) |
 
-**One-line takeaway:** ktayl is a **greenfield-modern insurer** whose value chain is built domain-by-domain
-on a mature k8s platform, with **one deliberate legacy spine** (Claims via GlobalCore/MySQL, simulated) — now LIVE end-to-end to prove
-real enterprise modernization — all clearing a continuous governance gate.
+**One-line takeaway:** ktayl is a **greenfield-modern insurer** whose value chain is **live at both ends —
+Policy #6 and Claims #11 in prod — with the operational middle (Underwriting on dev; Pricing/Billing planned)
+still in progress**, all built domain-by-domain on a mature k8s platform, with **one deliberate legacy spine**
+(Claims via GlobalCore/MySQL, simulated) — live end-to-end to prove real enterprise modernization — all
+clearing a continuous governance gate.
