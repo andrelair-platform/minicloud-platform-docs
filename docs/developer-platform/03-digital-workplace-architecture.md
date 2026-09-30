@@ -12,6 +12,32 @@ sidebar_label: 🗂 Digital Workplace (M365 alt)
 > consolidate onto it today). It fits the BYOD / browser-first posture (see the
 > [EA Blueprint scope boundary](../insurance-platform/enterprise-architecture-blueprint)).
 
+## The architecture principle — browser-first, data-server-side, identity-enforced
+
+The whole workplace follows one constraint, now codified as an auto-loaded platform rule
+([`.claude/rules/workplace-architecture.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/.claude/rules/workplace-architecture.md))
+so **every new user-facing app inherits it**:
+
+> **The enterprise operates a browser-first BYOD workplace. Employee endpoints are considered
+> UNTRUSTED and are not centrally managed. Security is enforced primarily at the identity, session,
+> application, API and data layers. Corporate information should remain server-side whenever possible,
+> with web-based collaboration preferred over local synchronization or storage. Strong authentication,
+> fine-grained authorization, auditability, data classification and restricted handling of sensitive
+> information are foundational architectural requirements.**
+
+`DEVICE = UNTRUSTED` → **identity is the perimeter.** Every user-facing app must clear eight admission
+requirements: (1) **SSO via Authentik only** (proxy/forward-auth for non-OIDC apps); (2) **group-gated
+authz** — never "any authenticated user" (membership governed by `ktayl-iam` dual-approval; ABAC for
+cross-border domains); (3) **session controls sized to sensitivity** + passkey; (4) **data stays
+server-side** (in-browser edit over download); (5) **honour data classification**
+(INTERNAL/CONFIDENTIAL/RESTRICTED); (6) **auditable to who · when · where · app · action · resource**;
+(7) **default-deny egress + private datastores**; (8) **no device-trust assumptions**.
+
+Out of scope by consequence (the [BYOD boundary](../insurance-platform/enterprise-architecture-blueprint)):
+Intune · Fleet/osquery · MDM · device enrollment · remote wipe · endpoint config. The residual BYOD
+risk (local copy / screenshot) is mitigated by keeping data **server-side** + a **sensitive-workforce
+tier** (browser isolation / VDI for finance-approval, legal, exec docs), *not* by managing the device.
+
 ## What replaces M365 (deployed today)
 
 Everything below is **deployed and running**, each behind **Authentik SSO + MFA**, reached over
@@ -47,6 +73,15 @@ Nextcloud Hub decision below for the trade-off.
   ([inbound mail stall PM](../observability/incident-2026-09-18-inbound-mail-stall)). Mail is now working
   both directions, with SPF+DKIM+DMARC aligned via a [custom MAIL FROM](./amazon-ses). *A transport
   problem, since resolved — not a workplace-architecture problem.*
+- **The real open gap is the DATA LAYER (not app access).** The BYOD model protects *application
+  access* very well and *data-after-it-reaches-the-device* barely — the known trade-off of browser-first
+  BYOD. Outstanding, in priority order: (1) **data classification → file-handling tiers**
+  (INTERNAL/CONFIDENTIAL/RESTRICTED) applied to Nextcloud — hardening public/anonymous/external share,
+  desktop/mobile sync limits, web-only for RESTRICTED (top regulated-insurer item, DORA/GDPR evidence);
+  (2) **RBAC → ABAC** (country / line-of-business attribute checks) for International Programs, into
+  `ktayl-iam`; (3) **passkey/WebAuthn + per-app session tiers** in Authentik; (4) a **sensitive-workforce
+  tier** (browser isolation / VDI); (5) a **unified audit/SOC plane** (Authentik + app + Falco → one
+  queryable view). These are the honest next steps, tracked against the workplace board (#10).
 
 ## Decision: Nextcloud Hub — evaluated, NOT adopted (2026-09-18)
 
