@@ -71,7 +71,7 @@ and marks what actually runs. 🟢 prod · 🔵 dev only · 🟡 partial · ⚪ 
 | Lifecycle stage | System / domain | Board | Status |
 |---|---|---|---|
 | Courtier / relationship | Distribution & CRM | #13 | ⚪ planned (no CRM) |
-| **Submission / appel d'offres** (dossier d'exposition) | **Submission Hub** | — | ⚪ **not built — no board even exists** (the #1 front-door gap) |
+| **Submission / appel d'offres** (dossier d'exposition) | **Submission Hub** | #27 | ⚪ **not built** — board #27 opened 2026-09-30; build not started (the #1 front-door gap) |
 | Underwriting — analyse · rating · capacité · T&C | **ktayl-underwriting** | #12 | 🔵 **live on dev** (intake→appetite→rating→quote→bind) |
 | Pricing (dedicated) + portfolio analytics | Pricing & Portfolio | #04/#12 | ⚪ planned |
 | Capacité (traité / facultative) | Reinsurance & Captive | #22 | ⚪ scaffold |
