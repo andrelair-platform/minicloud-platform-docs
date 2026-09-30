@@ -37,19 +37,21 @@ legacy core that one domain wraps → the shared Data/AI/**Document** platforms 
                                                  │  every call: OIDC · RBAC · audit
    ══════════════ BUSINESS VALUE CHAIN (the insurer itself — Track A) ══════════════
         DISTRIBUTION ─► UNDERWRITING ─► POLICY ADMIN ─► CLAIMS ─► BILLING ─► REINSURANCE
-           #13             #12          #6 (LIVE)        #11        #14         #22
+           #13             #12          #6 (LIVE)        #11 (LIVE)  #14         #22
         broker/CRM      workbench      contracts       FNOL→      premium     treaty/
         submissions     rating/quote   endorsements    settle     finance     cessions
                                           │                │
                                           │                │  (Claims is delivered by wrapping a legacy)
-   ══════════════ LEGACY SPINE — one deliberate initiative (Track C) ══════════════
+   ══════════════ LEGACY SPINE — one deliberate initiative (Track C) — LIVE on dev+prod ══════════════
                           ┌──────────────▼───────────────┐
-                          │ GlobalCore (System of Record) │  Oracle · Java 8 · SOAP · batch
+                          │ GlobalCore (System of Record) │  MySQL* · Java · SOAP · batch
                           │ FROZEN · OUTSIDE k8s          │  holds the CLAIMS domain
-                          └──────────────┬───────────────┘
-                          ACL wraps it:  │  SOAP→JSON (writes) · Debezium→NATS (events)
+                          └──────────────┬───────────────┘   *simulated Oracle-era legacy (ADR-002)
+                          ACL wraps it:  │  SOAP→JSON (writes) · Debezium binlog→NATS JetStream (CDC)
                           ┌──────────────▼───────────────┐
-                          │ ktayl-claims (#11) = the ACL  │  modern Claims, built AS the wrap
+                          │ ktayl-claims (#11) = the ACL  │  modern Claims, built AS the wrap — LIVE
+                          │  + CQRS read-model (CNPG)     │  reads = projection; writes = SOAP (ADR-008)
+                          │  + Angular adjuster workbench │  nginx BFF → internal ACL (ADR-009)
                           └──────────────┬───────────────┘
                                          │  clean domain events on NATS (never raw legacy access)
    ══════════════ SHARED PLATFORMS (serve every domain — transversal) ══════════════
@@ -72,7 +74,7 @@ Every item on the roadmap is in exactly one of three parallel tracks — this is
 
 | Track | What it is | Contains |
 |---|---|---|
-| **A — Business build** | the insurance value chain, built domain by domain | Distribution #13 → Underwriting #12 → **Policy Admin #6 (live)** → Claims #11 → Billing #14 → Reinsurance #22 |
+| **A — Business build** | the insurance value chain, built domain by domain | Distribution #13 → Underwriting #12 → **Policy Admin #6 (live)** → **Claims #11 (live)** → Billing #14 → Reinsurance #22 |
 | **B — Governance** | the gate *every* Track-A build clears (not a phase) | regulatory impact · AI-Act tier · NFR/security/resilience by design |
 | **C — Modernization lab** | the legacy-wrap muscle, feeding real integration skill into A | **GlobalCore** (legacy core) + the **ktayl-claims** ACL + GenApp M1–M4 |
 
@@ -97,11 +99,11 @@ So the docs aren't a pile of apps — they're **one architecture, three tracks, 
 | **What to build next / the tracks** | [🧭 IS Build Roadmap](../product-roadmap/is-build-roadmap) |
 | **The functional target (12 domains + 4 layers) + the legacy spine** | [🏛 EA Blueprint](./enterprise-architecture-blueprint) |
 | **Every app, its stack + status** | [Business Applications Catalog](./business-applications-catalog) |
-| **The legacy-core wrap (GlobalCore + Oracle + Claims)** | [Legacy-Core Modernization](./legacy-core-modernization) |
+| **The legacy-core wrap (GlobalCore + MySQL* + Claims — LIVE)** | [Legacy-Core Modernization](./legacy-core-modernization) |
 | **How AI is applied (RAG vs SQL-tools, the copilot)** | [AI-First Operating Model](./ai-first-operating-model) |
 | **Regulation & compliance-by-design** | [Regulatory Operating Model](./regulatory-operating-model) |
-| **A worked domain (deep-dive)** | [Underwriting FDE Playbook](./underwriting-fde-playbook) · [Policy Service](./ktayl-policy-service) |
+| **A worked domain (deep-dive)** | [Underwriting FDE Playbook](./underwriting-fde-playbook) · [Policy Service](./ktayl-policy-service) · [Legacy-Core Modernization / Claims](./legacy-core-modernization) |
 
 **One-line takeaway:** ktayl is a **greenfield-modern insurer** whose value chain is built domain-by-domain
-on a mature k8s platform, with **one deliberate legacy spine** (Claims via GlobalCore/Oracle) to prove
+on a mature k8s platform, with **one deliberate legacy spine** (Claims via GlobalCore/MySQL, simulated) — now LIVE end-to-end to prove
 real enterprise modernization — all clearing a continuous governance gate.
