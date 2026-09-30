@@ -31,16 +31,20 @@ admins / the DLP flow may assign it, so a user can't down-classify their own fil
 
 | Control | App / setting | Applies to |
 |---|---|---|
-| **Deny download** (web-only) | `files_accesscontrol` rule: *tag = RESTRICTED → deny `read` over `WebDAV`/public* | RESTRICTED |
-| **Deny public / anonymous share** | `files_accesscontrol`: tag is `CONFIDENTIAL`/`RESTRICTED` → deny share-link | CONF + RESTRICTED |
-| **Deny federated / external share** | `files_accesscontrol` + global sharing config | CONF + RESTRICTED |
-| **Secure view + watermark + no-download in the editor** | **OnlyOffice** `review/restrict download` + watermark template | RESTRICTED |
-| **No desktop/mobile sync** | deny WebDAV read (above) blocks the sync client too | RESTRICTED |
-| **Space isolation + ACL** | **Group Folders** (Corporate / Department / Project / **Restricted** spaces) with group ACLs | all |
-| **Auto-classify** (optional) | `files_automatedtagging` — tag by folder/upload location | all |
+| **Web-only document experience — no download/print/copy + watermark** | **OnlyOffice Secure View** (the real "web-only" for office docs, which is the bulk of content) | RESTRICTED |
+| **No public / anonymous / federated share on sensitive data** | **global sharing guardrails** (applied: password + 30-day expiry enforced, federated off) + the "never publicly share RESTRICTED/CONFIDENTIAL" policy | CONF + RESTRICTED |
+| **Access gate — RESTRICTED files only reachable by the authorised group** | `files_accesscontrol` rule: *tag = RESTRICTED AND user ∉ restricted-group → **deny access***. NB: this denies access **entirely** (it is binary — it cannot "allow view but block download"); pair it with the tight Group-Folder ACL. | RESTRICTED |
+| **Space isolation + ACL** (deny reshare on Restricted) | **Group Folders** (Corporate / Department / Project / **Restricted**) — scriptable via `occ groupfolders:*` | all |
 | **Session / MFA / step-up** | **Authentik** (not Nextcloud) — short session + re-auth for RESTRICTED apps | RESTRICTED |
 | **Audit** | `admin_audit` → log → the unified SOC plane (Authentik + app + Falco) | all |
-| **Retention** (optional) | `files_retention` by tag | CONF + RESTRICTED |
+| **Auto-classify / Retention** (optional) | `files_automatedtagging` (tag by folder) · `files_retention` (by tag) | all |
+
+> **Honest limit (matches the reference's own §24).** Nextcloud cannot natively "allow browser view but
+> block download" for an *arbitrary* file — that granularity doesn't exist. The strong, layered controls
+> are: **OnlyOffice Secure View** (web-only for documents — the main content type), **no public link** for
+> sensitive tags, a **tight Restricted Group-Folder ACL**, **audit**, and — for the truly sensitive
+> minority — the **VDI / browser-isolation** sensitive-workforce tier. Full download-proofing of any binary
+> is not a config toggle; it's the VDI tier.
 
 ### Space architecture (Group Folders)
 ```
@@ -52,41 +56,55 @@ Nextcloud
 ```
 Permission = **group + role + folder + classification** (never "authenticated ⇒ everything").
 
-## Global sharing hardening (the platform default)
-Independent of tags, set the safe workplace defaults: **public link creation disabled by default**
-(or limited to a named group), **auto-accept of incoming external shares off**, **default share
-expiration**, resharing restricted. This is the one change that can affect *existing* shares → apply
-after a review of current public links, not blindly.
+## Global sharing hardening (applied 2026-09-30 — "restrict with guardrails")
+Independent of tags. **Chosen posture: keep public links *possible* but *controlled*** (an insurer has
+legitimate broker/vendor sharing). Applied: public links require a **password** + an **enforced 30-day
+expiry**; **auto-accept of external shares off**; **federated (server-to-server) sharing disabled**.
+A pre-change **audit showed 0 existing shares**, so nothing broke. Employee login access from the
+internet is unaffected — this only governs anonymous share-*links*, never authenticated access.
 
-## Implementation runbook (occ)
+## Implementation — what's APPLIED vs remaining
 
-Additive/safe parts (no existing file is RESTRICTED yet, so nothing breaks):
+**Applied live 2026-09-30 (via `occ`):**
 ```bash
 NC(){ kubectl exec -n nextcloud deploy/nextcloud -c nextcloud -- php occ "$@"; }
-# 1. enforcement engines
-NC app:install files_accesscontrol ; NC app:install groupfolders
-# 2. classification tags — restricted (static): admins/DLP assign, users cannot
-NC tag:add INTERNAL     restricted
-NC tag:add CONFIDENTIAL restricted
-NC tag:add RESTRICTED   restricted
-# 3. RESTRICTED = web-only: deny download + deny share (Files Access Control rule, tag-scoped)
-#    (created via the Flow/Access-Control admin UI or the occ workflow API — rule:
-#     "File system tag is RESTRICTED"  →  deny [download, create-share])
+NC app:install files_accesscontrol ; NC app:install groupfolders          # engines
+NC tag:add INTERNAL restricted ; NC tag:add CONFIDENTIAL restricted ; NC tag:add RESTRICTED restricted
+# global sharing guardrails (audit first showed 0 existing shares → nothing broke):
+NC config:app:set core shareapi_enforce_links_password --value=yes        # public links MUST have a password
+NC config:app:set core shareapi_enforce_expire_date    --value=yes        # expiry mandatory
+NC config:app:set core shareapi_expire_after_n_days     --value=30
+NC config:app:set core shareapi_auto_accept_share       --value=no
+NC config:app:set files_sharing outgoing_server2server_share_enabled --value=no   # federated off
+NC config:app:set files_sharing incoming_server2server_share_enabled --value=no
 ```
-Reviewed parts (touch existing state — do after checking current shares):
+
+**Group-Folder spaces — scriptable (run when the department→group mapping is confirmed):**
 ```bash
-NC config:app:set core shareapi_allow_links --value=no          # or restrict to a group
-NC config:app:set files_sharing outgoing_server2server_share_enabled --value=no
-NC config:app:set core shareapi_default_expire_date --value=yes
+ID=$(NC groupfolders:create "Restricted Spaces")                 # returns the folder id
+NC groupfolders:group "$ID" "Direction Sinistres" read write     # grant the owning group
+NC groupfolders:permissions "$ID" -e                             # enable advanced ACL, then deny reshare
+NC groupfolders:quota "$ID" 50GB
 ```
-OnlyOffice RESTRICTED secure-view (watermark + no-download) is set in the OnlyOffice admin settings
-(restrict download/print/copy + a watermark template keyed on the RESTRICTED tag).
+
+**Remaining — admin UI (see the walkthrough below):**
+- **`files_accesscontrol` rule** (Settings → Administration → **Flow** → *Files access control* → *Add new
+  flow*): condition **File system tag** *is* **RESTRICTED** [+ *Group membership* *is not* the authorised
+  group] → the rule **denies access**. (Access-control is binary — the *web-only-view* comes from OnlyOffice
+  Secure View, below, not from here.)
+- **OnlyOffice Secure View** (Settings → Administration → **ONLYOFFICE** → *Secure view*): enable
+  **restrict download / copy / print** + a **watermark** (e.g. `{userId} — RESTRICTED — {date}`), scoped to
+  the RESTRICTED tag/group. This is the real web-only document experience.
 
 ## Verify / audit
 `admin_audit` logs every share/download/access with the Authentik identity → who · when · where ·
 app · action · resource. Feed it into the unified audit plane for the regulated-insurer trail.
+**Test:** tag a throwaway file RESTRICTED → confirm (1) it opens in OnlyOffice with a watermark and no
+download button, (2) a non-authorised user gets access-denied, (3) a public link can't be made without a
+password + expiry.
 
-## Status
-Design + runbook recorded. Enforcement engines + tags + the RESTRICTED web-only rule are the safe
-first apply; global-sharing hardening + department Group-Folders follow after a shares review.
-Tracked on the Digital Workplace board (#10).
+## Status (2026-09-30)
+✅ Design + runbook · ✅ enforcement engines (`files_accesscontrol`, `groupfolders`) · ✅ classification
+tags (restricted) · ✅ global sharing guardrails (audit showed 0 shares → safe). ⏳ Remaining (admin-UI,
+additive): the access-control rule + OnlyOffice Secure View; Group-Folder spaces (scriptable, pending the
+group mapping). Tracked on the Digital Workplace board (#10).
