@@ -506,6 +506,7 @@ const sidebars: SidebarsConfig = {
             'insurance-platform/business-operations-tooling',
             'insurance-platform/hr-tooling',
             'insurance-platform/regulatory-operating-model',
+            'insurance-platform/governance-intranet',
             {
               type: 'category',
               label: 'Domain Playbooks',
