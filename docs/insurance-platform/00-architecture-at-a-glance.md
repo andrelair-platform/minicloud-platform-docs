@@ -46,6 +46,7 @@ legacy core that one domain wraps → the shared Data/AI/**Document** platforms 
         ⚪ #13          🔵 #12          🟢 #6            🟢 #11      ⚪ #14      ⚪ #22
         broker/CRM      workbench      contracts       FNOL→      premium     treaty/
         submissions     rating/quote   endorsements    settle     finance     cessions
+        feeds UW ▲ ⚪ RISK ENGINEERING #21 (risk survey → prevention)   spans the chain ◆ ⚪ INTERNATIONAL PROGRAMMES #23 (master/local · DIC/DIL)
                                           │                │
                                           │                │  (Claims is delivered by wrapping a legacy)
    ══════════════ LEGACY SPINE — one deliberate initiative (Track C) — LIVE on dev+prod ══════════════
@@ -67,7 +68,7 @@ legacy core that one domain wraps → the shared Data/AI/**Document** platforms 
         │ warehouse · BI    │ RAG (docs) + SQL-tools  │ parse→chunk→metadata→embed │
         │ semantic/metrics  │ (data) · Copilot (last) │ →vector DB · GED · e-sign  │
         └───────────────────┴────────────────────────┴───────────────────────────┘
-        also transversal: 🟡 INTEGRATION (#25 · API-GW/events/ETL) · ⚪ MDM (#20 · golden records)
+        also transversal: 🟡 INTEGRATION (#25 · API-GW/events/ETL) · ⚪ MDM (#20 · golden records) · 🟡 COMPLIANCE (#15 · AML/sanctions/obligations) · ⚪ ITSM (#16 · GLPI/CMDB)
    ══════════════ FOUNDATIONS (live) + GOVERNANCE (continuous — Track B) ══════════════
      k3s · GitOps (ArgoCD/Kargo) · IaC (OpenTofu) · Observability (OTel/Prom/Grafana/Tempo)
      Identity (Authentik) · Secrets (Vault/ESO) · Supply-chain (cosign/SBOM/Trivy)
@@ -90,6 +91,10 @@ the running cluster on 2026-09-30, not the roadmap). 🟢 prod · 🔵 dev only 
 | **Enterprise Document #24** | 🟡 partial | e-sign + storage + RAG ingest live (Docuseal/Nextcloud); records-mgmt DMS planned |
 | **Integration #25** | 🟡 partial | NATS / Temporal / n8n engines live; API + event catalogue + BPM/approvals planned |
 | **MDM #20** | ⚪ planned | golden records parked — the keystone gap for cross-domain (customer) analytics |
+| **Risk Engineering #21** | ⚪ planned | scaffold; risk survey → prevention recommendations → feeds underwriting (the P1 insurability pivot) |
+| **International Programmes #23** | ⚪ planned | scaffold (`ktayl-ip-portal` backlog); master/local policies · DIC/DIL · PO↔SO premium/claims flows |
+| **Compliance & Enterprise Risk #15** | 🟡 partial | obligations register (doc) + DORA pattern proven via Retrieva; AML/sanctions screening planned |
+| **ITSM #16** | ⚪ planned | scaffold; GLPI (ITIL v4) + CMDB — not yet live |
 | **Foundations** — k3s · GitOps (ArgoCD/Kargo) · Observability · Identity · Secrets · Supply-chain | 🟢 prod | mature |
 
 > **Reading the value chain honestly:** it is live **at both ends** (Policy + Claims in prod) with the
@@ -102,7 +107,7 @@ Every item on the roadmap is in exactly one of three parallel tracks — this is
 
 | Track | What it is | Contains |
 |---|---|---|
-| **A — Business build** | the insurance value chain, built domain by domain | Distribution #13 → Underwriting #12 → **Policy Admin #6 (live)** → **Claims #11 (live)** → Billing #14 → Reinsurance #22 |
+| **A — Business build** | the insurance value chain, built domain by domain | Distribution #13 → Underwriting #12 → **Policy Admin #6 (live)** → **Claims #11 (live)** → Billing #14 → Reinsurance #22 · **+ Risk Engineering #21 · International Programmes #23** (value-chain) · **Compliance #15** (governance-adjacent) · **ITSM #16** (enterprise-IT) |
 | **B — Governance** | the gate *every* Track-A build clears (not a phase) | regulatory impact · AI-Act tier · NFR/security/resilience by design |
 | **C — Modernization lab** | the legacy-wrap muscle, feeding real integration skill into A | **GlobalCore** (legacy core) + the **ktayl-claims** ACL + GenApp M1–M4 |
 
