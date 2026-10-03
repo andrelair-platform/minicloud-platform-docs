@@ -507,6 +507,7 @@ const sidebars: SidebarsConfig = {
             'insurance-platform/hr-tooling',
             'insurance-platform/regulatory-operating-model',
             'insurance-platform/governance-intranet',
+            'insurance-platform/itsm-glpi',
             {
               type: 'category',
               label: 'Domain Playbooks',
