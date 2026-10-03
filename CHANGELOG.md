@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.2](https://github.com/andrelair-platform/minicloud-platform-docs/compare/minicloud-platform-docs-v0.1.1...minicloud-platform-docs-v0.1.2) (2026-10-03)
+
+
+### Features
+
+* **copilot:** add minicloud Copilot — M365 equivalent on self-hosted stack ([#260](https://github.com/andrelair-platform/minicloud-platform-docs/issues/260)–[#265](https://github.com/andrelair-platform/minicloud-platform-docs/issues/265)) ([#113](https://github.com/andrelair-platform/minicloud-platform-docs/issues/113)) ([5ca48a5](https://github.com/andrelair-platform/minicloud-platform-docs/commit/5ca48a5b8e5dcedc5d0c8f1d69b11ccde8bd4ea9))
+* minicloud brand identity + two-pillar navigation ([#225](https://github.com/andrelair-platform/minicloud-platform-docs/issues/225)) ([2ed425a](https://github.com/andrelair-platform/minicloud-platform-docs/commit/2ed425a40cfa8d13b4fbb8455c39d9a3f2fb664b))
+
+
+### Bug Fixes
+
+* **blog:** set feedOptions limit:false to include all posts in RSS feed ([#118](https://github.com/andrelair-platform/minicloud-platform-docs/issues/118)) ([868da22](https://github.com/andrelair-platform/minicloud-platform-docs/commit/868da22a5407412a93947b2da82b35557cb60ce7))
+* Information System navbar lands on the insurance blueprint, not intro ([#226](https://github.com/andrelair-platform/minicloud-platform-docs/issues/226)) ([1575feb](https://github.com/andrelair-platform/minicloud-platform-docs/commit/1575feb4de3ec3d8d1e0318de895856268b14bf7))
+* neutral home + symmetric pillars ([#227](https://github.com/andrelair-platform/minicloud-platform-docs/issues/227)) ([c7a4015](https://github.com/andrelair-platform/minicloud-platform-docs/commit/c7a401527096409ab0f38f03ed8427512d713d79))
+* **sidebar:** remove duplicate Insurance Platform section ([6ce01c2](https://github.com/andrelair-platform/minicloud-platform-docs/commit/6ce01c26e3e2c12172cc25135cd17fb54df062af))
+
 ## [0.1.1](https://github.com/andrelair-platform/minicloud-platform-docs/compare/minicloud-platform-docs-v0.1.0...minicloud-platform-docs-v0.1.1) (2026-08-14)
 
 
