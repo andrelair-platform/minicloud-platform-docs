@@ -8,11 +8,49 @@ sidebar_position: 9
 # Governance Framework & Intranet — Scoping
 
 :::note Status
-🟡 **Scoping (design only — nothing deployed).** Path-C design for the insurer's **governance corpus**
-(policies → standards → guidelines → procedures → runbooks) and the **intranet** that serves it to staff.
-Owner decisions at the end. Companions: [Regulatory Operating Model](./regulatory-operating-model) ·
-[Capability Map](./capability-map) · [System-of-Record](./system-of-record) · [HR Tooling](./hr-tooling) ·
+🟢 **Built — Phases 0 & 1 complete (2026-10-03).** BookStack is **live** at
+`https://intranet.devandre.sbs` (Authentik SSO). This page keeps the original design rationale
+(§2–§9) and adds the **as-built** state (§0) with the owner decisions resolved (§12). Companions:
+[Regulatory Operating Model](./regulatory-operating-model) · [Capability Map](./capability-map) ·
+[System-of-Record](./system-of-record) · [HR Tooling](./hr-tooling) ·
 obligations register (`ktayl-compliance/docs/obligations-register.md`).
+:::
+
+## 0. As-built — what is live
+
+| Aspect | As deployed |
+|---|---|
+| **Tool** | BookStack (`ghcr.io/linuxserver/bookstack`), namespace `intranet`, deployed by **raw manifests + ArgoCD** (`minicloud-gitops/manifests/bookstack/` + app `apps/platform/bookstack.yaml`) — single instance, **not Kargo** |
+| **URL** | `https://intranet.devandre.sbs` (public via the Cloudflare tunnel) + `intranet.10.0.0.200.nip.io` (internal) |
+| **Database** | a dedicated **MariaDB** StatefulSet (the one MySQL deviation vs the CNPG/Postgres standard) |
+| **Auth** | **native Authentik OIDC** — gates access *and* carries per-user identity + Authentik groups |
+| **Access model** | BookStack roles name-matched to the Authentik `Direction …` groups; each governance book **gated to its owning Direction** (full CRUD), all staff **view**, admins bypass |
+| **Content** | 12 function shelves + the 5-level hierarchy (Politique→Standard→Directive→Procédure→Runbook); **4 governance books** (RH · Juridique · Underwriting · IT/Security/DORA) seeded with **21 pages** of *simulated* content grounded in Solvency II Pillar 2 / IDD POG / DORA / GDPR-ACPR |
+| **Capability registry (§8)** | a Backstage **"Gouvernance & conformité" entity card** reads `governance.ktayl-solution/*` annotations and links a capability to its applicable policy/standard/guideline/procedure (+ controls / approval authority / evidence). Live on `ktayl-underwriting` (pilot), `ktayl-policy-service`, `minicloud-gitops`, `minicloud-backstage` |
+| **Secrets** | Vault `secret/platform/bookstack` (DB creds, app-key, OIDC client, API token) → ESO |
+
+**Operate / verify / extend** (reusable, in `minicloud-ops/scripts/`):
+
+```bash
+# bootstrap a service API token (break-glass, stored in Vault):
+bash scripts/bookstack/bootstrap-token-to-vault.sh
+# (re)create the shelves + governance books (idempotent):
+python3 scripts/bookstack/seed-governance-structure.py
+# map Authentik groups -> roles and gate the spaces:
+python3 scripts/bookstack/map-roles-and-permissions.py
+# (re)populate the page content:
+python3 scripts/bookstack/populate-content.py
+# create an app's OIDC provider in Authentik + store creds in Vault:
+bash scripts/authentik/oidc-provider-to-vault.sh <slug> <name> <redirect-uri> <vault-kv-path>
+```
+
+Deep detail + the hardened-cluster gotchas (Gatekeeper non-root exemption, split-horizon CA-trust
+initContainer, the `ghcr.io/linuxserver` registry choice) live in the platform memory
+`project_bookstack_intranet` / `feedback_thirdparty_oidc_hardened_cluster`.
+
+:::caution
+MFA is currently **disabled globally** (owner decision during testing) — restore with
+`minicloud-ops/scripts/authentik/mfa-toggle.sh on`.
 :::
 
 ## 1. The gap (and why it matters)
@@ -136,12 +174,12 @@ it is the natural **pilot**.
 
 ## 10. Phasing
 
-| Phase | Deliverable |
-|---|---|
-| **0 — Stand up the intranet** | Deploy BookStack (Helm/ArgoCD, MariaDB, Authentik OIDC, backup, netpol) — Digital Workplace #10; ADR for the MySQL deviation |
-| **1 — Structure + pilot content** | Create the shelves + the hierarchy; seed **3 pilot shelves** (RH, Juridique, **Underwriting**) + 2–3 governance families; add the 7 columns to the capability registry |
-| **2 — Make the high-value UW rules executable** | Wire appetite/referral/DoA/pricing-floors in the UW workbench to the registry↔guideline link (builds on ktayl-underwriting) |
-| **3 — Extend** | Roll out the remaining families / business lines; control library + ORSA under #15 |
+| Phase | Deliverable | Status |
+|---|---|---|
+| **0 — Stand up the intranet** | Deploy BookStack (manifests/ArgoCD, MariaDB, Authentik OIDC, netpol) — Digital Workplace #10 | ✅ **Done** (2026-10-03) |
+| **1 — Structure + pilot content** | Shelves + the hierarchy; pilot governance books (RH, Juridique, Underwriting + IT/Security/DORA); the capability-registry governance card (§8) + content | ✅ **Done** (2026-10-03) — see §0 |
+| **2 — Make the high-value UW rules executable** | Surface the applicable guideline **in** the UW workbench at submission-open, wired to the registry↔guideline link (builds on ktayl-underwriting, which already *enforces* appetite/referral/DoA/pricing) | ⬜ Deferred (ktayl-underwriting app feature) |
+| **3 — Extend** | Roll out the remaining families / business lines; control library + ORSA under #15 | ⬜ Pending (content authored by domain owners) |
 
 ## 11. Compliance & certification mapping
 
@@ -149,9 +187,9 @@ Solvency II Pillar 2 (governance system, written policies, DoA, four-eyes, ORSA)
 DORA (ICT governance family) · EU AI Act (AI-governance family) · ACPR (written policies, four-eyes). Cert:
 **BC01 (piloter)** + **BC03 (déployer & sécuriser)**; the AI-governance family also feeds **BC02**.
 
-## 12. Open decisions (owner)
+## 12. Decisions (owner) — resolved
 
-1. **Exposure:** internal-only (Tailscale/nip.io) **or** public behind Authentik forward-auth (`intranet.devandre.sbs`)?
-2. **Critical-policy corpus:** all content in BookStack, **or** keep Solvency-II policies in git+CODEOWNERS (strict four-eyes) and link them?
-3. **MariaDB:** dedicated small instance (recommended) vs reuse an existing MySQL.
-4. **Scope of Phase 1 pilot shelves** — confirm RH + Juridique + Underwriting, or a different first set.
+1. **Exposure:** ✅ **Public** at `intranet.devandre.sbs` (Cloudflare tunnel), gated by BookStack's **native OIDC** (not forward-auth — chosen so the app carries per-user identity + groups for per-shelf roles).
+2. **Critical-policy corpus:** ⬜ currently **all in BookStack** (simulation). The git+CODEOWNERS option for the hardest Solvency-II policies (timestamped four-eyes) remains available for when real policies are authored.
+3. **MariaDB:** ✅ **dedicated** small MariaDB StatefulSet (not reusing ERPNext's) — recorded as the one MySQL deviation.
+4. **Phase-1 pilot shelves:** ✅ **RH + Juridique + Underwriting** (+ IT/Security/DORA added for the platform capabilities in the registry).
