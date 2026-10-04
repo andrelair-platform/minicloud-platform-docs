@@ -508,6 +508,7 @@ const sidebars: SidebarsConfig = {
             'insurance-platform/regulatory-operating-model',
             'insurance-platform/governance-intranet',
             'insurance-platform/itsm-glpi',
+            'insurance-platform/access-governance-ktayl-iam',
             {
               type: 'category',
               label: 'Domain Playbooks',
