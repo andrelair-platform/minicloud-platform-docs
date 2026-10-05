@@ -509,6 +509,7 @@ const sidebars: SidebarsConfig = {
             'insurance-platform/governance-intranet',
             'insurance-platform/itsm-glpi',
             'insurance-platform/access-governance-ktayl-iam',
+            'insurance-platform/billing-ktayl-core',
             'insurance-platform/operating-sequence',
             {
               type: 'category',
