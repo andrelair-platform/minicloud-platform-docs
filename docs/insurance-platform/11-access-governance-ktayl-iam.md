@@ -8,11 +8,13 @@ sidebar_position: 11
 # Access Governance — ktayl-iam (custom IGA)
 
 :::note Status
-🟢 **IGA v1 slice live on dev (2026-10-04).** The full governed path — **request → four-eyes dual
-approval → Authentik group provisioning → who-has-what + audit** — is built, unit-tested and deployed
-to dev (`iam-dev.10.0.0.200.nip.io`, ArgoCD Synced/Healthy). Detailed design (PRD, solution
-architecture, NFR register, threat model, ADRs) lives in the **`ktayl-iam` repo** (`docs/`); this page
-is the org-site map.
+🟢 **IGA v1→v3 live on dev AND prod (2026-10-05).** The full governed path — **request → four-eyes dual
+approval → Authentik group provisioning → who-has-what + audit** (v1) — plus **multi-user login** (v2)
+and the **HR Joiner/Leaver lifecycle** (v3: HR event → auto-provision identity + mailbox + birthright
+access on a Joiner; auto-revoke **all** access the day after a Leaver's HR leave date) is built,
+unit-tested (98 backend tests), QA'd on live dev, and promoted to **prod** (`iam.10.0.0.200.nip.io`,
+ArgoCD Synced/Healthy) via the Kargo → CODEOWNERS gate. Detailed design (PRD, solution architecture,
+NFR register, threat model, ADRs) lives in the **`ktayl-iam` repo** (`docs/`); this page is the org-site map.
 :::
 
 **ktayl-iam** is the ktayl-solution **Access Governance / IGA platform**, board **#17** (IS Foundations)
@@ -44,8 +46,35 @@ the **role owner** approve — two *distinct* people, **no self-approval**. Eith
 | **S007** cutover | the first apps' roles/groups are in the catalog; access flows request → dual-approval → sync instead of by-hand Authentik edits |
 
 **Stack / deploy:** NestJS (backend) + Next.js standalone (frontend), dual-workload **GAP wrapper chart**
-`services/ktayl-iam/helm/`, per-image **Kargo**, ESO→Vault (`secret/platform/ktayl-iam`), ns `ktayl-iam`.
+`services/ktayl-iam/helm/`, **git-Warehouse Kargo** (one commit → both images), ESO→Vault
+(`secret/platform/ktayl-iam` dev / `secret/platform/ktayl-iam-prod` prod), ns `ktayl-iam` / `ktayl-iam-prod`.
 Hosts: dev `iam-dev.10.0.0.200.nip.io`, prod `iam.10.0.0.200.nip.io` (internal/Tailscale).
+
+## As-built — the HR Joiner/Leaver lifecycle (IGA v3, S015–S017)
+
+ktayl-iam is the **authoritative consumer of the HR J/M/L event stream** — the identity side of the
+*birthright → request → dual-approval → provision → revoke* loop. ERPNext HR (the system of record)
+emits a normalised `joiner`/`mover`/`leaver` event (schema `ktayl.hr.lifecycle/v1`, HMAC-SHA256 signed)
+onto **NATS JetStream** (stream `HR_LIFECYCLE`); ktayl-iam's durable consumer turns it into identity
+state. **Exactly ONE environment owns the durable** — **prod** is the authoritative consumer
+(`HR_NATS_URL` is set only on the prod overlay; dev's is blank so the two don't split/compete the stream).
+
+| Story | What's live |
+|---|---|
+| **S015** HR event bus | ERPNext HR → NATS `HR_LIFECYCLE` (signed J/M/L events); ktayl-iam durable consumer (`HrLifecycleConsumer`), HMAC verified over Python-canonical JSON |
+| **S016** Joiner handler | on a Joiner: derive the workplace email `firstname.lastname@devandre.sbs` (collision-safe) → **provision the Stalwart mailbox** (JMAP) → **create the Authentik user** (username = matricule) + add to the **`Workplace Users` birthright group** → persist an `Identity` (keyed by matricule) so the person becomes a requestable **subject** of the dual-approval flow. Idempotent + best-effort per leg |
+| **S017** Leaver | HR sets the relieving date → the system **auto-revokes ALL access the day STRICTLY AFTER** it: a daily 02:00 sweep (`@Cron`) revokes every due leaver — removes every active DB assignment **and** its business Authentik group, removes the `Workplace Users` birthright group, **disables the Authentik user** (`is_active=false`, the catch-all SSO block), and **archives the Stalwart mailbox** (clears credentials → direct IMAP/SMTP refused, mail **preserved** for retention). A backdated leave date revokes immediately. Idempotent |
+
+**Birthright access model:** every new employee gets the whole **workplace suite by default** via the
+`Workplace Users` group (Nextcloud, mail, Matrix/Element, Jitsi, Vaultwarden, Plane, ERPNext self-service,
+BookStack intranet). **Technical/LOB apps are NOT birthright** — they go through request → dual-approval.
+This is the *least-privilege-by-default-for-business, earn-it-for-sensitive* shape.
+
+**Mailbox archival vs SSO disable (why both on a leaver):** disabling the Authentik user cuts every
+**SSO/browser** path, but the Stalwart principal still accepts **direct IMAP/SMTP** with the mailbox
+password — so the leaver sweep **also** clears the Stalwart credential. Clearing (vs destroying) keeps the
+account + mail for retention and is reversible. Verified live: `credentials:{}` → IMAP `AUTHENTICATIONFAILED`,
+mail preserved.
 
 ## Security by design (threat model)
 
@@ -70,6 +99,8 @@ ssh controller "kubectl get application ktayl-iam-dev -n argocd"            # Sy
 # grant the sync engine its least-privilege Authentik perms (reusable, idempotent):
 ssh controller "cd ~/minicloud-ops && bash scripts/authentik/grant-service-group-perms.sh ktayl-iam-svc"
 # trigger a reconcile on demand (also runs hourly): POST /api/sync/reconcile ; export audit: /api/access/audit/export?format=csv
+# HR lifecycle consumer — PROD is the authoritative env (dev's HR_NATS_URL is blank by design):
+ssh controller "kubectl logs -n ktayl-iam-prod deploy/ktayl-iam-backend | grep -i HrLifecycleConsumer"   # 'subscribed' on prod; 'disabled' on dev
 ```
 Console: `/admin` (catalog) → `/admin/requests` (request · approve both legs · who-has-what · reconcile · export).
 
@@ -79,14 +110,16 @@ Console: `/admin` (catalog) → `/admin/requests` (request · approve both legs 
 Certification: **BC03 (déployer & sécuriser)**.
 
 ## Status honesty — what's deferred (documented, not gaps)
-- **Admin-only login today.** The console requires `Platform Admins`; requesters/approvers are modelled
-  by matricule. A dev-only `ALLOW_APPROVER_OVERRIDE` lets the single admin console demo both legs (the
-  server still rejects self-approval + any non-assigned approver). **Real multi-user login** (regular
-  employees as requesters/approvers) is the next increment — until then true four-eyes needs two humans.
+- **Multi-user login is live (v2)** — regular employees log in as requesters/approvers, so true
+  four-eyes no longer needs the single-admin `ALLOW_APPROVER_OVERRIDE` demo shim (kept dev-only).
+- **Mover (S018) is minimal** — a Mover currently updates identity attributes; full
+  *grant-new-role / revoke-stale-role on a department change* is the next lifecycle increment.
+- **Initial mailbox password is deliver-then-rotate (MVP)** — the Joiner stores a generated password to
+  hand off; a self-service first-login rotation is a follow-up.
 - **MemoryStore sessions** (single-replica) → move to a shared store before prod HA.
-- **Prod promotion** is a separate gated step: the live **QA gate** (adversarial pass on dev) +
-  CODEOWNERS Kargo PR must pass first; dev ≠ prod.
 
 Full detail + rationale: `ktayl-iam` repo `docs/` (brief · prd · `architecture/solution-architecture` ·
-`nfr-register` · `threat-model` · `adr` · access-role-model · app-authz-bindings) and the platform memories
-`project_iam_custom_access_governance` + `project_iam_deploy_specifics`.
+`nfr-register` · `threat-model` · `adr` · access-role-model · app-authz-bindings) + the HR-lifecycle module
+`backend/src/lifecycle/` (Joiner/Leaver handler, Stalwart JMAP client, NATS consumer); and the platform
+memories `project_iam_custom_access_governance`, `project_iam_deploy_specifics`,
+`reference_stalwart_jmap_provisioning` + `feedback_hr12_glpi_n8n_gotchas`.
