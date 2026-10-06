@@ -64,6 +64,12 @@ const config: Config = {
     ],
   ],
 
+  // Render ```mermaid code blocks as diagrams (ER diagrams, flowcharts, etc.)
+  markdown: {
+    mermaid: true,
+  },
+  themes: ['@docusaurus/theme-mermaid'],
+
   themeConfig: {
     // minicloud social card (LinkedIn/OG preview)
     image: 'img/minicloud-social-card.png',
