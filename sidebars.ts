@@ -500,6 +500,7 @@ const sidebars: SidebarsConfig = {
             'insurance-platform/enterprise-architecture-blueprint',
             'insurance-platform/capability-map',
             'insurance-platform/canonical-data-model',
+            'insurance-platform/data-stores-inventory',
             'insurance-platform/system-of-record',
             'insurance-platform/legacy-core-modernization',
             'insurance-platform/ai-first-operating-model',
