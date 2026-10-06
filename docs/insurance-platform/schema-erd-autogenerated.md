@@ -49,12 +49,31 @@ automatically, not documented by hand.
 | Lives in someone's desktop tool, unversioned | **Committed to Git**, rendered on this site |
 | Manual effort per change | Regenerated in seconds / in CI |
 
-## How it's produced (and the plan)
+## Pilot done — `tbls`, both engines ✅
 
-This example was generated directly via SQL against the live schema to prove the concept. The
-standard tool for doing this across **every** database — PostgreSQL *and* MySQL/MariaDB — is
-[`tbls`](https://github.com/k1LoW/tbls): a CLI that introspects a live DB and emits Markdown + Mermaid
-ER docs, runnable as a CI job. The target state:
+The intro diagram above was first hand-built via SQL to prove the idea; the generation is now done
+properly with [`tbls`](https://github.com/k1LoW/tbls), piloted across **both database engines** we run:
+
+- **Postgres** — `mlflow` (19 tables): full column-level ERD with exact FK rules (incl. `ON UPDATE/DELETE CASCADE`).
+- **MySQL/MariaDB** — `BookStack` (~40 tables): `tbls` produced entities **with columns + types + PK markers**
+  plus the role/permission relationships, e.g.:
+
+```mermaid
+erDiagram
+  role_user }o--|| roles : "role_id"
+  role_user }o--|| users : "user_id"
+  permission_role }o--|| role_permissions : "permission_id"
+  permission_role }o--|| roles : "role_id"
+```
+
+The reusable generator is committed at **`minicloud-ops/scripts/db-erd/generate-erd.sh`** — it
+reverse-engineers any live Postgres/MySQL DB over a `kubectl port-forward` (creds read from the k8s
+Secret at runtime, nothing uploaded). `tbls` also emits richer **per-table Markdown pages** and a
+`tbls diff` **drift-check**.
+
+## The plan (automate next)
+
+The target state for every DB:
 
 - each DB-owning repo gets an always-fresh ER doc under `docs/data-model/` (the SDD data-design
   artefact — see the [CNPG standard](../developer-platform/cnpg-standard));
