@@ -190,6 +190,7 @@ const sidebars: SidebarsConfig = {
             'developer-platform/dns-naming-externaldns',
             'developer-platform/branch-strategy-cicd',
             'developer-platform/gitops-directory-patterns',
+            'developer-platform/cnpg-standard',
             'developer-platform/docker-course',
             'platform-roadmap/phase-12-gitops',
             'developer-platform/third-party-charts',
