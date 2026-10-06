@@ -37,6 +37,17 @@ R2 backup landing before touching Langfuse), then a `pg_dump`→restore at **exa
 70 prompts / 166 models / 3 api_keys), then a one-line `host:` cutover (same Vault password → drop-in).
 New pod logged "412 migrations, **No pending migrations to apply**" — zero schema drift.
 
+## Second migration — Synapse / Matrix (2026-10-06)
+
+Matrix's DB moved off the `-noavx512` `postgresql-synapse` STS to a dedicated `synapse-postgres` CNPG cluster
+(C collation, as Matrix requires). This **verified nothing actually uses pgvector** (RAG vectors are in Qdrant)
+→ the custom `-noavx512` base is retireable with stock CNPG. The DB cutover was clean, but it surfaced a
+**stateful-RWO-PVC incident**: Synapse's *media* PVC (separate from the DB) wedged its Longhorn engine during
+the rollout, and manual scale/patch recovery attempts made it worse (selfHeal + the root app-of-apps revert
+them). Fixed by holding replicas=0 via a git `ignoreDifferences` on `/spec/replicas` and recreating the
+near-empty media PVC fresh. **Lesson carried forward: quiesce a workload before a DB host cutover when it owns
+its own stateful RWO volume.** Full postmortem in the ADR.
+
 ## Operate / verify
 
 ```bash

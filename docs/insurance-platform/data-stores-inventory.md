@@ -21,8 +21,8 @@ vectors, analytics, cache, events, secrets, objects and observability.
 ### PostgreSQL — the house standard (~20 instances, 3 deployment styles)
 | Style | Image | Where (ns / service) |
 |---|---|---|
-| **CNPG operator** (preferred) | `cloudnative-pg/postgresql:17.4` | authentik (2) · claims (dev 1 / prod 1) · underwriting (dev 1 / **prod 2**) · nextcloud · data-platform (`dp-postgres`) · **langfuse** (`langfuse-postgres`, migrated 2026-10-06 — see [CNPG standardisation](../developer-platform/cnpg-standard)) |
-| **Custom base** `postgresql:18.4.0-noavx512` (+ pgvector) | Harbor | `postgresql-ai` (RAG) · `postgresql-synapse` (Matrix) |
+| **CNPG operator** (preferred) | `cloudnative-pg/postgresql:17.4` | authentik (2) · claims (dev 1 / prod 1) · underwriting (dev 1 / **prod 2**) · nextcloud · data-platform (`dp-postgres`) · **langfuse** (`langfuse-postgres`) · **synapse/Matrix** (`synapse-postgres`, C collation) — both migrated 2026-10-06, see [CNPG standardisation](../developer-platform/cnpg-standard) |
+| **Custom base** `postgresql:18.4.0-noavx512` | Harbor | `postgresql-ai` (shared: openwebui/litellm/ragdb/vaultwarden/flowise/mlflow) · ~~`postgresql-synapse`~~ (migrated to CNPG 2026-10-06, STS bake-pending deletion). **Verified NO db uses pgvector** → the custom base is retireable with stock CNPG; `postgresql-ai` is the last consumer blocking removal of the image+repo. |
 | **Plain / vendor StatefulSet** | `postgres:16/15-alpine`, bitnami | ktayl-iam (dev+prod) · ktayl policy-service (dev+prod) · retrieva (dev+dev) · backstage (bitnami 15.4) · plane (15.7) · temporal (15) · **harbor-database** (goharbor) |
 | **External** (points elsewhere via `DATABASE_URL`) | — | *(none — langfuse's metadata DB moved to its own in-ns CNPG cluster on 2026-10-06)* |
 
