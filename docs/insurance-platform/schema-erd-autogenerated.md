@@ -81,15 +81,20 @@ committed doc drifted** — so the docs can't lie. The ERDs below are generated 
 Mermaid ER diagram **renders natively on GitHub**. The standard is now enforced constitution:
 [`schema-erd.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/.claude/rules/schema-erd.md).
 
+This table is **auto-generated** by `scripts/gen-erd-index.py` (discovers every repo committing a
+`docs/data-model/`); a new DB repo appears here with no manual step. Do not hand-edit between the markers.
+
+{/* ERD-INDEX:START */}
 | Repo | Migration toolchain | Tables | Committed ERD |
 |---|---|---:|---|
+| ktayl-claims | Flyway | 1 | [docs/data-model](https://github.com/andrelair-platform/ktayl-claims/blob/main/docs/data-model/README.md) |
 | ktayl-core | Flyway | 5 | [docs/data-model](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/data-model/README.md) |
-| ktayl-claims | Flyway | — | [docs/data-model](https://github.com/andrelair-platform/ktayl-claims/blob/main/docs/data-model/README.md) |
-| ktayl-underwriting | Alembic | 8 | [docs/data-model](https://github.com/andrelair-platform/ktayl-underwriting/blob/main/docs/data-model/README.md) |
 | ktayl-iam | TypeORM | 6 | [backend/docs/data-model](https://github.com/andrelair-platform/ktayl-iam/blob/main/backend/docs/data-model/README.md) |
 | ktayl-policy-service | golang-migrate | 5 | [docs/data-model](https://github.com/andrelair-platform/ktayl-policy-service/blob/main/docs/data-model/README.md) |
+| ktayl-underwriting | Alembic | 8 | [docs/data-model](https://github.com/andrelair-platform/ktayl-underwriting/blob/main/docs/data-model/README.md) |
 | retrieva-backend | Drizzle | 24 | [docs/data-model](https://github.com/andrelair-platform/retrieva-backend/blob/main/docs/data-model/README.md) |
 | ktayl-data-platform | **dbt (carve-out)** | — | self-documented by committed dbt **model contracts** (`models/**/_*.yml`) + CI `dbt parse` — tbls is the wrong tool for a *derived* warehouse (not a migration-owned schema) |
+{/* ERD-INDEX:END */}
 
 **Two generation modes** (both committed, both drift-gated):
 
