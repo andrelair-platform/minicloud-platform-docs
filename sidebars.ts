@@ -116,6 +116,7 @@ const sidebars: SidebarsConfig = {
           collapsed: true,
           items: [
             'security-enterprise/sso-authentik',
+            'security-enterprise/mail-authentik-ldap',
             'security-enterprise/phase25-public-access',
             'security-enterprise/kubectl-oidc-access',
             'security-enterprise/iam-hardening',
