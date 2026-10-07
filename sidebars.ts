@@ -443,6 +443,21 @@ const sidebars: SidebarsConfig = {
       ],
     },
 
+    // ── Data Platform (shared data-infra capability — like the AI platform) ──
+    {
+      type: 'category',
+      label: '🗄 Data Platform',
+      collapsed: true,
+      items: [
+        'data-layer/data-layer-overview',
+        'data-layer/data-platform-slice1',
+        'data-layer/kafka-redpanda',
+        'data-layer/clickhouse',
+        'data-layer/dbt',
+        'data-layer/openmetadata',
+      ],
+    },
+
     // ── Automation & Workflows ───────────────────────────────────────
     {
       type: 'category',
@@ -615,21 +630,6 @@ const sidebars: SidebarsConfig = {
       items: [
         'product-roadmap/is-build-roadmap',
         'product-roadmap/overview',
-      ],
-    },
-
-    // ── Data Platform ────────────────────────────────────────────────
-    {
-      type: 'category',
-      label: '🗄 Data Platform',
-      collapsed: true,
-      items: [
-        'data-layer/data-layer-overview',
-        'data-layer/data-platform-slice1',
-        'data-layer/kafka-redpanda',
-        'data-layer/clickhouse',
-        'data-layer/dbt',
-        'data-layer/openmetadata',
       ],
     },
 

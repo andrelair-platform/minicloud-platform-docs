@@ -17,6 +17,10 @@ target, not what runs today. Build order: thin vertical slices per live source, 
 
 The data layer transforms raw events from your platform into actionable business intelligence. It covers the full chain: event ingestion → storage → transformation → orchestration → visualization → governance.
 
+:::note Two-layer model — this is a **Platform** capability
+The Data Platform (streaming, OLAP, transformation, catalog) is a **shared, domain-agnostic infrastructure capability** — the data equivalent of the [AI Platform](../ai-ml/12-ai-gateway.md). The **business data products** built on it (e.g. the `policy_portfolio` from [Data Platform — Slice 1](./07-data-platform-slice1.md), insurance BI/dashboards) belong to the **Information System** — they are the *consumers* of this capability. Engine → Platform; data products → IS.
+:::
+
 ---
 
 ## Complete Data Chain
