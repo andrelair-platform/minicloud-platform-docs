@@ -51,4 +51,4 @@ design, guard table, and phased-migration plan are in the ADR linked above.
 
 ## Related
 - Delivery / wrapper-chart golden path: [Delivery Workflow](./delivery-workflow)
-- Mail auth on the same zone (custom MAIL FROM): [Amazon SES](./amazon-ses)
+- Mail auth on the same zone (custom MAIL FROM): [Amazon SES](../is/26-amazon-ses.md)
