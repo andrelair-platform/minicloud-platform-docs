@@ -105,3 +105,5 @@ This is verified at the governance gate (`bmad-compliance.md`), enforced downstr
 stable core (Annex III areas + the decision-effect + Art. 22 tests) and reviewed as guidance firms up.
 
 **Cert mapping:** BC02 (concevoir — the design-time control), BC03 (déployer & sécuriser — the gate + evidence).
+
+**Related (IS):** [Regulatory operating model](../insurance-platform/04-regulatory-operating-model.md) — the business/compliance obligations (DORA/GDPR/ACPR) this AI-platform gate feeds into.

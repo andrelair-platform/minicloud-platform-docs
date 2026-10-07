@@ -379,14 +379,20 @@ const sidebars: SidebarsConfig = {
           items: [
             'ai-ml/ai-gateway',
             'ai-ml/ai-platform-golden-path',
-            'ai-ml/retrieva',
             'ai-ml/llmops-stack-assessment',
             'ai-ml/langfuse',
             'ai-ml/per-product-llmops',
+            'ai-ml/annotation-workflow',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'AI Governance & Compliance',
+          collapsed: true,
+          items: [
             'ai-ml/model-governance-matrix',
             'ai-ml/ai-act-gate',
             'ai-ml/dora-audit',
-            'ai-ml/annotation-workflow',
           ],
         },
         {
@@ -592,7 +598,7 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
-          label: 'Security & Credentials',
+          label: 'Credentials (Vaultwarden)',
           collapsed: true,
           items: [
             'developer-platform/vaultwarden',
