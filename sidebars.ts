@@ -563,11 +563,11 @@ const sidebars: SidebarsConfig = {
           label: 'Collaboration',
           collapsed: true,
           items: [
-            'developer-platform/digital-workplace-architecture',
-            'developer-platform/data-classification-nextcloud',
-            'developer-platform/matrix-synapse-element-web',
-            'developer-platform/jitsi-meet',
-            'developer-platform/nextcloud',
+            'is/digital-workplace-architecture',
+            'is/data-classification-nextcloud',
+            'is/matrix-synapse-element-web',
+            'is/jitsi-meet',
+            'is/nextcloud',
           ],
         },
         {
@@ -575,8 +575,8 @@ const sidebars: SidebarsConfig = {
           label: 'Mail',
           collapsed: true,
           items: [
-            'developer-platform/stalwart-mail',
-            'developer-platform/amazon-ses',
+            'is/stalwart-mail',
+            'is/amazon-ses',
           ],
         },
         {
@@ -584,8 +584,8 @@ const sidebars: SidebarsConfig = {
           label: 'Project Management',
           collapsed: true,
           items: [
-            'developer-platform/plane-ce',
-            'developer-platform/minicloud-plane',
+            'is/plane-ce',
+            'is/minicloud-plane',
           ],
         },
         {
@@ -593,14 +593,14 @@ const sidebars: SidebarsConfig = {
           label: 'ERP & Finance',
           collapsed: true,
           items: [
-            'developer-platform/erpnext-hr',
-            'developer-platform/erpnext-french-insurance-config',
-            'developer-platform/erpnext-facturx-custom-image',
-            'developer-platform/erpnext-dsn-architecture',
-            'developer-platform/erpnext-dsn-guide-utilisateur',
-            'developer-platform/erpnext-crm-insurance-templates',
-            'developer-platform/erpnext-billing-dunning',
-            'developer-platform/erpnext-insurance-lob-doctypes',
+            'is/erpnext-hr',
+            'is/erpnext-french-insurance-config',
+            'is/erpnext-facturx-custom-image',
+            'is/erpnext-dsn-architecture',
+            'is/erpnext-dsn-guide-utilisateur',
+            'is/erpnext-crm-insurance-templates',
+            'is/erpnext-billing-dunning',
+            'is/erpnext-insurance-lob-doctypes',
           ],
         },
         {
@@ -608,7 +608,7 @@ const sidebars: SidebarsConfig = {
           label: 'Document & Signature',
           collapsed: true,
           items: [
-            'developer-platform/docuseal',
+            'is/docuseal',
           ],
         },
         {
@@ -616,7 +616,7 @@ const sidebars: SidebarsConfig = {
           label: 'Credentials (Vaultwarden)',
           collapsed: true,
           items: [
-            'developer-platform/vaultwarden',
+            'is/vaultwarden',
           ],
         },
       ],
@@ -649,7 +649,7 @@ const sidebars: SidebarsConfig = {
       label: '📋 IS Governance',
       collapsed: true,
       items: [
-        'developer-platform/is-governance-scrumban-prince2',
+        'is/is-governance-scrumban-prince2',
       ],
     },
 

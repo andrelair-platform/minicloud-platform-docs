@@ -69,4 +69,4 @@ ssh controller "bash ~/minicloud-ops/scripts/stalwart/stalwart-mail-ops.sh verif
 - **Rollback** = clear the *Authentication Directory* field (→ internal auth); the recovery admin always works.
 
 ## Related
-- [SSO + IAM via Authentik](./02-sso-authentik.md) · [Access Governance (ktayl-iam)](../insurance-platform/11-access-governance-ktayl-iam.md) · [Stalwart Mail (IS — Digital Workplace)](../developer-platform/28-stalwart-mail.md)
+- [SSO + IAM via Authentik](./02-sso-authentik.md) · [Access Governance (ktayl-iam)](../insurance-platform/11-access-governance-ktayl-iam.md) · [Stalwart Mail (IS — Digital Workplace)](../is/28-stalwart-mail.md)
