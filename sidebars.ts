@@ -116,6 +116,7 @@ const sidebars: SidebarsConfig = {
           collapsed: true,
           items: [
             'security-enterprise/sso-authentik',
+            'security-enterprise/identity-two-layer',
             'security-enterprise/mail-authentik-ldap',
             'security-enterprise/phase25-public-access',
             'security-enterprise/kubectl-oidc-access',
@@ -498,6 +499,7 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: [
         'engineering-standards/testing-strategy',
+        'engineering-standards/modular-monolith-first',
         'engineering-standards/bmad-operating-model',
         'engineering-standards/bmad-workflow',
       ],
