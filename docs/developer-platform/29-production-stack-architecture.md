@@ -19,11 +19,12 @@ CI/CD, security, AI/ML, collaboration & IS apps, automation, data & messaging, s
 email, and the 6-node hardware fabric.
 
 :::tip It's a detailed poster — open it full-screen
-**[▶ Open the full-resolution diagram (SVG — zoom & pan in your browser) →](pathname:///img/architecture/minicloud-platform.svg)**
-The thumbnail below is a preview; click it (or the link) for the readable version.
+Preview below (PNG, loads instantly). For the readable version, open the full-resolution
+**[▶ vector SVG (zoom & pan) →](pathname:///img/architecture/minicloud-platform.svg)** · or the
+**[PNG →](pathname:///img/architecture/minicloud-platform.png)**. Both are self-contained.
 :::
 
-[![minicloud production stack — generated architecture diagram](pathname:///img/architecture/minicloud-platform.svg)](pathname:///img/architecture/minicloud-platform.svg)
+[![minicloud production stack — generated architecture diagram](pathname:///img/architecture/minicloud-platform.png)](pathname:///img/architecture/minicloud-platform.svg)
 
 > This code-generated diagram **supersedes** the former hand-maintained HTML poster (retired
 > 2026-10-17) — a drawing whose boxes were placed at fixed pixel coordinates and drifted on every
