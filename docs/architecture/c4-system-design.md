@@ -49,9 +49,17 @@ The whole platform in one view: every capability as a **container**, grouped (Ac
 Delivery/GitOps · Security & Secrets · Data & Messaging · Storage & Backup · Observability · AI Runtime ·
 Runtime & Tooling), with the relationships that make it work — code→production (Delivery), request→app
 (Access), secrets, telemetry, backup, and what the IS consumes. It's detailed — **open it full-screen and
-zoom**. [Open full SVG →](/img/c4/structurizr-Containers.svg)
+zoom**.
 
-[![C4 Container view — the complete minicloud Platform](/img/c4/structurizr-Containers.svg)](/img/c4/structurizr-Containers.svg)
+**Icon-rich view** — the same container model with real brand logos + verb-labelled edges (the *visual*
+lens, mingrammer `diagrams`). [Open full SVG →](/img/architecture/platform-c4-container.svg)
+
+[![C4 Container view (icon-rich) — the complete minicloud Platform](/img/architecture/platform-c4-container.svg)](/img/architecture/platform-c4-container.svg)
+
+**Formal C4 notation** — the same thing in standard C4 boxes (the *rigorous* lens, Structurizr as code).
+[Open full SVG →](/img/c4/structurizr-Containers.svg)
+
+[![C4 Container view (formal notation) — the complete minicloud Platform](/img/c4/structurizr-Containers.svg)](/img/c4/structurizr-Containers.svg)
 
 **Drill into a subsystem →** [GitOps / ArgoCD](#gitops-delivery--inside-argocd) · [Secrets / Vault+ESO](#secrets-delivery--inside-vault--eso) · [AI / LiteLLM](#ai-gateway--inside-litellm) — or follow a flow: [delivery](#how-code-reaches-production--the-delivery-flow) · [request](#how-a-request-reaches-an-app-networking-flow) · [observability](#telemetry--alerting-observability-flow).
 
