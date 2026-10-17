@@ -69,8 +69,19 @@ the AI gateway. All grounded in the GitOps manifests + the platform rules. (Clic
 
 ### How code reaches production — the delivery flow
 
-A **numbered** sequence from a `git push` to a running production workload (CI → registries → Kargo →
-ArgoCD → cluster).
+A `git push` to a running production workload (CI → registries → Kargo → ArgoCD → cluster), showing the
+**continuous-delivery vs continuous-deployment split**: the same artifact is built+proved once, Kargo
+**auto-deploys it to dev (continuous *deployment* — no human)**, then a **CODEOWNERS-gated PR promotes it
+to prod (continuous *delivery* — a human decides when)**. The full narrative is on the
+**[Delivery Workflow](../developer-platform/35-delivery-workflow.md#continuous-delivery-vs-continuous-deployment)** page.
+
+**System-design view** — icon-rich, the four stages colour-coded (grey build · cyan promote · **green =
+automatic dev** · **amber = human-gated prod**). [Open full SVG →](/img/architecture/platform-delivery-pipeline.svg)
+
+[![Delivery pipeline — continuous delivery (prod) + continuous deployment (dev)](/img/architecture/platform-delivery-pipeline.svg)](/img/architecture/platform-delivery-pipeline.svg)
+
+**Formal C4 dynamic view** — the same sequence in standard C4 notation (Structurizr).
+[Open full SVG →](/img/c4/structurizr-DeliveryFlow.svg)
 
 [![Delivery flow — how code reaches production](/img/c4/structurizr-DeliveryFlow.svg)](/img/c4/structurizr-DeliveryFlow.svg)
 
