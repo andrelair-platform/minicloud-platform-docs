@@ -98,9 +98,8 @@ Enterprise Landscape → Business Capabilities → IS Applications → Platform 
 | **[Business Capability Map](../insurance-platform/capability-map.md)** | ~150 L2/L3 capabilities × status/criticality/RTO-RPO | ✅ capabilities |
 | **[IS — Architecture at a Glance](../insurance-platform/00-architecture-at-a-glance.md)** | the IS one-screen mental model | ✅ IS overview |
 
-**Archived reference:** the original hand-made poster is preserved at
-[`/diagrams/minicloud-production-stack.html`](pathname:///diagrams/minicloud-production-stack.html)
-until these views are validated, then retired. It is no longer canonical.
+> The original hand-made HTML poster was **retired 2026-10-17** — superseded by the code-generated
+> [C4 System Design](./c4-system-design.md) + the [Platform Architecture](../developer-platform/29-production-stack-architecture.md) views (maintainable, accurate, no pixel-pushing).
 
 > **Planned:** Architecture Decision Records (ADRs) under this section — *why* ArgoCD, Authentik, Cilium,
 > Longhorn, and the Platform/IS split were chosen — to show not just *what* was built but *why*.

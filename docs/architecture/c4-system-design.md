@@ -96,8 +96,22 @@ Virtual keys/budgets → model router → PII guardrail (Presidio) + cache + pro
 
 [![C4 Component — inside the LiteLLM gateway](pathname:///img/c4/structurizr-AIComponents.svg)](pathname:///img/c4/structurizr-AIComponents.svg)
 
-> More subsystem views (Observability, Networking…) are cheap to add — the model already holds the
-> elements; just add a `component`/`dynamic` view to [`workspace.dsl`](https://github.com/andrelair-platform/minicloud-platform-docs/blob/main/diagrams/structurizr/workspace.dsl).
+### How a request reaches an app (networking flow)
+
+User → Cloudflare → tunnel → ingress → Authentik (forward-auth) → the workload.
+[Open full SVG →](pathname:///img/c4/structurizr-RequestFlow.svg)
+
+[![Request flow — how a user request reaches an app](pathname:///img/c4/structurizr-RequestFlow.svg)](pathname:///img/c4/structurizr-RequestFlow.svg)
+
+### Telemetry + alerting (observability flow)
+
+Prometheus scrapes the cluster · OTel ships logs→Loki / traces→Tempo · alerts →
+Alertmanager → SES email. [Open full SVG →](pathname:///img/c4/structurizr-ObservabilityFlow.svg)
+
+[![Observability flow — telemetry + alerting](pathname:///img/c4/structurizr-ObservabilityFlow.svg)](pathname:///img/c4/structurizr-ObservabilityFlow.svg)
+
+> Further subsystem views are cheap to add — the model already holds the elements; just add a
+> `component`/`dynamic` view to [`workspace.dsl`](https://github.com/andrelair-platform/minicloud-platform-docs/blob/main/diagrams/structurizr/workspace.dsl).
 
 ---
 

@@ -123,9 +123,8 @@ star-kitten. The **MAAS controller is off-cluster** (NAT · Tailscale · MinIO b
 **network-attached**, so a pod fails over to any node — the hostname labels show *current* placement, not a
 hard pin.
 
-> The original hand-made HTML poster is **preserved as an archived reference** at
-> [`/diagrams/minicloud-production-stack.html`](pathname:///diagrams/minicloud-production-stack.html),
-> kept until these views are validated, then retired.
+> The original hand-made HTML poster was **retired 2026-10-17** — these code-generated views (and the
+> [C4 System Design](../architecture/c4-system-design.md)) supersede it.
 
 ---
 
