@@ -514,6 +514,7 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: [
         'engineering-standards/documentation-standard',
+        'engineering-standards/code-review',
         'engineering-standards/testing-strategy',
         'engineering-standards/modular-monolith-first',
         'engineering-standards/bmad-operating-model',
