@@ -9,20 +9,25 @@ sidebar_label: Production Stack Architecture ✅
 
 A complete view of the minicloud production platform — **6-node** on-premises k3s cluster (44 cores / ~84 GiB) running Phase 0–90 workloads across infrastructure, security, observability, AI/ML, automation, and collaboration layers.
 
-:::tip Interactive diagram
-Open the full diagram in your browser for PNG/PDF export and zoom-level control:
+## Architecture diagram
 
-**[View full architecture diagram →](pathname:///diagrams/minicloud-production-stack.html)**
+The full production-stack architecture is **generated from code** —
+[`diagrams/src/platform_overview.py`](https://github.com/andrelair-platform/minicloud-platform-docs/blob/main/diagrams/src/platform_overview.py)
+(mingrammer `diagrams` + Graphviz). Edit the `.py`, run `make generate`, commit — no pixel-pushing,
+and a CI workflow refreshes it on change. It covers every layer: access/edge, GitOps & delivery,
+CI/CD, security, AI/ML, collaboration & IS apps, automation, data & messaging, storage, observability,
+email, and the 6-node hardware fabric.
+
+:::tip It's a detailed poster — open it full-screen
+**[▶ Open the full-resolution diagram (SVG — zoom & pan in your browser) →](pathname:///img/architecture/minicloud-platform.svg)**
+The thumbnail below is a preview; click it (or the link) for the readable version.
 :::
 
-### Diagram-as-code view
-
-The diagram below is **generated from code** — [`diagrams/src/platform_overview.py`](https://github.com/andrelair-platform/minicloud-platform-docs/blob/main/diagrams/src/platform_overview.py)
-(mingrammer `diagrams` + Graphviz), replacing the hand-maintained SVG poster above. Edit the
-`.py`, run `make generate`, and the image refreshes — no pixel-pushing. A CI drift-gate keeps
-it in sync with the source. [Full-resolution SVG →](pathname:///img/architecture/minicloud-platform.svg)
-
 [![minicloud production stack — generated architecture diagram](pathname:///img/architecture/minicloud-platform.svg)](pathname:///img/architecture/minicloud-platform.svg)
+
+> This code-generated diagram **supersedes** the former hand-maintained HTML poster (retired
+> 2026-10-17) — a drawing whose boxes were placed at fixed pixel coordinates and drifted on every
+> change. The source of truth is now the Python module above.
 
 ---
 

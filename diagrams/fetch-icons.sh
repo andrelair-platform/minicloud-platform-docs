@@ -42,6 +42,12 @@ longhorn.png	$CNCF/longhorn/icon/color/longhorn-icon-color.png
 minio.png	$GH/minio.png?size=256
 otel.png	$CNCF/opentelemetry/icon/color/opentelemetry-icon-color.png
 nats.png	$CNCF/nats/icon/color/nats-icon-color.png
+cilium.png	$GH/cilium.png?size=256
+temporal.png	$GH/temporalio.png?size=256
+docuseal.png	$GH/docusealco.png?size=256
+polaris.png	$GH/FairwindsOps.png?size=256
+velero.png	$GH/vmware-tanzu.png?size=256
+paperless.png	$GH/paperless-ngx.png?size=256
 stripe.png	$GH/stripe.png?size=256
 spring.png	$GH/spring-projects.png?size=256
 nextjs.png	$GH/vercel.png?size=256

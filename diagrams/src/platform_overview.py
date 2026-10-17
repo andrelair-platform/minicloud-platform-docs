@@ -2,11 +2,12 @@
 
 Code-generated replacement for the hand-maintained
 `static/diagrams/minicloud-production-stack.html` (871 lines of absolute-positioned
-SVG). Same information architecture — the 11 layers of the ktayl-solution IS — but
-auto-laid-out by Graphviz from this file, so it never drifts to pixel-edits again.
+SVG). Same information architecture — the full ktayl-solution IS — but auto-laid-out
+by Graphviz from this file, so it never drifts to pixel-edits again. This is the
+**canonical** platform architecture diagram (the HTML poster is retired).
 
 Run:  make generate   (or: python src/platform_overview.py)
-Out:  static/img/architecture/minicloud-platform.{png,svg}
+Out:  static/img/architecture/minicloud-platform.{png,svg}  (open the SVG full-screen)
 
 Icon note: components without a built-in `diagrams` icon use the closest semantic
 built-in; the label is authoritative. Drop a brand PNG in src/icons/ + pass
@@ -25,6 +26,7 @@ from diagrams.generic.database import SQL
 from diagrams.generic.network import Firewall, Router, VPN
 from diagrams.generic.os import Ubuntu
 from diagrams.generic.storage import Storage
+from diagrams.k8s.chaos import ChaosMesh
 from diagrams.k8s.clusterconfig import HPA
 from diagrams.k8s.compute import DaemonSet, Job, Pod
 from diagrams.k8s.infra import Master, Node
@@ -37,7 +39,7 @@ from diagrams.onprem.certificates import CertManager, LetsEncrypt
 from diagrams.onprem.ci import GithubActions
 from diagrams.onprem.client import Client, Users
 from diagrams.onprem.compute import Server
-from diagrams.onprem.database import ClickHouse, PostgreSQL
+from diagrams.onprem.database import ClickHouse, MariaDB, PostgreSQL
 from diagrams.onprem.gitops import ArgoCD, Flagger
 from diagrams.onprem.groupware import Nextcloud
 from diagrams.onprem.iac import Ansible, Terraform
@@ -54,6 +56,7 @@ from diagrams.onprem.tracing import Tempo
 from diagrams.onprem.vcs import Github
 from diagrams.onprem.workflow import NiFi
 from diagrams.saas.alerting import Pagerduty
+from diagrams.saas.automation import N8N
 from diagrams.saas.cdn import Cloudflare
 from diagrams.saas.security import Crowdstrike
 
@@ -67,14 +70,16 @@ from _theme import (
     GREEN,
     NODE_ATTR,
     OUT,
-    RED,
     WIRE,
     cluster_attr,
     node,
 )
 
+# Tighter ranks than the default — a ~70-node poster, kept as compact as Graphviz allows.
+GRAPH_ATTR = {**GRAPH_ATTR, "ranksep": "0.7", "nodesep": "0.4", "fontsize": "26"}
+
 with Diagram(
-    "minicloud — Production Stack  ·  k3s v1.36  ·  6 nodes  ·  ~95 ArgoCD apps",
+    "minicloud — Production Stack  ·  k3s v1.36  ·  6 nodes  ·  ~95 ArgoCD apps  ·  the ktayl-solution IS",
     filename=str(OUT / "minicloud-platform"),
     outformat=["png", "svg"],
     direction="TB",
@@ -99,6 +104,7 @@ with Diagram(
         authentik = node(Dex, "Authentik SSO\nOIDC · TOTP · all apps", icon="authentik.png")
         certmgr = CertManager("cert-manager")
         le = LetsEncrypt("Let's Encrypt\n+ minicloud CA")
+        cilium = node(Firewall, "Cilium CNI\neBPF · NetworkPolicies", icon="cilium.png")
 
     # ======================================================= GITOPS & DELIVERY
     with Cluster("GITOPS & AUTOMATION", graph_attr=cluster_attr(GREEN)):
@@ -106,9 +112,17 @@ with Diagram(
         rollouts = node(Flagger, "Argo Rollouts\nCanary · BlueGreen", icon="argo-rollouts.png")
         kargo = node(Flagger, "Kargo\npromote dev→prod", icon="kargo.png")
         keda = node(HPA, "KEDA\nevent-driven scale", icon="keda.png")
+        vpa = HPA("VPA\nright-sizing")
         reloader = node(ConfigMap, "Reloader\nConfigMap hot-reload", icon="reloader.png")
         backstage = node(Rack, "Backstage IDP\nTechDocs · templates", icon="backstage.png")
         sysupgrade = Job("system-upgrade\nk3s Plans")
+
+    # ======================================================= CI / CD
+    with Cluster("CI / CD PIPELINE", graph_attr=cluster_attr(GREEN)):
+        gh = Github("GitHub\n8+ repos")
+        actions = GithubActions("GitHub Actions\nbuild · Trivy · Cosign · SBOM")
+        harbor = Harbor("Harbor\ndev registry")
+        ghcr = node(Rack, "ghcr.io\nprod registry", icon="ghcr.png")
 
     # ======================================================= SECURITY & SECRETS
     with Cluster("PLATFORM SECURITY", graph_attr=cluster_attr(AMBER)):
@@ -118,13 +132,8 @@ with Diagram(
         gatekeeper = PSP("Gatekeeper\nOPA policies")
         falco = Crowdstrike("Falco\nruntime security")
         trivy = Trivy("Trivy\nCVE scan")
-
-    # ======================================================= CI / CD
-    with Cluster("CI / CD PIPELINE", graph_attr=cluster_attr(GREEN)):
-        gh = Github("GitHub\n8 repos")
-        actions = GithubActions("GitHub Actions\nbuild · Trivy · Cosign · SBOM")
-        harbor = Harbor("Harbor\ndev registry")
-        ghcr = node(Rack, "ghcr.io\nprod registry", icon="ghcr.png")
+        polaris = node(PSP, "Polaris\nconfig best-practice", icon="polaris.png")
+        chaos = ChaosMesh("Chaos Mesh\nfault injection")
 
     # ======================================================= AI / ML PLATFORM
     with Cluster("AI / ML PLATFORM  ·  ai namespace", graph_attr=cluster_attr(CYAN)):
@@ -146,25 +155,34 @@ with Diagram(
 
     # ======================================================= COLLABORATION / IS
     with Cluster("COLLABORATION & IS APPS", graph_attr=cluster_attr(CYAN)):
-        erpnext = node(Server, "ERPNext\nHR source of truth", icon="erpnext.png")
+        erpnext = node(Server, "ERPNext\nHR · finance · GL", icon="erpnext.png")
         nextcloud = Nextcloud("Nextcloud\nfiles · OnlyOffice")
         matrix = node(Server, "Matrix + Element\nSynapse · SSO", icon="matrix.png")
         jitsi = node(Server, "Jitsi Meet\nJVB · star-kitten", icon="jitsi.png")
         plane = node(Rack, "Plane CE\nproject mgmt", icon="plane.png")
-        homer = node(Client, "Homer\ndashboard", icon="homer.png")
+        homer = node(Client, "Homer\ndashboards", icon="homer.png")
+        docuseal = node(Server, "Docuseal\ne-signature", icon="docuseal.png")
+        paperless = node(Server, "Paperless-ngx\nDMS · OCR", icon="paperless.png")
         metabase = Metabase("Metabase\nBI / analytics")
+
+    # ======================================================= AUTOMATION & WORKFLOW
+    with Cluster("AUTOMATION & WORKFLOW", graph_attr=cluster_attr(GREEN)):
+        n8n = N8N("n8n\nworkflow automation")
+        temporal = node(Rack, "Temporal\ndurable workflows", icon="temporal.png")
 
     # ======================================================= DATA & MESSAGING
     with Cluster("DATA & MESSAGING", graph_attr=cluster_attr(AMBER)):
         pg = PostgreSQL("PostgreSQL (CNPG)\npostgresql-ai · app DBs")
+        pg_synapse = PostgreSQL("postgresql-synapse\nMatrix DB")
+        mariadb = MariaDB("MariaDB\nERPNext")
         valkey = Redis("Valkey\nlitellm-cache")
-        nats = Nats("NATS\nJetStream · events")
+        nats = node(Nats, "NATS\nJetStream · events", icon="nats.png")
 
     # ======================================================= STORAGE & BACKUP
     with Cluster("STORAGE & INFRA", graph_attr=cluster_attr(CYAN)):
         longhorn = node(Storage, "Longhorn\ndistributed block PVCs", icon="longhorn.png")
         minio = node(Storage, "MinIO\nS3-compatible", icon="minio.png")
-        velero = node(Storage, "Velero + Kopia\ndaily → MinIO TTL 7d", icon="velero.png")
+        velero = node(Storage, "Velero + Kopia\ndaily → MinIO + R2", icon="velero.png")
 
     # ======================================================= OBSERVABILITY
     with Cluster("OBSERVABILITY STACK  ·  64/64 targets up", graph_attr=cluster_attr(GREEN)):
@@ -175,6 +193,8 @@ with Diagram(
         otel = node(Vector, "OTel Collector\nDaemonSet 0.156", icon="otel.png")
         alertmgr = Pagerduty("Alertmanager\nburn-rate 2-tier")
         nodeexp = DaemonSet("Node Exporter\n:9100")
+        ksm = Pod("kube-state-metrics")
+        hubble = node(Pod, "Hubble UI\nCilium flow obs", icon="cilium.png")
 
     # ======================================================= EMAIL PIPELINE
     with Cluster("EMAIL PIPELINE", graph_attr=cluster_attr(CYAN)):
@@ -197,7 +217,7 @@ with Diagram(
             swiftmac = Node("swift-mac · 10.0.0.10\nMacBook Pro · storage")
 
     # =====================================================================
-    # EDGES — kept deliberately sparse: the backbone flows, not a hairball.
+    # EDGES — the backbone flows, kept sparse to stay legible.
     # =====================================================================
 
     # --- request path (cyan) ---------------------------------------------
@@ -224,26 +244,30 @@ with Diagram(
     vault >> DASH("secrets") >> eso >> DASH() >> argocd
     gatekeeper >> DASH("admission") >> sethog
     falco >> DASH("runtime") >> sethog
+    cilium >> DASH("netpol / CNI") >> sethog
 
     # --- data / storage backing ------------------------------------------
     litellm >> DASH() >> valkey
     litellm >> DASH("traces") >> langfuse
     langfuse >> DASH() >> langfuse_ch
     ragingest >> DASH() >> qdrant
-    [erpnext, nextcloud, plane] >> DASH("db") >> pg
+    [erpnext] >> DASH("db") >> mariadb
+    [nextcloud, plane] >> DASH("db") >> pg
+    matrix >> DASH("db") >> pg_synapse
     longhorn >> DASH("PVCs") >> [pg, minio]
     velero >> DASH("backup") >> minio
     nats >> DASH("events") >> crew
 
     # --- observability scrape --------------------------------------------
     otel >> DASH() >> [loki, tempo]
-    nodeexp >> DASH() >> prometheus
+    [nodeexp, ksm] >> DASH() >> prometheus
     prometheus >> DASH() >> [grafana, alertmgr]
 
     # --- mail pipeline ---------------------------------------------------
     stalwart >> FLOW("relay 587") >> ses
     ses >> FLOW("inbound") >> sns >> sqs
     s3in >> DASH() >> sqs
+    alertmgr >> DASH("alerts") >> stalwart
 
     # --- hardware fabric --------------------------------------------------
     tofu >> DASH("provisions") >> controller
