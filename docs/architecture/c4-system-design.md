@@ -32,6 +32,8 @@ visual** views of the same platform — capability map, technology topology, phy
 
 ---
 
+**Jump to** · [① Context](#-system-context--who-the-platform-talks-to) · [② Container](#-container--the-complete-platform-all-capabilities) · [③ Deployment](#-deployment--where-it-physically-runs) · [④ Subsystem deep-dives](#subsystem-deep-dives-c4-component--flow)
+
 ## ① System Context — who the platform talks to
 
 The platform as one system, its users, the external systems it depends on, and **the Information System as
@@ -51,6 +53,8 @@ zoom**. [Open full SVG →](pathname:///img/c4/structurizr-Containers.svg)
 
 [![C4 Container view — the complete minicloud Platform](pathname:///img/c4/structurizr-Containers.svg)](pathname:///img/c4/structurizr-Containers.svg)
 
+**Drill into a subsystem →** [GitOps / ArgoCD](#gitops-delivery--inside-argocd) · [Secrets / Vault+ESO](#secrets-delivery--inside-vault--eso) · [AI / LiteLLM](#ai-gateway--inside-litellm) — or follow a flow: [delivery](#how-code-reaches-production--the-delivery-flow) · [request](#how-a-request-reaches-an-app-networking-flow) · [observability](#telemetry--alerting-observability-flow).
+
 ---
 
 ## ③ Deployment — where it physically runs
@@ -67,6 +71,8 @@ storage nodes**. [Open full SVG →](pathname:///img/c4/structurizr-Deployment.s
 
 Zooming **inside** the key containers — *"the GitOps platform in detail"*, and the same for secrets and
 the AI gateway. All grounded in the GitOps manifests + the platform rules.
+
+↑ [Back to the Container view](#-container--the-complete-platform-all-capabilities)
 
 ### How code reaches production — the delivery flow
 
