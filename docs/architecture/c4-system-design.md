@@ -6,31 +6,21 @@ sidebar_label: C4 System Design (Platform)
 
 # C4 System Design — the minicloud Platform
 
-> The **complete solution-architecture artefact** of the platform: *the platform is made of **these**
-> components, working together like **this***. Modelled once as a [Structurizr](https://structurizr.com)
-> DSL ([`workspace.dsl`](https://github.com/andrelair-platform/minicloud-platform-docs/blob/main/diagrams/structurizr/workspace.dsl))
-> and rendered to clean [C4-model](https://c4model.com) diagrams — diagram-as-code, so it never drifts.
+> The platform's **solution-architecture model** — *the platform is made of **these** components, working
+> together like **this***. Modelled once as a [Structurizr](https://structurizr.com) DSL
+> ([`workspace.dsl`](https://github.com/andrelair-platform/minicloud-platform-docs/blob/main/diagrams/structurizr/workspace.dsl))
+> and rendered to [C4-model](https://c4model.com) diagrams — diagram-as-code, so it never drifts.
 > **Every relationship is verified against the GitOps manifests** (no invented edges).
 
 **Boundary:** this models **the Platform** — the shared technical capabilities (the *internal cloud
 provider*). The **Information System** (the insurer's business apps) appears as a single external
-**consumer**; it gets its own C4 model later. See the [Architecture Hub](./index.md) for how the two
-pillars relate.
+**consumer** and gets its own C4 model later. See the [Architecture Hub](./index.md) for how the two pillars relate.
 
-**How to read C4** — three zoom levels: **① System Context** (the platform + who it talks to) → **②
-Container** (its internal capabilities) → **③ Deployment** (where it runs). Boxes = people / systems /
-containers; **every arrow is a labelled relationship** (a verb). Below the three top-level views are the
-**Component** deep-dives (④ — *the GitOps pipeline, secrets, and the AI gateway in detail*). *(An
-interactive Structurizr Lite is the remaining follow-up; the model already holds the elements.)*
-
-:::tip Two complementary approaches — pick the right lens
-This page is the **formal, standard-notation C4 model** (Structurizr, as code). For the **icon-rich
-visual** views of the same platform — capability map, technology topology, physical/deployment — see
-**[Platform Architecture](../developer-platform/29-production-stack-architecture.md)** (mingrammer
-`diagrams`). This is the rigorous *model*; that is the *visual* reference. Same facts, different lens.
-:::
-
----
+**Two lenses, same facts.** Each view is shown as the **icon-rich** visual (brand logos + verb-labelled
+edges, mingrammer `diagrams`); the equivalent **formal C4 notation** (Structurizr, standard boxes) is
+linked beside it. **Click any diagram to open it full-screen.** The complementary capability map,
+technology topology and physical view live on
+**[Platform Architecture](../developer-platform/29-production-stack-architecture.md)**.
 
 **Jump to** · [① Context](#-system-context--who-the-platform-talks-to) · [② Container](#-container--the-complete-platform-all-capabilities) · [③ Deployment](#-deployment--where-it-physically-runs) · [④ Subsystem deep-dives](#subsystem-deep-dives-c4-component--flow)
 
@@ -39,15 +29,9 @@ visual** views of the same platform — capability map, technology topology, phy
 The platform as one system, its users, the external systems it depends on, and **the Information System as
 its consumer**.
 
-**Icon-rich view** — brand logos + verb-labelled edges (the *visual* lens, mingrammer `diagrams`).
-[Open full SVG →](/img/architecture/platform-c4-context.svg)
+[![C4 System Context — minicloud Platform](/img/architecture/platform-c4-context.svg)](/img/architecture/platform-c4-context.svg)
 
-[![C4 System Context (icon-rich) — minicloud Platform](/img/architecture/platform-c4-context.svg)](/img/architecture/platform-c4-context.svg)
-
-**Formal C4 notation** — standard C4 boxes (the *rigorous* lens, Structurizr as code).
-[Open full SVG →](/img/c4/structurizr-Context.svg)
-
-[![C4 System Context (formal notation) — minicloud Platform](/img/c4/structurizr-Context.svg)](/img/c4/structurizr-Context.svg)
+*Formal C4 notation (Structurizr): [Context diagram →](/img/c4/structurizr-Context.svg).*
 
 ---
 
@@ -56,18 +40,11 @@ its consumer**.
 The whole platform in one view: every capability as a **container**, grouped (Access & Networking ·
 Delivery/GitOps · Security & Secrets · Data & Messaging · Storage & Backup · Observability · AI Runtime ·
 Runtime & Tooling), with the relationships that make it work — code→production (Delivery), request→app
-(Access), secrets, telemetry, backup, and what the IS consumes. It's detailed — **open it full-screen and
-zoom**.
+(Access), secrets, telemetry, backup, and what the IS consumes. It's detailed — **click to open full-screen and zoom**.
 
-**Icon-rich view** — the same container model with real brand logos + verb-labelled edges (the *visual*
-lens, mingrammer `diagrams`). [Open full SVG →](/img/architecture/platform-c4-container.svg)
+[![C4 Container view — the complete minicloud Platform](/img/architecture/platform-c4-container.svg)](/img/architecture/platform-c4-container.svg)
 
-[![C4 Container view (icon-rich) — the complete minicloud Platform](/img/architecture/platform-c4-container.svg)](/img/architecture/platform-c4-container.svg)
-
-**Formal C4 notation** — the same thing in standard C4 boxes (the *rigorous* lens, Structurizr as code).
-[Open full SVG →](/img/c4/structurizr-Containers.svg)
-
-[![C4 Container view (formal notation) — the complete minicloud Platform](/img/c4/structurizr-Containers.svg)](/img/c4/structurizr-Containers.svg)
+*Formal C4 notation (Structurizr): [Container diagram →](/img/c4/structurizr-Containers.svg).*
 
 **Drill into a subsystem →** [GitOps / ArgoCD](#gitops-delivery--inside-argocd) · [Secrets / Vault+ESO](#secrets-delivery--inside-vault--eso) · [AI / LiteLLM](#ai-gateway--inside-litellm) — or follow a flow: [delivery](#how-code-reaches-production--the-delivery-flow) · [request](#how-a-request-reaches-an-app-networking-flow) · [observability](#telemetry--alerting-observability-flow).
 
@@ -77,7 +54,7 @@ lens, mingrammer `diagrams`). [Open full SVG →](/img/architecture/platform-c4-
 
 The same model, deployed: the **6-node k3s cluster** + the **off-cluster MAAS controller**, with placement
 (Vault → fast-heron, vLLM → star-kitten, control-plane → set-hog) and **Longhorn replicated across the
-storage nodes**. [Open full SVG →](/img/c4/structurizr-Deployment.svg)
+storage nodes**.
 
 [![C4 Deployment view — 6-node k3s + controller](/img/c4/structurizr-Deployment.svg)](/img/c4/structurizr-Deployment.svg)
 
@@ -86,49 +63,48 @@ storage nodes**. [Open full SVG →](/img/c4/structurizr-Deployment.svg)
 ## Subsystem deep-dives (C4 Component + flow)
 
 Zooming **inside** the key containers — *"the GitOps platform in detail"*, and the same for secrets and
-the AI gateway. All grounded in the GitOps manifests + the platform rules.
+the AI gateway. All grounded in the GitOps manifests + the platform rules. (Click any diagram to enlarge.)
 
 ↑ [Back to the Container view](#-container--the-complete-platform-all-capabilities)
 
 ### How code reaches production — the delivery flow
 
 A **numbered** sequence from a `git push` to a running production workload (CI → registries → Kargo →
-ArgoCD → cluster). [Open full SVG →](/img/c4/structurizr-DeliveryFlow.svg)
+ArgoCD → cluster).
 
 [![Delivery flow — how code reaches production](/img/c4/structurizr-DeliveryFlow.svg)](/img/c4/structurizr-DeliveryFlow.svg)
 
 ### GitOps delivery — inside ArgoCD
 
 The app-of-apps engine: Root App-of-Apps → ApplicationSets / AppProjects → Sync+Health controller →
-the cluster; Kargo opens the CODEOWNERS-gated PR. [Open full SVG →](/img/c4/structurizr-GitOpsComponents.svg)
+the cluster; Kargo opens the CODEOWNERS-gated PR.
 
 [![C4 Component — inside ArgoCD](/img/c4/structurizr-GitOpsComponents.svg)](/img/c4/structurizr-GitOpsComponents.svg)
 
 ### Secrets delivery — inside Vault + ESO
 
 Vault KV/PKI (KMS auto-unseal) → ESO ClusterSecretStore reads Vault → ExternalSecret renders the k8s
-Secrets workloads consume. [Open full SVG →](/img/c4/structurizr-SecretsComponents.svg)
+Secrets workloads consume.
 
 [![C4 Component — inside Vault + ESO](/img/c4/structurizr-SecretsComponents.svg)](/img/c4/structurizr-SecretsComponents.svg)
 
 ### AI gateway — inside LiteLLM
 
 Virtual keys/budgets → model router → PII guardrail (Presidio) + cache + provider connectors
-(vLLM / Groq / cloud). [Open full SVG →](/img/c4/structurizr-AIComponents.svg)
+(vLLM / Groq / cloud).
 
 [![C4 Component — inside the LiteLLM gateway](/img/c4/structurizr-AIComponents.svg)](/img/c4/structurizr-AIComponents.svg)
 
 ### How a request reaches an app (networking flow)
 
 User → Cloudflare → tunnel → ingress → Authentik (forward-auth) → the workload.
-[Open full SVG →](/img/c4/structurizr-RequestFlow.svg)
 
 [![Request flow — how a user request reaches an app](/img/c4/structurizr-RequestFlow.svg)](/img/c4/structurizr-RequestFlow.svg)
 
 ### Telemetry + alerting (observability flow)
 
 Prometheus scrapes the cluster · OTel ships logs→Loki / traces→Tempo · alerts →
-Alertmanager → SES email. [Open full SVG →](/img/c4/structurizr-ObservabilityFlow.svg)
+Alertmanager → SES email.
 
 [![Observability flow — telemetry + alerting](/img/c4/structurizr-ObservabilityFlow.svg)](/img/c4/structurizr-ObservabilityFlow.svg)
 
@@ -144,7 +120,7 @@ Alertmanager → SES email. [Open full SVG →](/img/c4/structurizr-Observabilit
   boxes = **containers** (platform capabilities, tinted by group).
 - **Arrows:** every arrow is a **relationship with a verb** (*builds · pushes · promotes · reconciles ·
   supplies-secrets · issues-certs · authenticates · scrapes · ships-logs · backs-up · routes-to · consumes*).
-- Each view also has a C4 **key** (auto-generated): `structurizr-<view>-key.svg`.
+- Each formal view also has a C4 **key** (auto-generated): `structurizr-<view>-key.svg`.
 
 ## Maintaining it
 
