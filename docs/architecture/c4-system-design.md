@@ -85,10 +85,21 @@ automatic dev** · **amber = human-gated prod**). [Open full SVG →](/img/archi
 
 [![Delivery flow — how code reaches production](/img/c4/structurizr-DeliveryFlow.svg)](/img/c4/structurizr-DeliveryFlow.svg)
 
+### The GitOps workflow system (the reconcile loop)
+
+The **whole GitOps system** in one view — where the [delivery flow](#how-code-reaches-production--the-delivery-flow)
+follows the *artifact*, this follows the *control loop*: **humans and Kargo only ever write to Git (the
+single source of truth)**; **ArgoCD is the only thing that writes to the cluster**, continuously
+reconciling desired state (Git) against live state and self-healing drift. Shows the **two-repo model**,
+**Kargo** promotion (dev auto / prod CODEOWNERS-gated) *into Git*, the **app-of-apps** tree, the Helm
+wrapper+library render, and the **drift-correction loop** (red). [Open full SVG →](/img/architecture/platform-gitops-system.svg)
+
+[![GitOps workflow system — Git is the source of truth, ArgoCD is the only cluster writer](/img/architecture/platform-gitops-system.svg)](/img/architecture/platform-gitops-system.svg)
+
 ### GitOps delivery — inside ArgoCD
 
-The app-of-apps engine: Root App-of-Apps → ApplicationSets / AppProjects → Sync+Health controller →
-the cluster; Kargo opens the CODEOWNERS-gated PR.
+Zooming **inside** the reconcile engine above: Root App-of-Apps → ApplicationSets / AppProjects →
+Sync+Health controller → the cluster; Kargo opens the CODEOWNERS-gated PR.
 
 [![C4 Component — inside ArgoCD](/img/c4/structurizr-GitOpsComponents.svg)](/img/c4/structurizr-GitOpsComponents.svg)
 
