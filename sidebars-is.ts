@@ -69,11 +69,11 @@ const sidebars: SidebarsConfig = {
           label: 'Collaboration',
           collapsed: true,
           items: [
-            'is/digital-workplace-architecture',
-            'is/data-classification-nextcloud',
-            'is/matrix-synapse-element-web',
-            'is/jitsi-meet',
-            'is/nextcloud',
+            'apps/digital-workplace-architecture',
+            'apps/data-classification-nextcloud',
+            'apps/matrix-synapse-element-web',
+            'apps/jitsi-meet',
+            'apps/nextcloud',
           ],
         },
         {
@@ -81,8 +81,8 @@ const sidebars: SidebarsConfig = {
           label: 'Mail',
           collapsed: true,
           items: [
-            'is/stalwart-mail',
-            'is/amazon-ses',
+            'apps/stalwart-mail',
+            'apps/amazon-ses',
           ],
         },
         {
@@ -90,8 +90,8 @@ const sidebars: SidebarsConfig = {
           label: 'Project Management',
           collapsed: true,
           items: [
-            'is/plane-ce',
-            'is/minicloud-plane',
+            'apps/plane-ce',
+            'apps/minicloud-plane',
           ],
         },
         {
@@ -99,14 +99,14 @@ const sidebars: SidebarsConfig = {
           label: 'ERP & Finance',
           collapsed: true,
           items: [
-            'is/erpnext-hr',
-            'is/erpnext-french-insurance-config',
-            'is/erpnext-facturx-custom-image',
-            'is/erpnext-dsn-architecture',
-            'is/erpnext-dsn-guide-utilisateur',
-            'is/erpnext-crm-insurance-templates',
-            'is/erpnext-billing-dunning',
-            'is/erpnext-insurance-lob-doctypes',
+            'apps/erpnext-hr',
+            'apps/erpnext-french-insurance-config',
+            'apps/erpnext-facturx-custom-image',
+            'apps/erpnext-dsn-architecture',
+            'apps/erpnext-dsn-guide-utilisateur',
+            'apps/erpnext-crm-insurance-templates',
+            'apps/erpnext-billing-dunning',
+            'apps/erpnext-insurance-lob-doctypes',
           ],
         },
         {
@@ -114,7 +114,7 @@ const sidebars: SidebarsConfig = {
           label: 'Document & Signature',
           collapsed: true,
           items: [
-            'is/docuseal',
+            'apps/docuseal',
           ],
         },
         {
@@ -122,7 +122,7 @@ const sidebars: SidebarsConfig = {
           label: 'Credentials (Vaultwarden)',
           collapsed: true,
           items: [
-            'is/vaultwarden',
+            'apps/vaultwarden',
           ],
         },
       ],
@@ -155,7 +155,7 @@ const sidebars: SidebarsConfig = {
       label: '📋 IS Governance',
       collapsed: true,
       items: [
-        'is/is-governance-scrumban-prince2',
+        'apps/is-governance-scrumban-prince2',
       ],
     },
 
