@@ -24,8 +24,9 @@ install: $(VENV) ## Install Python deps (needs system Graphviz: brew install gra
 	@command -v dot >/dev/null || { echo 'ERROR: Graphviz "dot" not found — run: brew install graphviz'; exit 1; }
 
 .PHONY: generate
-generate: install ## Render every diagram in src/ (each *.py that isn't _private)
+generate: install ## Render every diagram in src/ (each *.py that isn't _private) + self-contain the SVGs
 	@for f in $(SRC)/[!_]*.py; do echo ">> $$f"; $(PY) "$$f"; done
+	@echo ">> inlining icons so the SVGs open standalone"; $(PY) embed-svg-images.py
 	@echo "Images written to ../static/img/architecture/"
 
 .PHONY: check
