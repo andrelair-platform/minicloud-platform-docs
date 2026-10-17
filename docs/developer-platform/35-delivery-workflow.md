@@ -30,6 +30,13 @@ Delivery is split across **application repos** and the single **deployment repo*
 The application developer never edits infrastructure to ship a version; the deployment repo is the
 auditable source of truth for what is running.
 
+**The GitOps system at a glance** — humans and Kargo only ever write to **Git**; **ArgoCD is the only
+thing that writes to the cluster**, reconciling desired state (Git) ↔ live state and self-healing drift
+(the red loop). ([full SVG](/img/architecture/platform-gitops-system.svg) · also on
+[Architecture → C4](../architecture/c4-system-design.md#the-gitops-workflow-system-the-reconcile-loop))
+
+[![GitOps workflow system — Git is the source of truth, ArgoCD is the only cluster writer](/img/architecture/platform-gitops-system.svg)](/img/architecture/platform-gitops-system.svg)
+
 ## Start here: what change are you making?
 
 Most delivery confusion comes from opening the right repo but the wrong layer. Use this routing table
