@@ -37,9 +37,17 @@ visual** views of the same platform — capability map, technology topology, phy
 ## ① System Context — who the platform talks to
 
 The platform as one system, its users, the external systems it depends on, and **the Information System as
-its consumer**. [Open full SVG →](/img/c4/structurizr-Context.svg)
+its consumer**.
 
-[![C4 System Context — minicloud Platform](/img/c4/structurizr-Context.svg)](/img/c4/structurizr-Context.svg)
+**Icon-rich view** — brand logos + verb-labelled edges (the *visual* lens, mingrammer `diagrams`).
+[Open full SVG →](/img/architecture/platform-c4-context.svg)
+
+[![C4 System Context (icon-rich) — minicloud Platform](/img/architecture/platform-c4-context.svg)](/img/architecture/platform-c4-context.svg)
+
+**Formal C4 notation** — standard C4 boxes (the *rigorous* lens, Structurizr as code).
+[Open full SVG →](/img/c4/structurizr-Context.svg)
+
+[![C4 System Context (formal notation) — minicloud Platform](/img/c4/structurizr-Context.svg)](/img/c4/structurizr-Context.svg)
 
 ---
 
