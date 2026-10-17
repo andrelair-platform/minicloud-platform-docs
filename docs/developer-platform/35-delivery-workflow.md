@@ -92,6 +92,39 @@ platform services run; ArgoCD is the only cluster writer for managed workloads.*
 **Division of labour:** CI *builds and proves* the artifact; **Kargo promotes** it (the one thing
 ArgoCD does not do); **ArgoCD deploys** it. Nothing writes to the cluster except ArgoCD.
 
+## Continuous Delivery vs Continuous Deployment
+
+These two terms are constantly confused. They share the **entire** pipeline above — build, test, scan,
+sign, make release-ready — and differ in exactly **one** place: **the last step into production.**
+
+| | Continuous **Delivery** | Continuous **Deployment** |
+|---|---|---|
+| Every change is built, tested, and made **release-ready** automatically | ✅ | ✅ |
+| Release to **production** is… | **triggered by a human** (an approval / a PR merge) | **fully automatic** — no human in the loop |
+| A manual gate before prod | **yes, by design** | **no** |
+
+**The one-liner:** continuous *delivery* means every change is *always ready* to ship but a **person
+decides when**; continuous *deployment* means every change that passes the pipeline **ships itself** to
+production with no approval. So **continuous deployment is continuous delivery with the final manual gate
+removed** — every continuous deployment is also continuous delivery, but not the reverse.
+
+> **Mnemonic:** deliv**e**ry → a human **e**nables the release · deploy**m**ent → the **m**achine releases it.
+
+### Where this platform sits — *both*, per environment
+
+This stack is deliberately **mixed**, and that is the point of a two-stage Kargo pipeline:
+
+| Environment | Model | Why |
+|---|---|---|
+| **dev** | **Continuous *Deployment*** | Kargo auto-promotes new Freight to dev (`ProjectConfig: stage dev, autoPromotionEnabled: true`), the dev PR auto-merges (`kargo-automerge.yml`), ArgoCD syncs — **no human** between a green `main` build and a running dev pod. |
+| **prod** | **Continuous *Delivery*** | Kargo opens a **CODEOWNERS-gated** PR on `services/*/helm/`; it needs `@AndreLair` review **and** the Freight must be [verified in dev](./kargo-promotion) **and** the live [QA gate](https://github.com/andrelair-platform/minicloud-gitops/blob/main/.claude/rules/qa-gate.md) must pass. **A human decides when prod ships.** |
+
+That human prod gate is a **feature, not friction**: for an insurance-domain system it's the governance /
+DORA-change-management sign-off (one auditable approval per prod change). Crossing fully into continuous
+*deployment* would just mean letting the prod PR auto-merge on green checks — a one-line policy change we
+**choose not to make**. The dev stage already gives the fast feedback of continuous deployment where the
+blast radius is safe.
+
 ## Workflow for GitOps changes in `minicloud-gitops`
 
 For a GitOps-only change, the workflow is shorter than a full application release:
