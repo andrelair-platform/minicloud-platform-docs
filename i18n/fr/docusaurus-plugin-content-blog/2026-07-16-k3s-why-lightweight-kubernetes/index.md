@@ -143,4 +143,4 @@ Avec cinq nœuds exécutant k3s, la couche suivante est le réseau et l'équilib
 
 ---
 
-*Les runbooks complets de chaque phase, y compris les modèles cloud-init exacts utilisés pour le provisioning MAAS, se trouvent dans la section [Documentation](/platform-roadmap/roadmap-overview).*
+*Les runbooks complets de chaque phase, y compris les modèles cloud-init exacts utilisés pour le provisioning MAAS, se trouvent dans la section [Documentation](/platform/platform-roadmap/roadmap-overview).*

@@ -82,4 +82,4 @@ Ces incidents — et leurs corrections — c'est ce à quoi ressemble vraiment l
 
 ---
 
-*Les runbooks complets pour chaque phase se trouvent dans la section [Documentation](/platform-roadmap/roadmap-overview) de ce site.*
+*Les runbooks complets pour chaque phase se trouvent dans la section [Documentation](/platform/platform-roadmap/roadmap-overview) de ce site.*

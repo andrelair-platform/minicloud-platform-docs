@@ -274,7 +274,7 @@ Long-horizon items. No delivery date committed.
 
 Quick-scan of IS domain items not yet scheduled. Full detail per item is in the [Business Applications Catalog](../insurance-platform/business-applications-catalog).
 
-**Platform engineering items (DevSecOps, FinOps, SRE, IaC, AI hardening, HR, intranet) are tracked separately → [Platform Engineering Backlog](../platform-engineering/platform-backlog)**
+**Platform engineering items (DevSecOps, FinOps, SRE, IaC, AI hardening, HR, intranet) are tracked separately → [Platform Engineering Backlog](/platform/platform-engineering/platform-backlog)**
 
 | Scope | Count |
 |---|---|

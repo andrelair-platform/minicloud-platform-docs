@@ -97,7 +97,7 @@ placement. Behaviour on MX failure = *use default* (falls back to `amazonses.com
 `devandre.sbs` is a young, low-volume sending domain. With SPF+DKIM+DMARC all aligned, occasional spam
 placement of **terse/test** mail (empty subject, tiny body) is **reputation + content**, not an auth
 failure — it fades with real volume and marking "not spam". See the
-[inbound mail stall postmortem](../observability/incident-2026-09-18-inbound-mail-stall) for the related
+[inbound mail stall postmortem](/platform/observability/incident-2026-09-18-inbound-mail-stall) for the related
 inbound fix, and the mail-auth posture is recorded in the platform memory index.
 :::
 

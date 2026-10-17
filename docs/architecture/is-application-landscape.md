@@ -8,8 +8,8 @@ sidebar_label: L2 · IS Application Landscape
 
 > A **navigation map** of the ktayl-solution business applications, grouped by insurance domain and
 > coloured by **implementation maturity**. It is not a new source of truth — the authoritative docs are
-> the **[Enterprise Architecture Blueprint](../insurance-platform/enterprise-architecture-blueprint.md)**
-> (functional target + gap analysis) and the **[Business Capability Map](../insurance-platform/capability-map.md)**
+> the **[Enterprise Architecture Blueprint](/is/insurance-platform/enterprise-architecture-blueprint)**
+> (functional target + gap analysis) and the **[Business Capability Map](/is/insurance-platform/capability-map)**
 > (~150 capabilities × criticality). This map helps you *find* them. Platform dependencies are in the
 > **[Platform ↔ IS Dependency Matrix](./platform-is-dependency-matrix.md)**.
 
@@ -76,11 +76,11 @@ flowchart TB
 
 ## Where to go deeper (authoritative docs)
 
-- **IS target + gaps:** [Enterprise Architecture Blueprint](../insurance-platform/enterprise-architecture-blueprint.md)
-- **Capabilities × status:** [Business Capability Map](../insurance-platform/capability-map.md)
-- **IS one-screen view:** [Architecture at a Glance](../insurance-platform/00-architecture-at-a-glance.md)
-- **App catalogue:** [Business Applications Catalog](../insurance-platform/01-business-applications-catalog.md)
-- **Digital Workplace:** [Digital Workplace Architecture](../is/03-digital-workplace-architecture.md)
+- **IS target + gaps:** [Enterprise Architecture Blueprint](/is/insurance-platform/enterprise-architecture-blueprint)
+- **Capabilities × status:** [Business Capability Map](/is/insurance-platform/capability-map)
+- **IS one-screen view:** [Architecture at a Glance](/is/insurance-platform/architecture-at-a-glance)
+- **App catalogue:** [Business Applications Catalog](/is/insurance-platform/business-applications-catalog)
+- **Digital Workplace:** [Digital Workplace Architecture](/is/is/digital-workplace-architecture)
 - **Per-product boards/repos:** the `ktayl-*` repos on [github.com/andrelair-platform](https://github.com/andrelair-platform)
   (one GitHub Project per product — see the product-boards table in the governance rules).
 

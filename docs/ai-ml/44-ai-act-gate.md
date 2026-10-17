@@ -106,4 +106,4 @@ stable core (Annex III areas + the decision-effect + Art. 22 tests) and reviewed
 
 **Cert mapping:** BC02 (concevoir — the design-time control), BC03 (déployer & sécuriser — the gate + evidence).
 
-**Related (IS):** [Regulatory operating model](../insurance-platform/04-regulatory-operating-model.md) — the business/compliance obligations (DORA/GDPR/ACPR) this AI-platform gate feeds into.
+**Related (IS):** [Regulatory operating model](/is/insurance-platform/regulatory-operating-model) — the business/compliance obligations (DORA/GDPR/ACPR) this AI-platform gate feeds into.

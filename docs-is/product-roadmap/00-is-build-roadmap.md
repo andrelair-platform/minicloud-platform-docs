@@ -220,6 +220,6 @@ the business. Today only **Policy Admin #6** is live, so this layer is mostly ah
 ## Where the detail lives
 - **Domain map (what exists):** [EA Blueprint](../insurance-platform/enterprise-architecture-blueprint)
 - **Per-domain deep-dive:** FDE playbooks (e.g. [Underwriting](../insurance-platform/underwriting-fde-playbook))
-- **Governance:** [Regulatory Operating Model](../insurance-platform/regulatory-operating-model) · [AI-Act Gate](../ai-ml/ai-act-gate)
+- **Governance:** [Regulatory Operating Model](../insurance-platform/regulatory-operating-model) · [AI-Act Gate](/platform/ai-ml/ai-act-gate)
 - **Practice lab:** `ktayl-integration/docs/legacy-wrapper-initiative-spec.md`
 - **Detailed backlog / quarter view:** [Product Roadmap (detail)](./overview)

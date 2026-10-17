@@ -5,7 +5,7 @@ sidebar_label: Platform Engineering Backlog
 
 # Platform Engineering Backlog
 
-All platform-layer items not yet scheduled — distinct from the [Insurance IS catalog](../insurance-platform/business-applications-catalog) which covers business domain applications.
+All platform-layer items not yet scheduled — distinct from the [Insurance IS catalog](/is/insurance-platform/business-applications-catalog) which covers business domain applications.
 
 Full issue tracker: [andrelair-platform/platform-backlog](https://github.com/andrelair-platform/platform-backlog)
 
@@ -233,7 +233,7 @@ Workforce systems and internal productivity tools that make the simulated compan
 
 | Scope | Items |
 |---|---|
-| Insurance IS domain ([catalog](../insurance-platform/business-applications-catalog)) | 53 |
+| Insurance IS domain ([catalog](/is/insurance-platform/business-applications-catalog)) | 53 |
 | Platform engineering (this page) | 100 |
 | Research pipeline (no committed date) | 8 |
 | **Total active backlog** | **161** |

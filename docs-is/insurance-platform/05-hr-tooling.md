@@ -47,7 +47,7 @@ The custom Frappe apps in `minicloud-erpnext` are the substantive HR engineering
   monthly mandatory social-declaration to URSSAF (S10/S20/S90 blocks, CRLF, UTF-8). Unit-tested.
 - **`erpnext_sepa`** — **SEPA pain.008** direct-debit / salary-transfer generation.
 
-These are Tier-A tested code (see the [testing standard](../engineering-standards/testing-strategy)),
+These are Tier-A tested code (see the [testing standard](/platform/engineering-standards/testing-strategy)),
 not just ERPNext configuration.
 
 ## Moodle LMS — planned, on a need-first hold

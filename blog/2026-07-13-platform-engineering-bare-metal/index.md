@@ -82,4 +82,4 @@ Those incidents — and the fixes — are what platform engineering actually loo
 
 ---
 
-*The full runbooks for every phase live in the [Documentation](/platform-roadmap/roadmap-overview) section of this site.*
+*The full runbooks for every phase live in the [Documentation](/platform/platform-roadmap/roadmap-overview) section of this site.*

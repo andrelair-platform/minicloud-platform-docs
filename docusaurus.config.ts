@@ -39,13 +39,28 @@ const config: Config = {
     },
   },
 
+  // INFORMATION SYSTEM pillar — a second docs instance mounted at /is, so Platform (/platform/*) and
+  // IS (/is/*) are distinct route sections (like /blog), not merged under one root.
+  plugins: [
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'is',
+        path: 'docs-is',
+        routeBasePath: '/is',
+        sidebarPath: './sidebars-is.ts',
+      },
+    ],
+  ],
+
   presets: [
     [
       'classic',
       {
         docs: {
+          // PLATFORM pillar — mounted at /platform (the IS pillar is a second instance below).
           sidebarPath: './sidebars.ts',
-          routeBasePath: '/',
+          routeBasePath: '/platform',
         },
         blog: {
           showReadingTime: true,
@@ -92,6 +107,7 @@ const config: Config = {
         {
           type: 'docSidebar',
           sidebarId: 'isSidebar',
+          docsPluginId: 'is',
           position: 'left',
           label: 'Information System',
         },
@@ -117,19 +133,19 @@ const config: Config = {
         {
           title: 'Phase 0 — MAAS',
           items: [
-            {label: 'Objective', to: '/phase-0-maas/objective'},
-            {label: 'Architecture', to: '/phase-0-maas/architecture'},
-            {label: 'Hardware', to: '/phase-0-maas/hardware'},
-            {label: 'Troubleshooting', to: '/phase-0-maas/troubleshooting'},
+            {label: 'Objective', to: '/platform/phase-0-maas/objective'},
+            {label: 'Architecture', to: '/platform/phase-0-maas/architecture'},
+            {label: 'Hardware', to: '/platform/phase-0-maas/hardware'},
+            {label: 'Troubleshooting', to: '/platform/phase-0-maas/troubleshooting'},
           ],
         },
         {
           title: 'Platform Roadmap',
           items: [
-            {label: 'Overview', to: '/platform-roadmap/roadmap-overview'},
-            {label: 'Kubernetes (k3s)', to: '/platform-roadmap/phase-1-kubernetes'},
-            {label: 'GitOps (ArgoCD)', to: '/platform-roadmap/phase-12-gitops'},
-            {label: 'Monitoring', to: '/platform-roadmap/phase-8-monitoring'},
+            {label: 'Overview', to: '/platform/platform-roadmap/roadmap-overview'},
+            {label: 'Kubernetes (k3s)', to: '/platform/platform-roadmap/phase-1-kubernetes'},
+            {label: 'GitOps (ArgoCD)', to: '/platform/platform-roadmap/phase-12-gitops'},
+            {label: 'Monitoring', to: '/platform/platform-roadmap/phase-8-monitoring'},
           ],
         },
         {

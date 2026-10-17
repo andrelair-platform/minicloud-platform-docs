@@ -23,7 +23,7 @@ slice of the ktayl IS Data Platform (#5).
 
 ## The doctrine (why light-first, why one slice)
 
-Per the [EA capability map](../insurance-platform/capability-map) roadmap: **use cases drive it · sources
+Per the [EA capability map](/is/insurance-platform/capability-map) roadmap: **use cases drive it · sources
 constrain it · technology comes last.** ktayl's sources are its own domain services, and most aren't built
 yet — so building a heavy OLAP cluster now would be "a warehouse for empty warehouses." The rule is **one
 thin vertical slice against a real live source → just-enough medallion → one data product**, then generalise
@@ -90,4 +90,4 @@ Metabase is provisioned as code by the idempotent `metabase/provision_dashboard.
 
 Slice 2 = add a second real source as the next domain ships (generalise ingestion from 2–3 real
 pipelines; CDC over batch), then MDM-keyed Customer 360 once MDM exists. See the
-[capability map roadmap](../insurance-platform/capability-map).
+[capability map roadmap](/is/insurance-platform/capability-map).

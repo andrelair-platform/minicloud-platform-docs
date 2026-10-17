@@ -14,8 +14,8 @@ auditable. This page is the **engineer's view** of that fleet: for each app, *wh
 
 :::note This is an integration view, not a business catalog
 For what each application *does for the business* (functional domains, the IARD insurer model, coverage
-and build order), see the **[Business Applications Catalog](../insurance-platform/business-applications-catalog)**
-and the **[EA Blueprint](../insurance-platform/enterprise-architecture-blueprint)**. This page instead
+and build order), see the **[Business Applications Catalog](/is/insurance-platform/business-applications-catalog)**
+and the **[EA Blueprint](/is/insurance-platform/enterprise-architecture-blueprint)**. This page instead
 answers *"what engineering did the operator do to each off-the-shelf app?"*
 :::
 
@@ -61,7 +61,7 @@ capability this page evidences.
 | **Temporal** | Deployed; durable workflow engine; PostgreSQL backend; **Authentik OIDC** | — | `apps/workloads/temporal.yaml` |
 
 :::warning Honesty: installed ≠ operational
-Following the platform's *"installed ≠ operational"* rule (see **[HR Tooling](../insurance-platform/hr-tooling)**),
+Following the platform's *"installed ≠ operational"* rule (see **[HR Tooling](/is/insurance-platform/hr-tooling)**),
 ERPNext HR is claimed precisely: the **payroll** modules (custom DSN/SEPA) are genuinely built + tested;
 Appraisal / Leave / Attendance / Job-Opening are **installed but empty**. Deploying an app is not the same
 as operating a populated business process, and this catalog says which is which.

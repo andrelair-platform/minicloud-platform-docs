@@ -143,4 +143,4 @@ With five nodes running k3s, the next layer is networking and load balancing: Me
 
 ---
 
-*The full runbooks for every phase, including the exact cloud-init templates used for MAAS provisioning, live in the [Documentation](/platform-roadmap/roadmap-overview) section.*
+*The full runbooks for every phase, including the exact cloud-init templates used for MAAS provisioning, live in the [Documentation](/platform/platform-roadmap/roadmap-overview) section.*
