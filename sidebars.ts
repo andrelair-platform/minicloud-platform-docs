@@ -234,6 +234,7 @@ const sidebars: SidebarsConfig = {
           collapsed: true,
           items: [
             'app-deployment/deploy-overview',
+            'app-deployment/new-business-service',
             'app-deployment/helm-chart',
             'app-deployment/deploy-helm',
             'app-deployment/deploy-argocd',
