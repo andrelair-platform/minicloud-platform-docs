@@ -26,8 +26,8 @@ with Diagram(
     filename=OUTFILE,
     outformat=["svg", "png"],
     show=False,
-    direction="LR",
-    graph_attr={**GRAPH_ATTR, "ranksep": "1.1", "nodesep": "0.6"},
+    direction="TB",
+    graph_attr={**GRAPH_ATTR, "ranksep": "1.0", "nodesep": "0.7", "splines": "spline"},
     node_attr=NODE_ATTR,
     edge_attr=EDGE_ATTR,
 ):
@@ -35,33 +35,34 @@ with Diagram(
     with Cluster("1 · Build & prove  (application repo)", graph_attr=cluster_attr(SLATE)):
         dev = User("Developer\ngit push → main")
         gh = node(Github, "GitHub repo\nsource + CI", icon="github-actions.png")
-        ci = node(Server, "CI\ntest · build · scan\ncosign · SBOM", icon="github-actions.png")
-        with Cluster("registries", graph_attr=cluster_attr(SLATE)):
-            harbor = node(Server, "Harbor\ndev image", icon="harbor.png")
-            ghcr = node(Server, "ghcr.io\nprod SHA (signed)", icon="ghcr.png")
+        ci = node(Server, "CI · test · build · scan\ncosign · SBOM", icon="github-actions.png")
+        harbor = node(Server, "Harbor\ndev image", icon="harbor.png")
+        ghcr = node(Server, "ghcr.io\nprod SHA (signed)", icon="ghcr.png")
 
     # ---- 2. promote (Kargo) --------------------------------------------------
     with Cluster("2 · Promote  (Kargo — the only promoter)", graph_attr=cluster_attr(CYAN)):
-        warehouse = node(Server, "Warehouse\ndetects image → Freight\n(immutable artifact)", icon="kargo.png")
+        warehouse = node(Server, "Warehouse · detects image\n→ Freight (immutable artifact)", icon="kargo.png")
 
     # ---- 3. dev = CONTINUOUS DEPLOYMENT (automatic, no human) -----------------
-    with Cluster("3 · dev  —  CONTINUOUS DEPLOYMENT  (automatic · no human)", graph_attr=cluster_attr(GREEN)):
-        kdev = node(Server, "Stage dev\nauto-promote\n(ProjectConfig)", icon="kargo.png")
-        devpr = node(Github, "dev values PR\n→ auto-merge\n(kargo-automerge)", icon="github-actions.png")
+    with Cluster("3 · dev  —  CONTINUOUS DEPLOYMENT  (automatic · no human in the path)",
+                 graph_attr=cluster_attr(GREEN)):
+        kdev = node(Server, "Stage dev\nauto-promote", icon="kargo.png")
+        devpr = node(Github, "dev values PR\n→ auto-merge", icon="github-actions.png")
         argodev = node(Argocd, "ArgoCD\nreconciles dev", icon="argocd.png")
         devcluster = node(Server, "dev workload\n(1 replica)", icon="k3s.png")
-        verify = node(Server, "dev-verify\nAnalysisRun →\n'Verified in dev'", icon="argo-rollouts.png")
+        verify = node(Server, "dev-verify →\n'Verified in dev'", icon="argo-rollouts.png")
 
     # ---- 4. prod = CONTINUOUS DELIVERY (human-gated) -------------------------
-    with Cluster("4 · prod  —  CONTINUOUS DELIVERY  (human decides when)", graph_attr=cluster_attr(AMBER)):
+    with Cluster("4 · prod  —  CONTINUOUS DELIVERY  (a human decides when)",
+                 graph_attr=cluster_attr(AMBER)):
         kprod = node(Server, "Stage prod\naccepts only\nverified Freight", icon="kargo.png")
-        reviewer = User("CODEOWNERS review\n@AndreLair + live QA gate\n← the manual gate")
+        reviewer = User("CODEOWNERS review\n@AndreLair + live QA gate\n◄ the manual gate")
         prodpr = node(Github, "prod values PR\n(NO auto-merge)", icon="github-actions.png")
         argoprod = node(Argocd, "ArgoCD\nreconciles prod", icon="argocd.png")
         prodcluster = node(Server, "prod workload\n(2–3 replicas · canary)", icon="k3s.png")
 
     # ============================= relationships ==============================
-    # build & prove (solid green = delivery flow)
+    # build & prove (solid green = delivery flow) — the column reads top→bottom
     dev >> WIRE("push") >> gh
     gh >> WIRE("triggers") >> ci
     ci >> WIRE("dev tag") >> harbor
@@ -76,10 +77,10 @@ with Diagram(
     devcluster >> DASH("smoke / analysis") >> verify
 
     # the dev→prod gate: only dev-verified Freight is promotable
-    verify >> WIRE("verified Freight →") >> kprod
+    verify >> WIRE("verified Freight") >> kprod
 
     # prod — human-gated continuous delivery (amber/red = the manual decision)
-    kprod >> FLOW("opens gated PR", ) >> prodpr
+    kprod >> FLOW("opens gated PR") >> prodpr
     prodpr >> DASH("blocks on", color=RED) >> reviewer
-    reviewer >> FLOW("human approves (squash)", ) >> argoprod
+    reviewer >> FLOW("human approves (squash)") >> argoprod
     argoprod >> FLOW("deploys") >> prodcluster
