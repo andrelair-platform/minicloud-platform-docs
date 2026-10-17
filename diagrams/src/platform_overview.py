@@ -18,9 +18,6 @@ from __future__ import annotations
 from diagrams import Cluster, Diagram
 
 # ---- built-in nodes (all confirmed present in diagrams==0.24.4) --------------
-from diagrams.aws.engagement import SimpleEmailServiceSes
-from diagrams.aws.integration import SimpleNotificationServiceSns, SimpleQueueServiceSqs
-from diagrams.aws.storage import SimpleStorageServiceS3
 from diagrams.generic.compute import Rack
 from diagrams.generic.database import SQL
 from diagrams.generic.network import Firewall, Router, VPN
@@ -34,14 +31,11 @@ from diagrams.k8s.network import Ingress
 from diagrams.k8s.others import PSP
 from diagrams.k8s.podconfig import ConfigMap, Secret
 from diagrams.onprem.aggregator import Vector
-from diagrams.onprem.analytics import Metabase
 from diagrams.onprem.certificates import CertManager, LetsEncrypt
 from diagrams.onprem.ci import GithubActions
 from diagrams.onprem.client import Client, Users
-from diagrams.onprem.compute import Server
 from diagrams.onprem.database import ClickHouse, MariaDB, PostgreSQL
 from diagrams.onprem.gitops import ArgoCD, Flagger
-from diagrams.onprem.groupware import Nextcloud
 from diagrams.onprem.iac import Ansible, Terraform
 from diagrams.onprem.identity import Dex
 from diagrams.onprem.inmemory import Redis
@@ -56,7 +50,6 @@ from diagrams.onprem.tracing import Tempo
 from diagrams.onprem.vcs import Github
 from diagrams.onprem.workflow import NiFi
 from diagrams.saas.alerting import Pagerduty
-from diagrams.saas.automation import N8N
 from diagrams.saas.cdn import Cloudflare
 from diagrams.saas.security import Crowdstrike
 
@@ -79,7 +72,7 @@ from _theme import (
 GRAPH_ATTR = {**GRAPH_ATTR, "ranksep": "0.7", "nodesep": "0.4", "fontsize": "26"}
 
 with Diagram(
-    "minicloud — Production Stack  ·  k3s v1.36  ·  6 nodes  ·  ~95 ArgoCD apps  ·  the ktayl-solution IS",
+    "minicloud PLATFORM — technical capabilities  ·  k3s v1.36 · 6 nodes  ·  (IS business apps → the IS Application Landscape)",
     filename=str(OUT / "minicloud-platform"),
     outformat=["png", "svg"],
     direction="TB",
@@ -92,7 +85,6 @@ with Diagram(
     users = Users("Internet users\nbrowsers · mobile")
     dev = Client("Developer\nMacBook Air (local)")
     groq = node(Rack, "Groq API\nllama-3.1-8b-instant", icon="groq.png")
-    ses = SimpleEmailServiceSes("AWS SES\neu-west-1")
 
     # ======================================================= ACCESS & EDGE
     with Cluster("ACCESS LAYER", graph_attr=cluster_attr(CYAN)):
@@ -153,30 +145,14 @@ with Diagram(
             langfuse = node(Rack, "Langfuse\nLLM traces · evals · cost", icon="langfuse.png")
             langfuse_ch = ClickHouse("ClickHouse\ntrace store")
 
-    # ======================================================= COLLABORATION / IS
-    with Cluster("COLLABORATION & IS APPS", graph_attr=cluster_attr(CYAN)):
-        erpnext = node(Server, "ERPNext\nHR · finance · GL", icon="erpnext.png")
-        nextcloud = Nextcloud("Nextcloud\nfiles · OnlyOffice")
-        matrix = node(Server, "Matrix + Element\nSynapse · SSO", icon="matrix.png")
-        jitsi = node(Server, "Jitsi Meet\nJVB · star-kitten", icon="jitsi.png")
-        plane = node(Rack, "Plane CE\nproject mgmt", icon="plane.png")
-        homer = node(Client, "Homer\ndashboards", icon="homer.png")
-        docuseal = node(Server, "Docuseal\ne-signature", icon="docuseal.png")
-        paperless = node(Server, "Paperless-ngx\nDMS · OCR", icon="paperless.png")
-        metabase = Metabase("Metabase\nBI / analytics")
-
-    # ======================================================= AUTOMATION & WORKFLOW
-    with Cluster("AUTOMATION & WORKFLOW", graph_attr=cluster_attr(GREEN)):
-        n8n = N8N("n8n\nworkflow automation")
-        temporal = node(Rack, "Temporal\ndurable workflows", icon="temporal.png")
-
     # ======================================================= DATA & MESSAGING
-    with Cluster("DATA & MESSAGING", graph_attr=cluster_attr(AMBER)):
-        pg = PostgreSQL("PostgreSQL (CNPG)\npostgresql-ai · app DBs")
-        pg_synapse = PostgreSQL("postgresql-synapse\nMatrix DB")
-        mariadb = MariaDB("MariaDB\nERPNext")
-        valkey = Redis("Valkey\nlitellm-cache")
-        nats = node(Nats, "NATS\nJetStream · events", icon="nats.png")
+    # Platform-provided data-infra ENGINES (a capability). The *schemas/data* they hold are
+    # IS-owned and appear in the IS Application Landscape — not here (ownership ≠ deployment).
+    with Cluster("DATA & MESSAGING  ·  managed capability", graph_attr=cluster_attr(AMBER)):
+        pg = PostgreSQL("PostgreSQL / CNPG\nPostgres-as-a-service")
+        mariadb = MariaDB("MariaDB\nmanaged instance")
+        valkey = Redis("Valkey / Redis\ncache-as-a-service")
+        nats = node(Nats, "NATS\nJetStream eventing", icon="nats.png")
 
     # ======================================================= STORAGE & BACKUP
     with Cluster("STORAGE & INFRA", graph_attr=cluster_attr(CYAN)):
@@ -195,13 +171,6 @@ with Diagram(
         nodeexp = DaemonSet("Node Exporter\n:9100")
         ksm = Pod("kube-state-metrics")
         hubble = node(Pod, "Hubble UI\nCilium flow obs", icon="cilium.png")
-
-    # ======================================================= EMAIL PIPELINE
-    with Cluster("EMAIL PIPELINE", graph_attr=cluster_attr(CYAN)):
-        stalwart = Server("Stalwart Mail\nSMTP 587 · IMAP 993")
-        sns = SimpleNotificationServiceSns("SNS")
-        sqs = SimpleQueueServiceSqs("SQS")
-        s3in = SimpleStorageServiceS3("S3 inbound")
 
     # ======================================================= HARDWARE
     with Cluster("HARDWARE  ·  MAAS provisioned  ·  Ubuntu 22.04", graph_attr=cluster_attr("#64748b")):
@@ -227,7 +196,7 @@ with Diagram(
     ingress >> FLOW("SSO gate") >> authentik
     certmgr >> DASH("issues TLS") >> ingress
     le >> DASH() >> certmgr
-    authentik >> FLOW() >> [litellm, erpnext, openwebui, nextcloud]
+    authentik >> FLOW("SSO-as-a-service") >> [litellm, openwebui]
 
     # --- delivery path (green) -------------------------------------------
     dev >> WIRE("git push") >> gh >> WIRE() >> actions
@@ -248,13 +217,11 @@ with Diagram(
 
     # --- data / storage backing ------------------------------------------
     litellm >> DASH() >> valkey
+    litellm >> DASH("cloud route") >> groq
     litellm >> DASH("traces") >> langfuse
     langfuse >> DASH() >> langfuse_ch
     ragingest >> DASH() >> qdrant
-    [erpnext] >> DASH("db") >> mariadb
-    [nextcloud, plane] >> DASH("db") >> pg
-    matrix >> DASH("db") >> pg_synapse
-    longhorn >> DASH("PVCs") >> [pg, minio]
+    longhorn >> DASH("PVCs") >> [pg, mariadb, minio]
     velero >> DASH("backup") >> minio
     nats >> DASH("events") >> crew
 
@@ -262,12 +229,6 @@ with Diagram(
     otel >> DASH() >> [loki, tempo]
     [nodeexp, ksm] >> DASH() >> prometheus
     prometheus >> DASH() >> [grafana, alertmgr]
-
-    # --- mail pipeline ---------------------------------------------------
-    stalwart >> FLOW("relay 587") >> ses
-    ses >> FLOW("inbound") >> sns >> sqs
-    s3in >> DASH() >> sqs
-    alertmgr >> DASH("alerts") >> stalwart
 
     # --- hardware fabric --------------------------------------------------
     tofu >> DASH("provisions") >> controller
