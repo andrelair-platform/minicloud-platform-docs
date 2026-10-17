@@ -82,10 +82,19 @@ The default is a **plain merge**, because the rulesets already make it safe:
   self-approve, the sanctioned path is a **review-bot CODEOWNER** that approves after CI (the `--admin`
   *elimination* follow-up), **not** reflexive `--admin`.
 
-> **Follow-up hardening:** make the CI validation job a **required status check** so even the plain path
-> can't merge a change that fails to build/validate (this would have caught conflict markers reaching
-> `main`). Caveat: a path-filtered check must be made *always-reporting* first, or a docs-only PR deadlocks
-> on an "expected" check that never runs.
+**Required check (done):** an always-on **`merge-gate`** status check runs on every PR and blocks
+unresolved git conflict markers — the exact failure that reached `main` via `--admin` in #1860. It's
+required in the branch ruleset, so the **plain-merge path can't ship that class of bug**. (Scoped to
+conflict markers only — zero false positives; template YAML stays with `validate-manifests`.)
+
+### `--admin` on gated PRs — accepted risk (solo, determined 2026-10-17)
+A second *independent human* approver does not exist (solo operator), so a CODEOWNERS-gated PR can't get a
+non-self approval — and we **don't fake one** (no review-bot, by choice). This is closed as an **accepted
+risk**, not a hidden gap (same determination style as the DORA tester-independence call):
+- **Non-gated PRs (the ~90%, all docs)** → plain `gh pr merge --squash`; `merge-gate` + CI actually gate them. `--admin` is never used here.
+- **Gated PRs** (prod overlays, `services/*/helm`, `apps/`, `helm-values/`, `.claude/`, security) → `--admin` as **logged break-glass, only after the owner has confirmed `merge-gate` + CI are green** (because `--admin` *also* bypasses those checks — so the control is the owner looking first).
+- **Compensating controls:** `merge-gate`/CI (machine) + the fresh-context `/bmad-code-review` (independent perspective) + the owner's pre-merge eyeball.
+- **Revisit trigger:** a second engineer joins, or a real-prod / real-PII claim → then add the review-bot or a human reviewer.
 
 ## Don't double-count the gates
 Review (judgement) + **CI** (L0–L4) + the **live QA gate** (L5) + **CODEOWNERS** (enforcement) are
