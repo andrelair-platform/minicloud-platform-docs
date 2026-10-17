@@ -19,9 +19,9 @@ pillars relate.
 
 **How to read C4** — three zoom levels: **① System Context** (the platform + who it talks to) → **②
 Container** (its internal capabilities) → **③ Deployment** (where it runs). Boxes = people / systems /
-containers; **every arrow is a labelled relationship** (a verb). *(Subsystem **Component** views — e.g.
-"the GitOps delivery pipeline in detail" — and an interactive Structurizr Lite are the next step; the
-model already holds the elements.)*
+containers; **every arrow is a labelled relationship** (a verb). Below the three top-level views are the
+**Component** deep-dives (④ — *the GitOps pipeline, secrets, and the AI gateway in detail*). *(An
+interactive Structurizr Lite is the remaining follow-up; the model already holds the elements.)*
 
 :::tip Two complementary approaches — pick the right lens
 This page is the **formal, standard-notation C4 model** (Structurizr, as code). For the **icon-rich
@@ -60,6 +60,44 @@ The same model, deployed: the **6-node k3s cluster** + the **off-cluster MAAS co
 storage nodes**. [Open full SVG →](pathname:///img/c4/structurizr-Deployment.svg)
 
 [![C4 Deployment view — 6-node k3s + controller](pathname:///img/c4/structurizr-Deployment.svg)](pathname:///img/c4/structurizr-Deployment.svg)
+
+---
+
+## Subsystem deep-dives (C4 Component + flow)
+
+Zooming **inside** the key containers — *"the GitOps platform in detail"*, and the same for secrets and
+the AI gateway. All grounded in the GitOps manifests + the platform rules.
+
+### How code reaches production — the delivery flow
+
+A **numbered** sequence from a `git push` to a running production workload (CI → registries → Kargo →
+ArgoCD → cluster). [Open full SVG →](pathname:///img/c4/structurizr-DeliveryFlow.svg)
+
+[![Delivery flow — how code reaches production](pathname:///img/c4/structurizr-DeliveryFlow.svg)](pathname:///img/c4/structurizr-DeliveryFlow.svg)
+
+### GitOps delivery — inside ArgoCD
+
+The app-of-apps engine: Root App-of-Apps → ApplicationSets / AppProjects → Sync+Health controller →
+the cluster; Kargo opens the CODEOWNERS-gated PR. [Open full SVG →](pathname:///img/c4/structurizr-GitOpsComponents.svg)
+
+[![C4 Component — inside ArgoCD](pathname:///img/c4/structurizr-GitOpsComponents.svg)](pathname:///img/c4/structurizr-GitOpsComponents.svg)
+
+### Secrets delivery — inside Vault + ESO
+
+Vault KV/PKI (KMS auto-unseal) → ESO ClusterSecretStore reads Vault → ExternalSecret renders the k8s
+Secrets workloads consume. [Open full SVG →](pathname:///img/c4/structurizr-SecretsComponents.svg)
+
+[![C4 Component — inside Vault + ESO](pathname:///img/c4/structurizr-SecretsComponents.svg)](pathname:///img/c4/structurizr-SecretsComponents.svg)
+
+### AI gateway — inside LiteLLM
+
+Virtual keys/budgets → model router → PII guardrail (Presidio) + cache + provider connectors
+(vLLM / Groq / cloud). [Open full SVG →](pathname:///img/c4/structurizr-AIComponents.svg)
+
+[![C4 Component — inside the LiteLLM gateway](pathname:///img/c4/structurizr-AIComponents.svg)](pathname:///img/c4/structurizr-AIComponents.svg)
+
+> More subsystem views (Observability, Networking…) are cheap to add — the model already holds the
+> elements; just add a `component`/`dynamic` view to [`workspace.dsl`](https://github.com/andrelair-platform/minicloud-platform-docs/blob/main/diagrams/structurizr/workspace.dsl).
 
 ---
 

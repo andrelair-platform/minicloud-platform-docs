@@ -27,11 +27,22 @@ workspace "minicloud Platform" "Complete C4 system design of the self-hosted ent
                 ci = container "GitHub Actions (CI)" "Build · Trivy scan · Cosign sign · SBOM." "Delivery"
                 registry = container "Image registries" "Harbor (dev) + ghcr.io (prod, SHA-pinned)." "Delivery"
                 kargo = container "Kargo" "Promotes one artifact dev→prod via a CODEOWNERS-gated PR." "Delivery"
-                argocd = container "ArgoCD" "GitOps reconcile (app-of-apps, ~95 apps)." "Delivery"
+                argocd = container "ArgoCD" "GitOps reconcile (app-of-apps, ~95 apps)." "Delivery" {
+                    acd_root = component "Root App-of-Apps" "Watches apps/ and owns every Application." "Delivery"
+                    acd_projects = component "AppProjects" "RBAC — allowed sources / destinations / namespaces." "Delivery"
+                    acd_appsets = component "ApplicationSets" "Generate Applications (e.g. kargo-projects over services/*/kargo)." "Delivery"
+                    acd_sync = component "Sync + Health controller" "Reconciles desired state; prune + selfHeal." "Delivery"
+                }
                 rollouts = container "Argo Rollouts" "Progressive delivery (canary / blue-green)." "Delivery"
             }
             group "Security & Secrets" {
-                vault = container "Vault + ESO" "Secrets · PKI · AWS-KMS auto-unseal. ESO writes k8s Secrets." "Security"
+                vault = container "Vault + ESO" "Secrets · PKI · AWS-KMS auto-unseal. ESO writes k8s Secrets." "Security" {
+                    v_kv = component "Vault KV" "secret/platform/* — runtime app secrets." "Security"
+                    v_pki = component "Vault PKI" "internal CA + cert issuance." "Security"
+                    v_unseal = component "KMS auto-unseal" "AWS KMS — unattended restart." "Security"
+                    eso_store = component "ESO ClusterSecretStore" "Authenticates ESO to Vault." "Security"
+                    eso_es = component "ExternalSecret → k8s Secret" "Renders Secrets that workloads consume." "Security"
+                }
                 gatekeeper = container "Gatekeeper (OPA)" "Admission policy. Cluster-wide." "Security"
                 falco = container "Falco" "Runtime threat detection (DaemonSet). Cluster-wide." "Security"
             }
@@ -54,7 +65,13 @@ workspace "minicloud Platform" "Complete C4 system design of the self-hosted ent
                 alertmgr = container "Alertmanager" "Alert routing (burn-rate)." "Observability"
             }
             group "AI Runtime" {
-                litellm = container "LiteLLM Gateway" "Governed LLM access — keys · routing · PII." "AI"
+                litellm = container "LiteLLM Gateway" "Governed LLM access — keys · routing · PII." "AI" {
+                    ll_keys = component "Virtual keys + budgets" "Per-team keys + spend limits (key-seeder)." "AI"
+                    ll_router = component "Model router" "Routes by model name to a provider." "AI"
+                    ll_pii = component "PII guardrail (Presidio)" "DLP masking before egress." "AI"
+                    ll_cache = component "Response cache" "Prompt/response cache (Valkey)." "AI"
+                    ll_conn = component "Provider connectors" "vLLM (on-cluster) · Groq / cloud." "AI"
+                }
                 qdrant = container "Qdrant" "Vector database (RAG)." "AI"
                 langfuse = container "Langfuse" "LLM observability (traces · cost · evals)." "AI"
                 vllm = container "vLLM" "On-cluster inference." "AI"
@@ -115,6 +132,26 @@ workspace "minicloud Platform" "Complete C4 system design of the self-hosted ent
         is -> litellm "Calls LLMs through"
         is -> longhorn "Persists files on"
 
+        # ---- component-level (subsystem internals, for the Component views) ----
+        # GitOps / delivery (inside ArgoCD)
+        acd_root -> acd_appsets "Owns"
+        acd_root -> acd_projects "Scoped by"
+        acd_appsets -> acd_sync "Generate Applications for"
+        acd_sync -> k3s "Reconciles onto"
+        kargo -> acd_root "Opens a CODEOWNERS-gated PR to the git repo watched by"
+        # Secrets (inside Vault + ESO)
+        v_unseal -> v_kv "Unseals"
+        eso_store -> v_kv "Reads secrets from"
+        eso_es -> eso_store "Uses"
+        eso_es -> k3s "Writes k8s Secrets (consumed by workloads) onto"
+        # AI gateway (inside LiteLLM)
+        ll_keys -> ll_router "Authorizes"
+        ll_router -> ll_pii "Masks input via"
+        ll_router -> ll_cache "Checks / fills"
+        ll_router -> ll_conn "Dispatches via"
+        ll_conn -> vllm "Routes to"
+        ll_conn -> cloudLLM "Routes to"
+
         # ---- physical deployment (where it runs) --------------------------
         deploymentEnvironment "Live" {
             deploymentNode "MAAS controller" "Off-cluster · ThinkPad X390 · NAT · Tailscale · 100.88.123.8" {
@@ -155,6 +192,31 @@ workspace "minicloud Platform" "Complete C4 system design of the self-hosted ent
 
         deployment platform "Live" "Deployment" "Where it physically runs — the 6-node k3s cluster + the off-cluster controller, with placement." {
             include *
+            autolayout lr
+        }
+
+        # --- Component views (subsystem deep-dives) ------------------------
+        component argocd "GitOpsComponents" "GitOps delivery — inside ArgoCD (the app-of-apps engine)." {
+            include *
+            autolayout
+        }
+        component vault "SecretsComponents" "Secrets delivery — inside Vault + ESO." {
+            include *
+            autolayout lr
+        }
+        component litellm "AIComponents" "AI gateway internals — inside the LiteLLM gateway." {
+            include *
+            autolayout lr
+        }
+
+        # --- Dynamic view: how code reaches production (numbered) ----------
+        dynamic platform "DeliveryFlow" "How code reaches production." {
+            dev -> ci "Push to main"
+            ci -> registry "Build · scan · sign · push image"
+            registry -> kargo "Newest image detected by"
+            kargo -> argocd "Open CODEOWNERS-gated PR; on merge, reconciled by"
+            argocd -> k3s "Reconcile onto"
+            argocd -> rollouts "Progressive delivery via"
             autolayout lr
         }
 
