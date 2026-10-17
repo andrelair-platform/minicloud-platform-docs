@@ -37,9 +37,9 @@ visual** views of the same platform — capability map, technology topology, phy
 ## ① System Context — who the platform talks to
 
 The platform as one system, its users, the external systems it depends on, and **the Information System as
-its consumer**. [Open full SVG →](pathname:///img/c4/structurizr-Context.svg)
+its consumer**. [Open full SVG →](/img/c4/structurizr-Context.svg)
 
-[![C4 System Context — minicloud Platform](pathname:///img/c4/structurizr-Context.svg)](pathname:///img/c4/structurizr-Context.svg)
+[![C4 System Context — minicloud Platform](/img/c4/structurizr-Context.svg)](/img/c4/structurizr-Context.svg)
 
 ---
 
@@ -49,9 +49,9 @@ The whole platform in one view: every capability as a **container**, grouped (Ac
 Delivery/GitOps · Security & Secrets · Data & Messaging · Storage & Backup · Observability · AI Runtime ·
 Runtime & Tooling), with the relationships that make it work — code→production (Delivery), request→app
 (Access), secrets, telemetry, backup, and what the IS consumes. It's detailed — **open it full-screen and
-zoom**. [Open full SVG →](pathname:///img/c4/structurizr-Containers.svg)
+zoom**. [Open full SVG →](/img/c4/structurizr-Containers.svg)
 
-[![C4 Container view — the complete minicloud Platform](pathname:///img/c4/structurizr-Containers.svg)](pathname:///img/c4/structurizr-Containers.svg)
+[![C4 Container view — the complete minicloud Platform](/img/c4/structurizr-Containers.svg)](/img/c4/structurizr-Containers.svg)
 
 **Drill into a subsystem →** [GitOps / ArgoCD](#gitops-delivery--inside-argocd) · [Secrets / Vault+ESO](#secrets-delivery--inside-vault--eso) · [AI / LiteLLM](#ai-gateway--inside-litellm) — or follow a flow: [delivery](#how-code-reaches-production--the-delivery-flow) · [request](#how-a-request-reaches-an-app-networking-flow) · [observability](#telemetry--alerting-observability-flow).
 
@@ -61,9 +61,9 @@ zoom**. [Open full SVG →](pathname:///img/c4/structurizr-Containers.svg)
 
 The same model, deployed: the **6-node k3s cluster** + the **off-cluster MAAS controller**, with placement
 (Vault → fast-heron, vLLM → star-kitten, control-plane → set-hog) and **Longhorn replicated across the
-storage nodes**. [Open full SVG →](pathname:///img/c4/structurizr-Deployment.svg)
+storage nodes**. [Open full SVG →](/img/c4/structurizr-Deployment.svg)
 
-[![C4 Deployment view — 6-node k3s + controller](pathname:///img/c4/structurizr-Deployment.svg)](pathname:///img/c4/structurizr-Deployment.svg)
+[![C4 Deployment view — 6-node k3s + controller](/img/c4/structurizr-Deployment.svg)](/img/c4/structurizr-Deployment.svg)
 
 ---
 
@@ -77,44 +77,44 @@ the AI gateway. All grounded in the GitOps manifests + the platform rules.
 ### How code reaches production — the delivery flow
 
 A **numbered** sequence from a `git push` to a running production workload (CI → registries → Kargo →
-ArgoCD → cluster). [Open full SVG →](pathname:///img/c4/structurizr-DeliveryFlow.svg)
+ArgoCD → cluster). [Open full SVG →](/img/c4/structurizr-DeliveryFlow.svg)
 
-[![Delivery flow — how code reaches production](pathname:///img/c4/structurizr-DeliveryFlow.svg)](pathname:///img/c4/structurizr-DeliveryFlow.svg)
+[![Delivery flow — how code reaches production](/img/c4/structurizr-DeliveryFlow.svg)](/img/c4/structurizr-DeliveryFlow.svg)
 
 ### GitOps delivery — inside ArgoCD
 
 The app-of-apps engine: Root App-of-Apps → ApplicationSets / AppProjects → Sync+Health controller →
-the cluster; Kargo opens the CODEOWNERS-gated PR. [Open full SVG →](pathname:///img/c4/structurizr-GitOpsComponents.svg)
+the cluster; Kargo opens the CODEOWNERS-gated PR. [Open full SVG →](/img/c4/structurizr-GitOpsComponents.svg)
 
-[![C4 Component — inside ArgoCD](pathname:///img/c4/structurizr-GitOpsComponents.svg)](pathname:///img/c4/structurizr-GitOpsComponents.svg)
+[![C4 Component — inside ArgoCD](/img/c4/structurizr-GitOpsComponents.svg)](/img/c4/structurizr-GitOpsComponents.svg)
 
 ### Secrets delivery — inside Vault + ESO
 
 Vault KV/PKI (KMS auto-unseal) → ESO ClusterSecretStore reads Vault → ExternalSecret renders the k8s
-Secrets workloads consume. [Open full SVG →](pathname:///img/c4/structurizr-SecretsComponents.svg)
+Secrets workloads consume. [Open full SVG →](/img/c4/structurizr-SecretsComponents.svg)
 
-[![C4 Component — inside Vault + ESO](pathname:///img/c4/structurizr-SecretsComponents.svg)](pathname:///img/c4/structurizr-SecretsComponents.svg)
+[![C4 Component — inside Vault + ESO](/img/c4/structurizr-SecretsComponents.svg)](/img/c4/structurizr-SecretsComponents.svg)
 
 ### AI gateway — inside LiteLLM
 
 Virtual keys/budgets → model router → PII guardrail (Presidio) + cache + provider connectors
-(vLLM / Groq / cloud). [Open full SVG →](pathname:///img/c4/structurizr-AIComponents.svg)
+(vLLM / Groq / cloud). [Open full SVG →](/img/c4/structurizr-AIComponents.svg)
 
-[![C4 Component — inside the LiteLLM gateway](pathname:///img/c4/structurizr-AIComponents.svg)](pathname:///img/c4/structurizr-AIComponents.svg)
+[![C4 Component — inside the LiteLLM gateway](/img/c4/structurizr-AIComponents.svg)](/img/c4/structurizr-AIComponents.svg)
 
 ### How a request reaches an app (networking flow)
 
 User → Cloudflare → tunnel → ingress → Authentik (forward-auth) → the workload.
-[Open full SVG →](pathname:///img/c4/structurizr-RequestFlow.svg)
+[Open full SVG →](/img/c4/structurizr-RequestFlow.svg)
 
-[![Request flow — how a user request reaches an app](pathname:///img/c4/structurizr-RequestFlow.svg)](pathname:///img/c4/structurizr-RequestFlow.svg)
+[![Request flow — how a user request reaches an app](/img/c4/structurizr-RequestFlow.svg)](/img/c4/structurizr-RequestFlow.svg)
 
 ### Telemetry + alerting (observability flow)
 
 Prometheus scrapes the cluster · OTel ships logs→Loki / traces→Tempo · alerts →
-Alertmanager → SES email. [Open full SVG →](pathname:///img/c4/structurizr-ObservabilityFlow.svg)
+Alertmanager → SES email. [Open full SVG →](/img/c4/structurizr-ObservabilityFlow.svg)
 
-[![Observability flow — telemetry + alerting](pathname:///img/c4/structurizr-ObservabilityFlow.svg)](pathname:///img/c4/structurizr-ObservabilityFlow.svg)
+[![Observability flow — telemetry + alerting](/img/c4/structurizr-ObservabilityFlow.svg)](/img/c4/structurizr-ObservabilityFlow.svg)
 
 > Further subsystem views are cheap to add — the model already holds the elements; just add a
 > `component`/`dynamic` view to [`workspace.dsl`](https://github.com/andrelair-platform/minicloud-platform-docs/blob/main/diagrams/structurizr/workspace.dsl).

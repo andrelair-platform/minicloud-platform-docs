@@ -94,10 +94,10 @@ provides to the IS* (the final edge).
 The full icon topology — **generated from code**
 ([`platform_overview.py`](https://github.com/andrelair-platform/minicloud-platform-docs/blob/main/diagrams/src/platform_overview.py),
 mingrammer `diagrams`). It's **logical** (a capability map, not a liveness claim). Preview below (PNG,
-instant); open the **[▶ vector SVG →](pathname:///img/architecture/minicloud-platform.svg)** ·
-**[PNG →](pathname:///img/architecture/minicloud-platform.png)** (both self-contained).
+instant); open the **[▶ vector SVG →](/img/architecture/minicloud-platform.svg)** ·
+**[PNG →](/img/architecture/minicloud-platform.png)** (both self-contained).
 
-[![minicloud platform technology topology](pathname:///img/architecture/minicloud-platform.png)](pathname:///img/architecture/minicloud-platform.svg)
+[![minicloud platform technology topology](/img/architecture/minicloud-platform.png)](/img/architecture/minicloud-platform.svg)
 
 **Legend / edge vocabulary** — **solid = principal flow** (request · delivery · routes-to) · **dashed =
 backing dependency**. Verbs: *builds · pushes · promotes (CODEOWNERS PR) · reconciles · issues-certs ·
@@ -111,10 +111,10 @@ substrates (**Cilium** CNI+LB, **Gatekeeper** admission, **Falco** runtime) are 
 
 Where it actually **runs** — the 6 nodes, their **roles**, **pinned** workloads, **Longhorn replication**,
 and **failure domains**. Open the
-**[▶ vector SVG →](pathname:///img/architecture/platform-physical.svg)** ·
-**[PNG →](pathname:///img/architecture/platform-physical.png)**.
+**[▶ vector SVG →](/img/architecture/platform-physical.svg)** ·
+**[PNG →](/img/architecture/platform-physical.png)**.
 
-[![minicloud platform physical / deployment view](pathname:///img/architecture/platform-physical.png)](pathname:///img/architecture/platform-physical.svg)
+[![minicloud platform physical / deployment view](/img/architecture/platform-physical.png)](/img/architecture/platform-physical.svg)
 
 **Legend** — `set-hog` is the **single control-plane** node (**control-plane SPOF**; kine/SQLite is
 backed up). Workers run general/AI workloads; the **storage nodes** (fast-heron · loving-gannet ·
