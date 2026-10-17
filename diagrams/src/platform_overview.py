@@ -20,7 +20,7 @@ from diagrams import Cluster, Diagram
 # ---- built-in nodes (all confirmed present in diagrams==0.24.4) --------------
 from diagrams.generic.compute import Rack
 from diagrams.generic.database import SQL
-from diagrams.generic.network import Firewall, Router, VPN
+from diagrams.generic.network import Firewall, VPN
 from diagrams.generic.os import Ubuntu
 from diagrams.generic.storage import Storage
 from diagrams.k8s.chaos import ChaosMesh
@@ -63,16 +63,17 @@ from _theme import (
     GREEN,
     NODE_ATTR,
     OUT,
+    SLATE,
     WIRE,
     cluster_attr,
     node,
 )
 
-# Tighter ranks than the default — a ~70-node poster, kept as compact as Graphviz allows.
-GRAPH_ATTR = {**GRAPH_ATTR, "ranksep": "0.7", "nodesep": "0.4", "fontsize": "26"}
+# Give labelled edges room to breathe (light theme, larger fonts).
+GRAPH_ATTR = {**GRAPH_ATTR, "ranksep": "0.95", "nodesep": "0.5"}
 
 with Diagram(
-    "minicloud PLATFORM — technical capabilities  ·  k3s v1.36 · 6 nodes  ·  (IS business apps → the IS Application Landscape)",
+    "minicloud PLATFORM — Technology Topology (logical)  ·  k3s v1.36 · 6 nodes  ·  solid = principal flow · dashed = backing dependency",
     filename=str(OUT / "minicloud-platform"),
     outformat=["png", "svg"],
     direction="TB",
@@ -84,19 +85,20 @@ with Diagram(
     # ======================================================= external world
     users = Users("Internet users\nbrowsers · mobile")
     dev = Client("Developer\nMacBook Air (local)")
-    groq = node(Rack, "Groq API\nllama-3.1-8b-instant", icon="groq.png")
+    groq = node(Rack, "Groq API\nllama-3.1-8b", icon="groq.png")
+    r2 = Storage("Cloudflare R2\noffsite backup")
+    alerts_out = Client("AWS SES email\n+ Slack\n(alert sink)")
 
     # ======================================================= ACCESS & EDGE
-    with Cluster("ACCESS LAYER", graph_attr=cluster_attr(CYAN)):
+    with Cluster("ACCESS & NETWORKING", graph_attr=cluster_attr(CYAN)):
         cf = Cloudflare("Cloudflare\nCDN · WAF · DNS")
         tunnel = node(VPN, "Cloudflared Tunnel\npublic → internal", icon="cloudflared.png")
         tailscale = node(VPN, "Tailscale VPN\n*.nip.io internal", icon="tailscale.png")
-        metallb = node(Router, "MetalLB\nLB IP 10.0.0.200", icon="metallb.png")
         ingress = Nginx("NGINX Ingress")
-        authentik = node(Dex, "Authentik SSO\nOIDC · TOTP · all apps", icon="authentik.png")
+        authentik = node(Dex, "Authentik SSO\nOIDC · forward-auth", icon="authentik.png")
         certmgr = CertManager("cert-manager")
         le = LetsEncrypt("Let's Encrypt\n+ minicloud CA")
-        cilium = node(Firewall, "Cilium CNI\neBPF · NetworkPolicies", icon="cilium.png")
+        cilium = node(Firewall, "Cilium\nCNI · LB-IPAM 10.0.0.200\n· NetworkPolicy", icon="cilium.png")
 
     # ======================================================= GITOPS & DELIVERY
     with Cluster("GITOPS & AUTOMATION", graph_attr=cluster_attr(GREEN)):
@@ -154,11 +156,10 @@ with Diagram(
         valkey = Redis("Valkey / Redis\ncache-as-a-service")
         nats = node(Nats, "NATS\nJetStream eventing", icon="nats.png")
 
-    # ======================================================= STORAGE & BACKUP
-    with Cluster("STORAGE & INFRA", graph_attr=cluster_attr(CYAN)):
+    # ======================================================= STORAGE & BACKUP (on-cluster)
+    with Cluster("STORAGE & BACKUP", graph_attr=cluster_attr(CYAN)):
         longhorn = node(Storage, "Longhorn\ndistributed block PVCs", icon="longhorn.png")
-        minio = node(Storage, "MinIO\nS3-compatible", icon="minio.png")
-        velero = node(Storage, "Velero + Kopia\ndaily → MinIO + R2", icon="velero.png")
+        velero = node(Storage, "Velero + Kopia\ndaily snapshots", icon="velero.png")
 
     # ======================================================= OBSERVABILITY
     with Cluster("OBSERVABILITY STACK  ·  64/64 targets up", graph_attr=cluster_attr(GREEN)):
@@ -172,9 +173,10 @@ with Diagram(
         ksm = Pod("kube-state-metrics")
         hubble = node(Pod, "Hubble UI\nCilium flow obs", icon="cilium.png")
 
-    # ======================================================= HARDWARE
-    with Cluster("HARDWARE  ·  MAAS provisioned  ·  Ubuntu 22.04", graph_attr=cluster_attr("#64748b")):
-        controller = Ubuntu("MAAS controller\nX390 · NAT · Tailscale\n100.88.123.8")
+    # ======================================================= HARDWARE / OFF-CLUSTER
+    with Cluster("HARDWARE & OFF-CLUSTER  ·  MAAS controller + 6 nodes", graph_attr=cluster_attr(SLATE)):
+        controller = Ubuntu("MAAS controller\nX390 · NAT · Tailscale\n100.88.123.8 (off-cluster)")
+        minio = node(Storage, "MinIO (on controller)\nS3 backup target", icon="minio.png")
         tofu = Terraform("OpenTofu / MAAS\nnode provisioning")
         ansible = Ansible("Ansible\nbootstrap roles")
         with Cluster("k3s cluster — 6 nodes", graph_attr=cluster_attr(CYAN)):
@@ -186,52 +188,62 @@ with Diagram(
             swiftmac = Node("swift-mac · 10.0.0.10\nMacBook Pro · storage")
 
     # =====================================================================
-    # EDGES — the backbone flows, kept sparse to stay legible.
+    # EDGES — every edge carries a VERB.  solid = principal flow · dashed = backing.
+    # (All relationships verified against the gitops manifests — no invented edges.)
     # =====================================================================
 
-    # --- request path (cyan) ---------------------------------------------
-    users >> FLOW() >> cf >> FLOW() >> tunnel >> FLOW() >> ingress
-    tailscale >> FLOW("internal") >> ingress
-    metallb >> FLOW() >> ingress
-    ingress >> FLOW("SSO gate") >> authentik
-    certmgr >> DASH("issues TLS") >> ingress
-    le >> DASH() >> certmgr
-    authentik >> FLOW("SSO-as-a-service") >> [litellm, openwebui]
+    # --- request path (solid, principal) ---------------------------------
+    users >> FLOW("HTTPS") >> cf >> FLOW("tunnel") >> tunnel >> FLOW("routes") >> ingress
+    tailscale >> FLOW("internal *.nip.io") >> ingress
+    cilium >> DASH("assigns LB IP 10.0.0.200") >> ingress
+    ingress >> FLOW("forward-auth") >> authentik
+    certmgr >> DASH("issues-certs") >> ingress
+    le >> DASH("ACME / CA") >> certmgr
+    authentik >> FLOW("authenticates") >> [litellm, openwebui]
 
-    # --- delivery path (green) -------------------------------------------
-    dev >> WIRE("git push") >> gh >> WIRE() >> actions
-    actions >> WIRE("dev image") >> harbor
-    actions >> WIRE("prod image") >> ghcr
-    actions >> WIRE("sign + SBOM") >> trivy
-    [harbor, ghcr] >> WIRE("newest build") >> kargo
-    kargo >> WIRE("CODEOWNERS PR") >> argocd
-    argocd >> WIRE("reconcile") >> sethog
-    argocd >> DASH() >> rollouts
-    rollouts >> DASH("metrics gate") >> prometheus
+    # --- delivery path: code → production (solid, green) ------------------
+    dev >> WIRE("git push") >> gh >> WIRE("triggers") >> actions
+    actions >> WIRE("builds + pushes (dev)") >> harbor
+    actions >> WIRE("builds + pushes (prod)") >> ghcr
+    actions >> DASH("scans · signs (Trivy/Cosign/SBOM)") >> trivy
+    ghcr >> WIRE("newest image") >> kargo
+    kargo >> WIRE("promotes · CODEOWNERS PR") >> argocd
+    argocd >> WIRE("reconciles") >> sethog
+    argocd >> DASH("drives") >> rollouts
+    rollouts >> DASH("gated by metrics") >> prometheus
 
-    # --- secrets / policy backing (dashed) -------------------------------
-    vault >> DASH("secrets") >> eso >> DASH() >> argocd
-    gatekeeper >> DASH("admission") >> sethog
-    falco >> DASH("runtime") >> sethog
-    cilium >> DASH("netpol / CNI") >> sethog
+    # --- secrets & policy (dashed, backing) ------------------------------
+    vault >> DASH("supplies-secrets") >> eso
+    argocd >> DASH("deploys ExternalSecret CR") >> eso
+    eso >> DASH("writes k8s Secrets → workloads") >> litellm
+    gatekeeper >> DASH("admission · cluster-wide") >> sethog
+    falco >> DASH("runtime monitoring · cluster-wide") >> sethog
+    cilium >> DASH("CNI + NetworkPolicy · cluster-wide") >> sethog
 
-    # --- data / storage backing ------------------------------------------
-    litellm >> DASH() >> valkey
-    litellm >> DASH("cloud route") >> groq
+    # --- AI runtime (routes-to is a principal flow) ----------------------
+    litellm >> FLOW("routes-to") >> [vllm, groq]
+    litellm >> DASH("caches in") >> valkey
     litellm >> DASH("traces") >> langfuse
-    langfuse >> DASH() >> langfuse_ch
-    ragingest >> DASH() >> qdrant
-    longhorn >> DASH("PVCs") >> [pg, mariadb, minio]
-    velero >> DASH("backup") >> minio
-    nats >> DASH("events") >> crew
+    langfuse >> DASH("stores") >> langfuse_ch
+    ragingest >> DASH("writes vectors") >> qdrant
 
-    # --- observability scrape --------------------------------------------
-    otel >> DASH() >> [loki, tempo]
-    [nodeexp, ksm] >> DASH() >> prometheus
-    prometheus >> DASH() >> [grafana, alertmgr]
+    # --- storage & backup (backing) --------------------------------------
+    longhorn >> DASH("provides PVCs") >> [pg, mariadb]
+    velero >> WIRE("backs-up") >> minio
+    velero >> WIRE("backs-up (offsite)") >> r2
 
-    # --- hardware fabric --------------------------------------------------
+    # --- observability (scrape / ship / notify) --------------------------
+    otel >> DASH("ships logs") >> loki
+    otel >> DASH("ships traces") >> tempo
+    [nodeexp, ksm] >> DASH("scraped by") >> prometheus
+    prometheus >> DASH("datasource") >> grafana
+    prometheus >> DASH("fires alerts") >> alertmgr
+    alertmgr >> FLOW("notifies") >> alerts_out
+
+    # --- provisioning vs reconciliation (hardware fabric) ----------------
     tofu >> DASH("provisions") >> controller
     ansible >> DASH("configures") >> controller
+    sysupgrade >> DASH("upgrades k3s") >> sethog
     controller >> DASH("NAT · Tailscale") >> sethog
-    sethog >> DASH() >> [skunk, heron, kitten, gannet, swiftmac]
+    controller >> DASH("hosts") >> minio
+    sethog >> DASH("control plane") >> [skunk, heron, kitten, gannet, swiftmac]

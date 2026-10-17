@@ -7,9 +7,10 @@ sidebar_label: Production Stack Architecture ✅
 
 # Production Stack Architecture
 
-The **L2 Platform topology** — the detailed technical **capabilities** of the minicloud platform
-(6-node on-premises k3s cluster, 44 cores / ~84 GiB): access/edge, GitOps & delivery, CI/CD, security,
-observability, the AI runtime, data-infra engines, storage, and the hardware fabric.
+**Platform Architecture** — the technical **capabilities** of the minicloud platform (6-node on-premises
+k3s, 44 cores / ~84 GiB), in **three complementary views**: a **capability map** (understand in 30s), the
+detailed **technology topology** (engineering reference), and the **physical / deployment** view (where it
+runs + failure domains).
 
 :::info This view is Platform-only (by ownership, not deployment)
 The **business applications** that run *on* this platform (ERPNext, the digital workplace, the custom
@@ -19,28 +20,105 @@ on this cluster is still an IS application. See the **[Architecture Hub](../arch
 the two pillars fit together and the [Platform ↔ IS dependency matrix](../architecture/platform-is-dependency-matrix.md).
 :::
 
-## Architecture diagram
+## 1. Platform Capability Architecture
 
-The platform topology is **generated from code** —
-[`diagrams/src/platform_overview.py`](https://github.com/andrelair-platform/minicloud-platform-docs/blob/main/diagrams/src/platform_overview.py)
-(mingrammer `diagrams` + Graphviz). Edit the `.py`, run `make generate`, commit — no pixel-pushing,
-and a CI workflow refreshes it on change. It covers the platform layers: access/edge, GitOps & delivery,
-CI/CD, security, AI runtime, data & messaging (managed engines), storage, observability, and the 6-node
-hardware fabric.
+The **30-second view** — the platform's **capabilities and principal flows**. Boxes are capability
+*groups* (not individual products); every arrow is a **verb**.
 
-:::tip It's a detailed poster — open it full-screen
-Preview below (PNG, loads instantly). For the readable version, open the full-resolution
-**[▶ vector SVG (zoom & pan) →](pathname:///img/architecture/minicloud-platform.svg)** · or the
-**[PNG →](pathname:///img/architecture/minicloud-platform.png)**. Both are self-contained.
-:::
+```mermaid
+flowchart TB
+  dev([Developer]):::actor
+  users([Internet users]):::actor
 
-[![minicloud platform architecture — generated topology diagram](pathname:///img/architecture/minicloud-platform.png)](pathname:///img/architecture/minicloud-platform.svg)
+  subgraph DELIV["① Developer &amp; Delivery (GitOps)"]
+    direction LR
+    SRC["Source &amp; CI<br/>GitHub · Actions · Trivy/Cosign/SBOM"]
+    REG["Registries<br/>Harbor (dev) · ghcr (prod)"]
+    PROMO["Promotion<br/>Kargo → ArgoCD"]
+    SRC --> REG --> PROMO
+  end
+  subgraph NET["② Networking &amp; Ingress"]
+    EDGE["Cloudflare · Tailscale<br/>Cilium LB · NGINX Ingress · cert-manager"]
+  end
+  subgraph SEC["③ Identity &amp; Security"]
+    SECC["Authentik SSO · Vault/ESO<br/>Gatekeeper · Falco · Trivy"]
+  end
+  subgraph RUN["④ Kubernetes Runtime (k3s · 6 nodes · Cilium CNI)"]
+    WL["Workloads<br/>(IS apps run here)"]
+  end
+  subgraph DATA["⑤ Data &amp; Storage"]
+    DATAC["PostgreSQL/CNPG · NATS · Valkey<br/>Longhorn PVCs"]
+  end
+  subgraph AIR["⑥ AI Runtime"]
+    AIRC["LiteLLM gateway · Qdrant<br/>Langfuse · vLLM"]
+  end
+  subgraph OBS["⑦ Observability"]
+    OBSC["Prometheus · Grafana · Loki · Tempo<br/>Alertmanager → SES/Slack"]
+  end
+  subgraph OPS["⑧ Infrastructure &amp; Operations"]
+    OPSC["MAAS/OpenTofu · Ansible · system-upgrade<br/>Velero → MinIO + R2"]
+  end
 
-> This code-generated diagram is the canonical platform topology. The original hand-made HTML poster
-> is **preserved as an archived reference** at
-> [`/diagrams/minicloud-production-stack.html`](pathname:///diagrams/minicloud-production-stack.html)
-> (its boxes were placed at fixed pixel coordinates and drifted on every change) — kept until the new
-> architecture views are validated, then retired.
+  dev -->|"git push"| DELIV
+  DELIV -->|"reconciles"| RUN
+  users -->|"HTTPS"| NET
+  NET -->|"authenticates"| RUN
+  SEC -->|"supplies-secrets · admission"| RUN
+  RUN -->|"consumes"| DATA
+  RUN -->|"routes-to LLM"| AIR
+  RUN -->|"emits telemetry"| OBS
+  OPS -->|"provisions · backs-up"| RUN
+  RUN ==>|"provides capabilities to"| IS["🏢 Information System<br/>business apps — separate view"]:::is
+
+  classDef actor fill:#e2e8f0,stroke:#475569,color:#0f172a;
+  classDef is fill:#ede9fe,stroke:#7c3aed,color:#0f172a;
+```
+
+**Legend** — boxes = platform **capability groups**; arrows = a **verb**; the **purple box = the
+Information System** (business apps, a [separate view](../architecture/is-application-landscape.md)). It
+answers the six questions: *how code reaches prod* (①→④), *how it's secured* (②③), *how workloads are
+exposed* (②), *how secrets/data are managed* (③⑤), *how failures are detected* (⑦), and *what the platform
+provides to the IS* (the final edge).
+
+---
+
+## 2. Platform Technology Topology (detailed reference)
+
+The full icon topology — **generated from code**
+([`platform_overview.py`](https://github.com/andrelair-platform/minicloud-platform-docs/blob/main/diagrams/src/platform_overview.py),
+mingrammer `diagrams`). It's **logical** (a capability map, not a liveness claim). Preview below (PNG,
+instant); open the **[▶ vector SVG →](pathname:///img/architecture/minicloud-platform.svg)** ·
+**[PNG →](pathname:///img/architecture/minicloud-platform.png)** (both self-contained).
+
+[![minicloud platform technology topology](pathname:///img/architecture/minicloud-platform.png)](pathname:///img/architecture/minicloud-platform.svg)
+
+**Legend / edge vocabulary** — **solid = principal flow** (request · delivery · routes-to) · **dashed =
+backing dependency**. Verbs: *builds · pushes · promotes (CODEOWNERS PR) · reconciles · issues-certs ·
+authenticates · supplies-secrets · scrapes · ships-logs/traces · backs-up · routes-to*. Cluster-wide
+substrates (**Cilium** CNI+LB, **Gatekeeper** admission, **Falco** runtime) are labelled *(cluster-wide)*;
+**MinIO is off-cluster** (on the MAAS controller). Every edge is verified against the GitOps manifests.
+
+---
+
+## 3. Platform Physical / Deployment view
+
+Where it actually **runs** — the 6 nodes, their **roles**, **pinned** workloads, **Longhorn replication**,
+and **failure domains**. Open the
+**[▶ vector SVG →](pathname:///img/architecture/platform-physical.svg)** ·
+**[PNG →](pathname:///img/architecture/platform-physical.png)**.
+
+[![minicloud platform physical / deployment view](pathname:///img/architecture/platform-physical.png)](pathname:///img/architecture/platform-physical.svg)
+
+**Legend** — `set-hog` is the **single control-plane** node (**control-plane SPOF**; kine/SQLite is
+backed up). Workers run general/AI workloads; the **storage nodes** (fast-heron · loving-gannet ·
+swift-mac) hold **Longhorn replicas**. **Vault** is pinned to fast-heron; **vLLM + Jitsi JVB** to
+star-kitten. The **MAAS controller is off-cluster** (NAT · Tailscale · MinIO backup target). Longhorn is
+**network-attached**, so a pod fails over to any node — the hostname labels show *current* placement, not a
+hard pin.
+
+> The original hand-made HTML poster is **preserved as an archived reference** at
+> [`/diagrams/minicloud-production-stack.html`](pathname:///diagrams/minicloud-production-stack.html),
+> kept until these views are validated, then retired.
 
 ---
 

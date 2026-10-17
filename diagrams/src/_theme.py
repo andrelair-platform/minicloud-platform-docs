@@ -1,16 +1,17 @@
-"""Shared theme + helpers for minicloud diagram-as-code (mingrammer `diagrams`).
+"""Shared theme + helpers for the minicloud PLATFORM diagrams (mingrammer `diagrams`).
 
-Echoes the palette of the hand-made static/diagrams/minicloud-production-stack.html
-(cyan #22d3ee / green #34d399 on slate #0f172a) so the generated poster feels
-like the same product — but auto-laid-out from code instead of pixel coordinates.
+**Light / neutral theme** (white background, dark text, high-contrast coloured edges) — chosen for
+legibility: the previous dark poster hid thin dashed edges and small labels, and a light diagram
+prints + reads far better for engineers/recruiters/PDF. Vendor icons pop on white.
 
-Usage in a diagram module:
+Edge semantics (used by every platform diagram — keep consistent, explain in the page legend):
+  FLOW  = solid, teal   — principal request / data flow
+  WIRE  = solid, green  — delivery / CI-CD / reconcile flow
+  DASH  = dashed, slate — backing dependency (supplies-secrets, scrapes, backs-up, …)
+Always put a VERB on the edge label (provisions · reconciles · supplies-secrets · routes-traffic ·
+authenticates · scrapes · ships-logs · backs-up · promotes · issues-certs · scales · routes-to-LLM).
 
-    from _theme import OUT, GRAPH_ATTR, NODE_ATTR, EDGE_ATTR, cluster_attr, node, FLOW, WIRE
-
-Add a brand icon later: drop a transparent PNG in src/icons/ and call
-`node(FallbackClass, "Kargo", icon="kargo.png")` — it uses the PNG if present,
-otherwise the built-in fallback. See README.md.
+Usage:  from _theme import OUT, GRAPH_ATTR, NODE_ATTR, EDGE_ATTR, cluster_attr, node, FLOW, WIRE, DASH
 """
 from __future__ import annotations
 
@@ -21,28 +22,29 @@ from diagrams.custom import Custom
 # ---------------------------------------------------------------- paths
 _HERE = Path(__file__).resolve().parent          # .../diagrams/src
 ICONS = _HERE / "icons"                           # drop brand PNGs here (optional)
-# Generated images land in the Docusaurus static tree so the docs site can serve them.
 OUT = _HERE.parent.parent / "static" / "img" / "architecture"
 OUT.mkdir(parents=True, exist_ok=True)
 
-# ---------------------------------------------------------------- palette
-SLATE = "#0f172a"
-SLATE_SOFT = "#111c33"
-CYAN = "#22d3ee"
-GREEN = "#34d399"
-TEXT = "#e2e8f0"
-MUTED = "#94a3b8"
-AMBER = "#f59e0b"
-RED = "#f87171"
+# ---------------------------------------------------------------- palette (light)
+BG = "#ffffff"          # page/diagram background
+PANEL = "#f1f5f9"       # cluster fill (slate-100)
+TEXT = "#0f172a"        # dark text (slate-900)
+EDGE_LABEL = "#334155"  # edge label text (slate-700)
+CYAN = "#0891b2"        # principal request/data flow + a cluster accent (cyan-700)
+GREEN = "#047857"       # delivery / reconcile + accent (emerald-700)
+AMBER = "#b45309"       # security / data accents (amber-700)
+MUTED = "#64748b"       # backing dashed edges (slate-500)
+SLATE = "#475569"       # neutral cluster border (slate-600)
+RED = "#dc2626"
 
 # ---------------------------------------------------------------- attrs
 GRAPH_ATTR = {
-    "bgcolor": SLATE,
+    "bgcolor": BG,
     "fontcolor": TEXT,
-    "fontname": "Helvetica",
-    "fontsize": "22",
-    "pad": "0.6",
-    "nodesep": "0.55",
+    "fontname": "Helvetica-Bold",
+    "fontsize": "26",
+    "pad": "0.7",
+    "nodesep": "0.5",
     "ranksep": "0.85",
     "splines": "spline",
     "compound": "true",
@@ -51,38 +53,33 @@ GRAPH_ATTR = {
 NODE_ATTR = {
     "fontcolor": TEXT,
     "fontname": "Helvetica",
-    "fontsize": "11",
+    "fontsize": "13",
 }
 
 EDGE_ATTR = {
     "color": MUTED,
-    "fontcolor": MUTED,
+    "fontcolor": EDGE_LABEL,
     "fontname": "Helvetica",
-    "fontsize": "9",
+    "fontsize": "11",
 }
 
 
 def cluster_attr(pencolor: str = CYAN, label_color: str | None = None) -> dict:
-    """Styling for a Cluster box — coloured outline on the slate background."""
+    """Styling for a Cluster box — a tinted panel with a strong coloured border on white."""
     return {
-        "bgcolor": SLATE_SOFT,
+        "bgcolor": PANEL,
         "pencolor": pencolor,
         "fontcolor": label_color or pencolor,
         "fontname": "Helvetica-Bold",
-        "fontsize": "13",
+        "fontsize": "14",
         "style": "rounded",
-        "penwidth": "1.6",
+        "penwidth": "2.2",
     }
 
 
 def node(cls, label: str, icon: str | None = None):
-    """Create a node: use a brand PNG from src/icons/ if available, else a built-in.
-
-    This is the one extension point for fidelity — the platform has ~25 components
-    with no built-in `diagrams` icon (Kargo, KEDA, Longhorn, Authentik, Langfuse …).
-    Until a real icon is vendored, we render the closest *semantic* built-in and let
-    the label carry the truth (exactly how the freeCodeCamp tutorial uses the library).
-    """
+    """Create a node: use a brand PNG from src/icons/ if available, else the built-in fallback.
+    The label is authoritative (components without a built-in icon render the closest semantic one)."""
     if icon:
         p = ICONS / icon
         if p.exists():
@@ -90,20 +87,20 @@ def node(cls, label: str, icon: str | None = None):
     return cls(label)
 
 
-# Edge presets — the two backbone flows the poster emphasises.
+# --- edge presets (solid = principal, dashed = backing) ----------------------
 def FLOW(label: str = ""):
-    """Request / data flow (cyan)."""
+    """Solid, teal — principal REQUEST / DATA flow."""
     from diagrams import Edge
-    return Edge(label=label, color=CYAN, fontcolor=MUTED)
+    return Edge(label=label, color=CYAN, fontcolor=EDGE_LABEL, penwidth="2.2")
 
 
 def WIRE(label: str = ""):
-    """Delivery / CI-CD flow (green)."""
+    """Solid, green — DELIVERY / reconcile flow."""
     from diagrams import Edge
-    return Edge(label=label, color=GREEN, fontcolor=MUTED)
+    return Edge(label=label, color=GREEN, fontcolor=EDGE_LABEL, penwidth="2.2")
 
 
 def DASH(label: str = "", color: str = MUTED):
-    """Secondary / backing dependency (dashed)."""
+    """Dashed, slate — BACKING dependency."""
     from diagrams import Edge
-    return Edge(label=label, color=color, fontcolor=MUTED, style="dashed")
+    return Edge(label=label, color=color, fontcolor=EDGE_LABEL, style="dashed", penwidth="1.5")
