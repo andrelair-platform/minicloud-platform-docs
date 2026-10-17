@@ -15,6 +15,15 @@ Open the full diagram in your browser for PNG/PDF export and zoom-level control:
 **[View full architecture diagram →](pathname:///diagrams/minicloud-production-stack.html)**
 :::
 
+### Diagram-as-code view
+
+The diagram below is **generated from code** — [`diagrams/src/platform_overview.py`](https://github.com/andrelair-platform/minicloud-platform-docs/blob/main/diagrams/src/platform_overview.py)
+(mingrammer `diagrams` + Graphviz), replacing the hand-maintained SVG poster above. Edit the
+`.py`, run `make generate`, and the image refreshes — no pixel-pushing. A CI drift-gate keeps
+it in sync with the source. [Full-resolution SVG →](pathname:///img/architecture/minicloud-platform.svg)
+
+[![minicloud production stack — generated architecture diagram](pathname:///img/architecture/minicloud-platform.svg)](pathname:///img/architecture/minicloud-platform.svg)
+
 ---
 
 ## Platform at a Glance
