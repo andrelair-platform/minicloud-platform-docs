@@ -6,12 +6,25 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
  *   isSidebar       → ktayl-solution, the INFORMATION SYSTEM running ON the platform
  * Same categories/IDs as before — only split across the two pillars (nothing dropped).
  */
+// Pillar-neutral Architecture Hub — the SAME nav referenced by both sidebars (not duplicated).
+const architectureNav = {
+  type: 'category',
+  label: '🧭 Architecture',
+  collapsed: false,
+  link: {type: 'doc', id: 'architecture/index'},
+  items: [
+    'architecture/is-application-landscape',
+    'architecture/platform-is-dependency-matrix',
+  ],
+} as const;
+
 const sidebars: SidebarsConfig = {
   // ══════════════════════════════════════════════════════════════════
   //  PLATFORM (minicloud) — the infrastructure & engineering
   // ══════════════════════════════════════════════════════════════════
   platformSidebar: [
 
+    architectureNav,
     {type: 'doc', id: 'developer-platform/production-stack-architecture', label: '🏛 Production Stack Architecture'},
     {type: 'doc', id: 'platform-engineering/platform-backlog', label: '🗓 Platform Backlog'},
 
@@ -511,6 +524,8 @@ const sidebars: SidebarsConfig = {
   //  INFORMATION SYSTEM (ktayl-solution) — the business running on it
   // ══════════════════════════════════════════════════════════════════
   isSidebar: [
+
+    architectureNav,
 
     // ── Business Applications ────────────────────────────────────────
     {

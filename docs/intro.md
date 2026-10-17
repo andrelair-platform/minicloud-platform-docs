@@ -20,6 +20,10 @@ This documentation is organised in **two layers** that mirror how the system rea
 
 *(This page is the neutral home — reach it any time via the minicloud logo.)*
 
+> **See how the two pillars fit together → the [🧭 Architecture Hub](./architecture/index.md)** — the
+> pillar-neutral entry point: the L1 enterprise landscape, the L2 Platform topology + IS application
+> landscape, and the Platform ↔ IS dependency matrix.
+
 :::note Keep the two layers distinct
 The **platform** (minicloud) and the **information system** (ktayl-solution) are deliberately separate: the IS *runs on and benefits from* the platform, but they are not the same thing — that separation is the point. Also distinct: **Retrieva** — a *separate* product (RNCP39583 certification / DORA third-party-risk) that merely *runs on* this infrastructure; it is **not** part of the ktayl IS.
 :::

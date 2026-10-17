@@ -7,16 +7,26 @@ sidebar_label: Production Stack Architecture ✅
 
 # Production Stack Architecture
 
-A complete view of the minicloud production platform — **6-node** on-premises k3s cluster (44 cores / ~84 GiB) running Phase 0–90 workloads across infrastructure, security, observability, AI/ML, automation, and collaboration layers.
+The **L2 Platform topology** — the detailed technical **capabilities** of the minicloud platform
+(6-node on-premises k3s cluster, 44 cores / ~84 GiB): access/edge, GitOps & delivery, CI/CD, security,
+observability, the AI runtime, data-infra engines, storage, and the hardware fabric.
+
+:::info This view is Platform-only (by ownership, not deployment)
+The **business applications** that run *on* this platform (ERPNext, the digital workplace, the custom
+insurance LOB services…) are **Information-System**-owned and live in the
+**[IS Application Landscape](../architecture/is-application-landscape.md)** — not here. A Claims app running
+on this cluster is still an IS application. See the **[Architecture Hub](../architecture/index.md)** for how
+the two pillars fit together and the [Platform ↔ IS dependency matrix](../architecture/platform-is-dependency-matrix.md).
+:::
 
 ## Architecture diagram
 
-The full production-stack architecture is **generated from code** —
+The platform topology is **generated from code** —
 [`diagrams/src/platform_overview.py`](https://github.com/andrelair-platform/minicloud-platform-docs/blob/main/diagrams/src/platform_overview.py)
 (mingrammer `diagrams` + Graphviz). Edit the `.py`, run `make generate`, commit — no pixel-pushing,
-and a CI workflow refreshes it on change. It covers every layer: access/edge, GitOps & delivery,
-CI/CD, security, AI/ML, collaboration & IS apps, automation, data & messaging, storage, observability,
-email, and the 6-node hardware fabric.
+and a CI workflow refreshes it on change. It covers the platform layers: access/edge, GitOps & delivery,
+CI/CD, security, AI runtime, data & messaging (managed engines), storage, observability, and the 6-node
+hardware fabric.
 
 :::tip It's a detailed poster — open it full-screen
 Preview below (PNG, loads instantly). For the readable version, open the full-resolution
@@ -24,11 +34,13 @@ Preview below (PNG, loads instantly). For the readable version, open the full-re
 **[PNG →](pathname:///img/architecture/minicloud-platform.png)**. Both are self-contained.
 :::
 
-[![minicloud production stack — generated architecture diagram](pathname:///img/architecture/minicloud-platform.png)](pathname:///img/architecture/minicloud-platform.svg)
+[![minicloud platform architecture — generated topology diagram](pathname:///img/architecture/minicloud-platform.png)](pathname:///img/architecture/minicloud-platform.svg)
 
-> This code-generated diagram **supersedes** the former hand-maintained HTML poster (retired
-> 2026-10-17) — a drawing whose boxes were placed at fixed pixel coordinates and drifted on every
-> change. The source of truth is now the Python module above.
+> This code-generated diagram is the canonical platform topology. The original hand-made HTML poster
+> is **preserved as an archived reference** at
+> [`/diagrams/minicloud-production-stack.html`](pathname:///diagrams/minicloud-production-stack.html)
+> (its boxes were placed at fixed pixel coordinates and drifted on every change) — kept until the new
+> architecture views are validated, then retired.
 
 ---
 
