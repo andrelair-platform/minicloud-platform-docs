@@ -513,6 +513,7 @@ const sidebars: SidebarsConfig = {
       label: '🧪 Engineering Standards',
       collapsed: false,
       items: [
+        'engineering-standards/documentation-standard',
         'engineering-standards/testing-strategy',
         'engineering-standards/modular-monolith-first',
         'engineering-standards/bmad-operating-model',
