@@ -13,6 +13,7 @@ const architectureNav = {
   collapsed: false,
   link: {type: 'doc', id: 'architecture/index'},
   items: [
+    'architecture/c4-system-design',
     'architecture/is-application-landscape',
     'architecture/platform-is-dependency-matrix',
   ],

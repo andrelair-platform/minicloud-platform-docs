@@ -1,0 +1,38 @@
+# Regenerate the C4 system-design SVGs when the Structurizr DSL changes.
+# workspace.dsl → Structurizr CLI (PlantUML export) → PlantUML (SVG) — both via Docker.
+# Mirrors update-architecture-diagrams.yml: regenerate + open a bot PR on change (NOT a hard gate;
+# the SVGs are committed so GitHub Pages serves them without a build-time Docker/Java dependency).
+name: Update C4 diagrams
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'diagrams/structurizr/**'
+  workflow_dispatch:
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Render C4 SVGs (Structurizr → PlantUML → SVG)
+        working-directory: diagrams/structurizr
+        run: make c4
+      - name: Open a PR if the C4 diagrams changed
+        env:
+          GH_TOKEN: ${{ secrets.GITOPS_TOKEN }}
+        run: |
+          if git diff --quiet -- static/img/c4; then
+            echo "C4 diagrams already up to date — nothing to do"; exit 0
+          fi
+          git config user.name  "ktayl-docs-bot"
+          git config user.email "bot@devandre.sbs"
+          BR="chore/c4-diagrams-${GITHUB_RUN_ID}"
+          git checkout -b "$BR"
+          git commit -am "docs: refresh C4 system-design diagrams"
+          git push -u origin "$BR"
+          gh pr create --base main --head "$BR" \
+            --title "docs: refresh C4 system-design diagrams (auto)" \
+            --body "Regenerated from diagrams/structurizr/workspace.dsl (Structurizr → PlantUML → SVG). Review + squash-merge."
