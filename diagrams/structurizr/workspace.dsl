@@ -91,6 +91,7 @@ workspace "minicloud Platform" "Complete C4 system design of the self-hosted ent
         cloudflare -> ingress "Tunnels traffic to"
         cilium -> ingress "Assigns the LB IP 10.0.0.200 to"
         ingress -> authentik "Gates every app via forward-auth"
+        ingress -> k3s "Routes authenticated traffic to workloads on"
         certmgr -> ingress "Issues TLS certs to"
 
         # delivery path (code → production)
@@ -217,6 +218,21 @@ workspace "minicloud Platform" "Complete C4 system design of the self-hosted ent
             kargo -> argocd "Open CODEOWNERS-gated PR; on merge, reconciled by"
             argocd -> k3s "Reconcile onto"
             argocd -> rollouts "Progressive delivery via"
+            autolayout lr
+        }
+        dynamic platform "RequestFlow" "How a user request reaches an app." {
+            user -> cloudflare "HTTPS"
+            cloudflare -> ingress "Tunnel to"
+            ingress -> authentik "Verify SSO (forward-auth)"
+            ingress -> k3s "Route authenticated traffic to the workload"
+            autolayout lr
+        }
+        dynamic platform "ObservabilityFlow" "Telemetry + alerting." {
+            prometheus -> k3s "Scrape metrics"
+            otel -> loki "Ship logs"
+            otel -> tempo "Ship traces"
+            prometheus -> alertmgr "Fire alerts"
+            alertmgr -> ses "Notify via email"
             autolayout lr
         }
 
