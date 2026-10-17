@@ -67,6 +67,26 @@ otherwise keep advocating, **politely**. **"Clean it up in a later CL" → no**:
 before submission unless it's an emergency; genuinely out-of-scope problems get **recorded** (`deferred-work.md`
 / a filed issue + `TODO(#issue)`), not waved through.
 
+## The merge path — `gh pr merge --admin` is break-glass only
+
+`--admin` **bypasses branch protection** (review + required checks). It is **break-glass only** — reflexive
+use is how an unverified or broken change can reach `main` (it defeats the gate the review is supposed to be).
+The default is a **plain merge**, because the rulesets already make it safe:
+
+- Both repos' `main` ruleset = `required_approving_review_count: 0` + signed commits + no force-push, with
+  **code-owner review required only on CODEOWNERS paths** (gitops: prod overlays, `services/*/helm`, `apps/`,
+  `helm-values/`, `.claude/`, security; platform-docs: none).
+- **So a PR touching no CODEOWNERS path merges on a normal `gh pr merge --squash` — no `--admin`.** Most
+  docs/non-gated PRs are exactly this.
+- A PR touching a **CODEOWNERS path** still needs the owner's approval. For a solo owner who can't
+  self-approve, the sanctioned path is a **review-bot CODEOWNER** that approves after CI (the `--admin`
+  *elimination* follow-up), **not** reflexive `--admin`.
+
+> **Follow-up hardening:** make the CI validation job a **required status check** so even the plain path
+> can't merge a change that fails to build/validate (this would have caught conflict markers reaching
+> `main`). Caveat: a path-filtered check must be made *always-reporting* first, or a docs-only PR deadlocks
+> on an "expected" check that never runs.
+
 ## Don't double-count the gates
 Review (judgement) + **CI** (L0–L4) + the **live QA gate** (L5) + **CODEOWNERS** (enforcement) are
 *distinct* evidence — none replaces another.
