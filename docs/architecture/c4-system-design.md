@@ -32,9 +32,9 @@ visual** views of the same platform — capability map, technology topology, phy
 
 ---
 
-**Jump to** · [① Context](#context) · [② Container](#container) · [③ Deployment](#deployment) · [④ Subsystem deep-dives](#deep-dives)
+**Jump to** · [① Context](#-system-context--who-the-platform-talks-to) · [② Container](#-container--the-complete-platform-all-capabilities) · [③ Deployment](#-deployment--where-it-physically-runs) · [④ Subsystem deep-dives](#subsystem-deep-dives-c4-component--flow)
 
-## ① System Context — who the platform talks to {#context}
+## ① System Context — who the platform talks to
 
 The platform as one system, its users, the external systems it depends on, and **the Information System as
 its consumer**. [Open full SVG →](pathname:///img/c4/structurizr-Context.svg)
@@ -43,7 +43,7 @@ its consumer**. [Open full SVG →](pathname:///img/c4/structurizr-Context.svg)
 
 ---
 
-## ② Container — the complete platform (all capabilities) {#container}
+## ② Container — the complete platform (all capabilities)
 
 The whole platform in one view: every capability as a **container**, grouped (Access & Networking ·
 Delivery/GitOps · Security & Secrets · Data & Messaging · Storage & Backup · Observability · AI Runtime ·
@@ -53,11 +53,11 @@ zoom**. [Open full SVG →](pathname:///img/c4/structurizr-Containers.svg)
 
 [![C4 Container view — the complete minicloud Platform](pathname:///img/c4/structurizr-Containers.svg)](pathname:///img/c4/structurizr-Containers.svg)
 
-**Drill into a subsystem →** [GitOps / ArgoCD](#gitops) · [Secrets / Vault+ESO](#secrets) · [AI / LiteLLM](#ai) — or follow a flow: [delivery](#delivery-flow) · [request](#request-flow) · [observability](#obs-flow).
+**Drill into a subsystem →** [GitOps / ArgoCD](#gitops-delivery--inside-argocd) · [Secrets / Vault+ESO](#secrets-delivery--inside-vault--eso) · [AI / LiteLLM](#ai-gateway--inside-litellm) — or follow a flow: [delivery](#how-code-reaches-production--the-delivery-flow) · [request](#how-a-request-reaches-an-app-networking-flow) · [observability](#telemetry--alerting-observability-flow).
 
 ---
 
-## ③ Deployment — where it physically runs {#deployment}
+## ③ Deployment — where it physically runs
 
 The same model, deployed: the **6-node k3s cluster** + the **off-cluster MAAS controller**, with placement
 (Vault → fast-heron, vLLM → star-kitten, control-plane → set-hog) and **Longhorn replicated across the
@@ -67,49 +67,49 @@ storage nodes**. [Open full SVG →](pathname:///img/c4/structurizr-Deployment.s
 
 ---
 
-## Subsystem deep-dives (C4 Component + flow) {#deep-dives}
+## Subsystem deep-dives (C4 Component + flow)
 
 Zooming **inside** the key containers — *"the GitOps platform in detail"*, and the same for secrets and
 the AI gateway. All grounded in the GitOps manifests + the platform rules.
 
-↑ [Back to the Container view](#container)
+↑ [Back to the Container view](#-container--the-complete-platform-all-capabilities)
 
-### How code reaches production — the delivery flow {#delivery-flow}
+### How code reaches production — the delivery flow
 
 A **numbered** sequence from a `git push` to a running production workload (CI → registries → Kargo →
 ArgoCD → cluster). [Open full SVG →](pathname:///img/c4/structurizr-DeliveryFlow.svg)
 
 [![Delivery flow — how code reaches production](pathname:///img/c4/structurizr-DeliveryFlow.svg)](pathname:///img/c4/structurizr-DeliveryFlow.svg)
 
-### GitOps delivery — inside ArgoCD {#gitops}
+### GitOps delivery — inside ArgoCD
 
 The app-of-apps engine: Root App-of-Apps → ApplicationSets / AppProjects → Sync+Health controller →
 the cluster; Kargo opens the CODEOWNERS-gated PR. [Open full SVG →](pathname:///img/c4/structurizr-GitOpsComponents.svg)
 
 [![C4 Component — inside ArgoCD](pathname:///img/c4/structurizr-GitOpsComponents.svg)](pathname:///img/c4/structurizr-GitOpsComponents.svg)
 
-### Secrets delivery — inside Vault + ESO {#secrets}
+### Secrets delivery — inside Vault + ESO
 
 Vault KV/PKI (KMS auto-unseal) → ESO ClusterSecretStore reads Vault → ExternalSecret renders the k8s
 Secrets workloads consume. [Open full SVG →](pathname:///img/c4/structurizr-SecretsComponents.svg)
 
 [![C4 Component — inside Vault + ESO](pathname:///img/c4/structurizr-SecretsComponents.svg)](pathname:///img/c4/structurizr-SecretsComponents.svg)
 
-### AI gateway — inside LiteLLM {#ai}
+### AI gateway — inside LiteLLM
 
 Virtual keys/budgets → model router → PII guardrail (Presidio) + cache + provider connectors
 (vLLM / Groq / cloud). [Open full SVG →](pathname:///img/c4/structurizr-AIComponents.svg)
 
 [![C4 Component — inside the LiteLLM gateway](pathname:///img/c4/structurizr-AIComponents.svg)](pathname:///img/c4/structurizr-AIComponents.svg)
 
-### How a request reaches an app (networking flow) {#request-flow}
+### How a request reaches an app (networking flow)
 
 User → Cloudflare → tunnel → ingress → Authentik (forward-auth) → the workload.
 [Open full SVG →](pathname:///img/c4/structurizr-RequestFlow.svg)
 
 [![Request flow — how a user request reaches an app](pathname:///img/c4/structurizr-RequestFlow.svg)](pathname:///img/c4/structurizr-RequestFlow.svg)
 
-### Telemetry + alerting (observability flow) {#obs-flow}
+### Telemetry + alerting (observability flow)
 
 Prometheus scrapes the cluster · OTel ships logs→Loki / traces→Tempo · alerts →
 Alertmanager → SES email. [Open full SVG →](pathname:///img/c4/structurizr-ObservabilityFlow.svg)
