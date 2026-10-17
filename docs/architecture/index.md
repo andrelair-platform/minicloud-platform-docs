@@ -94,9 +94,9 @@ Enterprise Landscape → Business Capabilities → IS Applications → Platform 
 | **[L2 — Platform Architecture / Topology](../developer-platform/29-production-stack-architecture.md)** | the platform's technical capabilities (icon topology) | ✅ platform topology |
 | **[L2 — IS Application Landscape](./is-application-landscape.md)** | the business apps by insurance domain + maturity | navigation → per-app docs |
 | **[Platform ↔ IS Dependency Matrix](./platform-is-dependency-matrix.md)** | consumer · capability · interface · ownership · evidence | ✅ the contract map |
-| **[Enterprise Architecture Blueprint](../insurance-platform/enterprise-architecture-blueprint.md)** | the IS functional target + gap analysis | ✅ IS domains |
-| **[Business Capability Map](../insurance-platform/capability-map.md)** | ~150 L2/L3 capabilities × status/criticality/RTO-RPO | ✅ capabilities |
-| **[IS — Architecture at a Glance](../insurance-platform/00-architecture-at-a-glance.md)** | the IS one-screen mental model | ✅ IS overview |
+| **[Enterprise Architecture Blueprint](/is/insurance-platform/enterprise-architecture-blueprint)** | the IS functional target + gap analysis | ✅ IS domains |
+| **[Business Capability Map](/is/insurance-platform/capability-map)** | ~150 L2/L3 capabilities × status/criticality/RTO-RPO | ✅ capabilities |
+| **[IS — Architecture at a Glance](/is/insurance-platform/architecture-at-a-glance)** | the IS one-screen mental model | ✅ IS overview |
 
 > The original hand-made HTML poster was **retired 2026-10-17** — superseded by the code-generated
 > [C4 System Design](./c4-system-design.md) + the [Platform Architecture](../developer-platform/29-production-stack-architecture.md) views (maintainable, accurate, no pixel-pushing).

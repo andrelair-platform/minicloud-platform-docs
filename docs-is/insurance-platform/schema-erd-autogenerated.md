@@ -106,5 +106,5 @@ This table is **auto-generated** by `scripts/gen-erd-index.py` (discovers every 
   (creds from the k8s Secret at runtime, nothing uploaded), for schemas with no in-repo migrations.
 
 Interactive inspection/debugging of a live DB is a separate concern — the locked-down SSO'd
-[Adminer cockpit](../developer-platform/adminer-db-cockpit) or `kubectl port-forward`; schema *changes*
+[Adminer cockpit](/platform/developer-platform/adminer-db-cockpit) or `kubectl port-forward`; schema *changes*
 always go through migrations (Flyway/Alembic/golang-migrate/Drizzle/TypeORM), never a GUI.

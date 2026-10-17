@@ -14,7 +14,7 @@ Snapshot: **2026-10-06**.
 
 PostgreSQL is the house relational engine, historically deployed **three inconsistent ways** (CNPG
 operator · custom-base StatefulSet · plain/vendor StatefulSet — see the
-[Data stores inventory](../insurance-platform/data-stores-inventory)). The standard is now explicit:
+[Data stores inventory](/is/insurance-platform/data-stores-inventory)). The standard is now explicit:
 
 > **CloudNativePG (CNPG) is the standard for every Postgres we operate.** New databases are born as a
 > CNPG `Cluster`; raw/vendor instances are migration candidates (need-first, not a big-bang sweep). Each

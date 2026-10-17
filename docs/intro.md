@@ -15,12 +15,12 @@ slug: /
 
 This documentation is organised in **two layers** that mirror how the system really works: an application layer running **on top of** an infrastructure layer. Use the top navigation.
 
-- **🏗 Platform** — *minicloud*: the infrastructure & engineering that runs everything — MAAS bare-metal, k3s, networking, storage, GitOps/CI-CD, security, observability, and the AI platform. → Start at **[Production Stack Architecture](./developer-platform/production-stack-architecture)**.
-- **🏢 Information System** — *ktayl-solution*: the business system that runs **on** the platform — a simulated commercial-lines (IARD) insurer's IS (business applications, insurance domains, data platform, governance). → Start at **[Insurance Platform → Architecture at a Glance](./insurance-platform/architecture-at-a-glance)**.
+- **🏗 Platform** — *minicloud*: the infrastructure & engineering that runs everything — MAAS bare-metal, k3s, networking, storage, GitOps/CI-CD, security, observability, and the AI platform. → Start at **[Production Stack Architecture](/platform/developer-platform/production-stack-architecture)**.
+- **🏢 Information System** — *ktayl-solution*: the business system that runs **on** the platform — a simulated commercial-lines (IARD) insurer's IS (business applications, insurance domains, data platform, governance). → Start at **[Insurance Platform → Architecture at a Glance](/is/insurance-platform/architecture-at-a-glance)**.
 
 *(This page is the neutral home — reach it any time via the minicloud logo.)*
 
-> **See how the two pillars fit together → the [🧭 Architecture Hub](./architecture/index.md)** — the
+> **See how the two pillars fit together → the [🧭 Architecture Hub](/platform/architecture)** — the
 > pillar-neutral entry point: the L1 enterprise landscape, the L2 Platform topology + IS application
 > landscape, and the Platform ↔ IS dependency matrix.
 

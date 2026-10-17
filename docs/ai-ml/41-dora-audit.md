@@ -62,4 +62,4 @@ Compliance-relevant alerts (story #308) route `critical` → **email + Slack**:
 - Confirm/set Langfuse project **retention ≥ 12 months** in the Langfuse UI (config, not git).
 - Restricted-document embeddings currently may use a US model (`text-embedding-3-small`) via unscoped paths — prefer on-cluster/EU embeddings (`mistral-embed`) for P3 data (route via a scoped key).
 
-**Related (IS):** [Regulatory operating model](../insurance-platform/04-regulatory-operating-model.md) — the business/compliance obligations (DORA third-party ICT) this AI-platform audit trail supports.
+**Related (IS):** [Regulatory operating model](/is/insurance-platform/regulatory-operating-model) — the business/compliance obligations (DORA third-party ICT) this AI-platform audit trail supports.

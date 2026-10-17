@@ -392,7 +392,7 @@ business data stays in the domain services (queried via SQL-tools, **not** dumpe
 | **Global Address List** | Stalwart LDAP | #227 (archived) | 📋 Backlog | Corporate address book — Authentik directory → email autocomplete |
 | **Shared mailboxes** | Stalwart IMAP ACL | #228 (archived) | 📋 Backlog | Team inboxes: sinistres, production, comptabilité, courtiers, direction |
 | **Distribution lists** | Stalwart virtual aliases | #229 (archived) | 📋 Backlog | Team mailing lists: sinistres@, production@, courtiers@, direction@ |
-| **minicloud Copilot** | n8n + LiteLLM + Qdrant + maubot | #260 (archived) | 📋 Backlog | M365 Copilot equivalent — AI layer across mail, chat, meetings, docs and enterprise search. 5 connectors wiring existing services. See [minicloud Copilot](../ai-ml/minicloud-copilot) |
+| **minicloud Copilot** | n8n + LiteLLM + Qdrant + maubot | #260 (archived) | 📋 Backlog | M365 Copilot equivalent — AI layer across mail, chat, meetings, docs and enterprise search. 5 connectors wiring existing services. See [minicloud Copilot](/platform/ai-ml/minicloud-copilot) |
 
 ---
 

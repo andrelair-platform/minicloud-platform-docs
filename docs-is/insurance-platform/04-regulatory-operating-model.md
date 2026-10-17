@@ -35,7 +35,7 @@ evidence accrues to a **control library** owned by Regulatory & Compliance (#15)
 | Artifact | What it is | Where |
 |---|---|---|
 | **Obligations Register** | the authoritative map — every framework × owner/systems/data/controls/ACPR-EIOPA ref/**applicability caveat**/status | [`ktayl-compliance/docs/obligations-register.md`](https://github.com/andrelair-platform/ktayl-compliance/blob/main/docs/obligations-register.md) (epic RC-05) |
-| **AI-Act Gate** | classify every AI use case by risk tier → proportionate controls, at design time | [AI Act Gate](../ai-ml/ai-act-gate) |
+| **AI-Act Gate** | classify every AI use case by risk tier → proportionate controls, at design time | [AI Act Gate](/platform/ai-ml/ai-act-gate) |
 
 ## Framework → domain ownership (who owns / consumes what)
 
@@ -54,7 +54,7 @@ The Act's high-risk insurance item is **life & health pricing for natural person
 IARD** — it insures **companies**, not natural persons, and not life/health — so **most of its UW/pricing
 AI is *limited-risk*, not high-risk.** The real high-risk vectors are narrow (claimants, sole traders,
 HR AI, autonomous decisions) where **GDPR Art. 22** often bites harder than the Act. Getting that scoping
-*right* is the insurance-FDE differentiator. Full rubric: [AI Act Gate](../ai-ml/ai-act-gate).
+*right* is the insurance-FDE differentiator. Full rubric: [AI Act Gate](/platform/ai-ml/ai-act-gate).
 
 ## How it respects build-order
 

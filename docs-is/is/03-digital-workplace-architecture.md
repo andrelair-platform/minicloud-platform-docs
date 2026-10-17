@@ -68,9 +68,9 @@ Nextcloud Hub decision below for the trade-off.
   them to phone/desktop clients. *(An earlier draft of this doc wrongly listed these as a gap — corrected.)*
 - **Mail delivery — resolved (2026-09-18).** During the swift-mac outage aftermath, external send **and**
   receive were briefly broken. Root causes were **not** Stalwart: outbound needed SES-direct
-  ([swift-mac PM](../observability/incident-2026-09-16-swift-mac-outage)); inbound was a bug in the
+  ([swift-mac PM](/platform/observability/incident-2026-09-16-swift-mac-outage)); inbound was a bug in the
   `ses-inbound` bridge (relaying external recipients → Stalwart rate-limit storm), fixed in the bridge
-  ([inbound mail stall PM](../observability/incident-2026-09-18-inbound-mail-stall)). Mail is now working
+  ([inbound mail stall PM](/platform/observability/incident-2026-09-18-inbound-mail-stall)). Mail is now working
   both directions, with SPF+DKIM+DMARC aligned via a [custom MAIL FROM](./amazon-ses). *A transport
   problem, since resolved — not a workplace-architecture problem.*
 - **The real open gap is the DATA LAYER (not app access).** The BYOD model protects *application
@@ -116,5 +116,5 @@ don't consolidate for uniformity's sake.
 - Per-tool docs: [Nextcloud](./nextcloud) · [Matrix/Element](./matrix-synapse-element-web) ·
   [Jitsi](./jitsi-meet) · [Stalwart mail](./stalwart-mail) · [Amazon SES](./amazon-ses) ·
   [Docuseal](./docuseal)
-- Mail incident + capability scope: [swift-mac postmortem](../observability/incident-2026-09-16-swift-mac-outage)
+- Mail incident + capability scope: [swift-mac postmortem](/platform/observability/incident-2026-09-16-swift-mac-outage)
 - Board: Digital Workplace **#10** · home repo `ktayl-workplace`
