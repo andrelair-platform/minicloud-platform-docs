@@ -23,6 +23,13 @@ containers; **every arrow is a labelled relationship** (a verb). *(Subsystem **C
 "the GitOps delivery pipeline in detail" — and an interactive Structurizr Lite are the next step; the
 model already holds the elements.)*
 
+:::tip Two complementary approaches — pick the right lens
+This page is the **formal, standard-notation C4 model** (Structurizr, as code). For the **icon-rich
+visual** views of the same platform — capability map, technology topology, physical/deployment — see
+**[Platform Architecture](../developer-platform/29-production-stack-architecture.md)** (mingrammer
+`diagrams`). This is the rigorous *model*; that is the *visual* reference. Same facts, different lens.
+:::
+
 ---
 
 ## ① System Context — who the platform talks to
