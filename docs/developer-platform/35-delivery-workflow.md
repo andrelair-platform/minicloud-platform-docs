@@ -50,6 +50,15 @@ platform services run; ArgoCD is the only cluster writer for managed workloads.*
 
 ## The pipeline, end to end
 
+**System-design view** — the four stages colour-coded: grey **build & prove** · cyan **Kargo promote** ·
+**green = dev (continuous *deployment*, automatic)** · **amber = prod (continuous *delivery*, human-gated)**.
+The CODEOWNERS reviewer is the visible manual gate. ([full SVG](/img/architecture/platform-delivery-pipeline.svg) ·
+also on the [Architecture → C4 Delivery flow](../architecture/c4-system-design.md#how-code-reaches-production--the-delivery-flow))
+
+[![Delivery pipeline — continuous delivery (prod) + continuous deployment (dev)](/img/architecture/platform-delivery-pipeline.svg)](/img/architecture/platform-delivery-pipeline.svg)
+
+The same flow in text detail:
+
 ```
  APPLICATION REPO                         DEPLOYMENT REPO (minicloud-gitops)
  ────────────────                         ─────────────────────────────────
