@@ -516,6 +516,7 @@ const sidebars: SidebarsConfig = {
         'engineering-standards/modular-monolith-first',
         'engineering-standards/bmad-operating-model',
         'engineering-standards/bmad-workflow',
+        'engineering-standards/decision-records',
       ],
     },
 
