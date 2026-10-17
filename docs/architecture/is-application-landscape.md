@@ -80,7 +80,7 @@ flowchart TB
 - **Capabilities × status:** [Business Capability Map](/is/insurance-platform/capability-map)
 - **IS one-screen view:** [Architecture at a Glance](/is/insurance-platform/architecture-at-a-glance)
 - **App catalogue:** [Business Applications Catalog](/is/insurance-platform/business-applications-catalog)
-- **Digital Workplace:** [Digital Workplace Architecture](/is/is/digital-workplace-architecture)
+- **Digital Workplace:** [Digital Workplace Architecture](/is/apps/digital-workplace-architecture)
 - **Per-product boards/repos:** the `ktayl-*` repos on [github.com/andrelair-platform](https://github.com/andrelair-platform)
   (one GitHub Project per product — see the product-boards table in the governance rules).
 
