@@ -8,9 +8,16 @@ sidebar_label: Production Stack Architecture ✅
 # Production Stack Architecture
 
 **Platform Architecture** — the technical **capabilities** of the minicloud platform (6-node on-premises
-k3s, 44 cores / ~84 GiB), in **three complementary views**: a **capability map** (understand in 30s), the
-detailed **technology topology** (engineering reference), and the **physical / deployment** view (where it
-runs + failure domains).
+k3s, 44 cores / ~84 GiB), in **three complementary, icon-rich views**: a **capability map** (understand in
+30s), the detailed **technology topology** (engineering reference), and the **physical / deployment** view
+(where it runs + failure domains).
+
+:::tip Two complementary approaches — pick the right lens
+These are the **icon-rich** views (mingrammer `diagrams`). For the **formal, standard-notation C4 model**
+of the same platform — System Context → Container → Deployment, from a single Structurizr source — see
+**[C4 System Design](../architecture/c4-system-design.md)**. The C4 page is the rigorous *model*; this page
+is the *visual* reference. Same facts, different lens.
+:::
 
 :::info This view is Platform-only (by ownership, not deployment)
 The **business applications** that run *on* this platform (ERPNext, the digital workplace, the custom

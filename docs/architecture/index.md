@@ -90,6 +90,7 @@ Enterprise Landscape → Business Capabilities → IS Applications → Platform 
 | View | What it answers | Authoritative? |
 |---|---|---|
 | **L1 — Enterprise Landscape** (above) | how Platform & IS relate | navigation |
+| **[C4 System Design (Platform)](./c4-system-design.md)** | the complete platform as a C4 model — Context → Container → Deployment (Structurizr, as code) | ✅ system design |
 | **[L2 — Platform Architecture / Topology](../developer-platform/29-production-stack-architecture.md)** | the platform's technical capabilities (icon topology) | ✅ platform topology |
 | **[L2 — IS Application Landscape](./is-application-landscape.md)** | the business apps by insurance domain + maturity | navigation → per-app docs |
 | **[Platform ↔ IS Dependency Matrix](./platform-is-dependency-matrix.md)** | consumer · capability · interface · ownership · evidence | ✅ the contract map |
