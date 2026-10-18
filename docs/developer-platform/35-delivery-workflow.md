@@ -191,6 +191,28 @@ for the chart's config surface and hardened defaults.
 | **dev→prod gate** | Kargo Stage prod `sources.stages: [dev]` + `<svc>-dev-verify` AnalysisRun | prod only accepts Freight already **verified in dev** |
 | **prod merge gate** | `.github/CODEOWNERS` on `services/*/helm/`, `services/*/base/`, `services/*/kargo/`, `apps/` | prod promotion PR needs `@AndreLair` review |
 
+## Instant sync — GitHub webhook + reconciliation backoff
+
+ArgoCD reconciles on a timer (`timeout.reconciliation`), so a merge to `main` used to take **up to
+~3 minutes** to start syncing. A **GitHub push webhook** to ArgoCD's `/api/webhook` collapses that to
+**seconds** (observed ~11s push→refresh; argocd-server logs `refreshing app <x> from webhook`).
+
+- **Only the webhook path is public.** ArgoCD is Tailscale-only, so the Cloudflare tunnel exposes a
+  **path-scoped** `argocd.devandre.sbs/api/webhook` **only** (the endpoint is unauthenticated-by-design
+  but **HMAC-validated** against `argocd-secret` `webhook.github.secret`); the UI/API stay off the tunnel.
+- **Host rewrite is required.** ingress-nginx routes on the HTTP **Host** header and the ArgoCD Ingress
+  declares only `argocd.10.0.0.200.nip.io`, so the tunnel rule sets `httpHostHeader` to that name
+  (`originServerName` only sets the TLS SNI — not the Host; that was a second, silent 404).
+- **The poll stays as a backstop at 1h (not `0`).** The webhook is best-effort (one HTTP POST, no retry)
+  and fires only on a **git push** — so the periodic reconcile is what still catches **missed deliveries**,
+  **live cluster drift** (selfHeal — out-of-band mutation is not a push), and **non-matching sources**.
+  `180s → 1h` cuts routine polling ~20× while guaranteeing worst-case convergence ≤ 1 hour. *Event for
+  speed, poll for guarantee.*
+
+Full decision, the SSA `configs.cm` gotcha (a `kubectl patch` + controller restart is needed to apply a
+reconciliation-timeout change), and verification: the
+**[ArgoCD instant-sync ADR](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/argocd-webhook-instant-sync.md)**.
+
 ## Verified end-to-end
 
 Proven on `platform-demo` (two promotion cycles): a Kargo Promotion `yaml-update`d
@@ -235,4 +257,4 @@ EOF
 ## Related
 
 - [Third-Party Charts](./third-party-charts) · [Kargo Promotion](./kargo-promotion) · [Helm vs Kustomize](./helm-vs-kustomize) · [Argo Rollouts](./argo-rollouts) · [KEDA scale-to-zero](./keda-cron-scale-to-zero)
-- Deployment repo: [`services/_template-helm/`](https://github.com/andrelair-platform/minicloud-gitops/tree/main/services/_template-helm) (scaffold) · [Helm golden-path ADR](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/helm-golden-path.md)
+- Deployment repo: [`services/_template-helm/`](https://github.com/andrelair-platform/minicloud-gitops/tree/main/services/_template-helm) (scaffold) · [Helm golden-path ADR](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/helm-golden-path.md) · [ArgoCD instant-sync ADR](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/argocd-webhook-instant-sync.md)
