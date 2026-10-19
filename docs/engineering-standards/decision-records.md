@@ -40,6 +40,7 @@ from the filename — **click through for the authoritative content**, which alw
 |  | Adr 002 Payment Psp Stripe Sepa | [`docs/architecture/adr/ADR-002-payment-psp-stripe-sepa.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-002-payment-psp-stripe-sepa.md) |
 |  | Adr 003 Ingest Underwriting Event | [`docs/architecture/adr/ADR-003-ingest-underwriting-event.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-003-ingest-underwriting-event.md) |
 |  | Prd | [`docs/prd.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/prd.md) |
+|  | Traceability Matrix | [`docs/traceability-matrix.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/traceability-matrix.md) |
 | **ktayl-data-platform** | Architecture | [`docs/architecture.md`](https://github.com/andrelair-platform/ktayl-data-platform/blob/main/docs/architecture.md) |
 |  | Adr 006 Ai Ready Governed Lakehouse | [`docs/architecture/adr/ADR-006-ai-ready-governed-lakehouse.md`](https://github.com/andrelair-platform/ktayl-data-platform/blob/main/docs/architecture/adr/ADR-006-ai-ready-governed-lakehouse.md) |
 |  | Prd | [`docs/prd.md`](https://github.com/andrelair-platform/ktayl-data-platform/blob/main/docs/prd.md) |
@@ -74,6 +75,7 @@ from the filename — **click through for the authoritative content**, which alw
 |  | Hr Workflows Initiative | [`docs/hr-workflows-initiative.md`](https://github.com/andrelair-platform/minicloud-erpnext/blob/main/docs/hr-workflows-initiative.md) |
 |  | Ops | [`docs/ops.md`](https://github.com/andrelair-platform/minicloud-erpnext/blob/main/docs/ops.md) |
 | **minicloud-gitops** | Architecture Audit | [`docs/architecture-audit.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/architecture-audit.md) |
+|  | Argocd Webhook Instant Sync | [`docs/argocd-webhook-instant-sync.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/argocd-webhook-instant-sync.md) |
 |  | Cnpg Standard | [`docs/cnpg-standard.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/cnpg-standard.md) |
 |  | Dns Naming And Externaldns | [`docs/dns-naming-and-externaldns.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/dns-naming-and-externaldns.md) |
 |  | Helm Golden Path | [`docs/helm-golden-path.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/helm-golden-path.md) |
