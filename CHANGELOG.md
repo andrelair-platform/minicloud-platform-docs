@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.3](https://github.com/andrelair-platform/minicloud-platform-docs/compare/minicloud-platform-docs-v0.1.2...minicloud-platform-docs-v0.1.3) (2026-10-20)
+
+
+### Features
+
+* **architecture:** C4 Component views — subsystem deep-dives ([#278](https://github.com/andrelair-platform/minicloud-platform-docs/issues/278)) ([912b594](https://github.com/andrelair-platform/minicloud-platform-docs/commit/912b594a1c66c1a47c76f524238bb6321927b9e1))
+* **architecture:** C4 request + observability flows; retire the HTML poster ([#281](https://github.com/andrelair-platform/minicloud-platform-docs/issues/281)) ([75320dc](https://github.com/andrelair-platform/minicloud-platform-docs/commit/75320dc326ff7745d1bb1512ea706a98d0b0033e))
+* **docs:** split Platform + Information System into distinct route sections (/platform, /is) ([#289](https://github.com/andrelair-platform/minicloud-platform-docs/issues/289)) ([8c3da8e](https://github.com/andrelair-platform/minicloud-platform-docs/commit/8c3da8e3be1cb04a3c9d6d39719db684efc615a7))
+
+
+### Bug Fixes
+
+* **docs:** inline diagram images were 404 on the live site ([#284](https://github.com/andrelair-platform/minicloud-platform-docs/issues/284)) ([8d4b9c3](https://github.com/andrelair-platform/minicloud-platform-docs/commit/8d4b9c368f84f1ef39c0e27d45c691ba8f68fe93))
+* **docs:** root redirect → /platform (no trailing slash); rename docs-is/is → apps ([#290](https://github.com/andrelair-platform/minicloud-platform-docs/issues/290)) ([6f4bdc4](https://github.com/andrelair-platform/minicloud-platform-docs/commit/6f4bdc4bf90afc05c178302aab57ede2bde52a66))
+
 ## [0.1.2](https://github.com/andrelair-platform/minicloud-platform-docs/compare/minicloud-platform-docs-v0.1.1...minicloud-platform-docs-v0.1.2) (2026-10-17)
 
 
