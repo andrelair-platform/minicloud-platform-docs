@@ -7,7 +7,7 @@ date: 2026-10-20
 description: "An insurance company doesn't run by hiring people and letting each department decide how to work. It runs on a framework of policies, standards, guidelines, procedures and controls. I built that framework for my simulated insurer — 15 governance books, 80 pages, wired to the business apps — and learned that the hard part isn't writing the rules. It's keeping the human rule, the executable rule and the engineering decision as one thing."
 ---
 
-A real insurer like **HDI Global SE** does not operate by hiring employees and letting each department improvise. It runs on a structured framework — **policies, standards, guidelines, procedures and controls** — that defines how decisions are made, who is authorized to make them, what controls apply, and what evidence is kept. For an insurer this isn't bureaucracy: the company carries financial responsibility for risks worth millions or billions of euros.
+A real industrial insurer does not operate by hiring employees and letting each department improvise. It runs on a structured framework — **policies, standards, guidelines, procedures and controls** — that defines how decisions are made, who is authorized to make them, what controls apply, and what evidence is kept. For an insurer this isn't bureaucracy: the company carries financial responsibility for risks worth millions or billions of euros.
 
 Picture five situations:
 
@@ -37,7 +37,7 @@ The single most useful idea is that a regulation, a policy, a guideline and a pr
 
 They overlap in conversation, but they serve different management purposes — and a mature insurer manages not just its business processes, but the **rules governing those processes.**
 
-This isn't theoretical. HDI Global SE's public [2025 Solvency and Financial Condition Report](https://www.hdi.global/globalassets/_local/international/downloads/solvency-and-financial-condition-reports-fatca/sfcr-hg_ye_2025_en.pdf) describes a Group-wide Code of Conduct, supported by more detailed compliance guidelines, across subjects like anti-bribery, antitrust, sales compliance, **financial sanctions and embargoes**, anti-money-laundering and supervisory law — reviewed regularly, with managers required to adapt affected working instructions. It runs a **Three Lines of Defence** model: operations own the risk, Risk/Compliance oversee and challenge, Internal Audit independently assures.
+This isn't theoretical. Under Solvency II, a regulated European insurer publishes a **Solvency and Financial Condition Report (SFCR)** that typically describes a Group-wide Code of Conduct, supported by more detailed compliance guidelines across subjects like anti-bribery, antitrust, sales compliance, **financial sanctions and embargoes**, anti-money-laundering and supervisory law — reviewed regularly, with managers required to adapt affected working instructions. Such insurers run a **Three Lines of Defence** model: operations own the risk, Risk/Compliance oversee and challenge, Internal Audit independently assures.
 
 ## The 12 domains I actually built
 
@@ -47,7 +47,7 @@ I organized ktayl-solution's governance into **12 domains**, each a "Cadre de go
 
 Concretely that landed as **15 governance books / 80 pages** in a wiki (BookStack), behind SSO, grounded in Solvency II Pillar 2, IDD POG, DORA, GDPR, IFRS 17 and the LCB-FT/sanctions regime. Each page carries its owner, review cadence and regulatory references — because a guideline without an owner and a review date is already rotting.
 
-*(To be clear, as the framework reference itself is: this catalogue combines publicly confirmed HDI governance topics with a recommended comprehensive framework. It is not a claim that HDI uses every exact title or workflow.)*
+*(To be clear: this catalogue combines publicly-documented industry governance topics with a recommended comprehensive framework — not a claim that any specific insurer uses every exact title or workflow.)*
 
 ## The hard part wasn't writing rules. It was three homes for one rule.
 

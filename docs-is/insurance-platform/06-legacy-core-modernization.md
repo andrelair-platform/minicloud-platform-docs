@@ -51,7 +51,7 @@ so wrapping it teaches the real modernization architecture. Its authentic-legacy
 
 | Trait | How it shows up | Why it matters |
 |---|---|---|
-| **Oracle** | the system-of-record runs on **Oracle** (Free edition) with **PL/SQL** stored procedures | real Oracle experience — the HDI-relevant skill; rules live in the DB, not the app |
+| **Oracle** | the system-of-record runs on **Oracle** (Free edition) with **PL/SQL** stored procedures | real Oracle experience — the enterprise-insurer-relevant skill; rules live in the DB, not the app |
 | **SOAP/XML only** | the only API is `/ws` (WSDL) — no REST, no JSON | forces an ACL translator (SOAP→JSON) |
 | **Batch, not real-time** | a create lands `pending`; a **nightly batch** activates it | you design around async issuance (batch→events) |
 | **Cryptic shared schema** | ≤8-char columns, codes not enums (`STATCD` P/A/L/C…) | the ugly representation the ACL must hide |

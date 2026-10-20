@@ -7,7 +7,7 @@ date: 2026-10-20
 description: "Une compagnie d'assurance ne fonctionne pas en embauchant des gens et en laissant chaque département improviser. Elle fonctionne sur un cadre de politiques, standards, directives, procédures et contrôles. J'ai construit ce cadre pour mon assureur simulé — 15 livres de gouvernance, 80 pages, câblés aux applications métier — et j'ai appris que le difficile n'est pas d'écrire les règles. C'est de garder la règle humaine, la règle exécutable et la décision d'ingénierie comme une seule et même chose."
 ---
 
-Un véritable assureur comme **HDI Global SE** ne fonctionne pas en embauchant des salariés et en laissant chaque département improviser. Il fonctionne sur un cadre structuré — **politiques, standards, directives, procédures et contrôles** — qui définit comment les décisions sont prises, qui est autorisé à les prendre, quels contrôles s'appliquent, et quelles preuves sont conservées. Pour un assureur, ce n'est pas de la bureaucratie : l'entreprise porte la responsabilité financière de risques valant des millions, voire des milliards d'euros.
+Un véritable assureur industriel ne fonctionne pas en embauchant des salariés et en laissant chaque département improviser. Il fonctionne sur un cadre structuré — **politiques, standards, directives, procédures et contrôles** — qui définit comment les décisions sont prises, qui est autorisé à les prendre, quels contrôles s'appliquent, et quelles preuves sont conservées. Pour un assureur, ce n'est pas de la bureaucratie : l'entreprise porte la responsabilité financière de risques valant des millions, voire des milliards d'euros.
 
 Imaginez cinq situations :
 
@@ -37,7 +37,7 @@ L'idée la plus utile : une réglementation, une politique, une directive et une
 
 Elles se recouvrent dans le langage courant, mais servent des objectifs de gestion différents — et un assureur mature gère non seulement ses processus métier, mais les **règles qui gouvernent ces processus.**
 
-Ce n'est pas théorique. Le [Rapport sur la solvabilité et la situation financière 2025](https://www.hdi.global/globalassets/_local/international/downloads/solvency-and-financial-condition-reports-fatca/sfcr-hg_ye_2025_en.pdf) public de HDI Global SE décrit un Code de conduite à l'échelle du Groupe, appuyé par des directives de conformité plus détaillées, sur des sujets comme l'anti-corruption, le droit de la concurrence, la conformité commerciale, les **sanctions financières et embargos**, la lutte anti-blanchiment et le droit prudentiel — revues régulièrement, les managers devant adapter les instructions de travail concernées. Il opère un modèle des **Trois lignes de maîtrise** : les opérations possèdent le risque, Risques/Conformité surveillent et challengent, l'Audit interne assure de façon indépendante.
+Ce n'est pas théorique. Sous Solvabilité II, un assureur européen régulé publie un **Rapport sur la solvabilité et la situation financière (SFCR)** qui décrit typiquement un Code de conduite à l'échelle du Groupe, appuyé par des directives de conformité plus détaillées, sur des sujets comme l'anti-corruption, le droit de la concurrence, la conformité commerciale, les **sanctions financières et embargos**, la lutte anti-blanchiment et le droit prudentiel — revues régulièrement, les managers devant adapter les instructions de travail concernées. De tels assureurs opèrent un modèle des **Trois lignes de maîtrise** : les opérations possèdent le risque, Risques/Conformité surveillent et challengent, l'Audit interne assure de façon indépendante.
 
 ## Les 12 domaines que j'ai réellement construits
 
@@ -47,7 +47,7 @@ J'ai organisé la gouvernance de ktayl-solution en **12 domaines**, chacun un li
 
 Concrètement, cela a donné **15 livres de gouvernance / 80 pages** dans un wiki (BookStack), derrière le SSO, ancrés dans Solvabilité II Pilier 2, IDD POG, DORA, RGPD, IFRS 17 et le dispositif LCB-FT/sanctions. Chaque page porte son titulaire, sa cadence de revue et ses références réglementaires — car une directive sans propriétaire ni date de revue est déjà en train de pourrir.
 
-*(Pour être clair, comme le dit la référence du cadre elle-même : ce catalogue combine des sujets de gouvernance HDI confirmés publiquement avec un cadre complet recommandé. Ce n'est pas une affirmation que HDI utilise chaque titre ou workflow exact.)*
+*(Pour être clair : ce catalogue combine des sujets de gouvernance sectoriels publiquement documentés avec un cadre complet recommandé — ce n'est pas une affirmation qu'un assureur particulier utilise chaque titre ou workflow exact.)*
 
 ## Le difficile n'était pas d'écrire des règles. C'était les trois foyers d'une même règle.
 

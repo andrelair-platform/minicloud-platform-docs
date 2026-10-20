@@ -21,7 +21,7 @@ provider→dependency→nth-party **graph is a reusable pattern** for portfolio 
 A capability earns priority by how much it attacks the industry's structural problems, not by parity with
 a generic map.
 
-| # | Problem (AXA/Chubb/HDI/Allianz) | What attacks it | Our position |
+| # | Problem (AXA/Chubb/Allianz) | What attacks it | Our position |
 |---|---|---|---|
 | **P1** | **Insurability crisis** — climate & secondary perils blow past actuarial models | Risk Engineering (**prevention**), CAT, Exposure & **Accumulation**, portfolio geo-steering | 🔴 our weakest area vs the #1 problem |
 | **P2** | **Margin squeeze** — soft market + claims/social inflation | **Pricing Engine**, portfolio analytics (loss/combined ratio), UW discipline, **Data Platform** | 🔴 largely gap |
