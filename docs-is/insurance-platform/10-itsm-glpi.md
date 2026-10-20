@@ -64,6 +64,7 @@ outpost** used for mail federation.
 | **Directory row** | provisioned by the reusable **`minicloud-ops/scripts/glpi/configure-ldap-directory.sh`** — runs GLPI's `AuthLDAP::add()` **in-pod** so `rootdn_passwd` is encrypted with the instance key (a raw SQL insert can't); bind creds from Vault `secret/platform/authentik-ldap-outpost`, piped via stdin (never on an argv) |
 | **Identity mapping** | `login_field=cn` (→ `glpi_users.name` = matricule/username), `email1_field=mail`. Because the OIDC `singlesignon` plugin keys on **email**, an SSO login **links to the LDAP-imported account** by email → **no duplicate** |
 | **Profiles** | imported users get GLPI's default **Self-Service (requester)** profile automatically — "everyone = requester" |
+| **Role mapping** | an **authorization rule** (`RuleRight`, criterion `memberof` CONTAINS the group DN) maps the **`Direction IT / SI`** group → **Technician** profile, so IT staff can be *assigned* tickets (not just raise them). Provisioned by `minicloud-ops/scripts/glpi/configure-ldap-profile-rule.sh`, applied on sync. Additive — non-IT users keep Self-Service via GLPI's default-profile fallback |
 | **Ongoing sync** | daily **CronJob `glpi-ldap-sync`** (`30 2 * * *`) runs `glpi:ldap:synchronize_users` inside the live pod via a least-privilege `pods/exec` SA → joiners imported, movers refreshed, leavers handled. Mirrors the `nextcloud-mail-provisioner` pattern |
 | **Connectivity** | the outpost ingress netpol admits ns `itsm`; GLPI egress → `authentik`:3389/6636; the sync pod reaches the kube-apiserver via a **`CiliumNetworkPolicy` `toEntities: [kube-apiserver]`** (a plain `ipBlock` can't match the apiserver identity under Cilium) |
 
@@ -83,6 +84,8 @@ ssh controller "cd ~/minicloud-ops && bash scripts/glpi/configure-ldap-directory
 ssh controller "kubectl exec -n itsm \$(kubectl get pod -n itsm -l app=glpi -o jsonpath='{.items[0].metadata.name}') -c glpi -- php /var/www/glpi/bin/console glpi:ldap:synchronize_users -c -s 1 -n"
 # run the sync CronJob on demand + watch it:
 ssh controller "kubectl create job -n itsm glpi-ldap-sync-now --from=cronjob/glpi-ldap-sync && kubectl logs -n itsm -f job/glpi-ldap-sync-now"
+# (re)provision the Direction IT / SI -> Technician authorization rule (idempotent), then sync to apply:
+ssh controller "cd ~/minicloud-ops && bash scripts/glpi/configure-ldap-profile-rule.sh itsm 'LDAP: Direction IT / SI -> Technician' 'cn=Direction IT / SI,ou=groups,dc=devandre,dc=sbs' Technician"
 
 # internal health (Tailscale + minicloud CA):
 /usr/bin/curl --cacert ~/minicloud-ca.crt -sI https://itsm.10.0.0.200.nip.io/   # -> 200, "Authentication - GLPI"
