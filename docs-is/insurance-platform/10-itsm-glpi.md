@@ -51,8 +51,39 @@ the claim. Claim-driven group→profile is a later story (plugin v2.x / a rules 
 is pre-provisioned Super-Admin so the ITSM is administrable over SSO from first login.
 :::
 
+## As-built — employee ingestion via Authentik LDAP (S008)
+
+So IT can track **who requested what**, every employee exists in GLPI as a selectable **requester** —
+not only after their first SSO login. GLPI's native LDAP sync is pointed at the **same Authentik LDAP
+outpost** used for mail federation.
+
+| Aspect | As deployed |
+|---|---|
+| **Source of truth** | Authentik, via the shared **`ktayl-ldap-outpost`** (ns `authentik`, `ldap://…:3389`, base DN `dc=devandre,dc=sbs`) — the same outpost the mail federation uses |
+| **Import filter** | `(&(objectClass=user)(memberOf=cn=Workplace Users,ou=groups,dc=devandre,dc=sbs))` → only real employees; cleanly excludes service accounts, the `it` shared mailbox and `akadmin` |
+| **Directory row** | provisioned by the reusable **`minicloud-ops/scripts/glpi/configure-ldap-directory.sh`** — runs GLPI's `AuthLDAP::add()` **in-pod** so `rootdn_passwd` is encrypted with the instance key (a raw SQL insert can't); bind creds from Vault `secret/platform/authentik-ldap-outpost`, piped via stdin (never on an argv) |
+| **Identity mapping** | `login_field=cn` (→ `glpi_users.name` = matricule/username), `email1_field=mail`. Because the OIDC `singlesignon` plugin keys on **email**, an SSO login **links to the LDAP-imported account** by email → **no duplicate** |
+| **Profiles** | imported users get GLPI's default **Self-Service (requester)** profile automatically — "everyone = requester" |
+| **Ongoing sync** | daily **CronJob `glpi-ldap-sync`** (`30 2 * * *`) runs `glpi:ldap:synchronize_users` inside the live pod via a least-privilege `pods/exec` SA → joiners imported, movers refreshed, leavers handled. Mirrors the `nextcloud-mail-provisioner` pattern |
+| **Connectivity** | the outpost ingress netpol admits ns `itsm`; GLPI egress → `authentik`:3389/6636; the sync pod reaches the kube-apiserver via a **`CiliumNetworkPolicy` `toEntities: [kube-apiserver]`** (a plain `ipBlock` can't match the apiserver identity under Cilium) |
+
+:::note Owner account reconciliation
+The owner's GLPI account was historically seeded by OIDC as `kanmegnea@gmail.com` (Authentik's `akadmin`
+carries that address). It was reconciled **in place** to login **`100001`** + primary email
+**`kanmegnea@devandre.sbs`**, keeping **Super-Admin** — so LDAP matches it by `cn=100001` and OIDC by the
+org email, both resolving to the one account. The gmail address remains only on Authentik's break-glass
+`akadmin` user.
+:::
+
 ## Operate / verify
 ```bash
+# employee ingestion (S008): provision/refresh the LDAP directory row (idempotent):
+ssh controller "cd ~/minicloud-ops && bash scripts/glpi/configure-ldap-directory.sh itsm 'Authentik (ktayl employees)' platform/authentik-ldap-outpost"
+# one-off import of new employees (the daily CronJob does this automatically at 02:30 UTC):
+ssh controller "kubectl exec -n itsm \$(kubectl get pod -n itsm -l app=glpi -o jsonpath='{.items[0].metadata.name}') -c glpi -- php /var/www/glpi/bin/console glpi:ldap:synchronize_users -c -s 1 -n"
+# run the sync CronJob on demand + watch it:
+ssh controller "kubectl create job -n itsm glpi-ldap-sync-now --from=cronjob/glpi-ldap-sync && kubectl logs -n itsm -f job/glpi-ldap-sync-now"
+
 # internal health (Tailscale + minicloud CA):
 /usr/bin/curl --cacert ~/minicloud-ca.crt -sI https://itsm.10.0.0.200.nip.io/   # -> 200, "Authentication - GLPI"
 # public edge (Cloudflare) + SSO redirect chain:
@@ -83,6 +114,11 @@ ssh controller "cd ~/minicloud-ops && bash scripts/glpi/configure-sso-provider.s
   → set `url_base` to the public host (`https://itsm.devandre.sbs`) or OIDC redirects point at localhost.
 - **The plugin appends `/provider/<id>`** to the callback → the Authentik redirect must be **REGEX**
   (`…/callback.php.*`), not STRICT, or Authentik returns *invalid_request*.
+- **LDAP ingestion (S008):** GLPI encrypts `rootdn_passwd` with its instance key → **a raw SQL insert
+  can't produce a bindable password**; provision via GLPI's own `AuthLDAP::add()` in-pod. A pod that
+  `kubectl exec`s (the sync CronJob) from a **default-deny-egress** namespace needs a **`CiliumNetworkPolicy`
+  `toEntities: [kube-apiserver]`** — a plain `ipBlock` can't match the apiserver identity under Cilium
+  (the pod otherwise hangs on `10.43.0.1:443`).
 
 Full detail + rationale: `ktayl-itsm` repo `docs/` (deployment-architecture, ADRs) and the platform
 memory `project_ktayl_itsm_glpi`.
@@ -97,6 +133,7 @@ memory `project_ktayl_itsm_glpi`.
 | **S005** — Alertmanager → auto-ticket | ⬜ |
 | **S006** — KPI dashboard (GLPI → Grafana) | ⬜ |
 | **S007** — Self-service portal + KB | ⬜ |
+| **S008** — Employee ingestion via Authentik LDAP (requesters + daily sync) | ✅ **Done** (dev) — 20 employees imported as requesters; daily `glpi-ldap-sync` CronJob |
 
 ## Compliance mapping
 ITIL v4 service management · **DORA** (ICT incident management + change governance — the ITSM record is
