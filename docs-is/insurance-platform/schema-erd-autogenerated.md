@@ -92,7 +92,7 @@ This table is **auto-generated** by `scripts/gen-erd-index.py` (discovers every 
 | ktayl-iam | TypeORM | 6 | [backend/docs/data-model](https://github.com/andrelair-platform/ktayl-iam/blob/main/backend/docs/data-model/README.md) |
 | ktayl-policy-service | golang-migrate | 5 | [docs/data-model](https://github.com/andrelair-platform/ktayl-policy-service/blob/main/docs/data-model/README.md) |
 | ktayl-underwriting | Alembic | 8 | [docs/data-model](https://github.com/andrelair-platform/ktayl-underwriting/blob/main/docs/data-model/README.md) |
-| retrieva-backend | Drizzle | 24 | [docs/data-model](https://github.com/andrelair-platform/retrieva-backend/blob/main/docs/data-model/README.md) |
+| retrieva-backend | Drizzle | 37 | [docs/data-model](https://github.com/andrelair-platform/retrieva-backend/blob/main/docs/data-model/README.md) |
 | ktayl-data-platform | **dbt (carve-out)** | — | self-documented by committed dbt **model contracts** (`models/**/_*.yml`) + CI `dbt parse` — tbls is the wrong tool for a *derived* warehouse (not a migration-owned schema) |
 {/* ERD-INDEX:END */}
 
