@@ -40,6 +40,7 @@ from the filename — **click through for the authoritative content**, which alw
 |  | Adr 002 Payment Psp Stripe Sepa | [`docs/architecture/adr/ADR-002-payment-psp-stripe-sepa.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-002-payment-psp-stripe-sepa.md) |
 |  | Adr 003 Ingest Underwriting Event | [`docs/architecture/adr/ADR-003-ingest-underwriting-event.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-003-ingest-underwriting-event.md) |
 |  | Prd | [`docs/prd.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/prd.md) |
+|  | Traceability Matrix | [`docs/traceability-matrix.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/traceability-matrix.md) |
 | **ktayl-data-platform** | Architecture | [`docs/architecture.md`](https://github.com/andrelair-platform/ktayl-data-platform/blob/main/docs/architecture.md) |
 |  | Adr 006 Ai Ready Governed Lakehouse | [`docs/architecture/adr/ADR-006-ai-ready-governed-lakehouse.md`](https://github.com/andrelair-platform/ktayl-data-platform/blob/main/docs/architecture/adr/ADR-006-ai-ready-governed-lakehouse.md) |
 |  | Prd | [`docs/prd.md`](https://github.com/andrelair-platform/ktayl-data-platform/blob/main/docs/prd.md) |
@@ -74,6 +75,7 @@ from the filename — **click through for the authoritative content**, which alw
 |  | Hr Workflows Initiative | [`docs/hr-workflows-initiative.md`](https://github.com/andrelair-platform/minicloud-erpnext/blob/main/docs/hr-workflows-initiative.md) |
 |  | Ops | [`docs/ops.md`](https://github.com/andrelair-platform/minicloud-erpnext/blob/main/docs/ops.md) |
 | **minicloud-gitops** | Architecture Audit | [`docs/architecture-audit.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/architecture-audit.md) |
+|  | Argocd Webhook Instant Sync | [`docs/argocd-webhook-instant-sync.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/argocd-webhook-instant-sync.md) |
 |  | Cnpg Standard | [`docs/cnpg-standard.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/cnpg-standard.md) |
 |  | Dns Naming And Externaldns | [`docs/dns-naming-and-externaldns.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/dns-naming-and-externaldns.md) |
 |  | Helm Golden Path | [`docs/helm-golden-path.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/helm-golden-path.md) |
@@ -87,6 +89,7 @@ from the filename — **click through for the authoritative content**, which alw
 |  | Reliability Longhorn Upgrade | [`docs/reliability-longhorn-upgrade.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/reliability-longhorn-upgrade.md) |
 |  | Reliability Storage Tiering | [`docs/reliability-storage-tiering.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/reliability-storage-tiering.md) |
 |  | Remediation Plan | [`docs/remediation-plan.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/remediation-plan.md) |
+|  | Software Adoption Decisions | [`docs/software-adoption-decisions.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/software-adoption-decisions.md) |
 | **minicloud-litellm-custom** | Dept Key Governance | [`docs/dept-key-governance.md`](https://github.com/andrelair-platform/minicloud-litellm-custom/blob/main/docs/dept-key-governance.md) |
 | **minicloud-open-webui** | Ktayl Knowledge Assistant Brief | [`docs/ktayl-knowledge-assistant-brief.md`](https://github.com/andrelair-platform/minicloud-open-webui/blob/main/docs/ktayl-knowledge-assistant-brief.md) |
 | **retrieva-backend** | Architecture Evaluation | [`docs/ARCHITECTURE_EVALUATION.md`](https://github.com/andrelair-platform/retrieva-backend/blob/main/docs/ARCHITECTURE_EVALUATION.md) |
@@ -94,6 +97,11 @@ from the filename — **click through for the authoritative content**, which alw
 |  | Optimization Guide | [`docs/OPTIMIZATION_GUIDE.md`](https://github.com/andrelair-platform/retrieva-backend/blob/main/docs/OPTIMIZATION_GUIDE.md) |
 |  | Security Implementation | [`docs/SECURITY_IMPLEMENTATION.md`](https://github.com/andrelair-platform/retrieva-backend/blob/main/docs/SECURITY_IMPLEMENTATION.md) |
 |  | Semantic Chunking Optimization | [`docs/SEMANTIC_CHUNKING_OPTIMIZATION.md`](https://github.com/andrelair-platform/retrieva-backend/blob/main/docs/SEMANTIC_CHUNKING_OPTIMIZATION.md) |
+|  | Concentration Function Model Convergence | [`docs/adr/0001-concentration-function-model-convergence.md`](https://github.com/andrelair-platform/retrieva-backend/blob/main/docs/adr/0001-concentration-function-model-convergence.md) |
+|  | Tool Onboarding Software Evaluation | [`docs/adr/0002-tool-onboarding-software-evaluation.md`](https://github.com/andrelair-platform/retrieva-backend/blob/main/docs/adr/0002-tool-onboarding-software-evaluation.md) |
+|  | Vendor Research Egress | [`docs/adr/0003-vendor-research-egress.md`](https://github.com/andrelair-platform/retrieva-backend/blob/main/docs/adr/0003-vendor-research-egress.md) |
+|  | Is Service Principal M2m | [`docs/adr/0004-is-service-principal-m2m.md`](https://github.com/andrelair-platform/retrieva-backend/blob/main/docs/adr/0004-is-service-principal-m2m.md) |
+|  | Governed Arrangement Intake | [`docs/governed-arrangement-intake.md`](https://github.com/andrelair-platform/retrieva-backend/blob/main/docs/governed-arrangement-intake.md) |
 {/* ADR-INDEX:END */}
 
 ## Operate / verify
