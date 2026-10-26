@@ -101,9 +101,9 @@ per repo:
 | Force push | Blocked |
 | Auto-delete head branch on merge | **On** (feature branches are short-lived by construction) |
 
-Direct push to `main` without a PR is rejected at the API level; the only exception is admin bypass
-(org owner), used only in emergencies, and it leaves a visible audit trail. There is **no**
-`staging-protection` ruleset anymore.
+Direct push to `main` without a PR is rejected. The active ruleset has an empty bypass-actor list, so
+no admin or team bypass is configured. Keep emergency changes on the protected PR path and record the
+incident/change evidence. There is **no** `staging-protection` ruleset anymore.
 
 ### Solo-maintainer production merge policy
 
