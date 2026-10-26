@@ -30,10 +30,15 @@ delivery path (A/B/C/E):
 |---|---|---|
 | 1 — self-review | `/bmad-build`'s own review + the test pyramid | the build agent |
 | 2 — independent AI pass | **`/bmad-code-review` in a FRESH context** — no memory of writing it (the real "second pair of eyes") | a fresh agent |
-| 3 — human review | **CODEOWNERS** approval that gates prod + CI (Trivy/kubeconform/SAST) | the owner |
+| 3 — maintainer review | The PR author reviews the diff and confirms release intent; required CI checks gate merge | the solo maintainer |
 
 Google's reviewer principles apply to layers 2 + 3. `/bmad-walkthrough` adds a risk-focused pass for
 auth / schema / public-API / security diffs.
+
+In the solo-maintainer setup, when the author is also the maintainer, this layer is self-review and
+release confirmation—not independent maker-checker approval. CI and a fresh-context AI review provide
+additional evidence, but neither is represented as a human approver. Record that role overlap for
+compliance-sensitive changes; restore independent human approval when a second maintainer is available.
 
 ## The reviewer checklist (priority order)
 **Design** (does it fit / belong here?) · **Functionality** (intent + users; edge cases, concurrency —
@@ -67,37 +72,25 @@ otherwise keep advocating, **politely**. **"Clean it up in a later CL" → no**:
 before submission unless it's an emergency; genuinely out-of-scope problems get **recorded** (`deferred-work.md`
 / a filed issue + `TODO(#issue)`), not waved through.
 
-## The merge path — `gh pr merge --admin` is break-glass only
+## The merge path — solo-maintainer policy
 
-`--admin` **bypasses branch protection** (review + required checks). It is **break-glass only** — reflexive
-use is how an unverified or broken change can reach `main` (it defeats the gate the review is supposed to be).
-The default is a **plain merge**, because the rulesets already make it safe:
+The author cannot approve their own GitHub pull request. This repository therefore does not require
+CODEOWNER approval: CODEOWNERS records ownership and suggests reviewers, while a single maintainer
+reviews and merges their PR after automated checks pass. The maintainer does not use `--admin` for the
+normal release path, and the merge keeps the same required branch protections.
 
-- Both repos' `main` ruleset = `required_approving_review_count: 0` + signed commits + no force-push, with
-  **code-owner review required only on CODEOWNERS paths** (gitops: prod overlays, `services/*/helm`, `apps/`,
-  `helm-values/`, `.claude/`, security; platform-docs: none).
-- **So a PR touching no CODEOWNERS path merges on a normal `gh pr merge --squash` — no `--admin`.** Most
-  docs/non-gated PRs are exactly this.
-- A PR touching a **CODEOWNERS path** still needs the owner's approval. For a solo owner who can't
-  self-approve, the sanctioned path is a **review-bot CODEOWNER** that approves after CI (the `--admin`
-  *elimination* follow-up), **not** reflexive `--admin`.
+For `minicloud-gitops`, `merge-gate` is always required; production changes also run the path-relevant
+architecture, Checkov, and kubeconform workflows. Checkov and kubeconform are conditional checks, not
+global required contexts. The ruleset requires signed commits and blocks force pushes. Kargo promotions
+must produce GitHub-verified commits before they can merge. Keep a fresh-context AI review as a quality
+practice, but do not represent it as a GitHub approval or as an independent human reviewer.
 
-**Required check (done):** an always-on **`merge-gate`** status check runs on every PR and blocks
-unresolved git conflict markers — the exact failure that reached `main` via `--admin` in #1860. It's
-required in the branch ruleset, so the **plain-merge path can't ship that class of bug**. (Scoped to
-conflict markers only — zero false positives; template YAML stays with `validate-manifests`.)
-
-### `--admin` on gated PRs — accepted risk (solo, determined 2026-10-17)
-A second *independent human* approver does not exist (solo operator), so a CODEOWNERS-gated PR can't get a
-non-self approval — and we **don't fake one** (no review-bot, by choice). This is closed as an **accepted
-risk**, not a hidden gap (same determination style as the DORA tester-independence call):
-- **Non-gated PRs (the ~90%, all docs)** → plain `gh pr merge --squash`; `merge-gate` + CI actually gate them. `--admin` is never used here.
-- **Gated PRs** (prod overlays, `services/*/helm`, `apps/`, `helm-values/`, `.claude/`, security) → `--admin` as **logged break-glass, only after the owner has confirmed `merge-gate` + CI are green** (because `--admin` *also* bypasses those checks — so the control is the owner looking first).
-- **Compensating controls:** `merge-gate`/CI (machine) + the fresh-context `/bmad-code-review` (independent perspective) + the owner's pre-merge eyeball.
-- **Revisit trigger:** a second engineer joins, or a real-prod / real-PII claim → then add the review-bot or a human reviewer.
+This policy applies to every CODEOWNERS-covered path because GitHub's repository branch ruleset applies
+CODEOWNER review at the ruleset level, not selectively by file path. Re-enable required CODEOWNER review
+when a second maintainer is available.
 
 ## Don't double-count the gates
-Review (judgement) + **CI** (L0–L4) + the **live QA gate** (L5) + **CODEOWNERS** (enforcement) are
+Review (judgement) + **CI** (L0–L4) + the **live QA gate** (L5) + **CODEOWNERS** (ownership map) are
 *distinct* evidence — none replaces another.
 
 ## Related

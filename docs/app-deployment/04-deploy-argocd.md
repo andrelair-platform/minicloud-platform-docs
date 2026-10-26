@@ -95,13 +95,17 @@ spec:
     namespace: myteam-prod
 
   syncPolicy:
-    automated: null       # NO auto-sync in production
+    automated:
+      prune: true
+      selfHeal: true
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
 ```
 
-Production requires a **manual sync** in the ArgoCD UI — a human approves every production deploy.
+Kargo-managed services use the protected promotion PR as the human release decision. After it merges,
+ArgoCD syncs production automatically; do not add a second manual sync gate. Manual sync is reserved
+for applications whose owning GitOps pattern explicitly requires it, plus documented recovery work.
 
 ---
 

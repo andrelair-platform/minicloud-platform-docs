@@ -24,8 +24,7 @@ Argo CD synchronises **one** environment from Git to the cluster. It deliberatel
 **not** manage *how a change moves between stages*. That gap used to be filled with
 fragile glue (CI `sed`/`git commit`, hand-written prod PRs). **Kargo** fills it the
 GitOps-native way: it watches the built artifact and **writes the Git change** (opens
-PRs) that Argo CD reconciles. It never touches the cluster, so the GitOps model — and
-the CODEOWNERS prod gate — stay intact.
+PRs) that Argo CD reconciles. It never touches the cluster, so the GitOps model stays intact.
 
 ## Division of labour (the mental model)
 
@@ -46,7 +45,7 @@ post-deploy verification all stay in CI.
 Each service has a `services/<svc>/kargo/` directory: a `Project` (= a Kargo namespace),
 a `Warehouse` (produces **Freight** = an immutable artifact set), and one or two `Stage`s
 whose `promotionTemplate` runs `git-clone → kustomize-set-image → git-commit → git-push →
-git-open-pr → git-wait-for-pr`. The **prod** PR lands on the **CODEOWNERS gate**; the live
+git-open-pr → git-wait-for-pr`. The **prod** PR uses required checks and maintainer review; the live
 canary Rollout + its AnalysisTemplate are the runtime safety brake.
 
 ## Two Warehouse models (choose per service)
@@ -123,8 +122,8 @@ depends on the service's dev topology (see the variants table further down).
   spec: { stage: prod, freight: <freight-name> }
   EOF
   ```
-  Kargo runs the template and **opens the PR** — dev PRs auto-merge (dev overlays aren't
-  CODEOWNERS-gated); the **prod PR waits for your CODEOWNERS review**, then Argo CD syncs.
+  Kargo runs the template and **opens the PR** — dev PRs auto-merge only after the path guard and
+  applicable checks pass; the **prod PR waits for the maintainer's merge after checks pass**, then Argo CD syncs.
 - **You never hand-edit overlay image tags.** Kargo writes them.
 - **Runtime config, not baked config:** an image must be **env-agnostic** to be promotable
   (the same artifact runs in dev and prod). Read environment values at **runtime**, not at
@@ -142,7 +141,7 @@ depends on the service's dev topology (see the variants table further down).
 This is the model **now live on all 6 custom services** (piloted on platform-demo, then rolled out).
 It makes Kargo the **sole promoter of dev** and moves **dev verification off the CI** into Kargo.
 (The earlier "safe posture" — manual promotions — is superseded for these services; only prod
-promotion stays manual, behind the CODEOWNERS PR gate.) Rationale: once Kargo owns promotion, having CI drive the dev deploy and
+promotion stays manual, with the maintainer merging after required checks.) Rationale: once Kargo owns promotion, having CI drive the dev deploy and
 then smoke it *synchronously in the same run* is a **sync-over-async anti-pattern**. CI should
 only **build & prove the artifact**; *"what qualifies a Freight for prod?"* → *"it was verified
 in dev"*, and that verification belongs to the deploy orchestrator.
@@ -151,7 +150,7 @@ Three pieces in `services/<svc>/kargo/`:
 
 1. **`ProjectConfig`** — `spec.promotionPolicies: [{stage: dev, autoPromotionEnabled: true}]`.
    New Freight is auto-promoted to the dev Stage (which subscribes to the Warehouse). Prod is
-   omitted → stays manual (the CODEOWNERS PR gate).
+   omitted → stays manual (maintainer merges the PR after required checks pass).
 2. **Stage `dev.spec.verification.analysisTemplates`** — references an AnalysisTemplate. After
    promoting to dev, Kargo runs it as an `AnalysisRun`; the Freight becomes `verifiedIn:[dev]`
    **only if it passes**. The prod Stage (`sources.stages: [dev]`) accepts **only verified
@@ -297,7 +296,7 @@ decoupled:
 | Concept | What it is | How it's fed |
 |---|---|---|
 | **`dev` environment** | a live namespace/overlay (permanent) | **Kargo** auto-promotes the `main` build into it, then verifies it |
-| **`prod` environment** | a live namespace/overlay (permanent) | **Kargo** opens a CODEOWNERS-gated PR promoting the dev-verified Freight |
+| **`prod` environment** | a live namespace/overlay (permanent) | **Kargo** opens a PR promoting dev-verified Freight; maintainer merges after required checks |
 | **`main` branch** | the trunk — the only deploy trigger | a merge builds `:<sha>` → Kargo takes over |
 | **`dev` branch** | an optional working/integration branch | **nothing** — pushing it no longer builds or deploys (CI is `push: [main]`-only) |
 

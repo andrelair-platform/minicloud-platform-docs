@@ -36,7 +36,7 @@ This page assumes the vocabulary below. If any term is new, skim
 | **CNPG** | CloudNativePG — runs Postgres as a managed, backed-up cluster. |
 | **netpol** | `NetworkPolicy` — a firewall rule for pods. The platform is **default-deny**; you allow only what you need. |
 | **SSA** | ArgoCD Server-Side-Apply (how it writes objects). Relevant only for the ESO quirk in Step 4. |
-| **CODEOWNERS** | GitHub rule that requires a named human to approve PRs touching prod paths. |
+| **CODEOWNERS** | Ownership map that records owners and can suggest reviewers for sensitive paths. |
 
 ## The model in one sentence
 
@@ -238,7 +238,7 @@ The root app-of-apps discovers the Application wherever it sits under `apps/`, s
 ## Step 5 — Kargo promotion (dev → prod gate)
 
 `services/ktayl-billing/kargo/` came with the Step-3 copy. Kargo watches your prod ghcr image and **opens
-the Git PRs** ArgoCD then reconciles — it never touches the cluster, so the CODEOWNERS prod gate stays
+the Git PRs** ArgoCD then reconciles — it never touches the cluster, so the protected-PR prod gate stays
 intact. Two models, **pick correctly** — this is the one place to think, not copy blindly:
 
 - **image model** (`NewestBuild`) — only if the image's build timestamp is **monotonic per build**. A plain
@@ -325,14 +325,14 @@ Green on all three = it's live on dev → run the QA gate → promote.
 - [ ] `services/<svc>/kargo` with the **correct** Warehouse model.
 - [ ] Secrets in Vault→ESO (owner did the Vault write); default-deny netpol trimmed to real allows; SSO-gated if user-facing.
 - [ ] **Verified live on dev** (ArgoCD Synced/Healthy + pods Running + health 200) → **QA gate clean** →
-      Kargo dev-verified Freight → **CODEOWNERS prod PR** (approve `--squash`).
+      Kargo dev-verified Freight → **protected production PR** (maintainer merge after checks).
 - [ ] As-built doc updated (this is a Definition-of-Done gate, not a follow-up).
 
 ## What still needs a human / deeper knowledge (be honest)
 
 - **The Vault secret write** (`secret/platform/*`) needs the break-glass **root** token → the **owner**
   does it. Coordinate before you deploy.
-- **The prod PR** lands on **CODEOWNERS** → a human (`@AndreLair`) approves it. You can't self-merge to prod.
+- **The prod PR** uses the protected `main` ruleset. The solo maintainer reviews and merges after required checks pass; this is self-review and release confirmation, not an independent human approval. No `--admin` is used in the normal path.
 - **There is no non-Go scaffolder yet** — Backstage's one-click golden path is Go-only, so for Python/Java/TS
   you clone a reference repo (Step 0) rather than generate one. (Tracked improvement.)
 - **The Kargo model choice** (Step 5) genuinely requires understanding your image's build-timestamp

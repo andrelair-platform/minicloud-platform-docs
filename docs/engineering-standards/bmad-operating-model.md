@@ -18,7 +18,7 @@ sidebar_label: BMAD Operating Model
 
 ## The one-line model
 **BMAD governs intent → implementation → review.** The platform owns everything around it:
-CI builds + proves → **Kargo** promotes → **ArgoCD** deploys → **CODEOWNERS** gates → observability.
+CI builds + proves → **Kargo** promotes → protected PR and checks gate production → **ArgoCD** deploys → observability.
 BMAD produces code; it never deploys. (See [Delivery Workflow](../developer-platform/35-delivery-workflow.md).)
 
 ## Scale to the work — pick a delivery path
@@ -28,7 +28,7 @@ product does not skip one.
 
 | Path | When | Planning artefacts before code |
 |---|---|---|
-| **A — Small** | bug / config / chore, one session, no new architecture | **none** (rules + tests + PR/CODEOWNERS always apply) |
+| **A — Small** | bug / config / chore, one session, no new architecture | **none** (rules + tests + protected PR/checks always apply) |
 | **B — Feature / Epic** | multi-story, new service on an existing product | **spec-first**: SPEC per epic + stories + readiness (PRD/architecture only if the design is new) |
 | **C — New product** | own backlog, > ~20 build sessions | the **full chain** below + the governance gate |
 | **E — Emergency** | prod incident / hotfix | none up front — fix first, backfill story + `deferred-work.md` + retro |
@@ -91,12 +91,12 @@ whole PRD, so bounded pieces run in parallel.
 
 1. **self** — build's own review + tests ([L0–L4](./testing-strategy.md))
 2. **AI-independent** — `/bmad-code-review` in a **fresh context** (before the human PR)
-3. **human** — CODEOWNERS on gated paths + CI (Checkov / kubeconform / SAST)
+3. **maintainer** — self-review and release confirmation + CI (Checkov / kubeconform / SAST); not an independent human approval in the solo setup
 4. `/bmad-walkthrough` for auth/schema/public-API/security diffs
 
 ## Governance above BMAD
 
-BMAD proposes; **humans own** the architecture/security call; the platform (CI + CODEOWNERS + Kargo)
+BMAD proposes; **the maintainer owns** the architecture/security call; the platform (CI + protected PR rules + Kargo)
 **enforces** it. A **named governance gate** (architecture review by SA/TL + security review by SEC)
 clears Path C and any boundary-crossing change (authz, data model, NetworkPolicy, secrets/Vault,
 public API, IAM, supply-chain), recorded in the project RACI (`project-governance.md`).

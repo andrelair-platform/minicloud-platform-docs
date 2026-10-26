@@ -51,7 +51,7 @@ flowchart LR
 - **Recoverable.** Off-site **Cloudflare R2** backups (volume data + Kine control-plane state) + a
   **tested restore drill** + a **scripted control-plane rebuild** — the difference between "hope" and DR.
 - **Strong guardrails.** Gatekeeper deny policies, signed images + SBOM, default-deny NetworkPolicies,
-  CODEOWNERS-gated GitOps.
+  protected GitOps PRs with required checks and signed commits.
 
 ## What caps it below ~9 (honest, structural)
 

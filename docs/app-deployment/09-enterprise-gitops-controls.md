@@ -10,23 +10,32 @@ Five controls turn a working GitOps repo into an auditable, production-safe one.
 
 ---
 
-## 1. CODEOWNERS — Mandatory Review for Production Paths
+## 1. CODEOWNERS — Ownership Routing; Protected PRs Gate Production
 
 **File:** `.github/CODEOWNERS`
 
-GitHub automatically requests a review from `@AndreLair` when any PR touches the following paths:
+CODEOWNERS records the owner for sensitive paths and can suggest a reviewer. The repository currently
+has one maintainer, so GitHub does **not** require a CODEOWNER approval that the PR author cannot give.
+The active `main-protection` ruleset instead requires a pull request, the `merge-gate` check, signed
+commits, and blocks force pushes; bypass actors are empty. Production changes also run their applicable
+architecture, Checkov, and kubeconform checks. Those path-filtered checks are not global required
+contexts.
 
-| Path | Why it's gated |
+The ownership map covers these paths:
+
+| Path | Why ownership is recorded |
 |------|----------------|
-| `services/*/minicloud-1/prod/` | Production overlay — any change here deploys to prod |
-| `helm-values/minicloud-1/` | All Helm values for running platform tools |
-| `manifests/rbac/` | Cluster-wide role bindings — security-sensitive |
-| `manifests/network-policies/*-prod.yaml` | Production network isolation |
-| `bootstrap/` | Root ArgoCD app — affects the entire cluster if misconfigured |
+| `services/*/overlays/prod/`, `services/*/minicloud-1/prod/`, `services/*/helm/` | Production deployment values and charts |
+| `services/*/base/`, `services/*/kargo/`, `platform/delivery/kargo/` | Shared workload settings and promotion machinery |
+| `apps/`, `bootstrap/` | ArgoCD application sources and cluster root |
+| `helm-values/`, `platform/security/quotas/*-prod.yaml` | Platform chart settings and production capacity |
+| `platform/security/network-policies/*-prod.yaml`, `platform/security/rbac/` | Network and access controls |
+| `.claude/`, `REVIEW.md`, `evals/`, agent-eval workflow | Agent operating policy and evaluation |
 
-Dev and staging paths have no CODEOWNERS entry. A developer can freely open a PR against `services/platform-demo/minicloud-1/dev/` without blocking on a review, but touching `prod/` requires explicit approval.
-
-The CODEOWNERS rule is enforced at the GitHub branch protection level — if the required reviewer has not approved, the PR cannot be merged regardless of other status checks passing.
+The maintainer reviews the diff and merges after checks pass. Because the author is also the sole
+maintainer, that is self-review and release confirmation, not independent human maker-checker approval.
+Do not use `--admin` for the normal path. Re-enable required CODEOWNER approval when a second maintainer
+is available.
 
 ---
 
@@ -54,7 +63,7 @@ What reviewers see:
 
 Rather than: "kustomization.yaml changed line 4: `newTag: abc123` → `newTag: def456`".
 
-The rendered diff shows exactly which Kubernetes resources change, including resources that inherit values from the base. A reviewer can approve a production overlay change knowing precisely what will land in the cluster.
+The rendered diff shows exactly which Kubernetes resources change, including resources that inherit values from the base. The maintainer can inspect the rendered production change before merging.
 
 Diffs longer than 400 lines are truncated with a notice.
 
@@ -186,7 +195,7 @@ Without `recurse: true`, ArgoCD would scan only `apps/` root and find nothing. T
 
 When adding a service via `services/_template/`:
 
-1. **CODEOWNERS** — no action needed; `services/*/minicloud-1/prod/` is already gated.
+1. **CODEOWNERS** — no action needed; the ownership map already covers service production and promotion paths. The protected PR and checks gate merges.
 2. **PR diff** — no action needed; the workflow triggers on `services/**/minicloud-1/**` automatically.
 3. **Change record** — no action needed; any prod overlay PR will produce a record.
 4. **Cluster dimension** — use `minicloud-1/{dev,staging,prod}` (the template already has this structure).

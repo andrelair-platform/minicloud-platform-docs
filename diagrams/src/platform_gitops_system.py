@@ -3,7 +3,7 @@
 Where the delivery-pipeline diagram follows the *artifact's journey*, this shows the GitOps **system**
 as a loop: humans and Kargo only ever write to **Git (the single source of truth)**; **ArgoCD is the
 only cluster writer**, continuously reconciling desired state (Git) against live state (cluster) and
-self-healing drift. The two-repo model, app-of-apps, Kargo promotion + CODEOWNERS gate, and the Helm
+self-healing drift. The two-repo model, app-of-apps, Kargo promotion + protected PR/check gate, and the Helm
 wrapper/library render are all in one view.
 
 Run via the central venv:  python src/platform_gitops_system.py   (see Makefile `make generate`).
@@ -42,10 +42,10 @@ with Diagram(
 
     # ---- 2. promote — Kargo (writes to Git, never to the cluster) -------------
     with Cluster("2 · Promote  (Kargo)", graph_attr=cluster_attr(CYAN)):
-        kargo = node(Server, "Kargo\nimage → Freight → promotion PR\ndev: auto-merge · prod: CODEOWNERS gate", icon="kargo.png")
+        kargo = node(Server, "Kargo\nimage → Freight → promotion PR\ndev: checked auto-merge · prod: maintainer merge", icon="kargo.png")
 
     # ---- 3. the single source of truth — Git ---------------------------------
-    with Cluster("3 · Git — SINGLE SOURCE OF TRUTH  (CODEOWNERS-gated main)", graph_attr=cluster_attr(AMBER)):
+    with Cluster("3 · Git — SINGLE SOURCE OF TRUTH  (protected main: PR + checks + signed commits)", graph_attr=cluster_attr(AMBER)):
         gitops = Github("minicloud-gitops  (deployment repo)\nArgoCD Applications · wrapper + library\nHelm charts · manifests · AppProjects")
 
     # ---- 4. reconcile — ArgoCD (the ONLY cluster writer) ---------------------
@@ -63,7 +63,7 @@ with Diagram(
     # ============================= relationships ==============================
     # humans only ever write to Git (code or config) — never the cluster
     engineer >> WIRE("code PR") >> apprepo
-    engineer >> FLOW("config PR + prod approval") >> gitops
+    engineer >> FLOW("config PR + maintainer release decision") >> gitops
 
     # build → image → Kargo → Git (desired state is only ever changed via Git)
     apprepo >> WIRE("push → CI") >> ci

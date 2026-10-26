@@ -100,7 +100,7 @@ owner: <SA/Compliance>
 
 An AI capability **cannot pass its Path-C security/architecture review** without: (1) a completed **AI
 System Card**, (2) a **tier** from the §2 rubric, and (3) the tier's **controls present in the design**.
-This is verified at the governance gate (`bmad-compliance.md`), enforced downstream by CODEOWNERS + CI.
+This is verified at the governance gate (`bmad-compliance.md`), with protected PR checks and CI enforcing the downstream controls.
 **Living control:** the Act's timelines/GPAI rules are still settling — the rubric is pinned to the
 stable core (Annex III areas + the decision-effect + Art. 22 tests) and reviewed as guidance firms up.
 

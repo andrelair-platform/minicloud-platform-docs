@@ -112,7 +112,7 @@ The normal promotion sequence is:
 6. ArgoCD syncs dev.
 7. Kargo runs dev verification.
 8. A verified Freight can be promoted to prod.
-9. Kargo opens a CODEOWNERS-gated prod PR.
+9. Kargo opens a production PR for maintainer review and required checks.
 10. ArgoCD reconciles prod after the PR merges.
 ```
 
@@ -152,7 +152,7 @@ Cosign signature and SBOM were produced
 Kargo Freight exists for the new artifact
 Kargo dev verification passed before prod promotion
 ArgoCD application is Synced and Healthy
-prod promotion PR passed CODEOWNERS review
+prod promotion PR merged after maintainer review and required checks
 ```
 
 ---

@@ -100,7 +100,7 @@ instant); open the **[▶ vector SVG →](/img/architecture/minicloud-platform.s
 [![minicloud platform technology topology](/img/architecture/minicloud-platform.png)](/img/architecture/minicloud-platform.svg)
 
 **Legend / edge vocabulary** — **solid = principal flow** (request · delivery · routes-to) · **dashed =
-backing dependency**. Verbs: *builds · pushes · promotes (CODEOWNERS PR) · reconciles · issues-certs ·
+backing dependency**. Verbs: *builds · pushes · promotes (protected PR + maintainer merge) · reconciles · issues-certs ·
 authenticates · supplies-secrets · scrapes · ships-logs/traces · backs-up · routes-to*. Cluster-wide
 substrates (**Cilium** CNI+LB, **Gatekeeper** admission, **Falco** runtime) are labelled *(cluster-wide)*;
 **MinIO is off-cluster** (on the MAAS controller). Every edge is verified against the GitOps manifests.
@@ -162,7 +162,7 @@ Cloudflare Tunnel moved from a controller systemd service to a 2-replica Kuberne
 :::note Promotion is now Kargo-driven (staging retired)
 The flow below is the **historical** CI-drives-promotion shape. Since 2026-08, promotion is
 **trunk-based**: CI on `main` builds + proves one immutable artifact, **Kargo** promotes it
-`dev → prod` (CODEOWNERS-gated), and Argo CD deploys it. The `staging` environment/branch was
+`dev → prod` (protected PR, required checks, maintainer merge), and Argo CD deploys it. The `staging` environment/branch was
 removed. See the [Delivery Workflow](https://andrelair-platform.github.io/minicloud-platform-docs/developer-platform/delivery-workflow)
 and Kargo pages for the current model.
 :::

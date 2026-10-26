@@ -104,5 +104,6 @@ cd minicloud-platform-docs && python3 scripts/gen-adr-index.py
 # it rewrites only the table between the ADR-INDEX markers; everything else is left untouched.
 ```
 
-A decision record's **content** is never moved onto this site — it stays versioned and CODEOWNERS-gated
-next to the manifests/code it governs. This page only ever *points* at it.
+A decision record's **content** is never moved onto this site — it stays versioned next to the
+manifests/code it governs and changes through the repository's protected PR and check policy. This
+page only ever *points* at it.
