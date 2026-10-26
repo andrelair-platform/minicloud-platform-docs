@@ -2,8 +2,8 @@
 
 Visualises the end-to-end delivery workflow AND the continuous-delivery-vs-continuous-deployment
 split: the same artifact is built+proved once, Kargo auto-promotes it to **dev (continuous
-DEPLOYMENT — no human)**, then a CODEOWNERS-gated PR promotes it to **prod (continuous DELIVERY —
-a human decides when)**. ArgoCD is the only cluster writer.
+DEPLOYMENT — no human)**, then a protected PR promotes it to **prod (continuous DELIVERY —
+the solo maintainer reviews the diff and confirms the release after checks pass)**. ArgoCD is the only cluster writer.
 
 Run via the central venv:  python src/platform_delivery_pipeline.py   (see Makefile `make generate`).
 Output → static/img/architecture/platform-delivery-pipeline.{svg,png} (base64-inlined afterwards).
@@ -52,11 +52,11 @@ with Diagram(
         devcluster = node(Server, "dev workload\n(1 replica)", icon="k3s.png")
         verify = node(Server, "dev-verify →\n'Verified in dev'", icon="argo-rollouts.png")
 
-    # ---- 4. prod = CONTINUOUS DELIVERY (human-gated) -------------------------
+    # ---- 4. prod = CONTINUOUS DELIVERY (maintainer decision + checks) --------
     with Cluster("4 · prod  —  CONTINUOUS DELIVERY  (a human decides when)",
                  graph_attr=cluster_attr(AMBER)):
         kprod = node(Server, "Stage prod\naccepts only\nverified Freight", icon="kargo.png")
-        reviewer = User("CODEOWNERS review\n@AndreLair + live QA gate\n◄ the manual gate")
+        reviewer = User("Solo maintainer\nself-review + release confirmation\n(no independent human approver)")
         prodpr = node(Github, "prod values PR\n(NO auto-merge)", icon="github-actions.png")
         argoprod = node(Argocd, "ArgoCD\nreconciles prod", icon="argocd.png")
         prodcluster = node(Server, "prod workload\n(2–3 replicas · canary)", icon="k3s.png")
@@ -79,8 +79,8 @@ with Diagram(
     # the dev→prod gate: only dev-verified Freight is promotable
     verify >> WIRE("verified Freight") >> kprod
 
-    # prod — human-gated continuous delivery (amber/red = the manual decision)
-    kprod >> FLOW("opens gated PR") >> prodpr
-    prodpr >> DASH("blocks on", color=RED) >> reviewer
-    reviewer >> FLOW("human approves (squash)") >> argoprod
+    # prod — continuous delivery: required checks plus the maintainer's release decision
+    kprod >> FLOW("opens protected PR") >> prodpr
+    prodpr >> DASH("required checks pass", color=RED) >> reviewer
+    reviewer >> FLOW("maintainer merges PR") >> argoprod
     argoprod >> FLOW("deploys") >> prodcluster

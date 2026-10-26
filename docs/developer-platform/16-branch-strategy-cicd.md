@@ -29,7 +29,7 @@ branches you merge between).
 | Thing | What it is | Fed by |
 |---|---|---|
 | **`dev` environment** | `<svc>-dev` namespace + `minicloud-1/dev` overlay (permanent) | **Kargo** auto-promotes the `main` build into it, then verifies it |
-| **`prod` environment** | `<svc>-prod` namespace + `minicloud-1/prod` overlay (permanent) | **Kargo** opens a CODEOWNERS-gated PR promoting the dev-verified Freight |
+| **`prod` environment** | `<svc>-prod` namespace + `minicloud-1/prod` overlay (permanent) | **Kargo** opens a PR promoting dev-verified Freight; maintainer merges after required checks |
 | **`main` branch** | the trunk — the only deploy trigger | a merge builds `:<sha>` → Kargo takes over |
 | **`dev` branch** *(optional)* | a working/integration branch | **nothing** — pushing it no longer builds or deploys |
 | **feature branches** | `feat/…` `fix/…` `docs/…` `chore/…` → PR → `main` | short-lived; **auto-deleted on merge** (`delete_branch_on_merge=true` on all 26 repos) |
@@ -95,14 +95,26 @@ per repo:
 
 | Rule | Value |
 |---|---|
-| Pull request required | Yes (self-merge allowed; CODEOWNERS review required on protected paths in `minicloud-gitops`) |
+| Pull request required | Yes (solo maintainer may merge after required checks; CODEOWNERS is advisory) |
 | Signed commits required | Yes — GPG key `FD6D39D681DEFA34` (Kargo PRs are squash-merged so GitHub signs the squash commit) |
+| Required check (`minicloud-gitops`) | `merge-gate` (always runs); path-relevant PR checks run for production changes |
 | Force push | Blocked |
 | Auto-delete head branch on merge | **On** (feature branches are short-lived by construction) |
 
 Direct push to `main` without a PR is rejected at the API level; the only exception is admin bypass
 (org owner), used only in emergencies, and it leaves a visible audit trail. There is **no**
 `staging-protection` ruleset anymore.
+
+### Solo-maintainer production merge policy
+
+Production changes still use a PR and the same protected `main` branch. CODEOWNERS entries document
+ownership and may suggest a reviewer, but GitHub does not require an approval that the sole maintainer
+cannot give. The maintainer reviews the diff and merges only after the required status checks pass.
+For `minicloud-gitops`, `merge-gate` is the always-required check; production changes also run the
+path-relevant architecture, Checkov, and kubeconform workflows. Signed commits and the no-force-push
+rule remain enforced. This applies to all
+CODEOWNERS-covered paths because GitHub's branch ruleset cannot make CODEOWNER approval conditional
+on an individual file path. A second maintainer can be added later and CODEOWNER approval re-enabled.
 
 **Why per-repo, not org-level:** org-level rulesets need the GitHub Team plan; the org is on free.
 Per-repo rulesets carry identical content, applied via the API in batch.
@@ -120,7 +132,7 @@ feature branch ──PR──► main  (signed, PR-gated)
         ▼
       Kargo  ──auto-promote──► dev environment ──verify (smoke AnalysisRun)──►
         │
-        ▼  dev-verified Freight ──CODEOWNERS PR──► prod environment (Argo CD syncs)
+        ▼  dev-verified Freight ──protected PR + maintainer merge──► prod environment (Argo CD syncs)
 ```
 
 - **CI is build-only** (`push: [main]`). It no longer bumps overlays or smokes deploys — Kargo owns

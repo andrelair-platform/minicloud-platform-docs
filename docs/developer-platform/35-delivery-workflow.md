@@ -24,7 +24,7 @@ Delivery is split across **application repos** and the single **deployment repo*
 | Contains | source, `Dockerfile`, tests, CI | ArgoCD `Application`s, per-app **wrapper Helm charts**, the shared library chart, platform manifests |
 | Answers | *"what the software is"* | *"how/where it runs"* |
 | Produces | a signed, SBOM'd **image** | the declarative **desired state** of the cluster |
-| Owner | application developer | platform/DevOps (here: same person; the split is structural, enforced by CODEOWNERS) |
+| Owner | application developer | platform/DevOps (here: same person; the split is structural and documented in CODEOWNERS) |
 | Holds deploy config? | **no** — zero Helm/k8s config in the app repo | **yes** — all of it |
 
 The application developer never edits infrastructure to ship a version; the deployment repo is the
@@ -59,7 +59,7 @@ platform services run; ArgoCD is the only cluster writer for managed workloads.*
 
 **System-design view** — the four stages colour-coded: grey **build & prove** · cyan **Kargo promote** ·
 **green = dev (continuous *deployment*, automatic)** · **amber = prod (continuous *delivery*, human-gated)**.
-The CODEOWNERS reviewer is the visible manual gate. ([full SVG](/img/architecture/platform-delivery-pipeline.svg) ·
+The maintainer's PR review and required checks are the visible merge gate. ([full SVG](/img/architecture/platform-delivery-pipeline.svg) ·
 also on the [Architecture → C4 Delivery flow](../architecture/c4-system-design.md#how-code-reaches-production--the-delivery-flow))
 
 [![Delivery pipeline — continuous delivery (prod) + continuous deployment (dev)](/img/architecture/platform-delivery-pipeline.svg)](/img/architecture/platform-delivery-pipeline.svg)
@@ -95,7 +95,7 @@ The same flow in text detail:
  │  Stage prod → yaml-update  services/<svc>/helm/values-prod.yaml    │
  │   │                                                                │
  │   ▼  opens PR (NO automerge)                                       │
- │  CODEOWNERS review on services/*/helm/  ────────────────────────► main
+ │  required checks + maintainer merge     ────────────────────────► main
  └────────────────────────────────────────────────────────────────────┘
    │
    ▼
@@ -116,12 +116,12 @@ sign, make release-ready — and differ in exactly **one** place: **the last ste
 | | Continuous **Delivery** | Continuous **Deployment** |
 |---|---|---|
 | Every change is built, tested, and made **release-ready** automatically | ✅ | ✅ |
-| Release to **production** is… | **triggered by a human** (an approval / a PR merge) | **fully automatic** — no human in the loop |
+| Release to **production** is… | **triggered by a human** (a maintainer merges the PR) | **fully automatic** — no human decision in the loop |
 | A manual gate before prod | **yes, by design** | **no** |
 
 **The one-liner:** continuous *delivery* means every change is *always ready* to ship but a **person
 decides when**; continuous *deployment* means every change that passes the pipeline **ships itself** to
-production with no approval. So **continuous deployment is continuous delivery with the final manual gate
+production with no human release decision. So **continuous deployment is continuous delivery with the final manual gate
 removed** — every continuous deployment is also continuous delivery, but not the reverse.
 
 > **Mnemonic:** deliv**e**ry → a human **e**nables the release · deploy**m**ent → the **m**achine releases it.
@@ -133,13 +133,13 @@ This stack is deliberately **mixed**, and that is the point of a two-stage Kargo
 | Environment | Model | Why |
 |---|---|---|
 | **dev** | **Continuous *Deployment*** | Kargo auto-promotes new Freight to dev (`ProjectConfig: stage dev, autoPromotionEnabled: true`), the dev PR auto-merges (`kargo-automerge.yml`), ArgoCD syncs — **no human** between a green `main` build and a running dev pod. |
-| **prod** | **Continuous *Delivery*** | Kargo opens a **CODEOWNERS-gated** PR on `services/*/helm/`; it needs `@AndreLair` review **and** the Freight must be [verified in dev](./kargo-promotion) **and** the live [QA gate](https://github.com/andrelair-platform/minicloud-gitops/blob/main/.claude/rules/qa-gate.md) must pass. **A human decides when prod ships.** |
+| **prod** | **Continuous *Delivery*** | Kargo opens a PR; the solo maintainer reviews and merges after required checks pass. Freight must be [verified in dev](./kargo-promotion) **and** the live [QA gate](https://github.com/andrelair-platform/minicloud-gitops/blob/main/.claude/rules/qa-gate.md) must pass. |
 
-That human prod gate is a **feature, not friction**: for an insurance-domain system it's the governance /
-DORA-change-management sign-off (one auditable approval per prod change). Crossing fully into continuous
-*deployment* would just mean letting the prod PR auto-merge on green checks — a one-line policy change we
-**choose not to make**. The dev stage already gives the fast feedback of continuous deployment where the
-blast radius is safe.
+This remains continuous *delivery*: Kargo proposes the exact production diff, and the maintainer makes
+the release decision by reviewing and merging the PR. GitHub requires the always-on `merge-gate`; relevant
+production workflows such as architecture validation, Checkov, and kubeconform also run. Signed commits
+and no-force-push protection remain enabled. CODEOWNERS records ownership but cannot require approval
+from the PR author in this solo-maintainer setup.
 
 ## Workflow for GitOps changes in `minicloud-gitops`
 
@@ -155,8 +155,8 @@ For a GitOps-only change, the workflow is shorter than a full application releas
    helm dependency update .
    helm template <svc> . -f values-dev.yaml
    ```
-5. Open a PR. Dev-only Kargo PRs may auto-merge; prod paths and platform controls require CODEOWNERS
-   review.
+5. Open a PR. Dev-only Kargo PRs may auto-merge after the path guard and applicable checks pass;
+   production and platform-control PRs require maintainer diff review and green required checks.
 6. After merge, ArgoCD reconciles the change. Verify the relevant app is `Synced` and `Healthy`.
 
 Direct `kubectl apply`, `helm upgrade`, or manual ArgoCD sync is reserved for bootstrap, recovery, or
@@ -189,7 +189,7 @@ for the chart's config surface and hardened defaults.
 |---|---|---|
 | **dev auto-merge** | `.github/workflows/kargo-automerge.yml` | merges only dev-only PRs — paths matching `services/*/minicloud-1/dev/` **or** `services/*/helm/values-dev.yaml`. Everything else is refused. |
 | **dev→prod gate** | Kargo Stage prod `sources.stages: [dev]` + `<svc>-dev-verify` AnalysisRun | prod only accepts Freight already **verified in dev** |
-| **prod merge gate** | `.github/CODEOWNERS` on `services/*/helm/`, `services/*/base/`, `services/*/kargo/`, `apps/` | prod promotion PR needs `@AndreLair` review |
+| **prod merge gate** | Protected `main` ruleset | required checks and signed commits; maintainer reviews and merges |
 
 ## Instant sync — GitHub webhook + reconciliation backoff
 
@@ -218,7 +218,7 @@ reconciliation-timeout change), and verification: the
 Proven on `platform-demo` (two promotion cycles): a Kargo Promotion `yaml-update`d
 `services/platform-demo/helm/values-dev.yaml` `image.tag` → opened the dev PR → `kargo-automerge`
 merged it → ArgoCD synced the wrapper chart → the Rollout picked up the promoted tag. The same
-mechanics drive the CODEOWNERS-gated prod PR.
+mechanics drive the checks-gated prod PR.
 
 ## Invariants & gotchas (learned the hard way)
 
@@ -246,7 +246,7 @@ metadata: { generateName: manual-, namespace: <svc> }
 spec: { stage: dev, freight: <freight-name> }
 EOF
 
-# Promote dev-verified Freight to prod → opens the CODEOWNERS-gated PR (approve with --squash)
+# Promote dev-verified Freight to prod → opens a PR; review it and merge normally after required checks pass.
 
 # Roll back: re-promote the previous Freight (or revert the values PR); ArgoCD reconciles.
 

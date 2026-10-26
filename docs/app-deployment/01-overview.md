@@ -36,7 +36,7 @@ Kargo Warehouse detects artifact -> Freight
         |        v
         |   ArgoCD syncs dev -> Kargo smoke verification
         |
-        +--> prod Stage: only dev-verified Freight -> CODEOWNERS PR
+        +--> prod Stage: only dev-verified Freight -> protected PR + maintainer merge
                  |
                  v
             ArgoCD syncs prod
@@ -63,7 +63,7 @@ The platform standard is **two environments**:
 | Environment | Source of change | Gate |
 |---|---|---|
 | `dev` | Kargo auto-promotes a new `main` artifact and opens a dev values PR | dev-only path guard and smoke verification |
-| `prod` | Kargo promotes only Freight verified in dev | CODEOWNERS review before merge |
+| `prod` | Kargo promotes only Freight verified in dev | protected PR, required checks, maintainer merge |
 
 Git branches are not environments. `main` is the deploy trigger; optional `dev` branches are only
 for human collaboration and do not deploy.
@@ -84,7 +84,7 @@ The platform owns:
 
 - `minicloud-gitops` desired state
 - wrapper-chart standards and shared library chart
-- ArgoCD Applications, Kargo promotion, and CODEOWNERS gates
+- ArgoCD Applications, Kargo promotion, and protected PR/check policy
 - namespaces, quotas, NetworkPolicies, Vault/ESO, ingress, and certificates
 - operational runbooks and production verification
 
@@ -95,7 +95,7 @@ The platform owns:
 3. Kargo detects the new artifact and updates `values-dev.yaml` in `minicloud-gitops`.
 4. ArgoCD deploys dev and Kargo runs smoke verification.
 5. Promote the verified Freight to prod.
-6. Review and merge the CODEOWNERS-gated prod PR.
+6. Review the production diff and merge the PR after required checks pass.
 7. ArgoCD reconciles prod; verify `Synced` and `Healthy`.
 
 For config-only changes, start directly in `minicloud-gitops`, edit the owned path, open a PR, and

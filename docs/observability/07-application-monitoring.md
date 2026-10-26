@@ -450,12 +450,13 @@ Both Go services push to `harbor.10.0.0.200.nip.io` and bump the kustomize overl
       --body "Automated image promotion from CI run ${{ github.run_id }}."
     gh pr merge "${BRANCH}" \
       --repo andrelair-platform/minicloud-gitops \
-      --admin --merge --delete-branch
+      --squash --delete-branch
 ```
 
-- `GITOPS_TOKEN` (not `GITHUB_TOKEN`) — needs write access to the gitops repo
-- `--admin` bypasses the PR review requirement
-- `main` push → `overlays/dev` only; prod requires an explicit human PR
+- `GITOPS_TOKEN` (not `GITHUB_TOKEN`) — needs write access to the gitops repo; it does not bypass rules
+- Normal merges preserve the protected-branch checks and signed-commit policy; do not use `--admin`
+- This is a legacy dev-only example. Current production uses Kargo-verified Freight, a protected PR,
+  required checks, and a maintainer merge before ArgoCD reconciliation.
 
 ---
 

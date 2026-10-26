@@ -207,7 +207,7 @@ with Diagram(
     actions >> WIRE("builds + pushes (prod)") >> ghcr
     actions >> DASH("scans · signs (Trivy/Cosign/SBOM)") >> trivy
     ghcr >> WIRE("newest image") >> kargo
-    kargo >> WIRE("promotes · CODEOWNERS PR") >> argocd
+    kargo >> WIRE("promotes · protected prod PR") >> argocd
     argocd >> WIRE("reconciles") >> sethog
     argocd >> DASH("drives") >> rollouts
     rollouts >> DASH("gated by metrics") >> prometheus

@@ -71,7 +71,7 @@ the AI gateway. All grounded in the GitOps manifests + the platform rules. (Clic
 
 A `git push` to a running production workload (CI → registries → Kargo → ArgoCD → cluster), showing the
 **continuous-delivery vs continuous-deployment split**: the same artifact is built+proved once, Kargo
-**auto-deploys it to dev (continuous *deployment* — no human)**, then a **CODEOWNERS-gated PR promotes it
+**auto-deploys it to dev (continuous *deployment* — no human)**, then a **protected PR with maintainer review and required checks promotes it
 to prod (continuous *delivery* — a human decides when)**. The full narrative is on the
 **[Delivery Workflow](../developer-platform/35-delivery-workflow.md#continuous-delivery-vs-continuous-deployment)** page.
 
@@ -91,7 +91,7 @@ The **whole GitOps system** in one view — where the [delivery flow](#how-code-
 follows the *artifact*, this follows the *control loop*: **humans and Kargo only ever write to Git (the
 single source of truth)**; **ArgoCD is the only thing that writes to the cluster**, continuously
 reconciling desired state (Git) against live state and self-healing drift. Shows the **two-repo model**,
-**Kargo** promotion (dev auto / prod CODEOWNERS-gated) *into Git*, the **app-of-apps** tree, the Helm
+**Kargo** promotion (dev auto / prod protected PR) *into Git*, the **app-of-apps** tree, the Helm
 wrapper+library render, and the **drift-correction loop** (red). [Open full SVG →](/img/architecture/platform-gitops-system.svg)
 
 [![GitOps workflow system — Git is the source of truth, ArgoCD is the only cluster writer](/img/architecture/platform-gitops-system.svg)](/img/architecture/platform-gitops-system.svg)
@@ -99,7 +99,7 @@ wrapper+library render, and the **drift-correction loop** (red). [Open full SVG 
 ### GitOps delivery — inside ArgoCD
 
 Zooming **inside** the reconcile engine above: Root App-of-Apps → ApplicationSets / AppProjects →
-Sync+Health controller → the cluster; Kargo opens the CODEOWNERS-gated PR.
+Sync+Health controller → the cluster; Kargo opens the production PR for required checks and maintainer merge.
 
 [![C4 Component — inside ArgoCD](/img/c4/structurizr-GitOpsComponents.svg)](/img/c4/structurizr-GitOpsComponents.svg)
 
