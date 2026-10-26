@@ -146,6 +146,7 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: [
         'project-governance/project-governance-standard',
+        'project-governance/software-evaluation',
       ],
     },
 
