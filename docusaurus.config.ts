@@ -112,6 +112,16 @@ const config: Config = {
           label: 'Information System',
         },
         {
+          to: '/platform/architecture/c4-system-design',
+          label: 'System Design',
+          position: 'left',
+        },
+        {
+          to: '/glossary',
+          label: 'Glossary',
+          position: 'left',
+        },
+        {
           to: '/blog',
           label: 'Blog',
           position: 'left',
