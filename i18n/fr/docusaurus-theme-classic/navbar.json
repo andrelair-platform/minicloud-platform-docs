@@ -1,0 +1,10 @@
+{
+  "item.label.System Design": {
+    "message": "Conception système",
+    "description": "Navbar item with label System Design"
+  },
+  "item.label.Glossary": {
+    "message": "Glossaire",
+    "description": "Navbar item with label Glossary"
+  }
+}
