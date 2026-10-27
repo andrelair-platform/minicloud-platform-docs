@@ -6,7 +6,7 @@ sidebar_position: 11
 
 # Phase 62 — IAM Hardening (OIDC kubectl + RBAC + MFA)
 
-Completed 2026-06-22. Replaced the shared static kubeconfig with OIDC-based kubectl access via Authentik, enforced MFA for all users, disabled default service account token auto-mounting cluster-wide, and wired human RBAC to Authentik groups.
+Completed 2026-06-22; OIDC and RBAC model revalidated 2026-10-27. Replaced the shared static kubeconfig with OIDC-based kubectl access via Authentik, enforced MFA for all users, disabled default service account token auto-mounting cluster-wide, and wired human RBAC to dedicated Kubernetes access groups.
 
 ---
 
@@ -23,11 +23,13 @@ Completed 2026-06-22. Replaced the shared static kubeconfig with OIDC-based kube
 
 ## 1. k3s OIDC Flags
 
-Added to `/etc/rancher/k3s/config.yaml` on set-hog (control plane):
+Managed in `/etc/rancher/k3s/config.yaml` on set-hog by
+`minicloud-ansible/roles/k3s-oidc/` and `playbooks/configure-k3s-oidc.yml`:
 
 ```yaml
 kube-apiserver-arg:
   - "oidc-issuer-url=https://auth.10.0.0.200.nip.io/application/o/kubernetes/"
+  - "oidc-ca-file=/etc/rancher/k3s/minicloud-ca.crt"
   - "oidc-client-id=kubernetes"
   - "oidc-username-claim=preferred_username"
   - "oidc-username-prefix=oidc:"
@@ -35,7 +37,7 @@ kube-apiserver-arg:
   - "oidc-groups-prefix=oidc:"
 ```
 
-The `oidc:` prefix on username and group claims prevents collisions between OIDC identities and internal Kubernetes service accounts (e.g. `oidc:kanmegnea` vs `kanmegnea`).
+The `oidc:` prefix on username and group claims prevents collisions between OIDC identities and internal Kubernetes service accounts (for example, `oidc:100001` versus an unprefixed local identity).
 
 **Authentik application:** `kubernetes` (OIDC provider, authorization code + device flow).
 
@@ -83,17 +85,19 @@ users:
     user:
       exec:
         apiVersion: client.authentication.k8s.io/v1beta1
-        command: kubectl-oidc_login
+        command: kubectl
         args:
+          - oidc-login
           - get-token
           - --oidc-issuer-url=https://auth.10.0.0.200.nip.io/application/o/kubernetes/
           - --oidc-client-id=kubernetes
-          - --oidc-client-secret=<client-secret>
           - --oidc-extra-scope=groups
-          - --grant-type=authcode-keyboard
+          - --oidc-extra-scope=profile
+          - --listen-address=localhost:8000
 ```
 
-`--grant-type=authcode-keyboard` uses the device authorization flow — opens a browser URL for Authentik login, no redirect URI needed.
+The authorization-code flow opens Authentik in the browser and returns to the localhost callback. This
+public client configuration does not place an OIDC client secret in kubeconfig.
 
 ### Usage
 
@@ -109,57 +113,42 @@ kubectl --context minicloud-break-glass get nodes
 
 ## 4. ClusterRoleBindings (GitOps-managed)
 
-File: `minicloud-gitops/manifests/rbac/00-oidc-clusterrolebindings.yaml`
+File: `minicloud-gitops/platform/security/rbac/00-oidc-clusterrolebindings.yaml`
 
 ```yaml
 ---
-# Direction IT group → cluster-admin
+# Dedicated Kubernetes administrators → cluster-admin
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: oidc-cluster-admin
 subjects:
   - kind: Group
-    name: "oidc:Direction IT"
+    name: "oidc:k8s-cluster-admins"
     apiGroup: rbac.authorization.k8s.io
 roleRef:
   kind: ClusterRole
   name: cluster-admin
   apiGroup: rbac.authorization.k8s.io
 ---
-# Cybersécurité + Audit → read-only
+# Dedicated Kubernetes viewers → read-only
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: oidc-cluster-viewer
 subjects:
   - kind: Group
-    name: "oidc:Cybersécurité"
-    apiGroup: rbac.authorization.k8s.io
-  - kind: Group
-    name: "oidc:Audit"
+    name: "oidc:k8s-cluster-viewers"
     apiGroup: rbac.authorization.k8s.io
 roleRef:
   kind: ClusterRole
   name: view
   apiGroup: rbac.authorization.k8s.io
----
-# kanmegnea individual admin (break-glass-oidc)
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: oidc-cluster-admin-kanmegnea
-subjects:
-  - kind: User
-    name: "oidc:kanmegnea"
-    apiGroup: rbac.authorization.k8s.io
-roleRef:
-  kind: ClusterRole
-  name: cluster-admin
-  apiGroup: rbac.authorization.k8s.io
 ```
 
-ArgoCD Application `rbac` (`minicloud-gitops/apps/rbac.yaml`) syncs this automatically.
+Argo CD Application `rbac` syncs this automatically. Authentik group membership and provider mappings
+are converged by the plan-first `minicloud-ops/scripts/authentik/kubernetes-rbac.sh`. Direct OIDC user
+bindings are prohibited; emergency access uses `minicloud-break-glass`.
 
 ---
 
@@ -168,37 +157,31 @@ ArgoCD Application `rbac` (`minicloud-gitops/apps/rbac.yaml`) syncs this automat
 All personas tested via `kubectl auth can-i --as` impersonation — no interactive Authentik login needed:
 
 ```bash
-# Direction IT → cluster-admin
-kubectl auth can-i get pods --all-namespaces \
-  --as=oidc:demo.it --as-group='oidc:Direction IT'
+# Kubernetes administrators → cluster-admin
+kubectl --context minicloud-oidc auth can-i '*' '*' --all-namespaces \
+  --as=oidc:validation --as-group='oidc:k8s-cluster-admins'
 # → yes
 
-kubectl auth can-i delete pods --all-namespaces \
-  --as=oidc:demo.it --as-group='oidc:Direction IT'
+# Kubernetes viewers → view only
+kubectl --context minicloud-oidc auth can-i get pods --all-namespaces \
+  --as=oidc:validation --as-group='oidc:k8s-cluster-viewers'
 # → yes
 
-# Cybersécurité → view only
-kubectl auth can-i get pods --all-namespaces \
-  --as=oidc:demo.cyber --as-group='oidc:Cybersécurité'
-# → yes
-
-kubectl auth can-i delete pods --all-namespaces \
-  --as=oidc:demo.cyber --as-group='oidc:Cybersécurité'
+kubectl --context minicloud-oidc auth can-i delete pods --all-namespaces \
+  --as=oidc:validation --as-group='oidc:k8s-cluster-viewers'
 # → no
 
-# No binding → denied
-kubectl auth can-i get pods --all-namespaces \
-  --as=oidc:demo.sinistres
-# → no
+# Dev editors → edit only in approved dev namespaces
+kubectl --context minicloud-oidc auth can-i update deployments -n platform-demo-dev \
+  --as=oidc:validation --as-group='oidc:k8s-dev-editors'
+# → yes
 ```
 
-| Persona | Authentik group | get pods | delete pods |
-|---|---|---|---|
-| demo.it | Direction IT | yes | yes |
-| demo.cyber | Cybersécurité | yes | no |
-| demo.audit | Audit | yes | no |
-| kanmegnea | (individual binding) | yes | yes |
-| demo.sinistres | (no binding) | no | no |
+| Access group | Scope | Expected result |
+|---|---|---|
+| `k8s-cluster-admins` | Cluster-wide | Full administration |
+| `k8s-cluster-viewers` | Cluster-wide | Read-only |
+| `k8s-dev-editors` | Approved dev namespaces | Edit |
 
 ---
 

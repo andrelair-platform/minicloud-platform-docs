@@ -6,7 +6,7 @@ sidebar_label: RBAC Audit
 
 # RBAC Audit — SA vs Human Identity Separation
 
-Reviewed 2026-07-07. This document covers the full RBAC architecture, separation between human and workload identities, accepted-risk cluster-admin grants, and the fixes applied.
+Reviewed 2026-10-27. This document covers the full RBAC architecture, separation between human and workload identities, accepted-risk cluster-admin grants, and the fixes applied.
 
 ## Identity Architecture
 
@@ -14,23 +14,26 @@ The platform enforces a strict separation between human and workload identities.
 
 | Identity type | Path | Example |
 |---|---|---|
-| Human (admin) | Authentik OIDC → OIDC group → ClusterRoleBinding | `oidc:Direction IT → cluster-admin` |
-| Human (read-only) | Authentik OIDC → OIDC group → ClusterRoleBinding | `oidc:Cybersécurité → view` |
+| Human (admin) | Authentik OIDC → Kubernetes access group → ClusterRoleBinding | `oidc:k8s-cluster-admins → cluster-admin` |
+| Human (read-only) | Authentik OIDC → Kubernetes access group → ClusterRoleBinding | `oidc:k8s-cluster-viewers → view` |
 | Break-glass (human) | Static cert kubeconfig (`minicloud-break-glass`) | Used only when Authentik is down |
 | Workload SA | Helm-created SA → ClusterRoleBinding (operator-scoped) | `argocd-application-controller`, `cert-manager` |
 
-Human access never shares identity with workload SAs. OIDC subjects use the `oidc:` prefix (`oidc:kanmegnea`, `oidc:Direction IT`) which is structurally distinct from SA subjects (`system:serviceaccount:namespace:name`).
+Human access never shares identity with workload SAs. OIDC subjects use the `oidc:` prefix (`oidc:100001`, `oidc:k8s-cluster-admins`) which is structurally distinct from SA subjects (`system:serviceaccount:namespace:name`).
 
 ## Human RBAC (GitOps-managed)
 
-All human RBAC is in `manifests/rbac/00-oidc-clusterrolebindings.yaml`:
+Cluster-wide human RBAC is in `platform/security/rbac/00-oidc-clusterrolebindings.yaml`; environment bindings are in `platform/security/rbac/02-env-rolebindings.yaml` and the applicable dev overlays:
 
 | Subject | Type | Role |
 |---|---|---|
-| `oidc:Direction IT` | OIDC Group | `cluster-admin` |
-| `oidc:Cybersécurité` | OIDC Group | `view` |
-| `oidc:Audit` | OIDC Group | `view` |
-| `oidc:kanmegnea` | OIDC User | `cluster-admin` |
+| `oidc:k8s-cluster-admins` | OIDC Group | `cluster-admin` |
+| `oidc:k8s-cluster-viewers` | OIDC Group | `view` |
+| `oidc:k8s-dev-editors` | OIDC Group | `edit` in approved dev namespaces |
+
+There is no standing direct-user ClusterRoleBinding. The break-glass path is the separate certificate
+context `minicloud-break-glass`. Authentik group convergence is owned by
+`minicloud-ops/scripts/authentik/kubernetes-rbac.py`.
 
 **ArgoCD admin login is disabled** (`admin.enabled: false`). The sole login path is Authentik OIDC. Break-glass access is via static cert kubeconfig (no ArgoCD UI).
 
@@ -38,7 +41,7 @@ All human RBAC is in `manifests/rbac/00-oidc-clusterrolebindings.yaml`:
 
 ### Accepted cluster-admin Grants
 
-Two workload SAs hold `cluster-admin`. Both are upstream chart design choices that cannot be scoped without forking the chart. They are formally documented in `manifests/rbac/01-rbac-accepted-risks.yaml` (deployed as a ConfigMap in the cluster for audit trail).
+Two workload SAs hold `cluster-admin`. Both are upstream chart design choices that cannot be scoped without forking the chart. They are formally documented in `platform/security/rbac/01-rbac-accepted-risks.yaml` (deployed as a ConfigMap in the cluster for audit trail).
 
 **`longhorn-system/longhorn-support-bundle → cluster-admin`**
 
@@ -127,4 +130,5 @@ kubectl get configmap rbac-accepted-risks -n default -o yaml
 1. All new namespaces must patch `default` SA to `automountServiceAccountToken: false` before first workload deploy
 2. Workload SAs that do not call the Kubernetes API must set `automount: false` in Helm values or a post-deploy patch
 3. Human access is exclusively via OIDC — no static ServiceAccount tokens for humans
-4. Any new `cluster-admin` grant requires an entry in `manifests/rbac/01-rbac-accepted-risks.yaml` with justification and compensating controls
+4. Any new `cluster-admin` grant requires an entry in `platform/security/rbac/01-rbac-accepted-risks.yaml` with justification and compensating controls
+5. Bind Kubernetes-specific access groups, not broad organisational groups or individual OIDC users

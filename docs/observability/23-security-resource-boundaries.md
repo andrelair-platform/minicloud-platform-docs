@@ -6,7 +6,7 @@ sidebar_position: 23
 
 # Security & Resource Boundaries — RBAC, Admission Control, Quotas & LimitRanges
 
-Evaluated 2026-08-02. Two gaps found and closed in gitops PR #525.
+Evaluated 2026-08-02; RBAC status refreshed 2026-10-27. Two gaps found and closed in gitops PR #525.
 
 | Criterion | Before | After |
 |-----------|--------|-------|
@@ -40,15 +40,14 @@ Evaluated 2026-08-02. Two gaps found and closed in gitops PR #525.
 
 | Subject | Role | Type |
 |---------|------|------|
-| `oidc:Direction IT` | `cluster-admin` | Group |
-| `oidc:kanmegnea` | `cluster-admin` | Direct user |
-| `oidc:Cybersécurité`, `oidc:Audit` | `view` | Group |
+| `oidc:k8s-cluster-admins` | `cluster-admin` | Group |
+| `oidc:k8s-cluster-viewers` | `view` | Group |
 
 **RoleBindings (per namespace):**
 
 | Group | Role | Namespaces |
 |-------|------|------------|
-| `oidc:Développeurs` | `edit` | `platform-demo-dev`, `minicloud-plane-dev`, `collab-dev`, `insurance-dev` |
+| `oidc:k8s-dev-editors` | `edit` | `platform-demo-dev`, `minicloud-plane-dev`, `collab-dev`, `insurance-dev` |
 | `oidc:QA` | `view` | `platform-demo-staging`, `minicloud-plane-staging`, `collab-staging`, `insurance-staging` |
 
 No human RoleBinding on any `*-prod` namespace.
@@ -69,11 +68,12 @@ Gatekeeper's `require-resource-limits` constraint had a namespace exclusion list
 
 After verifying that all 4 Jitsi containers (jicofo, jvb, prosody, web) have explicit resource limits in `helm-values/minicloud-1/jitsi-values.yaml`, `collab` was removed from the exclusion list. New Deployments/StatefulSets in `collab` will now be blocked by Gatekeeper if they lack limits.
 
-### Accepted gap — direct user ClusterRoleBinding
+### Closed gap — direct user ClusterRoleBinding
 
-`oidc-cluster-admin-kanmegnea` grants `cluster-admin` to the individual OIDC user `kanmegnea` rather than going through the group model. This is intentional: the group binding (`oidc:Direction IT → cluster-admin`) relies on Authentik's group token claim, and a direct binding serves as a break-glass fallback if the group claim is misconfigured.
-
-**Path to close:** Add `kanmegnea` to the `Direction IT` Authentik group, then delete `oidc-cluster-admin-kanmegnea`. The group binding alone is sufficient.
+Closed 2026-10-27 in GitOps PR #1992. A freshly issued token for identity `oidc:100001`
+contained `oidc:k8s-cluster-admins`, group-only cluster administration was verified, and Argo CD pruned
+`oidc-cluster-admin-kanmegnea`. Emergency access now uses the separate certificate context
+`minicloud-break-glass`; no direct OIDC user has a standing ClusterRoleBinding.
 
 ### Remaining exclusion list (known backlog)
 
@@ -157,9 +157,9 @@ kubectl delete pod test-lr -n erp
 
 ```
 RBAC
-  cluster-admin  → oidc:Direction IT (group) + oidc:kanmegnea (direct user, break-glass)  ✅
-  view           → oidc:Cybersécurité, oidc:Audit                                          ✅
-  dev edit       → oidc:Développeurs in *-dev namespaces (4 services)                     ✅
+  cluster-admin  → oidc:k8s-cluster-admins (group only)                                  ✅
+  view           → oidc:k8s-cluster-viewers                                               ✅
+  dev edit       → oidc:k8s-dev-editors in approved *-dev namespaces                     ✅
   staging view   → oidc:QA in *-staging namespaces (4 services)                           ✅
   prod           → no human binding, ArgoCD SA only                                       ✅
 

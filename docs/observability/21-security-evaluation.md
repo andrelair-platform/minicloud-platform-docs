@@ -212,20 +212,20 @@ git -C ~/Developer/cloudplateform/minicloud-gitops log --all -p -- '**/*.yaml' \
 
 ### ClusterRoleBindings (cluster-wide)
 
-Defined in `manifests/rbac/00-oidc-clusterrolebindings.yaml`:
+Defined in `platform/security/rbac/00-oidc-clusterrolebindings.yaml`:
 
 | Group | ClusterRole | Scope |
 |---|---|---|
-| `oidc:Platform Admins` | `cluster-admin` | Full cluster (ArgoCD, cert-manager management) |
-| `oidc:Viewers` | `view` | Read-only across all namespaces |
+| `oidc:k8s-cluster-admins` | `cluster-admin` | Full cluster administration |
+| `oidc:k8s-cluster-viewers` | `view` | Read-only across all namespaces |
 
 ### RoleBindings (namespace-scoped)
 
-Defined in `manifests/rbac/02-env-rolebindings.yaml`:
+Defined in `platform/security/rbac/02-env-rolebindings.yaml` and applicable dev overlays:
 
 | Group | Role | Namespaces |
 |---|---|---|
-| `oidc:Développeurs` | `edit` | `platform-demo-dev`, `minicloud-plane-dev` |
+| `oidc:k8s-dev-editors` | `edit` | Approved development namespaces |
 | `oidc:QA` | `view` | `platform-demo-staging`, `minicloud-plane-staging` |
 
 **Production namespaces have no human RoleBinding.** Only the ArgoCD
@@ -235,7 +235,7 @@ or `cluster-admin` escalation (Authentik OIDC MFA gate).
 
 ### Accepted risks
 
-`manifests/rbac/01-rbac-accepted-risks.yaml` documents workloads that
+`platform/security/rbac/01-rbac-accepted-risks.yaml` documents workloads that
 require elevated cluster-scoped permissions and the justification:
 - Falco (`cluster-admin` equivalent for eBPF probe access)
 - Velero (needs to read/write all namespaces for backup/restore)

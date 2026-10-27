@@ -91,12 +91,12 @@ Two Authentik groups created and bound to Kubernetes RBAC:
 
 | Group | Kubernetes binding | Namespaces |
 |-------|-------------------|------------|
-| `oidc:Développeurs` | `ClusterRole/edit` | all `*-dev` namespaces |
+| `oidc:k8s-dev-editors` | `ClusterRole/edit` | approved `*-dev` namespaces |
 | `oidc:QA` | `ClusterRole/view` | all `*-staging` namespaces |
 
 Production namespaces have **no human RoleBinding** — ArgoCD service account access is the only path to prod, enforcing the principle of least privilege.
 
-`manifests/rbac/02-env-rolebindings.yaml` covers `platform-demo` and `minicloud-plane`. Per-overlay `03-rolebinding.yaml` files handle `collab` and `insurance` via the `environments/overlays/` ApplicationSet path.
+`platform/security/rbac/02-env-rolebindings.yaml` covers `platform-demo` and `minicloud-plane`. Per-overlay `03-rolebinding.yaml` files handle `collab` and `insurance` through their environment overlays.
 
 ### 6. Prod Namespace Rename (PR #485)
 
@@ -169,7 +169,7 @@ _template/
     ├── dev/
     │   ├── ingress.yaml             ← Authentik forward-auth, SERVICE_NAME-dev host
     │   ├── quota.yaml               ← dev ResourceQuota + LimitRange
-    │   └── rolebinding.yaml         ← oidc:Développeurs → edit
+    │   └── rolebinding.yaml         ← oidc:k8s-dev-editors → edit
     ├── staging/
     │   ├── ingress.yaml
     │   ├── quota.yaml
