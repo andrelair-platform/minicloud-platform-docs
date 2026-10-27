@@ -102,6 +102,13 @@ Before hardening this returned the full API discovery response to unauthenticate
 
 **Audit policy file** at `/etc/rancher/k3s/audit-policy.yaml` on set-hog:
 
+:::warning Known identity mismatch — verified 2026-10-27
+The live `RequestResponse` rule still targets the retired username `oidc:kanmegnea`. Current OIDC login
+produces `oidc:100001`, so that identity falls through to the final `Metadata` rule. This is documented
+live-state drift, not a completed remediation. The audit policy must be moved into Ansible and changed to
+the stable identity or an appropriate `userGroups` rule in a separately reviewed security change.
+:::
+
 ```yaml
 apiVersion: audit.k8s.io/v1
 kind: Policy

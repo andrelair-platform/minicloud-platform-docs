@@ -77,7 +77,7 @@ A change record (GitHub Issue) is created automatically when a PR merges **and**
 
 - The PR touches a production overlay (`*/minicloud-1/prod/**`)
 - The PR touches `helm-values/minicloud-1/`
-- The PR touches `manifests/rbac/`, `manifests/network-policies/`, or `bootstrap/`
+- The PR touches `platform/security/rbac/`, `platform/security/network-policies/`, or `bootstrap/`
 - The PR is classified as `risk: medium` or `risk: high` in the PR template
 
 Change records for a production merge look like this:

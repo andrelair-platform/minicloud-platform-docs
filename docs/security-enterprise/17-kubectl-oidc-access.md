@@ -6,7 +6,7 @@ sidebar_label: "🔑 kubectl OIDC Access"
 
 # kubectl OIDC Access — Setup & Troubleshooting
 
-The `minicloud-oidc` kubectl context authenticates via Authentik using the OIDC Authorization Code flow + PKCE (kubelogin). Getting this working end-to-end required fixing four independent bugs across four different layers. This page documents the correct configuration and the full debugging chain so it can be reproduced on any new machine.
+The `minicloud-oidc` kubectl context authenticates via Authentik using the OIDC Authorization Code flow + PKCE (kubelogin). This page records the current configuration, its declarative owners, and the evidence-first troubleshooting chain. Last live verification: **2026-10-27**.
 
 ---
 
@@ -19,7 +19,7 @@ Mac (kubectl)
             └─ RS256 JWT returned to localhost:8000 callback
                  └─ kubectl presents token to k3s API (10.0.0.2:6443)
                       └─ kube-apiserver fetches JWKS from Authentik to verify signature
-                           └─ RBAC: oidc:kanmegnea ClusterRoleBinding
+                           └─ RBAC: oidc:k8s-cluster-admins ClusterRoleBinding
 ```
 
 Three network hops all require explicit configuration:
@@ -59,6 +59,9 @@ The `profile` scope is mandatory — without it Authentik omits `preferred_usern
 
 ## k3s Configuration (`/etc/rancher/k3s/config.yaml` on set-hog)
 
+The desired state is owned by `minicloud-ansible/roles/k3s-oidc/` and applied with
+`minicloud-ansible/playbooks/configure-k3s-oidc.yml`. Do not edit the live file as the normal change path.
+
 ```yaml
 kube-apiserver-arg:
   - "oidc-issuer-url=https://auth.10.0.0.200.nip.io/application/o/kubernetes/"
@@ -70,17 +73,23 @@ kube-apiserver-arg:
   - "oidc-groups-prefix=oidc:"
 ```
 
-The CA file must be copied to set-hog before use:
+Apply or verify the configuration from `minicloud-ansible`:
 
 ```bash
-scp ~/minicloud-ca.crt set-hog:/tmp/minicloud-ca.crt
-ssh set-hog "sudo cp /tmp/minicloud-ca.crt /etc/rancher/k3s/minicloud-ca.crt"
-sudo systemctl restart k3s
+ansible-playbook playbooks/configure-k3s-oidc.yml --check --diff --limit set-hog
+ansible-playbook playbooks/configure-k3s-oidc.yml --limit set-hog
 ```
+
+The role validates OIDC discovery and the exact issuer, backs up the K3s configuration, restarts K3s
+only when configuration changes, waits for `/readyz`, and verifies Gatekeeper webhook recovery.
 
 ---
 
 ## Authentik OAuth2 Provider
+
+Kubernetes-specific access groups and provider mappings are converged by
+`minicloud-ops/scripts/authentik/kubernetes-rbac.sh`. It is plan-only by default; mutation requires
+`AK_APPLY=1`. The provider must attach exactly one mapping that emits the `groups` claim.
 
 The `kubernetes` provider must have an RSA signing key set. Without one, Authentik signs JWTs with the `client_secret` using HS256, which kubelogin and k3s both reject.
 
@@ -238,13 +247,32 @@ print('groups' in data, data.get('groups'))
 # → False None   (claim absent)
 ```
 
-**Fix:** Add `--oidc-extra-scope=profile` to the `oidc-user` exec args in `~/.kube/config`. Delete the stale cache to force a fresh token:
+**Fix:** Add `--oidc-extra-scope=profile` to the `oidc-user` exec args in `~/.kube/config`. Clear the stale cache with kubelogin to force a fresh token:
 ```bash
-rm ~/.kube/cache/oidc-login/*
+kubectl oidc-login clean
 kubectl --context minicloud-oidc get nodes   # triggers fresh browser login
 ```
 
 ---
+
+## 2026-10-27 authentication and authorization remediation
+
+The browser reported a successful Authentik login while Kubernetes returned `Unauthorized`. Evidence
+showed that networking, TLS, discovery and kubelogin were healthy, but the K3s API server did not have
+the OIDC authenticator arguments. After the Ansible-managed repair, authentication produced the stable
+identity `oidc:100001`; the previous direct RBAC subject expected a different username.
+
+The durable authorization model is now:
+
+| Authentik group | Kubernetes permission |
+|---|---|
+| `k8s-cluster-admins` | `cluster-admin`, cluster-wide |
+| `k8s-cluster-viewers` | `view`, cluster-wide |
+| `k8s-dev-editors` | `edit`, approved development namespaces |
+
+Organisational groups remain the membership sources in Authentik, but Kubernetes binds only these
+purpose-specific groups. Identity `100001` is a member of `k8s-cluster-admins`. The temporary direct
+`oidc:100001` ClusterRoleBinding was removed after a newly issued token proved group-only access.
 
 ## Verification Checklist (new machine setup)
 
@@ -264,18 +292,41 @@ nc -zv -G 5 10.0.0.2 6443
 kubectl --context minicloud-oidc get nodes
 # → browser opens once, then cached silently
 
-# 5. Verify token has preferred_username
-python3 -c "
-import base64, json, glob, os
-f = glob.glob(os.path.expanduser('~/.kube/cache/oidc-login/*.json'))
-if not f: print('no cache'); exit()
-payload = json.loads(open(f[0]).read())['id_token'].split('.')[1]
-payload += '=' * (4 - len(payload) % 4)
-d = json.loads(base64.urlsafe_b64decode(payload))
-print('user:', d.get('preferred_username'))
-print('groups:', d.get('groups'))
-"
+# 5. Ask the API server which authenticated identity and groups it accepted
+kubectl --context minicloud-oidc auth whoami -o json
+# Expected username: oidc:<stable employee ID>
+# Administrators must include: oidc:k8s-cluster-admins
+
+# 6. Verify effective authorization using the real token
+kubectl --context minicloud-oidc auth can-i '*' '*' --all-namespaces
 ```
+
+To force new claims after an Authentik membership or mapping change, use the plugin's supported cleanup
+command rather than deleting cache files manually:
+
+```bash
+kubectl oidc-login clean
+kubectl --context minicloud-oidc auth whoami -o json
+```
+
+## Declarative ownership and rollback
+
+| Concern | Source of truth | Rollback |
+|---|---|---|
+| K3s OIDC authenticator | `minicloud-ansible/roles/k3s-oidc/` | Run the focused playbook with `-e k3s_oidc_state=absent` |
+| Authentik access groups and mappings | `minicloud-ops/scripts/authentik/kubernetes-rbac.py` | Revert the operations change, review its plan, then apply deliberately |
+| Kubernetes human RBAC | `minicloud-gitops/platform/security/rbac/` | Revert the relevant GitOps PR and let Argo CD reconcile |
+
+The emergency path is the `minicloud-break-glass` certificate context. It is not a daily-use identity and
+is distinct from the removed direct OIDC user binding.
+
+### Change evidence
+
+- [`minicloud-ansible#25`](https://github.com/andrelair-platform/minicloud-ansible/pull/25) — durable K3s OIDC authenticator
+- [`minicloud-ops#24`](https://github.com/andrelair-platform/minicloud-ops/pull/24) — Authentik Kubernetes access groups and claim mapping
+- [`minicloud-gitops#1991`](https://github.com/andrelair-platform/minicloud-gitops/pull/1991) — group-based Kubernetes RBAC
+- [`minicloud-ansible#26`](https://github.com/andrelair-platform/minicloud-ansible/pull/26) — Ansible CI and post-restart Gatekeeper checks
+- [`minicloud-gitops#1992`](https://github.com/andrelair-platform/minicloud-gitops/pull/1992) — removal of the temporary direct-user binding
 
 ---
 
