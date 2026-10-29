@@ -136,34 +136,16 @@ Full detail — the Oracle + GlobalCore evolution, the SOAP/batch wrap, the CDC/
 **[Legacy-Core Modernization](./legacy-core-modernization)** and the wrapper initiative spec
 (`ktayl-integration/docs/legacy-wrapper-initiative-spec.md`).
 
-## 3. Gap analysis — target vs **deployed reality** (verified on-cluster, 2026-09-14)
+## 3. Gap analysis — target vs **deployed reality**
 
-This is the honest status from **what's actually running** (every Deployment/StatefulSet across all
-namespaces), not just what has a repo/board. Status: 🟢 deployed & serving · 🟡 partial (platform up or
-repo exists, business capability not built/configured) · 🔴 nothing running.
-
-### The 12 domains
-| # | Domain | Board | **Deployed reality** | Status |
-|---|---|---|---|---|
-| 1 | Distribution / CRM / Broker portal | #13 | ERPNext platform up (`erp/`) but **CRM not configured**; no broker portal | 🟡 platform only |
-| 2 | Underwriting workbench | #12 | nothing running (repo scaffold) | 🔴 |
-| 3 | Pricing / Rating engine | #12 | nothing running | 🔴 |
-| 4 | **Policy Administration (PAS)** | #6 | **`ktayl-policy-service` + `ktayl-postgres`** (ktayl + ktayl-prod) | 🟢 **live** |
-| 5 | Claims | #11 | scaffold — planned as the modern **ACL/strangler** that wraps **GlobalCore** to deliver Claims (§2b) | 🔴 |
-| — | **Legacy core** — GlobalCore (`globalcore-legacy`) | Track C | Java 8 / SOAP / batch **built ✅**; evolving to **Oracle + the Claims domain** as the deliberate legacy the modern Claims wrap delivers (§2b, [Legacy-Core Modernization](./legacy-core-modernization)) | 🟡 built, evolving |
-| 6 | Risk Engineering / Prevention | #21 | nothing running (repo `ktayl-risk-engineering` scaffold) | 🔴 |
-| 7 | International Programs | #23 | nothing running (repo `ktayl-international-programs` scaffold) | 🔴 |
-| 8 | Billing / Premium & Finance | #14 | ERPNext finance up, **insurance billing not configured** | 🟡 platform only |
-| 9 | Reinsurance | #22 | nothing running (repo `ktayl-reinsurance` scaffold) | 🔴 |
-| 10 | Compliance / Legal | #15 | nothing (Presidio PII is a data tool, not a compliance system) | 🔴 |
-| 11 | Data / Actuarial | #5 | analytics stack (ClickHouse/dbt/Superset) **not deployed**; only MLflow up | 🔴 |
-| 12 | Enterprise IT | #3/#4/#10/#16/#17 | **very strong — see note below** (except ITSM/GLPI + CMDB) | 🟢 |
-
-**Enterprise IT (#12) deployed detail:** 🟢 IAM (Authentik) · M365-alt suite (Nextcloud, OnlyOffice,
-Stalwart mail, Matrix/Element, Jitsi, Docuseal, n8n) · cloud/k8s (ArgoCD, Kargo, cert-manager +
-trust-manager, ESO, Vault, Harbor, Cilium, Longhorn, KEDA, VPA, Velero) · observability
-(Prometheus/Grafana/Loki/Tempo) · security (Falco, Gatekeeper, Polaris, Trivy) · DevPortal (Backstage) ·
-project-mgmt (Plane CE). 🔴 **Not deployed: ITSM/GLPI (#16) + CMDB** (Plane covers project-mgmt, not helpdesk).
+> **Live status now lives on the [📊 SI Delivery Board](../delivery-board).** That board is the single,
+> continuously re-verified source for *what is deployed vs missing* across every domain — checked
+> against the live ArgoCD application set + the org repositories, so it does not go stale as services
+> ship. (The per-domain status tables that used to sit here, verified on-cluster 2026-09-14, were
+> moved there after several domains — Underwriting, Claims, Data Platform, ITSM — went live.)
+>
+> This section keeps only the **architectural rationale** behind the gaps — *why* certain domains are
+> deferred, parked or scoped out — which is durable and does not change with each deploy.
 
 :::info Scope boundary — BYOD, no managed endpoints (deliberate)
 ktayl manages **no company computers, phones, or desk telephony** — employees use their own device,
@@ -178,12 +160,12 @@ the primary control. **Revisit** when real employees + PII-at-volume or a produc
 :::
 
 ### The 4 transversal layers
-| Layer | Board | **Deployed reality** | Status |
-|---|---|---|---|
-| **Enterprise Document Platform** (GED / OCR / IDP) | #24 | Nextcloud (storage) + OnlyOffice (edit) + **Docuseal** (e-sign) + **Docling + markitdown-proxy → Qdrant** (OCR/parse/embed → RAG) all **live**; missing a records-mgmt DMS (Paperless-ngx) + the structured IDP pipeline as a product (repo `ktayl-dms` scaffold). Full spec: [Business Applications Catalog §8](./business-applications-catalog) | 🟡 partial |
-| Integration (API-GW / ESB / ETL / MFT / EDI) | #25 | **NATS** (events) + **Temporal** (workflow) + **n8n** (low-code integration) **live** as primitives; missing the formal API-GW/ESB/ETL/MFT/EDI insurance fabric (repo `ktayl-integration` scaffold) | 🟡 primitives only |
-| Master Data / Référentiels (MDM) | #20 | nothing running (repo scaffold, **parked** — see §5) | 🔴 |
-| Data | #5 | only MLflow; analytical Data Platform not deployed | 🔴 |
+
+The four transversal layers — **Enterprise Document Platform** (#24), **Integration** (#25),
+**Master Data / MDM** (#20) and **Data** (#5) — carry their own rows on the
+[📊 SI Delivery Board](../delivery-board) (live deployed-vs-missing status). Their *architectural*
+rationale — why MDM is distinct from the Data Platform, and why the Data Platform is deliberately
+deferred — is kept in the notes below.
 
 :::info MDM (#20) vs Data Platform (#5) — different things, not a duplicate
 **MDM = operational OLTP** golden records + low-latency lookup (PostgreSQL), consumed by the copilot
