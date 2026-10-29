@@ -9,7 +9,7 @@ The detailed backlog behind the **ktayl-solution IS** — the simulated commerci
 information system on the minicloud platform. **This is the inventory view;** for the *shape* of the plan
 start with the two pages below.
 
-**Start here →** [🗺 Architecture at a Glance](../insurance-platform/architecture-at-a-glance) · **What to build next (the 3 tracks) →** [🧭 IS Build Roadmap](../product-roadmap/is-build-roadmap) · **Full catalogue →** [Business Applications Catalog](../insurance-platform/business-applications-catalog) · **Functional target + deployed reality →** [EA Blueprint](../insurance-platform/enterprise-architecture-blueprint)
+**Start here →** [🗺 Architecture at a Glance](../insurance-platform/architecture-at-a-glance) · **What to build next (the 3 tracks) →** [🧭 IS Build Roadmap](../product-roadmap/is-build-roadmap) · **Full catalogue →** [Business Applications Catalog](../insurance-platform/business-applications-catalog) · **Functional target →** [EA Blueprint](../insurance-platform/enterprise-architecture-blueprint) · **Live deployed status (ready vs missing) →** [📊 SI Delivery Board](../delivery-board)
 
 :::warning Read this before the tables — the framing changed
 1. **This IS is *not* the certification.** The RNCP39583 deliverable is **Retrieva** (a separate product

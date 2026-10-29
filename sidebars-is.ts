@@ -16,6 +16,9 @@ const sidebars: SidebarsConfig = {
 
     architectureLink,
 
+    // ── Global Delivery Board (live status: ready vs missing) ────────
+    {type: 'doc', id: 'delivery-board', label: '📊 SI Delivery Board'},
+
     // ── Business Applications ────────────────────────────────────────
     {
       type: 'category',
