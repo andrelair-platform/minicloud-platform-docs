@@ -131,10 +131,35 @@ def load_app_envs() -> dict[str, set[str]]:
     return envs
 
 
+def argo_health() -> dict[str, tuple[str, str]]:
+    """OPTIONAL live overlay: app-name → (sync, health) from ArgoCD, {} if the cluster is unreachable
+    (e.g. in CI — which is why this never feeds the COMMITTED board, only the `--live` terminal view).
+    Tries, in order: local `--context minicloud`, local plain kubectl (the controller's own default), then
+    `ssh controller` (the reliable path from the Mac, whose kubeconfig has no minicloud context)."""
+    attempts = [
+        ["kubectl", "--context", "minicloud", "-n", "argocd", "get", "applications", "-o", "json"],
+        ["kubectl", "-n", "argocd", "get", "applications", "-o", "json"],
+        ["ssh", "controller", "kubectl -n argocd get applications -o json"],
+    ]
+    for cmd in attempts:
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        if r.returncode != 0 or not r.stdout.strip():
+            continue
+        try:
+            items = json.loads(r.stdout).get("items", [])
+        except json.JSONDecodeError:
+            continue
+        if items:
+            return {a["metadata"]["name"]: (a.get("status", {}).get("sync", {}).get("status", "?"),
+                                            a.get("status", {}).get("health", {}).get("status", "?"))
+                    for a in items}
+    return {}
+
+
 def classify(cfg: dict, sizes: dict[str, int], app_envs: dict[str, set[str]]):
-    """→ (glyph, evidence_str)."""
+    """→ (glyph, evidence_str, matched_app_names)."""
     if cfg.get("parked"):
-        return "⏸", f"parked — {cfg['parked']}"
+        return "⏸", f"parked — {cfg['parked']}", []
     # collect envs across this board's app prefixes
     envs: set[str] = set()
     hit_apps: list[str] = []
@@ -142,27 +167,44 @@ def classify(cfg: dict, sizes: dict[str, int], app_envs: dict[str, set[str]]):
         if any(app == pre or app.startswith(pre) for pre in cfg.get("apps", [])):
             envs |= es
             hit_apps.append(app)
+    hits = sorted(set(hit_apps))
     repos = cfg.get("repos", [])
     sized = [(r, sizes.get(r)) for r in repos if r in sizes]
     biggest = max((s or 0) for _, s in sized) if sized else 0
 
     if cfg.get("external"):
-        return "🟢", f"live off-cluster ({cfg['external']})"
+        return "🟢", f"live off-cluster ({cfg['external']})", []
     if "prod" in envs or "singleton" in envs:
         env_note = "dev+prod" if "dev" in envs else "prod"
-        return "🟢", f"{env_note} · apps: {', '.join(sorted(set(hit_apps))[:4])}"
+        return "🟢", f"{env_note} · apps: {', '.join(hits[:4])}", hits
     if "dev" in envs:
-        return "🔵", f"dev · apps: {', '.join(sorted(set(hit_apps))[:4])}"
+        return "🔵", f"dev · apps: {', '.join(hits[:4])}", hits
     if biggest >= SCAFFOLD_KB:
-        return "🔶", f"repo has content ({biggest} KB), no Application yet: {repos[0] if repos else '—'}"
+        return "🔶", f"repo has content ({biggest} KB), no Application yet: {repos[0] if repos else '—'}", []
     if repos and biggest > 0:
-        return "❌", f"scaffold repo ({biggest} KB): {repos[0]}"
+        return "❌", f"scaffold repo ({biggest} KB): {repos[0]}", []
     if repos:
-        return "❌", f"repo not found / empty: {repos[0]}"
-    return "❌", "no repo yet"
+        return "❌", f"repo not found / empty: {repos[0]}", []
+    return "❌", "no repo yet", []
+
+
+def health_cell(apps: list[str], health: dict[str, tuple[str, str]]) -> str:
+    """Summarise live ArgoCD sync/health for a board's matched apps (for the --live overlay). `apps` are
+    de-suffixed manifest stems (e.g. `retrieva`); live app names carry the env suffix (`retrieva-dev`,
+    `retrieva-prod`) — so match a live app when its name == the stem or starts with `<stem>-`."""
+    seen: dict[str, tuple[str, str]] = {}
+    for stem in apps:
+        for name, sh in health.items():
+            if name == stem or name.startswith(stem + "-"):
+                seen[name] = sh
+    if not seen:
+        return "—"
+    bad = [f"{a}:{s}/{h}" for a, (s, h) in sorted(seen.items()) if not (s == "Synced" and h == "Healthy")]
+    return "✓ Synced/Healthy" if not bad else "⚠ " + "; ".join(bad[:3])
 
 
 def main() -> int:
+    live = "--live" in sys.argv
     boards = load_boards()
     if not boards:
         print("no boards from `gh project list` — aborting (gh/auth/scope issue)", file=sys.stderr)
@@ -171,17 +213,36 @@ def main() -> int:
     app_envs = load_app_envs()
     if not app_envs:
         print("warning: no gitops apps/** read — deploy status will be degraded", file=sys.stderr)
+    health = argo_health() if live else {}
+    if live and not health:
+        print("warning: --live could not reach ArgoCD (no cluster access) — showing declared status only",
+              file=sys.stderr)
 
-    rows: dict[str, list[tuple[int, str, str]]] = {g: [] for g in ORDER}
+    rows: dict[str, list[tuple[int, str, str, list[str]]]] = {g: [] for g in ORDER}
     counts: dict[str, int] = {g: 0 for g in ORDER}
     for b in boards:
         num, title = b["number"], b["title"]
         cfg = BRIDGE.get(num, {"repos": [], "apps": []})
-        glyph, evidence = classify(cfg, sizes, app_envs)
-        rows[glyph].append((num, title, evidence))
+        glyph, evidence, hits = classify(cfg, sizes, app_envs)
+        rows[glyph].append((num, title, evidence, hits))
         counts[glyph] += 1
 
     summary = " · ".join(f"{g} {counts[g]}" for g in ORDER if counts[g])
+
+    # --live: print an enriched view to STDOUT and exit WITHOUT writing the committed page
+    # (CI has no cluster, so live health must never land in the committed, CI-regenerated file → no drift).
+    if live:
+        print(f"SI Delivery Board — LIVE ({date.today().isoformat()})   {summary}")
+        for g in ORDER:
+            if not rows[g]:
+                continue
+            print(f"\n{HEADING[g].lstrip('# ')}")
+            for num, title, evidence, hits in sorted(rows[g]):
+                h = f"   [{health_cell(hits, health)}]" if (hits and health) else ""
+                print(f"  {g} #{num:<3} {title:<46} {evidence}{h}")
+        if not health:
+            print("\n(live health unavailable — ran without cluster access; the COMMITTED page is unchanged)")
+        return 0
     out: list[str] = [
         f"_Auto-generated {date.today().isoformat()} by `scripts/gen-si-delivery.py` from the live GitHub "
         f"product boards + the gitops `apps/**` manifests + repo sizes — do not hand-edit between the markers._",
@@ -193,7 +254,7 @@ def main() -> int:
         if not rows[g]:
             continue
         out += [HEADING[g], "", "| Board | Domain | Evidence |", "|---|---|---|"]
-        for num, title, evidence in sorted(rows[g]):
+        for num, title, evidence, _ in sorted(rows[g]):
             link = f"[#{num}](https://github.com/orgs/{ORG}/projects/{num})"
             out.append(f"| {link} | {title} | {evidence} |")
         out.append("")
