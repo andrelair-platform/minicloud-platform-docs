@@ -93,8 +93,12 @@ _Auto-generated 2026-10-30 by `scripts/gen-si-delivery.py` from the live GitHub 
 ## Notes & caveats
 
 - **Deploy status is read from the gitops `apps/**` manifests, not the live cluster** — so it reflects
-  what is *declared* (ArgoCD will reconcile it). For live sync/health run `kubectl --context minicloud
-  get applications -n argocd`, or see the Grafana *Delivery Portfolio* dashboard.
+  what is *declared* (ArgoCD will reconcile it). This is deliberate: the committed board must be
+  CI-reproducible (CI has no cluster access), so **live health is never written into this page** (it would
+  drift every week). For a **live Synced/Health overlay on demand**, run `python3 scripts/gen-si-delivery.py
+  --live` — it prints the board to your terminal with per-domain ArgoCD health (reaching the cluster via
+  local kubectl or `ssh controller`), without touching this page. For a dashboard, see Grafana
+  *Delivery Portfolio*.
 - **🔶 vs ❌ uses a repo-size heuristic** (`SCAFFOLD_KB` in the generator) only to split *no-Application*
   boards into "has real content" vs "scaffold" — it is intentionally approximate.
 - **Opening a board ≠ a build commitment.** A board identifies a domain and gives its backlog a home; the
