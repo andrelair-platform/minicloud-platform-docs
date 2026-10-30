@@ -75,9 +75,9 @@ _Auto-generated 2026-10-30 by `scripts/gen-si-delivery.py` from the live GitHub 
 | [#24](https://github.com/orgs/andrelair-platform/projects/24) | ktayl Documents & DMS | scaffold repo (6 KB): ktayl-dms |
 | [#25](https://github.com/orgs/andrelair-platform/projects/25) | ktayl Integration Platform | scaffold repo (31 KB): ktayl-integration |
 | [#27](https://github.com/orgs/andrelair-platform/projects/27) | ktayl Submission Hub | repo not found / empty: ktayl-submission |
-| [#29](https://github.com/orgs/andrelair-platform/projects/29) | ktayl Investment & Treasury (ALM) | no repo yet |
-| [#30](https://github.com/orgs/andrelair-platform/projects/30) | ktayl Complaints & Disputes | no repo yet |
-| [#31](https://github.com/orgs/andrelair-platform/projects/31) | ktayl Procurement & Contract Management | no repo yet |
+| [#29](https://github.com/orgs/andrelair-platform/projects/29) | ktayl Investment & Treasury (ALM) | repo not found / empty: ktayl-investment |
+| [#30](https://github.com/orgs/andrelair-platform/projects/30) | ktayl Complaints & Disputes | repo not found / empty: ktayl-complaints |
+| [#31](https://github.com/orgs/andrelair-platform/projects/31) | ktayl Procurement & Contract Management | repo not found / empty: ktayl-procurement |
 
 ## ⏸ Parked — deliberate hold
 

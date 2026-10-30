@@ -69,9 +69,9 @@ BRIDGE: dict[int, dict] = {
     25: {"repos": ["ktayl-integration"], "apps": []},
     27: {"repos": ["ktayl-submission"], "apps": []},
     28: {"repos": ["ktayl-core"], "apps": ["ktayl-core"]},
-    29: {"repos": [], "apps": []},   # Investment & Treasury (ALM) — newly identified 2026-10-30
-    30: {"repos": [], "apps": []},   # Complaints & Disputes — newly identified 2026-10-30
-    31: {"repos": [], "apps": []},   # Procurement & Contract Mgmt — newly identified 2026-10-30
+    29: {"repos": ["ktayl-investment"], "apps": ["ktayl-investment"]},    # Investment & Treasury (ALM) — blind-spot 2026-10-30 (repo/app to create)
+    30: {"repos": ["ktayl-complaints"], "apps": ["ktayl-complaints"]},    # Complaints & Disputes — blind-spot 2026-10-30 (repo/app to create)
+    31: {"repos": ["ktayl-procurement"], "apps": ["ktayl-procurement"]},  # Procurement & Contract Mgmt — blind-spot 2026-10-30 (repo/app to create)
 }
 
 ORDER = ["🟢", "🔵", "🔶", "❌", "⏸"]
