@@ -120,6 +120,14 @@ The blueprint says **buy** IAM/CRM/ITSM/DMS/ERP/Finance. We **build** several of
 
 We're **past Wave 0's tech foundation and past the AI-platform (Wave 6 infra)** already. So our real backlog re-sequences around P1–P4:
 
+> ⚠️ **VERY IMPORTANT — the P2 sequencing trap.** When P2 (margin / pricing) is picked up, the honest
+> **first slice is NOT the Pricing Engine — it is the Data Platform depth it depends on** (a warehouse +
+> curated loss-ratio / portfolio analytics). Technical/experience rating, portfolio steering and
+> loss/combined-ratio monitoring all *read from* that data layer; building the Pricing Engine before the
+> warehouse exists means building against stubs for zero real value (the same "don't build the automation
+> before its foundation" lesson as the parked copilot/MDM). **Order: Stage B Data Platform depth → then
+> Stage C Pricing Engine.** Same dependency shape as P1 (its models need the hazard/climate data layer first).
+
 **Stage A — Complete Wave 0 (cheap, unlocks everything, literally "fill what's missing"):**
 - Maintain the populated **capability registry** (this xlsx): actual apps + status + SoR + board/repository + declared environment + target DORA/RTO/RPO. Complete vendor mapping, evidence-based maturity and measured recovery fields.
 - Declare the **System-of-Record registry** + a first **canonical data model** + **event catalogue** skeleton.
