@@ -126,7 +126,18 @@ We're **past Wave 0's tech foundation and past the AI-platform (Wave 6 infra)** 
 > loss/combined-ratio monitoring all *read from* that data layer; building the Pricing Engine before the
 > warehouse exists means building against stubs for zero real value (the same "don't build the automation
 > before its foundation" lesson as the parked copilot/MDM). **Order: Stage B Data Platform depth → then
-> Stage C Pricing Engine.** Same dependency shape as P1 (its models need the hazard/climate data layer first).
+> Stage C Pricing Engine.** Same dependency shape as **P1** (its CAT/secondary-peril models need the
+> hazard/climate data layer first) and **P3** (see below).
+>
+> ⚠️ **P3 (systemic cyber/AI accumulation) — identified + planned-later, and the CHEAPEST differentiator
+> to turn into a strength.** The `provider → dependency → nth-party` **graph engine already exists**
+> (Retrieva, for the insurer's *own* DORA ICT third-party). P3 = **reuse that graph over the policyholder
+> portfolio** to answer *"one AWS/CrowdStrike outage → which policies, what total limit/exposure?"* — the
+> accumulation question that threatens solvency. **But same data-foundation-first dependency:** it needs
+> the **Data Platform depth + MDM** (to resolve which policies share a cloud/software provider) + captured
+> policy-exposure data **before** the graph can be applied. `CAP-209` Exposure & Accumulation Analytics =
+> **PARTIAL**. Order: Stage B (Data Platform + MDM) → Stage D (apply the Retrieva graph for portfolio
+> accumulation). Don't build the accumulation product before the data layer + MDM exist.
 
 **Stage A — Complete Wave 0 (cheap, unlocks everything, literally "fill what's missing"):**
 - Maintain the populated **capability registry** (this xlsx): actual apps + status + SoR + board/repository + declared environment + target DORA/RTO/RPO. Complete vendor mapping, evidence-based maturity and measured recovery fields.
