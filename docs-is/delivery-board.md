@@ -88,9 +88,9 @@ _Auto-generated 2026-10-31 by `scripts/gen-si-delivery.py` from the live GitHub 
 | [#24](https://github.com/orgs/andrelair-platform/projects/24) | ktayl Documents & DMS | not assessed · 16 caps | scaffold repo (6 KB): ktayl-dms |
 | [#25](https://github.com/orgs/andrelair-platform/projects/25) | ktayl Integration Platform | not assessed · 24 caps | scaffold repo (31 KB): ktayl-integration |
 | [#27](https://github.com/orgs/andrelair-platform/projects/27) | ktayl Submission Hub | not assessed · 20 caps | repo not found / empty: ktayl-submission |
-| [#29](https://github.com/orgs/andrelair-platform/projects/29) | ktayl Investment & Treasury (ALM) | not assessed · 18 caps | repo not found / empty: ktayl-investment |
-| [#30](https://github.com/orgs/andrelair-platform/projects/30) | ktayl Complaints & Disputes | not assessed · 13 caps | repo not found / empty: ktayl-complaints |
-| [#31](https://github.com/orgs/andrelair-platform/projects/31) | ktayl Procurement & Contract Management | not assessed · 35 caps | repo not found / empty: ktayl-procurement |
+| [#29](https://github.com/orgs/andrelair-platform/projects/29) | ktayl Investment & Treasury (ALM) | 0% · not started (18 caps) | repo not found / empty: ktayl-investment |
+| [#30](https://github.com/orgs/andrelair-platform/projects/30) | ktayl Complaints & Disputes | 0% · not started (13 caps) | repo not found / empty: ktayl-complaints |
+| [#31](https://github.com/orgs/andrelair-platform/projects/31) | ktayl Procurement & Contract Management | 0% · not started (35 caps) | repo not found / empty: ktayl-procurement |
 
 ## ⏸ Parked — deliberate hold
 

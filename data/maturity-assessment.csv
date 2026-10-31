@@ -13,3 +13,6 @@ Board,Domain,Functional,Process,Integration,Data,Operational,Basis
 16,ktayl ITSM (GLPI),2,2,2,2,2,"Dev only (not prod) — native OIDC + employee ingestion live; CMDB/SLA/full ITIL shallow"
 17,Access Governance (IAM/IGA),3,4,4,3,4,"Custom IGA dual-approval live, SSO everywhere (Authentik), CNPG-backed; ABAC-per-business-object + SOC/vuln-mgmt missing"
 28,ktayl-core (modular monolith),1,1,1,1,2,"Infra only (ktayl-core-infra deployed); the Billing module (premium→cash→GL) is still being built — no business capability live yet"
+29,ktayl Investment & Treasury (ALM),0,0,0,0,0,"Greenfield — board opened 2026-10-30, no repo/app/design yet. The insurer's 'second business' (investment portfolio + ALM duration-matching + treasury/FX + SCR market-risk); likely ADOPT specialist tooling. 18 target caps."
+30,ktayl Complaints & Disputes,0,0,0,0,0,"Greenfield — board opened 2026-10-30, no repo/app/design yet. ACPR/EIOPA/IDD complaints obligation (register, deadlines, ombudsman, root-cause); likely a ktayl-core module. 13 target caps."
+31,ktayl Procurement & Contract Management,0,0,0,0,0,"Greenfield — board opened 2026-10-30, no repo/app/design yet. Non-ICT business vendor/contract SoR (Retrieva owns the ICT graph only); adopt-or-module. 35 target caps."

@@ -189,6 +189,9 @@ def maturity_cell(num: int, caps: dict[int, tuple[int, int, float | None]],
     """First-pass domain estimate if we have one; else the register's (empty) per-cap roll-up as
     'not assessed · N caps' (N = the domain's capability count — the size of the gap)."""
     if num in est:
+        if est[num] == 0:  # assessed as greenfield / not-started — keep the cap count (the gap size)
+            total = caps.get(num, (0, 0, None))[0]
+            return "0% · not started" + (f" ({total} caps)" if total else "")
         return f"~{est[num]}% (est.)"
     m = caps.get(num)
     if not m:

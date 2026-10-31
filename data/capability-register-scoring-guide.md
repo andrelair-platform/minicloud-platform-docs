@@ -72,6 +72,11 @@ Five dimensions, 1–5; **Maturity % = mean × 20**.
 | **Data maturity** | none/ad-hoc | a schema exists | modelled, ERD, quality, ownership |
 | **Operational maturity** | dev only | prod, basic monitoring | prod HA + DR + SLOs + tested recovery |
 
+A dimension may also be **0 = absent / not started** (no code, workflow, wiring, schema or deployment).
+A domain scored 0 across all five → **0% "not started"** on the board (shown with its capability count as
+the gap size), e.g. the greenfield blind-spot boards #29/#30/#31. 0% is a *positive* assessment ("we looked;
+nothing is built"), distinct from `not assessed` ("we haven't scored it").
+
 ### 4b. Per-capability health (Capability Map §27 — future detailed pass; CSV columns, today empty)
 Eight measurable 1–5 scores per capability: *Business maturity · Process maturity · Application health ·
 Data quality · Integration maturity · Automation maturity · DORA resilience · AI opportunity.* The CSV's
