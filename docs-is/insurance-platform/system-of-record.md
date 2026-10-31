@@ -18,8 +18,8 @@ Status: 🟢 live SoR · 🟡 partial/scaffold · 🔴 no authoritative source y
 | **Policy** | Policy Admin | **ktayl-policy-service** | 🟢 |
 | **Identity** | IAM | **ktayl-iam** + Authentik | 🟢 |
 | **Payment / Ledger** | Finance ERP | **ERPNext** (GL/AP/AR) | 🟡 |
-| **Risk / Quote** | Underwriting | ktayl-underwriting (scaffold) | 🟡 |
-| **Claim / Reserve** | Claims | ktayl-claims (scaffold; legacy GlobalCore spine) | 🟡 |
+| **Risk / Quote** | Underwriting | ktayl-underwriting (dev+prod declared; SoR behavior not independently verified) | 🟡 |
+| **Claim / Reserve** | Claims | GlobalCore via ktayl-claims ACL/CQRS surface (dev+prod declared) | 🟢 |
 | **Survey / Recommendation** | Risk Engineering | ktayl-risk-engineering (scaffold) | 🟡 |
 | **Reinsurance Contract** | Reinsurance | ktayl-reinsurance (scaffold) | 🟡 |
 | **Document** | DMS | ktayl-dms (scaffold); Nextcloud/Docuseal (storage/e-sign) | 🟡 |
@@ -27,6 +27,10 @@ Status: 🟢 live SoR · 🟡 partial/scaffold · 🔴 no authoritative source y
 | **Submission** | Submission Platform | — | 🔴 |
 | **Customer / Broker** | CRM / MDM | — | 🔴 |
 | **Invoice / Premium** | Billing | — | 🔴 |
+
+Deployment state above is reconciled with the SI Delivery Board as of 2026-10-30. It does not prove
+functional completeness or tested recovery. Those evidence fields are tracked separately in the capability
+registry.
 
 ## MDM master / reference objects (all 🔴 — no MDM yet)
 

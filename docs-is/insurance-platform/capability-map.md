@@ -46,18 +46,18 @@ model. They reconcile — the 19 just split what the 12 bundled:
 
 | Status | Count | % | Where |
 |---|---|---|---|
-| 🟢 LIVE | 22 | 15% | Policy, **Claims (prod)**, IAM, AI platform, **Data Platform (Metabase BI)**, parts of Finance |
-| 🟡 PARTIAL | 34 | 23% | **Underwriting (live on dev)**, ERPNext finance, compliance/DORA, integration primitives, DMS storage |
-| 🟡 SCAFFOLD | 40 | 27% | Risk-Eng, Reinsurance, International, ITSM |
-| 🔴 GAP | 54 | 36% | Submission, CRM/MDM, Pricing, Billing (insurance), Channels |
+| 🟢 LIVE | 38 | 25% | Policy, Claims, Underwriting, IAM and the AI platform have prod deployments declared |
+| 🟡 PARTIAL | 48 | 32% | Data, Finance, Compliance, DMS, Integration and ITSM have only part of their target capability |
+| 🟡 SCAFFOLD | 24 | 16% | Risk Engineering, Reinsurance and International are not deployed |
+| 🔴 GAP | 40 | 27% | Submission, CRM/MDM, dedicated Pricing, insurance Billing and Channels |
 
-**~15% of the insurer's capabilities are live.** The GAPs cluster exactly where P1/P2 bite (pricing,
+**25% of the mapped capabilities sit in domains with a prod deployment declared.** This is deployment
+evidence, not proof of complete functional depth. The GAPs cluster exactly where P1/P2 bite (pricing,
 portfolio, prevention). Criticality mix: **31 Critical · 80 High · 39 Medium**.
 
-> **Updated 2026-09-30 (verified against the running cluster):** since the last registry count, **Claims**
-> promoted to **prod** (GlobalCore strangler shipped), the **Data Platform (Metabase BI, Slice 1)** came
-> live, and **Underwriting** is **live on dev** — so the live/partial mix slightly understates reality; the
-> exact counts await a registry re-count. Stage-by-stage live-vs-planned is in [§3.1](#31-contract-lifecycle-coverage--the-b2b-industrial-policy-end-to-end) below.
+> **Reconciled 2026-10-30:** counts now follow the committed SI Delivery Board's repository and declared
+> GitOps evidence. Capability maturity and measured recovery remain unassessed until capability-level
+> evidence is linked. Use `scripts/gen-si-delivery.py --live` for transient Argo CD health.
 
 Per-domain status is in the [EA Blueprint gap analysis](./enterprise-architecture-blueprint); per-capability detail (owner, data, API, pain, AI potential, priority score) is in the registry spreadsheet.
 
@@ -72,12 +72,12 @@ and marks what actually runs. 🟢 prod · 🔵 dev only · 🟡 partial · ⚪ 
 |---|---|---|---|
 | Courtier / relationship | Distribution & CRM | #13 | ⚪ planned (no CRM) |
 | **Submission / appel d'offres** (dossier d'exposition) | **Submission Hub** | #27 | ⚪ **not built** — board #27 opened 2026-09-30; build not started (the #1 front-door gap) |
-| Underwriting — analyse · rating · capacité · T&C | **ktayl-underwriting** | #12 | 🔵 **live on dev** (intake→appetite→rating→quote→bind) |
+| Underwriting — analyse · rating · capacité · T&C | **ktayl-underwriting** | #12 | 🟢 dev+prod declared; depth remains partial (intake→appetite→rating→quote→bind) |
 | Pricing (dedicated) + portfolio analytics | Pricing & Portfolio | #04/#12 | ⚪ planned |
 | Capacité (traité / facultative) | Reinsurance & Captive | #22 | ⚪ scaffold |
-| **Quote** | ktayl-underwriting | #12 | 🔵 live on dev |
+| **Quote** | ktayl-underwriting | #12 | 🟢 dev+prod declared; SoR behavior not independently verified |
 | Négociation courtier ↔ assureur | Broker portal | #13/#15 | ⚪ planned |
-| **Binding** (→ écrit la police) | ktayl-underwriting → PAS | #12 | 🔵 live on dev |
+| **Binding** (→ écrit la police) | ktayl-underwriting → PAS | #12 | 🟢 dev+prod declared; integration depth not independently verified |
 | **Police / Policy** | **ktayl-policy-service** | #6 | 🟢 **live prod** |
 | **Facturation de la prime** (échéances · IPT · commissions) | Insurance Billing | #14 | ⚪ planned — ERPNext is *general* finance, **not** insurance billing |
 | Vie — avenants / endorsements | ktayl-policy-service | #6 | 🟡 live prod (depth partial) |
@@ -112,7 +112,9 @@ obligation; this table covers the *business* capabilities.
 
 We are **past the tech foundation and the AI platform** already, so the backlog re-sequences around P1–P4:
 
-- **Stage A — foundation registry (this work):** capability registry populated · [System of Record](./system-of-record) · [Canonical Data Model](./canonical-data-model) · DORA/RTO-RPO per capability. *(done)*
+- **Stage A — foundation registry:** actual application, SoR, board/repository, declared environment and
+  target DORA/RTO-RPO fields are populated. Maturity scoring, vendor mapping, event/API catalogues, the
+  three blind-spot domains and measured recovery evidence remain open. *(partial)*
 - **Stage B — unlock P1/P2/P3 analytics:** **Data Platform** (keystone) + **MDM** (Customer/Entity/Broker).
 - **Stage C — operational core + AI showcase (P2 + P4):** **Submission Hub** → **Underwriting Workbench** + **Pricing Engine** (UW Copilot lands here).
 - **Stage D — the P1/P3 differentiators:** **Risk Engineering** (prevention → P1) + **Exposure/Accumulation/CAT** (reuse the Retrieva graph → P3).
@@ -124,7 +126,9 @@ We are **past the tech foundation and the AI platform** already, so the backlog 
 
 ## 6. Sources
 
-- **Registry (authoritative, fine-grained):** `insurance_enterprise_capability_registry.xlsx` — 150 capabilities × 28 fields (owner, data, API, criticality, DORA, RTO/RPO, pain, automation/AI potential, priority score, status).
+- **Registry (authoritative, fine-grained):** `insurance_enterprise_capability_registry.xlsx` — 150
+  capabilities × 46 fields, including declared deployment evidence, SoR, target resilience, unpopulated
+  maturity dimensions and separate measured-recovery fields.
 - **Narrative map:** [EA Blueprint](./enterprise-architecture-blueprint) · [Architecture at a Glance](./architecture-at-a-glance).
 - **Foundations:** [System of Record](./system-of-record) · [Canonical Data Model](./canonical-data-model).
 - **Detail:** [Business Applications Catalog](./business-applications-catalog) · [Regulatory Operating Model](./regulatory-operating-model).
