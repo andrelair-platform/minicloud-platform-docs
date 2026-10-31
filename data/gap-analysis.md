@@ -208,3 +208,37 @@ onboarding: **Investment/ALM/Treasury** almost certainly **adopts** specialist t
 are not something to hand-build); **Complaints** is a natural **ktayl-core module**; **Procurement/CLM** is
 adopt-or-module. Tier-2 items stay as sub-capabilities until one earns its own board. Follow-up: add the three
 new boards (#29–#31) to the *Product boards* table in `minicloud-gitops/.claude/rules/github-projects.md`.
+
+---
+
+## 9. Lifecycle build backlog — the complete to-build checklist (DO NOT FORGET)
+
+Everything still to build to make the **industrial-contract lifecycle** (submission → UW → pricing → quote →
+bind → policy → billing → contract-life → renewal) run end-to-end. Priority-ordered. `[ ]` = not built.
+Status source: the capability register (`capability-register.csv`), reconciled live 2026-10-31.
+
+### A. Missing whole stages — these break the end-to-end chain (build first)
+- [ ] **Submission Hub** (#27) — dossier intake + exposure-data extraction; the *front door*. `20/20 GAP`. (P2/P4)
+- [ ] **Pricing Engine** (#04/#12) — base/exposure/experience rating, CAT/expense/capital loads, technical premium. `26/29 GAP`. (P2) — **needs Data Platform depth first (§6 flag).**
+- [ ] **Insurance Billing** (#14) — premium/installments/commission/IPT/cash-matching. `25/25 GAP`. (P2) — ERPNext ≠ insurance billing.
+
+### B. Scaffold → build
+- [ ] **Risk Engineering** (#21) — survey/recommendation/risk-quality. `21/23 scaffold`. (P1 prevention)
+
+### C. Depth within the "live" domains (live core, missing depth — reconciled 2026-10-31)
+- [ ] **Underwriting** (#12): Exposure Analysis `GAP` (BI/geo/NatCat/supply-chain/accumulation/multi-peril); Capacity, Referral, Risk-Assessment depth, Claims-Experience, Renewal `PARTIAL`. (live core = Quote + Coverage Design)
+- [ ] **Policy** (#6): endorsement lifecycle + **document generation** (certificates/attestations). (live core = issuance)
+- [ ] **Claims** (#11): Reserving, Payment, Recovery, Fraud/SIU, Litigation `GAP`; Investigation, Closure `PARTIAL`. (live core = FNOL + Coverage Review)
+
+### D. Differentiator programmes — identified, planned later (see the §6 ⚠️ flag)
+- [ ] **P1 Climate & Secondary-Perils** (`CAP-615`–`630`) — build the hazard/climate **data layer first**.
+- [ ] **P3 Systemic accumulation** — reuse the **Retrieva graph** over the portfolio, **after Data Platform + MDM**.
+
+### E. Foundations that unblock most of the above (Stage A/B — do before C/D)
+- [ ] **Data Platform depth** (warehouse) — unblocks Pricing, Portfolio analytics, Claims-Experience, Accumulation.
+- [ ] **MDM** (Customer/Entity/Broker/Country/Industry) — the keystone for accumulation + a Customer SoR.
+- [ ] **CRM / Distribution** (#13) — broker/account mgmt (feeds Submission + renewal).
+
+> **Sequencing rule (from §6):** foundations (E) unblock the data-dependent builds — don't build Pricing/
+> Accumulation/Claims-Experience before the Data Platform + MDM exist. Close the **chain breaks (A)** to make
+> the lifecycle *run*; add **depth (C)** to make it *good*; the **differentiators (D)** are the moat.
