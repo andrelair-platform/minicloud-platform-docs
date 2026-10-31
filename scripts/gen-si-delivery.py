@@ -27,7 +27,9 @@ PR on drift (.github/workflows/update-si-delivery.yml) weekly + on demand — ru
 gap analysis.
 """
 from __future__ import annotations
+import csv
 import json
+import re
 import subprocess
 import sys
 from datetime import date
@@ -35,7 +37,12 @@ from pathlib import Path
 
 ORG = "andrelair-platform"
 GITOPS = "minicloud-gitops"
-PAGE = Path(__file__).resolve().parent.parent / "docs-is" / "delivery-board.md"
+ROOT = Path(__file__).resolve().parent.parent
+PAGE = ROOT / "docs-is" / "delivery-board.md"
+# Canonical capability register (committed, plain-text, VSCode-editable) — the single source of truth.
+# The xlsx in B2BAssurance is a derived presentation view. Maturity is read from here and shown honestly:
+# "not assessed" until the Maturity % cells are filled (the register is a target schema, not an assessment).
+CSV_PATH = ROOT / "data" / "capability-register.csv"
 START, END = "{/* SI-DELIVERY:START */}", "{/* SI-DELIVERY:END */}"
 SCAFFOLD_KB = 40  # gh diskUsage (KB) below this + no Application ⇒ treat the repo as a scaffold
 
@@ -131,6 +138,42 @@ def load_app_envs() -> dict[str, set[str]]:
     return envs
 
 
+def load_maturity() -> dict[int, tuple[int, int, float | None]]:
+    """Per board# → (total_caps, scored_caps, mean_maturity%|None) from the committed capability register.
+    A cap counts toward every board# referenced in its `Product Board` cell (e.g. `#17/#3` → both).
+    `Maturity %` is read as-is: today it is empty for all 630 (the register is a NOT-ASSESSED target
+    schema), so this yields `scored=0` → the board honestly shows "not assessed · N caps" until someone
+    fills the cells in the CSV. No number is invented."""
+    if not CSV_PATH.exists():
+        return {}
+    agg: dict[int, list] = {}
+    with CSV_PATH.open(newline="") as f:
+        for row in csv.DictReader(f):
+            nums = {int(n) for n in re.findall(r"#(\d+)", row.get("Product Board") or "")}
+            raw = (row.get("Maturity %") or "").strip().rstrip("%")
+            try:
+                score = float(raw)
+            except ValueError:
+                score = None
+            for n in nums:
+                agg.setdefault(n, [0, 0, 0.0])
+                agg[n][0] += 1
+                if score is not None:
+                    agg[n][1] += 1
+                    agg[n][2] += score
+    return {n: (tot, sc, (s / sc if sc else None)) for n, (tot, sc, s) in agg.items()}
+
+
+def maturity_cell(num: int, maturity: dict[int, tuple[int, int, float | None]]) -> str:
+    m = maturity.get(num)
+    if not m:
+        return "—"
+    total, scored, mean = m
+    if scored == 0:
+        return f"not assessed · {total} caps"
+    return f"~{mean:.0f}% · {scored}/{total} scored"
+
+
 def argo_health() -> dict[str, tuple[str, str]]:
     """OPTIONAL live overlay: app-name → (sync, health) from ArgoCD, {} if the cluster is unreachable
     (e.g. in CI — which is why this never feeds the COMMITTED board, only the `--live` terminal view).
@@ -213,6 +256,9 @@ def main() -> int:
     app_envs = load_app_envs()
     if not app_envs:
         print("warning: no gitops apps/** read — deploy status will be degraded", file=sys.stderr)
+    maturity = load_maturity()
+    if not maturity:
+        print("warning: capability register not found — maturity column omitted", file=sys.stderr)
     health = argo_health() if live else {}
     if live and not health:
         print("warning: --live could not reach ArgoCD (no cluster access) — showing declared status only",
@@ -239,7 +285,8 @@ def main() -> int:
             print(f"\n{HEADING[g].lstrip('# ')}")
             for num, title, evidence, hits in sorted(rows[g]):
                 h = f"   [{health_cell(hits, health)}]" if (hits and health) else ""
-                print(f"  {g} #{num:<3} {title:<46} {evidence}{h}")
+                mat = f"   {{{maturity_cell(num, maturity)}}}" if maturity else ""
+                print(f"  {g} #{num:<3} {title:<46} {evidence}{mat}{h}")
         if not health:
             print("\n(live health unavailable — ran without cluster access; the COMMITTED page is unchanged)")
         return 0
@@ -253,10 +300,13 @@ def main() -> int:
     for g in ORDER:
         if not rows[g]:
             continue
-        out += [HEADING[g], "", "| Board | Domain | Evidence |", "|---|---|---|"]
+        mat_hdr = " Maturity |" if maturity else ""
+        mat_sep = "---|" if maturity else ""
+        out += [HEADING[g], "", f"| Board | Domain |{mat_hdr} Evidence |", f"|---|---|{mat_sep}---|"]
         for num, title, evidence, _ in sorted(rows[g]):
             link = f"[#{num}](https://github.com/orgs/{ORG}/projects/{num})"
-            out.append(f"| {link} | {title} | {evidence} |")
+            mat = f" {maturity_cell(num, maturity)} |" if maturity else ""
+            out.append(f"| {link} | {title} |{mat} {evidence} |")
         out.append("")
 
     table = "\n".join(out).rstrip()
