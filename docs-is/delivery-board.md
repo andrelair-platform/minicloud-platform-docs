@@ -18,16 +18,22 @@ sidebar_position: 1
 2. **Code** = each board's **repo size** (`gh repo list`) — real code vs scaffold vs no repo.
 3. **Deployed** = the **gitops `apps/**` Application manifests** — which domains have a dev/prod Application
    *defined* (a gh-only proxy for "deployed", with env from the filename).
-4. **Maturity** = the committed **capability register** (`data/capability-register.csv` — the single source
-   of truth; the B2BAssurance xlsx is a derived view) — each board's `Maturity %` averaged across its
-   capabilities. The register is a NOT-ASSESSED *target schema* today, so this honestly shows
-   **"not assessed · N caps"** (N = the domain's capability count) and flips to **"~X% · S/N scored"** the
-   moment someone fills the `Maturity %` cells in the CSV. No number is invented.
+4. **Maturity** = how *complete* a domain is (depth), from two sources: a **first-pass domain estimate**
+   (`data/maturity-assessment.csv` — a 5-dimension rubric: Functional/Process/Integration/Data/Operational,
+   1–5, with a one-line basis per domain) shown as **`~X% (est.)`**; and, for domains without an estimate,
+   the committed **capability register** (`data/capability-register.csv` — the single source of truth; the
+   B2BAssurance xlsx is a derived view) shown as **`not assessed · N caps`** (N = the domain's capability
+   count = the size of the gap). **No number is invented.**
+
+> ⚠️ **The `(est.)` figures are a first-pass, evidence-based estimate pending owner confirmation** — not a
+> per-capability assessment. The basis for each is in `data/maturity-assessment.csv`; adjust the 1–5
+> dimensions there and the board updates. The 630-capability register's per-cap `Maturity %` stays
+> deliberately empty for a future detailed EA pass.
 
 **Legend:** 🟢 a prod deployment is defined · 🔵 on dev only · 🔶 real code, not yet deployed ·
-❌ scaffold / no repo yet · ⏸ deliberately parked. **Maturity** = how *complete* a domain is (depth), a
-separate axis from deploy status (a domain can be 🟢 *live* yet low-maturity — only a few of its
-capabilities built).
+❌ scaffold / no repo yet · ⏸ deliberately parked. **Maturity is a separate axis from deploy status** — a
+domain can be 🟢 *live* yet low-maturity (only a few of its capabilities built, e.g. Policy ~60%,
+Underwriting ~60%).
 
 > The board↔repo↔app bridge (the one hand-maintained input) lives in the generator (`BRIDGE`). A board
 > missing from it still shows (as ❌/🔶 from its repo alone). To track a brand-new domain, just open its
@@ -44,30 +50,30 @@ _Auto-generated 2026-10-31 by `scripts/gen-si-delivery.py` from the live GitHub 
 
 | Board | Domain | Maturity | Evidence |
 |---|---|---|---|
-| [#2](https://github.com/orgs/andrelair-platform/projects/2) | Retrieva — RNCP39583 Certification | not assessed · 29 caps | dev+prod · apps: retrieva, retrieva-assessment-crew |
-| [#3](https://github.com/orgs/andrelair-platform/projects/3) | GitOps — Platform Engineering | not assessed · 32 caps | prod · apps: argo-cd, backstage, harbor, vault |
-| [#4](https://github.com/orgs/andrelair-platform/projects/4) | AI Platform | not assessed · 16 caps | dev+prod · apps: langfuse, litellm, minicloud-agent, minicloud-crew-agent |
-| [#5](https://github.com/orgs/andrelair-platform/projects/5) | Data Platform | not assessed · 26 caps | prod · apps: data-platform |
-| [#6](https://github.com/orgs/andrelair-platform/projects/6) | ktayl Policy Service | not assessed · 25 caps | dev+prod · apps: ktayl-policy-service |
-| [#7](https://github.com/orgs/andrelair-platform/projects/7) | ktayl Public Web | — | live off-cluster (GitHub Pages) |
-| [#8](https://github.com/orgs/andrelair-platform/projects/8) | ERPNext (HR-Finance) | not assessed · 53 caps | prod · apps: erpnext |
-| [#10](https://github.com/orgs/andrelair-platform/projects/10) | Digital Workplace (M365 Alternative) | not assessed · 33 caps | prod · apps: bookstack, docuseal, jitsi, matrix-synapse |
-| [#11](https://github.com/orgs/andrelair-platform/projects/11) | ktayl Claims | not assessed · 40 caps | dev+prod · apps: ktayl-claims |
-| [#12](https://github.com/orgs/andrelair-platform/projects/12) | ktayl Underwriting & Pricing | not assessed · 68 caps | dev+prod · apps: ktayl-underwriting |
-| [#17](https://github.com/orgs/andrelair-platform/projects/17) | Access Governance (IAM/IGA) | not assessed · 22 caps | dev+prod · apps: ktayl-iam |
-| [#28](https://github.com/orgs/andrelair-platform/projects/28) | ktayl-core — Insurance LOB (modular monolith) | — | prod · apps: ktayl-core-infra |
+| [#2](https://github.com/orgs/andrelair-platform/projects/2) | Retrieva — RNCP39583 Certification | ~80% (est.) | dev+prod · apps: retrieva, retrieva-assessment-crew |
+| [#3](https://github.com/orgs/andrelair-platform/projects/3) | GitOps — Platform Engineering | ~88% (est.) | prod · apps: argo-cd, backstage, harbor, vault |
+| [#4](https://github.com/orgs/andrelair-platform/projects/4) | AI Platform | ~72% (est.) | dev+prod · apps: langfuse, litellm, minicloud-agent, minicloud-crew-agent |
+| [#5](https://github.com/orgs/andrelair-platform/projects/5) | Data Platform | ~48% (est.) | prod · apps: data-platform |
+| [#6](https://github.com/orgs/andrelair-platform/projects/6) | ktayl Policy Service | ~60% (est.) | dev+prod · apps: ktayl-policy-service |
+| [#7](https://github.com/orgs/andrelair-platform/projects/7) | ktayl Public Web | ~44% (est.) | live off-cluster (GitHub Pages) |
+| [#8](https://github.com/orgs/andrelair-platform/projects/8) | ERPNext (HR-Finance) | ~56% (est.) | prod · apps: erpnext |
+| [#10](https://github.com/orgs/andrelair-platform/projects/10) | Digital Workplace (M365 Alternative) | ~68% (est.) | prod · apps: bookstack, docuseal, jitsi, matrix-synapse |
+| [#11](https://github.com/orgs/andrelair-platform/projects/11) | ktayl Claims | ~68% (est.) | dev+prod · apps: ktayl-claims |
+| [#12](https://github.com/orgs/andrelair-platform/projects/12) | ktayl Underwriting & Pricing | ~60% (est.) | dev+prod · apps: ktayl-underwriting |
+| [#17](https://github.com/orgs/andrelair-platform/projects/17) | Access Governance (IAM/IGA) | ~72% (est.) | dev+prod · apps: ktayl-iam |
+| [#28](https://github.com/orgs/andrelair-platform/projects/28) | ktayl-core — Insurance LOB (modular monolith) | ~24% (est.) | prod · apps: ktayl-core-infra |
 
 ## 🔵 On dev — deployed to dev, not yet promoted to prod
 
 | Board | Domain | Maturity | Evidence |
 |---|---|---|---|
-| [#16](https://github.com/orgs/andrelair-platform/projects/16) | ktayl ITSM (GLPI) | not assessed · 25 caps | dev · apps: ktayl-itsm |
+| [#16](https://github.com/orgs/andrelair-platform/projects/16) | ktayl ITSM (GLPI) | ~40% (est.) | dev · apps: ktayl-itsm |
 
 ## 🔶 In progress — real code, not yet deployed
 
 | Board | Domain | Maturity | Evidence |
 |---|---|---|---|
-| [#9](https://github.com/orgs/andrelair-platform/projects/9) | ktayl Insurance LOB — Product Lines | not assessed · 15 caps | repo has content (261 KB), no Application yet: ktayl-solution-web |
+| [#9](https://github.com/orgs/andrelair-platform/projects/9) | ktayl Insurance LOB — Product Lines | ~32% (est.) | repo has content (261 KB), no Application yet: ktayl-solution-web |
 
 ## ❌ Not started — scaffold or no repo yet
 

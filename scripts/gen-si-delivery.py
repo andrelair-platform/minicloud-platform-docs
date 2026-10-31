@@ -43,6 +43,10 @@ PAGE = ROOT / "docs-is" / "delivery-board.md"
 # The xlsx in B2BAssurance is a derived presentation view. Maturity is read from here and shown honestly:
 # "not assessed" until the Maturity % cells are filled (the register is a target schema, not an assessment).
 CSV_PATH = ROOT / "data" / "capability-register.csv"
+# Domain-level FIRST-PASS maturity (5-dimension rubric per board) — evidence-based ESTIMATES pending owner
+# confirmation, NOT a per-capability assessment (which stays in the register, honestly empty). Board# →
+# a row with Functional/Process/Integration/Data/Operational (1-5) + a one-line basis.
+MATURITY_PATH = ROOT / "data" / "maturity-assessment.csv"
 START, END = "{/* SI-DELIVERY:START */}", "{/* SI-DELIVERY:END */}"
 SCAFFOLD_KB = 40  # gh diskUsage (KB) below this + no Application ⇒ treat the repo as a scaffold
 
@@ -164,8 +168,29 @@ def load_maturity() -> dict[int, tuple[int, int, float | None]]:
     return {n: (tot, sc, (s / sc if sc else None)) for n, (tot, sc, s) in agg.items()}
 
 
-def maturity_cell(num: int, maturity: dict[int, tuple[int, int, float | None]]) -> str:
-    m = maturity.get(num)
+def load_domain_maturity() -> dict[int, int]:
+    """board# → first-pass maturity % (mean of the 5 rubric dimensions ×20). {} if the file is absent."""
+    if not MATURITY_PATH.exists():
+        return {}
+    out: dict[int, int] = {}
+    dims = ["Functional", "Process", "Integration", "Data", "Operational"]
+    with MATURITY_PATH.open(newline="") as f:
+        for row in csv.DictReader(f):
+            try:
+                scores = [int(row[d]) for d in dims]
+                out[int(row["Board"])] = round(sum(scores) / len(scores) * 20)
+            except (ValueError, KeyError):
+                continue
+    return out
+
+
+def maturity_cell(num: int, caps: dict[int, tuple[int, int, float | None]],
+                  est: dict[int, int]) -> str:
+    """First-pass domain estimate if we have one; else the register's (empty) per-cap roll-up as
+    'not assessed · N caps' (N = the domain's capability count — the size of the gap)."""
+    if num in est:
+        return f"~{est[num]}% (est.)"
+    m = caps.get(num)
     if not m:
         return "—"
     total, scored, mean = m
@@ -257,8 +282,10 @@ def main() -> int:
     if not app_envs:
         print("warning: no gitops apps/** read — deploy status will be degraded", file=sys.stderr)
     maturity = load_maturity()
-    if not maturity:
-        print("warning: capability register not found — maturity column omitted", file=sys.stderr)
+    est = load_domain_maturity()
+    show_mat = bool(maturity or est)
+    if not show_mat:
+        print("warning: no capability register / maturity assessment found — maturity column omitted", file=sys.stderr)
     health = argo_health() if live else {}
     if live and not health:
         print("warning: --live could not reach ArgoCD (no cluster access) — showing declared status only",
@@ -285,7 +312,7 @@ def main() -> int:
             print(f"\n{HEADING[g].lstrip('# ')}")
             for num, title, evidence, hits in sorted(rows[g]):
                 h = f"   [{health_cell(hits, health)}]" if (hits and health) else ""
-                mat = f"   {{{maturity_cell(num, maturity)}}}" if maturity else ""
+                mat = f"   {{{maturity_cell(num, maturity, est)}}}" if show_mat else ""
                 print(f"  {g} #{num:<3} {title:<46} {evidence}{mat}{h}")
         if not health:
             print("\n(live health unavailable — ran without cluster access; the COMMITTED page is unchanged)")
@@ -300,12 +327,12 @@ def main() -> int:
     for g in ORDER:
         if not rows[g]:
             continue
-        mat_hdr = " Maturity |" if maturity else ""
-        mat_sep = "---|" if maturity else ""
+        mat_hdr = " Maturity |" if show_mat else ""
+        mat_sep = "---|" if show_mat else ""
         out += [HEADING[g], "", f"| Board | Domain |{mat_hdr} Evidence |", f"|---|---|{mat_sep}---|"]
         for num, title, evidence, _ in sorted(rows[g]):
             link = f"[#{num}](https://github.com/orgs/{ORG}/projects/{num})"
-            mat = f" {maturity_cell(num, maturity)} |" if maturity else ""
+            mat = f" {maturity_cell(num, maturity, est)} |" if show_mat else ""
             out.append(f"| {link} | {title} |{mat} {evidence} |")
         out.append("")
 
