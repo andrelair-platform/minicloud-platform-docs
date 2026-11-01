@@ -17,6 +17,7 @@ const architectureNav = {
     'architecture/is-application-landscape',
     'architecture/platform-is-dependency-matrix',
     'architecture/adr-document-intelligence-spine',
+    'architecture/adr-ai-domain-copilots',
   ],
 } as const;
 
