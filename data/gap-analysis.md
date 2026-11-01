@@ -229,6 +229,7 @@ Status source: the capability register (`capability-register.csv`), reconciled l
 ### C. Depth within the "live" domains (live core, missing depth — reconciled 2026-10-31)
 - [ ] **Underwriting** (#12): Exposure Analysis `GAP` (BI/geo/NatCat/supply-chain/accumulation/multi-peril); the **loss-estimation core `GAP`** — **TIV aggregation, PML, MFL/EML** (`CAP-631/632/633`, the numbers that drive capacity/premium/deductible/retention/reinsurance); Capacity, Referral, Risk-Assessment depth, Claims-Experience, Renewal `PARTIAL`. (live core = Quote + Coverage Design)
 - [ ] **Policy** (#6): endorsement lifecycle + **document generation** (certificates/attestations). (live core = issuance)
+- [ ] **Insurance E-Signature & Sealing** (`CAP-641`–`645`, Document/DMS #24) — multi-party signing **circuits** (broker→client SMS-OTP→PAS), **form-field layering**, **eIDAS electronic seal (cachet électronique)**, signed-doc **structured intake→PAS**, **délégation de signature**. `GAP` — only generic Docuseal e-sign exists. Spans Distribution + Policy + DMS.
 - [ ] **Claims** (#11): Reserving, Payment, Recovery, Fraud/SIU, Litigation `GAP`; Investigation, Closure `PARTIAL`. (live core = FNOL + Coverage Review)
 
 ### D. Differentiator programmes — identified, planned later (see the §6 ⚠️ flag)
