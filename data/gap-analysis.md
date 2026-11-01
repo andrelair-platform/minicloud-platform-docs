@@ -224,7 +224,7 @@ Status source: the capability register (`capability-register.csv`), reconciled l
 - [ ] **Coinsurance Settlement** (`CAP-634`–`637`) — ingest the periodic coinsurance clearing bordereau → compute lead/follower (apériteur/coassureur) share of every premium/commission/claim/recovery/fee → emit ledger-ready accounting flux + claims register. `GAP`. Pervasive on large industrial coinsured risks; only co-insurance *setup* (CAP-138/477) exists today, not *settlement*. Feeds Insurance Billing + Technical Accounting + the Claims register.
 
 ### B. Scaffold → build
-- [ ] **Risk Engineering** (#21) — survey/recommendation/risk-quality. `21/23 scaffold`. (P1 prevention)
+- [ ] **Risk Engineering** (#21) — survey/recommendation/risk-quality `scaffold`; **+ the prevention→pricing loop** (`CAP-638` loss-reduction/cost-benefit quantification, `CAP-639` reco→renewal/coverage-condition/pricing linkage) + `CAP-640` Cyber-OT survey dimension — `GAP`. (P1 prevention; the economic engine that turns inspections into pricing/insurability)
 
 ### C. Depth within the "live" domains (live core, missing depth — reconciled 2026-10-31)
 - [ ] **Underwriting** (#12): Exposure Analysis `GAP` (BI/geo/NatCat/supply-chain/accumulation/multi-peril); the **loss-estimation core `GAP`** — **TIV aggregation, PML, MFL/EML** (`CAP-631/632/633`, the numbers that drive capacity/premium/deductible/retention/reinsurance); Capacity, Referral, Risk-Assessment depth, Claims-Experience, Renewal `PARTIAL`. (live core = Quote + Coverage Design)
