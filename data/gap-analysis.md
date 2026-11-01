@@ -234,6 +234,8 @@ Status source: the capability register (`capability-register.csv`), reconciled l
 - [ ] **Insurance E-Signature & Sealing** (`CAP-641`–`645`, Document/DMS #24) — multi-party signing **circuits** (broker→client SMS-OTP→PAS), **form-field layering**, **eIDAS electronic seal (cachet électronique)**, signed-doc **structured intake→PAS**, **délégation de signature**. `GAP` — only generic Docuseal e-sign exists. Spans Distribution + Policy + DMS.
 - [ ] **Claims** (#11): Reserving, Payment, Recovery, Fraud/SIU, Litigation `GAP`; Investigation, Closure `PARTIAL`. (live core = FNOL + Coverage Review)
 
+- [ ] **Clause & Wording Management / Orchestration** (`CAP-650`–`657`, UW #12) — approved-clause **library**, **external-clause ingestion**, **federated search**, **comparison/deviation analysis**, **restriction/blacklist rules**, **versioning/traceability**, **approval workflow** (peer/four-eyes/Legal/Compliance), **contract wording assembly**. `GAP` — ktayl has only clause *selection* (CAP-473/474). *For a carrier with existing clause tools this is orchestrate-not-rebuild; ktayl must build/adopt.*
+
 ### D. Differentiator programmes — identified, planned later (see the §6 ⚠️ flag)
 - [ ] **P1 Climate & Secondary-Perils** (`CAP-615`–`630`) — build the hazard/climate **data layer first**.
 - [ ] **P3 Systemic accumulation** — reuse the **Retrieva graph** over the portfolio, **after Data Platform + MDM**.
