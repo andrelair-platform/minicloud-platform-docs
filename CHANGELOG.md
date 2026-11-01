@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.1.3](https://github.com/andrelair-platform/minicloud-platform-docs/compare/minicloud-platform-docs-v0.1.2...minicloud-platform-docs-v0.1.3) (2026-11-01)
+
+
+### Features
+
+* **architecture:** C4 Component views — subsystem deep-dives ([#278](https://github.com/andrelair-platform/minicloud-platform-docs/issues/278)) ([912b594](https://github.com/andrelair-platform/minicloud-platform-docs/commit/912b594a1c66c1a47c76f524238bb6321927b9e1))
+* **architecture:** C4 request + observability flows; retire the HTML poster ([#281](https://github.com/andrelair-platform/minicloud-platform-docs/issues/281)) ([75320dc](https://github.com/andrelair-platform/minicloud-platform-docs/commit/75320dc326ff7745d1bb1512ea706a98d0b0033e))
+* **docs:** add --live ArgoCD health overlay to the SI delivery generator ([#325](https://github.com/andrelair-platform/minicloud-platform-docs/issues/325)) ([d82a3fc](https://github.com/andrelair-platform/minicloud-platform-docs/commit/d82a3fc9ed21790ea6562b928af77ebe4496f670))
+* **docs:** add capability-maturity column to the SI delivery board ([#326](https://github.com/andrelair-platform/minicloud-platform-docs/issues/326)) ([2d3ac28](https://github.com/andrelair-platform/minicloud-platform-docs/commit/2d3ac285c76168592864b8e77c735f5dcd0d80a9))
+* **docs:** auto-generate the SI Delivery Board (built vs to-build) ([#323](https://github.com/andrelair-platform/minicloud-platform-docs/issues/323)) ([7a30bfb](https://github.com/andrelair-platform/minicloud-platform-docs/commit/7a30bfb8e1ba5f1dc24bf88a9e8c0711da0f2a6e))
+* **docs:** first-pass domain maturity estimates on the SI delivery board ([#328](https://github.com/andrelair-platform/minicloud-platform-docs/issues/328)) ([527715a](https://github.com/andrelair-platform/minicloud-platform-docs/commit/527715a04bcc4e21bef0186dbce0e289cd83bcb0))
+* **docs:** first-pass maturity for the 3 greenfield blind-spot domains ([#330](https://github.com/andrelair-platform/minicloud-platform-docs/issues/330)) ([ce56294](https://github.com/andrelair-platform/minicloud-platform-docs/commit/ce562946760aa05899cb35f1b49f5fe93ab3f36f))
+* **docs:** split Platform + Information System into distinct route sections (/platform, /is) ([#289](https://github.com/andrelair-platform/minicloud-platform-docs/issues/289)) ([8c3da8e](https://github.com/andrelair-platform/minicloud-platform-docs/commit/8c3da8e3be1cb04a3c9d6d39719db684efc615a7))
+
+
+### Bug Fixes
+
+* **data:** reconcile register — SIEM/SOC/Vuln-Mgmt were wrongly LIVE ([#334](https://github.com/andrelair-platform/minicloud-platform-docs/issues/334)) ([ddfd56f](https://github.com/andrelair-platform/minicloud-platform-docs/commit/ddfd56f3dcd1558fedc349f32ee2ce8bb7663738))
+* **data:** reconcile the whole Cybersecurity & IAM cluster (domain 18) ([#335](https://github.com/andrelair-platform/minicloud-platform-docs/issues/335)) ([c9e7259](https://github.com/andrelair-platform/minicloud-platform-docs/commit/c9e7259621768e5880dd1cea1b0a0c48225e2a40))
+* **docs:** inline diagram images were 404 on the live site ([#284](https://github.com/andrelair-platform/minicloud-platform-docs/issues/284)) ([8d4b9c3](https://github.com/andrelair-platform/minicloud-platform-docs/commit/8d4b9c368f84f1ef39c0e27d45c691ba8f68fe93))
+* **docs:** root redirect → /platform (no trailing slash); rename docs-is/is → apps ([#290](https://github.com/andrelair-platform/minicloud-platform-docs/issues/290)) ([6f4bdc4](https://github.com/andrelair-platform/minicloud-platform-docs/commit/6f4bdc4bf90afc05c178302aab57ede2bde52a66))
+
 ## [0.1.2](https://github.com/andrelair-platform/minicloud-platform-docs/compare/minicloud-platform-docs-v0.1.1...minicloud-platform-docs-v0.1.2) (2026-10-17)
 
 
