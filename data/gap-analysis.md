@@ -221,6 +221,7 @@ Status source: the capability register (`capability-register.csv`), reconciled l
 - [ ] **Submission Hub** (#27) — dossier intake + exposure-data extraction; the *front door*. `20/20 GAP`. (P2/P4)
 - [ ] **Pricing Engine** (#04/#12) — base/exposure/experience rating, CAT/expense/capital loads, technical premium. `26/29 GAP`. (P2) — **needs Data Platform depth first (§6 flag).**
 - [ ] **Insurance Billing** (#14) — premium/installments/commission/IPT/cash-matching. `25/25 GAP`. (P2) — ERPNext ≠ insurance billing.
+- [ ] **Coinsurance Settlement** (`CAP-634`–`637`) — ingest the periodic coinsurance clearing bordereau → compute lead/follower (apériteur/coassureur) share of every premium/commission/claim/recovery/fee → emit ledger-ready accounting flux + claims register. `GAP`. Pervasive on large industrial coinsured risks; only co-insurance *setup* (CAP-138/477) exists today, not *settlement*. Feeds Insurance Billing + Technical Accounting + the Claims register.
 
 ### B. Scaffold → build
 - [ ] **Risk Engineering** (#21) — survey/recommendation/risk-quality. `21/23 scaffold`. (P1 prevention)
