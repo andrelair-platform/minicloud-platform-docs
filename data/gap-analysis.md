@@ -249,3 +249,18 @@ Status source: the capability register (`capability-register.csv`), reconciled l
 > **Sequencing rule (from §6):** foundations (E) unblock the data-dependent builds — don't build Pricing/
 > Accumulation/Claims-Experience before the Data Platform + MDM exist. Close the **chain breaks (A)** to make
 > the lifecycle *run*; add **depth (C)** to make it *good*; the **differentiators (D)** are the moat.
+
+### F. Product-line (LOB) portfolio — a DIFFERENT axis from capabilities (§15)
+The L3 capabilities (UW, pricing, policy, claims, clause, reinsurance…) are **LOB-agnostic** — they serve
+*any* line. Which **lines of business** ktayl offers is a separate **product-portfolio** dimension (board
+#9 *Product Lines* + the register's `Line of Business` column + the Product Catalogue). Today that axis is
+**coarse** (~6 lines in the catalogue; a 3-bucket LOB column). The full corporate-insurer target taxonomy
+to flesh out (NOT capability gaps — product-portfolio scope decisions):
+- **Property** (Fire · NatCat · Machinery · Business Interruption)
+- **Casualty / Liability** (General · Product · Environmental · Employers)
+- **Marine** (Cargo · Hull · Marine Liability)
+- **Engineering** (CAR · EAR · Machinery Breakdown · Infrastructure)
+- **Cyber** · **Credit & Political Risk** · **Aviation** · **Energy** · **Specialty**
+- **Financial Lines** (D&O · Professional Indemnity · Crime · Financial Institutions)
+Each line reuses the same capability stack; "offering a line" = a product-catalogue + rating/wording
+configuration, not new capabilities. Flesh out per `product-portfolio` scope, need-first.
