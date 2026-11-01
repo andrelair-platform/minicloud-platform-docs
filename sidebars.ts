@@ -16,6 +16,7 @@ const architectureNav = {
     'architecture/c4-system-design',
     'architecture/is-application-landscape',
     'architecture/platform-is-dependency-matrix',
+    'architecture/adr-document-intelligence-spine',
   ],
 } as const;
 
