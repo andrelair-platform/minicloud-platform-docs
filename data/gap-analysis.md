@@ -226,7 +226,7 @@ Status source: the capability register (`capability-register.csv`), reconciled l
 - [ ] **Risk Engineering** (#21) — survey/recommendation/risk-quality. `21/23 scaffold`. (P1 prevention)
 
 ### C. Depth within the "live" domains (live core, missing depth — reconciled 2026-10-31)
-- [ ] **Underwriting** (#12): Exposure Analysis `GAP` (BI/geo/NatCat/supply-chain/accumulation/multi-peril); Capacity, Referral, Risk-Assessment depth, Claims-Experience, Renewal `PARTIAL`. (live core = Quote + Coverage Design)
+- [ ] **Underwriting** (#12): Exposure Analysis `GAP` (BI/geo/NatCat/supply-chain/accumulation/multi-peril); the **loss-estimation core `GAP`** — **TIV aggregation, PML, MFL/EML** (`CAP-631/632/633`, the numbers that drive capacity/premium/deductible/retention/reinsurance); Capacity, Referral, Risk-Assessment depth, Claims-Experience, Renewal `PARTIAL`. (live core = Quote + Coverage Design)
 - [ ] **Policy** (#6): endorsement lifecycle + **document generation** (certificates/attestations). (live core = issuance)
 - [ ] **Claims** (#11): Reserving, Payment, Recovery, Fraud/SIU, Litigation `GAP`; Investigation, Closure `PARTIAL`. (live core = FNOL + Coverage Review)
 
