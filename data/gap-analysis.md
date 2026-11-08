@@ -249,7 +249,7 @@ Status source: the capability register (`capability-register.csv`), reconciled l
 - [ ] **P3 Systemic accumulation** — reuse the **Retrieva graph** over the portfolio, **after Data Platform + MDM**.
 
 ### E. Foundations that unblock most of the above (Stage A/B — do before C/D)
-- [ ] **Data Platform depth** (warehouse) — unblocks Pricing, Portfolio analytics, Claims-Experience, Accumulation.
+- [ ] **Data Platform depth** (warehouse) — unblocks Pricing, Portfolio analytics, Claims-Experience, Accumulation. **→ Gated by decision: `ktayl-data-platform` ADR-007 (Data Platform depth + MDM is the gating foundation; no data-dependent build starts before it) — with the dependency-ordered Slice 2 scope (MDM keys → ingest claims/billing/finance → conformed fact/dim marts → quality spine → BI).**
 - [ ] **MDM** (Customer/Entity/Broker/Country/Industry) — the keystone for accumulation + a Customer SoR.
 - [ ] **CRM / Distribution** (#13) — broker/account mgmt (feeds Submission + renewal).
 
