@@ -469,6 +469,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'data-layer/data-layer-overview',
         'data-layer/data-platform-slice1',
+        'data-layer/data-platform-target',
         'data-layer/kafka-redpanda',
         'data-layer/clickhouse',
         'data-layer/dbt',
