@@ -6,6 +6,13 @@ sidebar_position: 3
 
 # Deploy with Helm (Direct)
 
+:::warning Partly stale — not the onboarding path
+The examples below use a **`staging` environment** (removed — the standard is `dev` + `prod`) and a
+**manual `helm install`** flow (custom apps deploy via **ArgoCD + a GAP wrapper chart**, not by hand).
+Keep this page only as a reference for *ad-hoc, local* Helm use. To onboard or deploy a service, use
+**[Deploy a new business service](./new-business-service)** and **[Standard Helm Chart](./helm-chart)**.
+:::
+
 Direct Helm commands are used for local development, debugging, and first-time namespace setup. For persistent production workloads, use [ArgoCD (GitOps)](./deploy-argocd) instead.
 
 ---

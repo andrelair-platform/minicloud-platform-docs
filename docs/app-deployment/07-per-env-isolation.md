@@ -4,7 +4,23 @@ title: Phase 86 — Per-Env Namespace Isolation
 sidebar_position: 7
 ---
 
-# Phase 86 — Per-App-Per-Env Namespace Isolation
+# Phase 86 — Per-App-Per-Env Namespace Isolation (historical record)
+
+:::note This is a historical phase record — the *controls* are current, the *mechanics* changed
+The **isolation controls catalogued below are still the standard** (default-deny NetworkPolicies +
+the Cilium node policy, ResourceQuota/LimitRange, per-env Ingress+Certificate, OIDC-group RBAC, and
+**no human RoleBinding in prod**). What has changed since this phase:
+- **Two environments, not three** — `staging` was removed; the standard is **`dev` + `prod`**.
+- **Helm-only, not Kustomize** — these controls now ship from the **GAP wrapper chart**
+  (`minicloud-app-deployment` renders the NetworkPolicy/PDB/ServiceMonitor; quota/limitrange come from
+  the `environments/overlays/{dev,prod}` packaging charts). The `services/_template/` scaffold and the
+  `minicloud-1/{dev,staging,prod}` overlay tree are **retired**.
+- **Kargo promotes dev→prod**, not a manual ArgoCD sync click.
+
+For the current onboarding see **[Deploy a new business service](./new-business-service)** and
+**[Standard Helm Chart](./helm-chart)**. Read the sections below as the *what* (the controls) — the
+*how* (kustomize/`_template`/staging/manual-sync) is superseded.
+:::
 
 Implemented 2026-08-02. Completed the **Option 2 multi-namespace pattern** across four services (`platform-demo`, `minicloud-plane`, `collab`, `insurance`): each service gets three dedicated namespaces (`<app>-dev`, `<app>-staging`, `<app>-prod`) with full isolation controls applied consistently at every tier.
 

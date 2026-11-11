@@ -243,7 +243,6 @@ const sidebars: SidebarsConfig = {
             'app-deployment/deploy-yaml',
             'app-deployment/cicd-pipeline',
             'app-deployment/per-env-isolation',
-            'app-deployment/gitops-repo-patterns',
             'app-deployment/enterprise-gitops-controls',
             'app-deployment/third-party-app-integration',
             'platform-roadmap/phase-9-workload',
