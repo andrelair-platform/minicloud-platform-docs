@@ -6,30 +6,64 @@ sidebar_position: 2
 
 # Standard Helm Chart Structure
 
-:::note Current minicloud standard
-Custom applications now use a **GAP wrapper chart** in `minicloud-gitops/services/<svc>/helm/`,
-depending on the shared `minicloud-app-deployment` library chart. Use
-[End-to-End Delivery Workflow](../developer-platform/delivery-workflow) as the canonical guide for
-new services. The generic chart structure below is kept as Helm background.
+:::note Current minicloud standard — you do NOT hand-write charts
+Custom applications use the **GAP wrapper-chart golden path**: a *thin* per-service chart in
+`minicloud-gitops/services/<svc>/helm/` that `dependencies:` on the shared **`minicloud-app-deployment`**
+library chart, which renders the hardened workload for you. **To onboard a new service, follow the
+step-by-step [Deploy a new business service — zero → prod](./new-business-service)** (the canonical
+on-ramp); use [End-to-End Delivery Workflow](../developer-platform/delivery-workflow) for *promoting* an
+artifact once the service exists. The generic chart anatomy further down is **Helm background** (useful
+for understanding the library chart and third-party charts) — it is **not** the path for a custom app.
 :::
 
 Every application deployed on this platform uses a Helm chart. This page defines the **platform-approved standard chart layout** — what goes in it, how it is structured, and how `values.yaml` is organized for multi-environment support.
 
 ---
 
-## Scaffold a New Chart
+## Onboard a custom app — the GAP wrapper chart (the standard)
 
-```bash
-helm create myapp
+You write a **thin wrapper** + values; the library chart supplies the hardened Deployment/Rollout +
+Service + Ingress + Certificate + HPA/KEDA + NetworkPolicy + PDB + ServiceMonitor + ESO ExternalSecret.
+A service's deployment is just "configure the library + add your few extras."
+
+```text
+minicloud-gitops/services/<svc>/helm/
+├── Chart.yaml           ← dependencies: [minicloud-app-deployment <ver>, repository: oci://ghcr.io/andrelair-platform]
+├── Chart.lock           ← COMMIT it (ArgoCD's repo-server runs `helm dependency build` from it)
+├── .helmignore          ← must NOT list charts/ (would break the render); charts/ is gitignored instead
+├── values.yaml          ← config under `minicloud-app-deployment:` (image, ports, env, resources, probes) + wrapper-local keys
+├── values-dev.yaml      ← env overlay (image.tag, host, replicas: 1)
+├── values-prod.yaml     ← env overlay (replicas: 2–3, prod-only gates)
+└── templates/           ← ONLY service-specific extras (TLS Certificate, a dedicated Postgres, a ConfigMap…)
 ```
 
-This generates the baseline. Clean it up to match the standard:
+The service is then wired to the cluster by **two ArgoCD Applications** (`apps/…/<svc>-dev.yaml` +
+`-prod.yaml`, each a single Helm source with `helm.releaseName: <svc>`) and a **Kargo** promotion dir
+(`services/<svc>/kargo/`) that bumps `minicloud-app-deployment.image.tag` dev→prod.
+
+**The gotchas that bite (all enforced the hard way):**
+
+- **`helm.releaseName: <svc>` is MANDATORY** in the ArgoCD app — without it the Service/Deployment take the *app* name, not the service name.
+- **`.helmignore` must not contain `charts/`** — it makes Helm treat the vendored library dep as missing at render time.
+- **Any value Kargo promotes must be BLOCK-style YAML** (`image:` then an indented `tag: "…"`), never flow `{ tag: … }` — Kargo's YAML mutator cannot parse a flow mapping and every promotion errors.
+- **Escape non-Helm `{{ }}`** in your templates (ESO output-templates, Argo-Rollouts analysis args) with backticks so Helm emits them verbatim.
+- **Immutable selector for zero-downtime** — set `selectorLabels: {app: <svc>}` to match the live workload so a migration is an in-place rolling update, not a delete/recreate.
+
+> The authoritative decision + rationale is the ADR `minicloud-gitops/docs/helm-golden-path.md`; the
+> full step-by-step onboarding is [Deploy a new business service](./new-business-service).
+
+---
+
+## Appendix — generic chart anatomy (Helm background)
+
+> The sections below describe a **plain** Helm chart. They are kept for understanding the library chart
+> internals and third-party charts — **not** the path for onboarding a custom app (use the wrapper chart
+> above). A generic chart's layout:
 
 ```text
 myapp/
 ├── Chart.yaml             ← chart metadata + dependencies
 ├── values.yaml            ← default values (production-safe defaults)
-├── values-staging.yaml    ← staging overrides
 ├── values-prod.yaml       ← production overrides
 └── templates/
     ├── _helpers.tpl        ← named templates (labels, selectors)
@@ -158,13 +192,16 @@ redis:
 
 ---
 
-## values-staging.yaml
+## values-dev.yaml
+
+> The platform standard is exactly **two environments: `dev` + `prod`** (staging was removed). A
+> generic `values-dev.yaml` overlay:
 
 ```yaml
 replicaCount: 1
 
 image:
-  tag: "latest-main"      # staging tracks latest main build
+  tag: "latest-main"      # dev tracks the latest main build
 
 resources:
   requests:
@@ -175,14 +212,14 @@ resources:
     memory: "256Mi"
 
 autoscaling:
-  enabled: false          # fixed replicas in staging
+  enabled: false          # fixed replicas in dev
 
 ingress:
-  host: myapp.staging.yourdomain.com
-  tls: false              # no TLS in staging
+  host: myapp.dev.yourdomain.com
+  tls: true
 
 env:
-  NODE_ENV: staging
+  NODE_ENV: development
   LOG_LEVEL: debug
 ```
 
@@ -377,7 +414,7 @@ helm pull oci://harbor.local/charts/myapp --version 1.2.0
 
 ```text
 ✔ Chart scaffolded with all standard templates
-✔ values.yaml, values-staging.yaml, values-prod.yaml defined
+✔ values.yaml, values-dev.yaml, values-prod.yaml defined
 ✔ Chart pushed to Harbor OCI registry
 ✔ helm template ./myapp renders without errors
 ✔ Chart installs cleanly with helm install --dry-run
