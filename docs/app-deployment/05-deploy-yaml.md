@@ -6,6 +6,13 @@ sidebar_position: 5
 
 # Deploy with Raw YAML (Alternative)
 
+:::warning Stale examples — `staging` removed
+The examples below use a **`staging` environment** and `*.staging.*` hosts — removed; the standard is
+`dev` + `prod`. Read the layout as illustrative only. For how real workloads deploy, use
+**[Deploy a new business service](./new-business-service)** (wrapper chart + ArgoCD). Raw manifests on
+this platform are packaged as Helm **`.Files.Get` shim charts**, not applied by hand.
+:::
+
 Raw Kubernetes YAML is the alternative to Helm for cases where a full chart is overkill — one-off jobs, quick debugging, simple internal tools, or when learning the platform. For persistent production workloads, [Helm + ArgoCD](./deploy-argocd) is always preferred.
 
 ---

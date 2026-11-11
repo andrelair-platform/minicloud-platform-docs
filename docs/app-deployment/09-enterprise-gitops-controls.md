@@ -6,6 +6,19 @@ sidebar_position: 9
 
 # Enterprise GitOps Controls
 
+:::note Controls current — some mechanics superseded (Kustomize → Helm, 3-env → 2-env)
+The **controls on this page are still the standard** — CODEOWNERS-gated prod paths, the `main-protection`
+ruleset + `merge-gate`, rendered-diff review on every PR, the change-record audit log, and kubeconform/
+Checkov validation. But the repo is now **Helm-only** and runs **two envs** (`dev` + `prod`), so where the
+text says:
+- **`kustomize build` diff** → the PR render check is now **`helm template → kubeconform`** (`validate-manifests.yml`);
+- **`services/*/minicloud-1/{dev,staging,prod}` / `overlays/`** → the current layout is **`services/*/helm/`** (wrapper charts) with `values-dev.yaml` / `values-prod.yaml`;
+- **`staging`** → removed.
+
+Read the control *concepts* as authoritative; treat the kustomize/`minicloud-1`/staging *mechanics* as
+historical. Current deploy model: **[Standard Helm Chart](./helm-chart)** + **[Deploy a new business service](./new-business-service)**.
+:::
+
 Five controls turn a working GitOps repo into an auditable, production-safe one. Each addresses a concrete failure mode: unreviewed production changes, invisible diffs, noisy audit trails, implicit cluster coupling, and a flat directory that gives no signal about blast radius.
 
 ---

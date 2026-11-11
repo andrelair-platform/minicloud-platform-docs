@@ -6,6 +6,14 @@ sidebar_position: 4
 
 # Deploy via ArgoCD — GitOps Path (Primary)
 
+:::warning Stale examples — concept correct, details outdated
+The ArgoCD-drives-Git concept on this page is current, but the **examples use a `staging` environment**
+(removed — the standard is `dev` + `prod`) and the old per-service chart layout. For the real, current
+Application manifests see **[Deploy a new business service → Step 4](./new-business-service)** and
+**[Standard Helm Chart](./helm-chart)** (single Helm source + `helm.releaseName`, dev auto-sync +
+CODEOWNERS-gated prod, Kargo promotion).
+:::
+
 This is the **standard production deployment path**. Developers do not run `helm upgrade` in production. Instead, they push changes to Git — ArgoCD detects the change and drives the Helm deployment. The cluster always matches what is in Git.
 
 ---
