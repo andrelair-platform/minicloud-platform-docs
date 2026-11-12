@@ -9,9 +9,10 @@ sidebar_label: Branch Strategy & CI/CD
 :::note Superseded model
 This page was rewritten (2026-09-04) for the **trunk-based + Kargo** model. The earlier
 `dev`/`staging`/`prod` **branch-per-environment** flow (long-lived branches, `dev-<sha>` /
-`staging-<sha>` image tags, CI-driven overlay bumps) is **retired**. Environments are now Kustomize
-overlays reconciled from `main`, promoted by Kargo — see
-[Kargo — Multi-Stage Promotion](./34-kargo-promotion.md).
+`staging-<sha>` image tags, CI-driven overlay bumps) is **retired**. Environments are now **Helm
+wrapper-chart overlays** (`values-dev.yaml` / `values-prod.yaml`) reconciled from `main`, promoted by
+Kargo — see [Kargo — Multi-Stage Promotion](./34-kargo-promotion.md). (Kustomize was also retired
+2026-09-24 — the repo is Helm-only.)
 :::
 
 All ~26 repositories in `andrelair-platform` follow one **trunk-based** standard: a long-lived `main`,

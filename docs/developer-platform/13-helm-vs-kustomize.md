@@ -6,6 +6,14 @@ sidebar_label: Helm vs Kustomize
 
 # Helm vs Kustomize — When to Use Which
 
+:::danger Superseded — the platform is now Helm-only (Kustomize retired, 2026-09-24)
+The decision this page weighs has been **made**: the repo has **zero Kustomize** (no
+`kustomization.yaml` anywhere). Custom apps use **GAP Helm wrapper charts**, and raw-CR bundles use
+Helm **`.Files.Get` packaging shim** charts. Keep this page as **general Helm-vs-Kustomize background**
+only — it does **not** describe a live choice here. For the current model see
+**[Standard Helm Chart](../app-deployment/helm-chart)** + **[Deploy a new business service](../app-deployment/new-business-service)**.
+:::
+
 This platform uses both Helm and Kustomize. They are not competing tools —
 each is the right fit for a different category of workload. This page
 explains the split, the tradeoffs, and the single question that decides
