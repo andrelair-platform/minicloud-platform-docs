@@ -256,7 +256,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: default
-  namespace: myteam-staging
+  namespace: myteam-dev
 automountServiceAccountToken: false
 ```
 

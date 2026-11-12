@@ -6,6 +6,14 @@ sidebar_label: Backstage + Helm/Kustomize
 
 # Backstage — How It Works With Helm and Kustomize Apps
 
+:::note Stale examples — Kustomize retired, `staging` removed
+The Backstage integration concept here is current, but the examples predate two changes: custom apps
+are now **Helm wrapper charts** (not Kustomize — the repo is Helm-only since 2026-09-24), and the
+standard is **`dev` + `prod`** (no `staging`; names like `platform-demo-staging` / `gitops-demo` are
+historical). Read the Backstage mechanics as current; the Helm-vs-Kustomize split + 3-env examples are
+superseded — see **[Standard Helm Chart](../app-deployment/helm-chart)**.
+:::
+
 Backstage is the developer portal that aggregates visibility across the
 platform. It connects to the Kubernetes cluster, ArgoCD, and GitHub to
 surface a unified view of every service. The integration works
