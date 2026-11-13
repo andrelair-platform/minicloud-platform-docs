@@ -83,6 +83,17 @@ products stop varying. Full tree:
 [`docs/templates/product-docs-skeleton.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/templates/product-docs-skeleton.md).
 Reference products: **ktayl-core** (plain `docs/`) and **retrieva** (Docusaurus).
 
+### The template set (source of truth in GitOps)
+
+The reusable docs templates all live in `minicloud-gitops/docs/templates/`:
+
+| Template | Use it for | Source |
+|---|---|---|
+| **Product docs skeleton** | the canonical per-product `docs/` layout | [`product-docs-skeleton.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/templates/product-docs-skeleton.md) |
+| **SDD template** | the assembled System Design Document (SA artefact #1) for a Path-C product | [`sdd-template.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/templates/sdd-template.md) |
+| **Traceability matrix** | requirement ID → component → test → pipeline → evidence | [`traceability-matrix.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/templates/traceability-matrix.md) |
+| **Software-evaluation scorecard** | the weighted adopt-a-tool decision matrix | [`software-evaluation-scorecard.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/templates/software-evaluation-scorecard.md) |
+
 ## How a developer uses this
 
 - **Starting a product?** Follow the [zero→prod runbook](/platform/app-deployment/new-business-service); it

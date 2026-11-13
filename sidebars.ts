@@ -96,6 +96,7 @@ const sidebars: SidebarsConfig = {
             'storage/longhorn',
             'storage/nfs',
             'storage/minio',
+            'storage/storage-hardening',
           ],
         },
         {
@@ -506,6 +507,7 @@ const sidebars: SidebarsConfig = {
         'reliability/chaos-mesh',
         'reliability/phase81-chaos-game-day',
         'reliability/cluster-stability-assessment',
+        'reliability/slo-and-postmortems',
       ],
     },
 
@@ -522,6 +524,7 @@ const sidebars: SidebarsConfig = {
         'engineering-standards/bmad-operating-model',
         'engineering-standards/bmad-workflow',
         'engineering-standards/decision-records',
+        'engineering-standards/evidence-and-proof',
       ],
     },
 
