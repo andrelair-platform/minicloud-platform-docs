@@ -115,6 +115,48 @@ the two overlay files by **Kargo** (a dev-overlay PR, then a CODEOWNERS-gated pr
 `Application` pointers are stable; only the `image.tag` inside the values files advances. See
 [End-to-End Delivery Workflow](/platform/developer-platform/delivery-workflow).
 
+### What Kargo does and why
+
+ArgoCD has a blind spot: it **reconciles one environment from Git — it does not move a change between
+environments.** It will faithfully make `ktayl-prod` match whatever `values-prod.yaml` says, but it has no
+notion of *"this image passed dev, now advance it to prod."* **Something has to write that Git change**
+(bump the prod values file to the new tag). Before Kargo that was a **human hand-editing an image tag** —
+which is toil, drifts, and hits a real bug: a 7-hex-digit SHA that is all decimal (e.g. `9248482`) parses
+as a **YAML number** → `9.248482e+06` → `InvalidImageName`.
+
+**Kargo is that missing middle:**
+
+```
+CI builds & proves the image   →   KARGO promotes it (writes the Git PR)   →   ArgoCD deploys it
+```
+
+Per Kargo-managed service, the mechanism is:
+
+- **`Warehouse`** — *what Kargo watches*: it subscribes to the prod image in ghcr; a new CI build becomes a
+  **"Freight"** (one specific, immutable artifact version).
+- **`Stage dev`** — writes the `values-dev.yaml` bump (auto-merged; dev isn't gated), optionally runs a dev
+  smoke test → the Freight becomes *verified in dev*.
+- **`Stage prod`** — `sources: {stages: [dev]}` — **prod can only accept Freight already live+verified in
+  dev.** That is the dev→prod gate, enforced structurally. Its PR lands on the **CODEOWNERS** approval.
+
+Three things make it safe: **(1)** Kargo **only opens Git PRs — it never touches the cluster**, so the
+GitOps model and the CODEOWNERS prod gate stay intact (Kargo automates the *mechanics*, not the
+*decision*); **(2)** it moves **one immutable artifact** across stages — the exact SHA that passed dev is
+what ships to prod (no rebuild, no re-tag → *what you tested is what you ship*); **(3)** **verification
+stays in CI** — Kargo owns promotion, not testing. The `image.tag` must be **block-style YAML** so Kargo's
+`yaml-update` can rewrite it (and it `quote()`s the value → the all-digit-SHA bug can't recur).
+
+**Why only the custom multi-env services use it** (not vendor charts, not single-env customs): Kargo earns
+its place only when all four hold — **you build the image**, **two envs run the same artifact**, the image
+is **env-agnostic**, and the prod tag is **immutable**. A vendor app fails the first two (you don't build
+Grafana; it's single-instance — see [the vendor path](#the-two-deploy-paths--custom-wrapper-vs-vendor-multi-source-current)
+below), so there's nothing to promote → it self-updates by a Renovate version bump instead.
+
+> **One line:** *ArgoCD deploys one environment; Kargo moves the validated artifact between environments.*
+> CI proves the artifact, Kargo promotes it, ArgoCD deploys it — without ever touching the cluster or
+> bypassing the prod gate. Full mechanics, Warehouse models, gotchas and the per-service list:
+> [**Kargo — Multi-Stage Promotion**](/platform/developer-platform/kargo-promotion).
+
 ---
 
 ## The two deploy paths — custom wrapper vs vendor multi-source (current)
