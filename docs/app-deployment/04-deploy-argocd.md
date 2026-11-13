@@ -189,6 +189,41 @@ test (you don't build its image; it's one instance, not a dev→prod pair of an 
 it is the release decision. To change *how* a vendor app runs, you edit **one file**:
 `helm-values/minicloud-1/<app>-values.yaml`.
 
+### Why two patterns and not one? (the design rationale)
+
+A common question: *why do vendor apps keep their config in a central `helm-values/` dir instead of
+inside the chart like custom apps (`values-dev.yaml`/`values-prod.yaml`)?*
+
+**The deciding reason — where is the chart?** A values file has to live where the chart is.
+
+- **Custom app:** the chart is **in your repo** (`services/<svc>/helm/` — you wrote it), so the values
+  live **inside it**, their natural home.
+- **Vendor app:** the chart is **not in your repo** — it's pulled from the vendor's Helm repo at deploy
+  time. There's no local chart dir to put values "inside", so they live in a dir you own (`helm-values/`)
+  and the multi-source `$values` reference stitches them onto the upstream chart at render time.
+
+**Could you wrap a vendor chart too** (a thin `services/grafana/helm/` depending on the upstream chart)?
+Technically yes — but the platform deliberately doesn't, because **every piece of the custom structure
+exists to solve a problem a vendor app doesn't have:**
+
+| Custom-pattern piece | Why it exists (custom apps) | Vendor needs it? |
+|---|---|---|
+| `values-dev.yaml` + `values-prod.yaml` | the app runs in **two environments** (same artifact promoted) | ❌ single instance — one Grafana/Vault/Harbor; one values file suffices |
+| the library-chart dependency | gives a stateless app its shared Deployment/Service/Ingress | ❌ the vendor chart **already is** the full workload |
+| block-style `image.tag` | so **Kargo** can promote the built image dev→prod | ❌ you build nothing; Renovate bumps the chart version instead |
+| `Chart.yaml` + `Chart.lock` | to vendor + lock the library dependency | ❌ nothing to depend on — pure boilerplate here |
+
+So wrapping a vendor chart would add `Chart.yaml` + `Chart.lock` + a dependency-build step **for zero
+benefit** (no second env, no library, no Kargo). Plus the central `helm-values/` is a deliberate
+single-source-of-truth: one `ls` shows every third-party tool's config, instead of it scattered across ~42
+chart dirs. It's the same *structure-only-when-it-earns-its-keep* discipline applied elsewhere (the
+standalone-vs-wrapper chart call, not pre-building a stateful scaffolder).
+
+> **The rule:** *Custom = you build it, dev+prod, needs the shared workload, gets promoted → wrapper chart,
+> values inside. Vendor = you build nothing, single instance, the chart is complete, self-updates by
+> version → pull from upstream, one central values file.* The two patterns match two different realities;
+> vendors aren't "failing to follow" the custom path — the custom path is machinery for problems they don't have.
+
 :::tip Which path am I on?
 **Did you build the image?** Yes → custom wrapper (single-source, `services/<svc>/helm`, Kargo). No, it's
 an upstream chart → vendor multi-source (`helm-values/` + the pinned `targetRevision`, Renovate). The
