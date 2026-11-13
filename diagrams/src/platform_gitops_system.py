@@ -46,7 +46,7 @@ with Diagram(
 
     # ---- 3. the single source of truth — Git ---------------------------------
     with Cluster("3 · Git — SINGLE SOURCE OF TRUTH  (protected main: PR + checks + signed commits)", graph_attr=cluster_attr(AMBER)):
-        gitops = Github("minicloud-gitops  (deployment repo)\nArgoCD Applications · wrapper + library\nHelm charts · manifests · AppProjects")
+        gitops = Github("minicloud-gitops  (deployment repo)\nArgoCD Applications · wrapper + library\nHelm charts · platform/ + is/ · AppProjects")
 
     # ---- 4. reconcile — ArgoCD (the ONLY cluster writer) ---------------------
     with Cluster("4 · Reconcile — ArgoCD  (the only thing that writes to the cluster)",
