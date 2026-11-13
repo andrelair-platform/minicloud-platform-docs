@@ -18,6 +18,105 @@ This is the **standard production deployment path**. Developers do not run `helm
 
 ---
 
+## How it actually works here — `apps/` + the wrapper chart (current)
+
+:::note Verified, current (2026-11-13)
+This section describes the **real** mechanism on this cluster. The generic sections further down are kept
+as conceptual background but use a stale `staging`/multi-source layout — prefer this section +
+[Deploy a new business service](./new-business-service) + [Standard Helm chart](./helm-chart).
+:::
+
+### `apps/` is the app-of-apps registry
+
+Everything ArgoCD runs is declared by **one file per deployment** under `minicloud-gitops/apps/` (~105
+files). A single **root `Application`** (`bootstrap/root-app.yaml`) points at `apps/` with
+`directory.recurse: true`, so ArgoCD discovers an `Application` **wherever** it sits in the tree — the
+sub-folders are **pure taxonomy**, not functional:
+
+```
+apps/
+├── platform/   shared infrastructure capabilities (foundation, storage, networking, secrets,
+│               security, observability, delivery, data, ai, automation, shared-services, _demos)
+├── is/         the business/IS apps (insurance, iam, erp, itsm, workplace)
+├── retrieva/   the RNCP39583 cert product (its own group)
+└── previews/   PR preview environments
+```
+
+The folder an `Application` lives in just records **what kind of thing it is** (the Platform ↔ IS
+ownership boundary — enforced by the `architecture-guard` CI, which blocks a new `Application` outside
+`apps/platform/<layer>/` or `apps/is/<group>/`).
+
+### `apps/` vs `services/` — pointer vs recipe
+
+| | `services/<svc>/helm/` | `apps/.../<svc>-{dev,prod}.yaml` |
+|---|---|---|
+| Is | the **recipe** (the wrapper Helm chart) | the **pointer** (an ArgoCD `Application`) |
+| One per | custom service | **deployment** → a service = **two** pointers (dev + prod) |
+| Says | *how* to run it | *what* to run + *where* (namespace) + *which* overlay |
+
+The dev/prod split lives entirely in these two pointers: `<svc>-dev` → namespace `<svc>` +
+`values-dev.yaml`; `<svc>-prod` → namespace `<svc>-prod` + `values-prod.yaml`. **One recipe, two
+pointers.**
+
+### How an `Application` renders a `services/<svc>/helm` chart (the pipeline)
+
+A single-source Helm `Application` (the golden path — no kustomize, no multi-source `$values`):
+
+```yaml
+source:
+  repoURL: https://github.com/andrelair-platform/minicloud-gitops.git
+  targetRevision: main
+  path: services/ktayl-policy-service/helm     # the wrapper chart dir
+  helm:
+    releaseName: ktayl-policy-service          # MANDATORY (see below)
+    valueFiles:
+      - values-dev.yaml                        # the env overlay
+destination:
+  namespace: ktayl                             # the room (dev)
+```
+
+What ArgoCD's **repo-server** does with that, step by step:
+
+1. **Checkout** `minicloud-gitops@main` and read the chart at `path:`. It sees `Chart.yaml` → this is a
+   Helm source.
+2. **Resolve the dependency.** The wrapper `dependencies:` on the shared library chart
+   `minicloud-app-deployment` (`repository: oci://ghcr.io/andrelair-platform`, version-pinned). The
+   repo-server runs **`helm dependency build`**, which reads the **committed `Chart.lock`** and pulls that
+   exact library version from the **ghcr OCI registry**. That registry is authenticated by a registered
+   ArgoCD repo credential (`ghcr-oci-repo`, `type: helm`, `enableOCI: true`, delivered by ESO from Vault)
+   — which is why `Chart.lock` **must be committed** (no lock → the build can't resolve the dep → the app
+   won't render).
+3. **Render.** `helm template <releaseName> . -f values-dev.yaml` — the chart's own `values.yaml` is the
+   base, `values-dev.yaml` overlays it. The **library subchart** renders the reusable workload
+   (Deployment/Rollout + Service + Ingress + NetworkPolicy + ServiceMonitor + PDB…); the wrapper's **own
+   `templates/`** render the service-specific extras (TLS Certificate, CNPG database, ExternalSecrets…).
+   One Helm render → a flat stream of plain Kubernetes manifests.
+4. **Apply.** ArgoCD diffs that rendered output against the live cluster and applies it with
+   **ServerSideApply** into the `destination.namespace` (`CreateNamespace=true` makes the namespace if
+   missing). `syncPolicy.automated` then keeps it reconciled forever: **selfHeal** re-applies any manual
+   drift, **prune** deletes anything removed from git.
+
+```
+apps/.../ktayl-policy-service-dev.yaml  (the Application)
+        │ source.path → services/ktayl-policy-service/helm
+        ▼
+ArgoCD repo-server:  helm dependency build (Chart.lock → pull minicloud-app-deployment from ghcr OCI)
+        │            helm template <releaseName> . -f values-dev.yaml
+        ▼            → library subchart (workload) + wrapper templates/ (cnpg, cert, ES…)
+rendered manifests ──ServerSideApply──► namespace "ktayl"   (selfHeal + prune keep it matching git)
+```
+
+**Why `releaseName` is mandatory:** the library chart derives every object's name from the Helm
+**release name**. Omit `helm.releaseName` and ArgoCD defaults it to the *Application* name — the workload,
+Service and Rollout would silently take the wrong name. Always set it to the service slug.
+
+**Promotion (dev→prod)** never changes *where* an app runs — it's the **same immutable image** moved across
+the two overlay files by **Kargo** (a dev-overlay PR, then a CODEOWNERS-gated prod-overlay PR). The two
+`Application` pointers are stable; only the `image.tag` inside the values files advances. See
+[End-to-End Delivery Workflow](/platform/developer-platform/delivery-workflow).
+
+---
+
 ## GitOps Repository Structure
 
 A dedicated repository stores all deployment configuration. It is separate from application code repos:
