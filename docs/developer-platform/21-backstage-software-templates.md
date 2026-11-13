@@ -31,6 +31,15 @@ two ArgoCD Applications. **It produces deployment config only** — the applicat
 repo (deploy-repo-vs-code-repo rule), so the template opens **one PR on `minicloud-gitops`** (it does not
 create a code repo).
 
+:::info Scope — stateless services
+This template emits the **stateless** library-wrapper path (a `Deployment` behind the shared library
+chart, optionally with a CNPG database *as an extra*). A **fully stateful app** that owns a PVC-backed
+workload (e.g. GLPI in `ktayl-itsm` — its own disk + a dedicated MariaDB) is a **standalone chart**,
+hand-authored in `templates/` without the library dependency — it does not use this scaffolder. See the
+*library-wrapper default / stateful standalone exception* rule in `gitops.md`. (A `stateful-service`
+template is deferred until there are 2–3 such apps — at one, a one-off chart is proportionate.)
+:::
+
 ### What it produces (one PR on minicloud-gitops)
 
 | Artifact | Location | Notes |
