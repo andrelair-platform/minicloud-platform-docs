@@ -117,6 +117,87 @@ the two overlay files by **Kargo** (a dev-overlay PR, then a CODEOWNERS-gated pr
 
 ---
 
+## The two deploy paths — custom wrapper vs vendor multi-source (current)
+
+The pipeline above is for apps **you build**. Most apps on the cluster — Grafana, Vault, Harbor, Tempo,
+ERPNext, cert-manager… — come from an **upstream open-source Helm chart you did not write**, and are wired
+a different way. The split is roughly:
+
+| | **Custom-built** (single-source) | **Vendor / open-source chart** (multi-source) |
+|---|---|---|
+| ~Count | ~63 Applications | ~42 Applications |
+| Chart comes from | `services/<svc>/helm/` (your wrapper chart) | the **vendor's own Helm repo** (pulled at deploy time) |
+| You build the image? | yes → **Kargo** promotes dev→prod | no → nothing to build, nothing to promote |
+| Updates via | Kargo (image tag) | **Renovate** bumps the pinned chart version |
+| Your config lives in | `services/<svc>/helm/values-*.yaml` | `helm-values/minicloud-1/<app>-values.yaml` |
+
+### How a vendor app is provisioned — the multi-source `Application`
+
+Instead of pointing at a chart in your repo, the `Application` lists **2–3 `sources:`** that ArgoCD
+stitches together at render time. Real example (Tempo):
+
+```yaml
+spec:
+  sources:
+    # 1️⃣ THE UPSTREAM CHART — pulled straight from the vendor, pinned version
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: tempo
+      targetRevision: "1.24.4"                 # Renovate bumps this
+      helm:
+        releaseName: tempo
+        valueFiles:
+          - $values/helm-values/minicloud-1/tempo-values.yaml   # ← OUR config
+
+    # 2️⃣ THE VALUES SOURCE — our gitops repo, exposed as "$values"
+    - repoURL: https://github.com/andrelair-platform/minicloud-gitops.git
+      targetRevision: main
+      ref: values                              # makes $values resolve to this checkout
+
+    # 3️⃣ (optional) OUR EXTRA RAW MANIFESTS alongside the chart
+    - repoURL: https://github.com/andrelair-platform/minicloud-gitops.git
+      targetRevision: main
+      path: platform/observability/tempo       # e.g. 01-networkpolicy.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tempo
+```
+
+What ArgoCD does with it:
+
+1. **Pulls the upstream chart** directly from the vendor's Helm repo (`grafana.github.io/...`) at the
+   pinned `targetRevision` — the real published chart, not a copy kept in your repo.
+2. **Overlays *your* values.** The `$values/...` reference resolves into source #2 (the gitops repo), so
+   `helm-values/minicloud-1/tempo-values.yaml` is **your** customization of the vendor chart (hostnames,
+   storage, CA trust, resources, SSO…). `ref: values` is what makes `$values` a valid prefix.
+3. **Adds your extras** (source #3) — raw manifests the vendor chart doesn't ship: a NetworkPolicy, an
+   ExternalSecret, an Ingress, CRs. Applied in the same sync.
+4. Same tail as any app: ServerSideApply into the namespace, `selfHeal` + `prune` keep it matching git.
+
+### The mental map (where each piece lives)
+
+```
+apps/platform/<layer>/<app>.yaml              ← the Application (lists the sources)
+helm-values/minicloud-1/<app>-values.yaml     ← YOUR values (the config you own)
+platform/<layer>/<app>/                        ← YOUR extra raw manifests (netpol, ES, CRs)
+   ⟵ the chart itself is NOT in your repo — pulled from the vendor at deploy time
+```
+
+**No wrapper chart, no `Chart.lock`, no library dependency, no Kargo.** A vendor chart fails the Kargo
+test (you don't build its image; it's one instance, not a dev→prod pair of an artifact you built), so it
+**self-updates by a Git version bump** → ArgoCD sync. **Renovate** watches the `targetRevision` (its
+`argocd` manager in `renovate.json`) and opens a PR when the vendor publishes a new chart version; merging
+it is the release decision. To change *how* a vendor app runs, you edit **one file**:
+`helm-values/minicloud-1/<app>-values.yaml`.
+
+:::tip Which path am I on?
+**Did you build the image?** Yes → custom wrapper (single-source, `services/<svc>/helm`, Kargo). No, it's
+an upstream chart → vendor multi-source (`helm-values/` + the pinned `targetRevision`, Renovate). The
+generic sections below predate this split and use a stale `staging`/manual-sync layout — prefer this
+section.
+:::
+
+---
+
 ## GitOps Repository Structure
 
 A dedicated repository stores all deployment configuration. It is separate from application code repos:
@@ -255,6 +336,13 @@ Teams cannot deploy to namespaces they don't own or use cluster-admin resources.
 ---
 
 ## Multi-Source Application (chart + values in separate repos)
+
+:::warning Superseded — see [The two deploy paths](#the-two-deploy-paths--custom-wrapper-vs-vendor-multi-source-current) above
+This generic example (a `staging` env, a Harbor-hosted chart) predates the current layout. The **real,
+current** multi-source pattern — a vendor chart pulled from its upstream Helm repo + `$values` from
+`helm-values/` + optional raw extras — is documented in *The two deploy paths* section above. Kept here
+only for the conceptual shape.
+:::
 
 Separate the Helm chart (app repo) from the values (gitops repo):
 
