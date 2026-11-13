@@ -62,10 +62,10 @@ produces a **mixed Freight** (e.g. `backend@old + frontend@new`). A **git** Ware
 Freight on the commit, so every image is promoted at the **same SHA** — consistent and
 auditable. (retrieva is a public repo, so its git subscription needs no credential.)
 
-## Which deployments need Kargo? (why only 6 of ~91 apps)
+## Which deployments need Kargo? (why only 9 of ~112 apps)
 
-A common confusion: the cluster runs **~91 Argo CD Applications, 127 Deployments,
-34 StatefulSets, ~369 pods** — yet only **6 services** are on Kargo. That is not an
+A common confusion: the cluster runs **~112 Argo CD Applications, ~156 Deployments,
+~32 StatefulSets, ~330 pods** — yet only **9 services** are on Kargo. That is not an
 oversight. **Kargo promotes *one immutable artifact that you build* across *multiple
 stages*.** It only earns its place when **all four** conditions hold at once:
 
@@ -86,29 +86,35 @@ between stages:
 
 **The mental test:** *"Do I have a `dev` **and** a `prod` running the same artifact I
 build, and do I want to move a validated version from one to the other?"*
-**Yes → Kargo** (the 6). **No** (third-party / single instance / infra) **→ just Argo CD
+**Yes → Kargo** (the 9). **No** (third-party / single instance / infra) **→ just Argo CD
 + Helm version-pinning.**
 
-:::note Why 91 ≠ 91 candidates
+:::note Why 112 ≠ 112 candidates
 One Kargo service is itself **~3 Argo CD Applications** (`<svc>-dev` + `<svc>-prod` +
-`kargo-<svc>`). The 91 count also includes every separate dev/prod app, all third-party
-apps and all infra. **91 apps is not 91 promotion candidates** — the vast majority
+`kargo-<svc>`). The ~112 count also includes every separate dev/prod app, all third-party
+apps and all infra. **~112 apps is not ~112 promotion candidates** — the vast majority
 self-update by a Git version bump, not a multi-stage promotion.
 :::
 
-## Which services are wired (all 6 custom services — fully on Option 2)
+## Which services are wired (all 9 custom services — fully on Option 2)
 
-**All 6 are cut over to the target model** (below): Kargo is the sole dev promoter (auto-promotion),
+**All 9 are cut over to the target model** (below): Kargo is the sole dev promoter (auto-promotion),
 Kargo owns the dev→prod verification gate, and each CI is build-only. The dev **smoke variant**
-depends on the service's dev topology (see the variants table further down).
+depends on the service's dev topology (see the variants table further down). **Warehouse model** is `git`
+for any service whose image timestamp isn't monotonic (Java/temurin base-layer date, or a reproducible
+build that fixes `config.created`) — which is now most of them; `image` only where NewestBuild ranks
+correctly (epoch base layer → real `config.created`). See *Two Warehouse models* below.
 
 | Service | Warehouse | Smoke variant | Notes |
 |---|---|---|---|
 | platform-demo | image (public ghcr) | **A** — KEDA interceptor + netpol | reference; full canary promo demonstrated |
-| ktayl-policy-service | image (Internal ghcr + cred) | **B** — via ingress-nginx | ghcr/SHA; own prod Postgres |
+| ktayl-policy-service | **git** | **B** — via ingress-nginx | Go/gRPC; reproducible build fixes `config.created` → git model; own prod CNPG |
+| ktayl-claims | **git** | **B** — via ingress-nginx | Java/temurin base-layer date → git model |
+| ktayl-iam | **git** | **C** — dev Service cross-ns | NestJS+Next monorepo (dual workload) |
+| ktayl-underwriting | **git** | **B** — via ingress-nginx | Python/FastAPI + Next BFF |
 | minicloud-agent / -crew | image (Internal ghcr + cred) | **C** — dev Service cross-ns | internal, no ingress |
 | minicloud-plane | image (Internal ghcr + cred) | **D** — cron scale-aware | pauses the KEDA cron scaler, smokes, resumes |
-| **retrieva** | **git** (2 images) | **C** — both dev Services cross-ns | runtime-config frontend; builds on `main` only; smoke verifies both images |
+| **retrieva** | **git** (backend+frontend) + **image** (assessment-crew) | **C** — dev Services cross-ns | runtime-config frontend; **3 Warehouses**; builds on `main` only; smoke verifies each image |
 
 ## For developers — how you work with it
 
@@ -136,9 +142,9 @@ depends on the service's dev topology (see the variants table further down).
   prod namespace collides — see retrieva). The litmus test: **Kargo promotes one immutable
   artifact across stages.**
 
-## Auto-promotion & Kargo-owned dev verification (the live model on all 6 services)
+## Auto-promotion & Kargo-owned dev verification (the live model on all 9 services)
 
-This is the model **now live on all 6 custom services** (piloted on platform-demo, then rolled out).
+This is the model **now live on all 9 custom services** (piloted on platform-demo, then rolled out).
 It makes Kargo the **sole promoter of dev** and moves **dev verification off the CI** into Kargo.
 (The earlier "safe posture" — manual promotions — is superseded for these services; only prod
 promotion stays manual, with the maintainer merging after required checks.) Rationale: once Kargo owns promotion, having CI drive the dev deploy and
