@@ -14,6 +14,14 @@ change the names.** This page is the on-ramp; [End-to-End Delivery Workflow](/pl
 is the deeper runbook for *promoting* an artifact once the service exists.
 :::
 
+:::tip Fast path — scaffold the deployment instead of hand-copying
+The **Backstage `wrapper-service` template** (Backstage → Create → *"Deployment — Helm wrapper-chart
+service"*) stamps out the whole `services/<name>/helm/` chart + two ArgoCD apps (+ optional CNPG DB /
+app-secret) as **one PR on minicloud-gitops**, with the gotchas baked in. See
+[Backstage Software Templates](/platform/developer-platform/backstage-software-templates). Read this page
+anyway to understand *what* it produces — the scaffold is the shortcut, not a substitute for knowing the shape.
+:::
+
 :::tip New to GitOps / Kubernetes? Read these two first (20 min), then come back
 This page assumes the vocabulary below. If any term is new, skim
 [Application Delivery Overview](/platform/app-deployment/deploy-overview) and
