@@ -48,6 +48,17 @@ different scaling · different tech stack (e.g. Python/ML) · strong data isolat
 consumed by several apps · stable business boundary. One or two yes ≠ a service — it's a
 security/architecture-boundary decision, recorded in an ADR.
 
+## Proven in practice — the Complaints slice
+
+The pattern isn't just doctrine: **ktayl-core's Complaints & Disputes module** is the end-to-end proof.
+A greenfield vertical slice (register → acknowledge → assign → resolve → close) built as a **module**, not
+a service — one deployable, schema-per-module, a CLOSED boundary enforced in CI (`ApplicationModules.verify`),
+and **hexagonal internals** (a framework-pure domain, ports & adapters) so the business logic survives the
+tech. It layers L1→L3 tests + an ArchUnit purity guard, and the build fails on a cross-module tap or a
+framework import in the domain. As-built + ERD + API:
+[`ktayl-core/docs/complaints/as-built.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/complaints/as-built.md)
+(see also [ADR-013 — hexagonal domain independence](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-013-hexagonal-domain-independence.md)).
+
 ## Full ADR
 
 Decision, the full ground-truth review, the anti-patterns, and the extraction phases:
