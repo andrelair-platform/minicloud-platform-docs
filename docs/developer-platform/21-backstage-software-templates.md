@@ -6,9 +6,79 @@ sidebar_label: Phase 70 — Software Templates
 
 # Phase 70 — Backstage Software Templates (Golden Path)
 
+:::note Current state (2026-11-13) — `go-service` retired, `wrapper-service` is the live template
+The original **`go-service`** template (the "Phase 70" narrative below) scaffolded the **retired** model —
+kustomize `base/` + `overlays/{dev,staging,prod}`, a `staging` branch, a `Containerfile` (conventions.md
+now mandates `Dockerfile`), and a 3-env layout. Its output would be **rejected by today's
+architecture-guard CI**. It has been **removed** and replaced by **`wrapper-service`** on the current Helm
+golden path (see the section directly below). The Phase-70 sections that follow are kept as **history** —
+the `custom-image` template and the `vault:policy:create` backend action they describe still exist.
+:::
+
 Every new service on the platform used to require the same manual work: create the GitHub repo, configure three branches, write the CI workflow from scratch, create Kustomize overlays in minicloud-gitops, open an ArgoCD Application, and register the component in Backstage. None of it was hard, but none of it was standardised either — each repo had slight differences in action versions, GPG setup, or Trivy config.
 
 Phase 70 replaces all of that with a **Backstage Software Template** (the scaffolder plugin). A developer fills in a name and description in the Backstage UI, clicks "Create", and gets back a fully wired service.
+
+---
+
+## Current template — `wrapper-service` (deployment golden path)
+
+**Backstage → Create → *"Deployment — Helm wrapper-chart service (dev+prod)"*.** This is the live
+template every new custom service uses. It scaffolds the **deployment** on the Helm wrapper-chart golden
+path (`developer-platform/delivery-workflow`): a thin wrapper chart that depends on the
+`minicloud-app-deployment` library chart, with `values-dev.yaml` / `values-prod.yaml` overlays consumed by
+two ArgoCD Applications. **It produces deployment config only** — the application *source* lives in its own
+repo (deploy-repo-vs-code-repo rule), so the template opens **one PR on `minicloud-gitops`** (it does not
+create a code repo).
+
+### What it produces (one PR on minicloud-gitops)
+
+| Artifact | Location | Notes |
+|---|---|---|
+| Wrapper chart | `services/<name>/helm/` | `Chart.yaml` (library dep) + `values.yaml` + `values-dev.yaml` (Harbor) + `values-prod.yaml` (ghcr, **block-style tag** for Kargo) |
+| TLS certificate | `services/<name>/helm/templates/certificate.yaml` | cert-manager `Certificate` (ClusterIssuer `minicloud-ca`) |
+| Two ArgoCD apps | `apps/is/<group>/<name>-{dev,prod}.yaml` | single Helm source each, `releaseName` set, ESO + CNPG-scalar `ignoreDifferences` carried |
+| **Optional** CNPG database | `templates/cnpg.yaml` (Helm-gated `db.enabled`) | dev 1 / prod 2 instances, prod R2 PITR + WAL keepalive, rw role via ESO |
+| **Optional** app secret | `templates/externalsecret.yaml` (Helm-gated `appSecret.enabled`) | ExternalSecret from Vault `secret/platform/<name>` → pod `envFrom` |
+| Finish-wiring README | `services/<name>/README.md` | Chart.lock, AppProject namespaces, first image, Kargo, Vault secret |
+
+### Parameters
+
+`name` · `description` · `owner` · `port` · `appGroup` (→ `apps/is/<group>/`) · `devNamespace` ·
+`prodNamespace` · `imageRepo` (basename) · and three **toggles**: **`needsDb`** (CNPG) · **`needsSecret`**
+(app ExternalSecret) · **`needsSSO`** (adds a README step — forward-auth can't be fully scaffolded, it
+needs per-app Authentik provisioning).
+
+### Correct-by-construction
+
+The skeleton bakes in the wrapper-chart gotchas so a new service can't re-hit them:
+
+- **`releaseName` set** on both apps (else the library objects take the ArgoCD app name).
+- **Block-style `image.tag`** in the values (Kargo's `yaml-update` cannot mutate a flow mapping).
+- **ESO SSA `ignoreDifferences`** on both apps (an ExternalSecret under ServerSideApply is otherwise permanently `OutOfSync`).
+- **CNPG managed role with explicit `connectionLimit: -1` + `inherit: true` and NO `managed.roles[]`
+  list-item `ignoreDifferences`** — a list-item ignore + `RespectIgnoreDifferences=true` makes ArgoCD drop
+  a newly-added role from the SSA patch (so the role silently never applies; learned the hard way, see the
+  CNPG standard ADR).
+
+Verified before shipping: `helm template` renders clean for extras **on/off × dev/prod** — 5 objects (no
+extras), 9 (db+secret dev), 14 (db+secret prod: + PodDisruptionBudget / ScheduledBackup / WAL-keepalive).
+
+### Finish-wiring (in the generated README, not auto-done)
+
+A scaffolder can't run `helm dependency update` or push an image, so after merging the PR: (1) `helm
+dependency update` + commit `Chart.lock`; (2) add the two namespaces to the `minicloud-platform`
+AppProject; (3) build+push the first image and set the dev `image.tag`; (4) **wire Kargo** once the first
+ghcr image exists (copy `services/ktayl-policy-service/kargo/` — Kargo is a README step, not scaffolded,
+because its `${{ }}` promotion syntax collides with Backstage's delimiter and it needs the image to exist
+first); (5) if `needsSecret`, create the Vault secret `secret/platform/<name>`.
+
+### Registration
+
+The template is a catalog `url` location in `minicloud-gitops/helm-values/minicloud-1/backstage-values.yaml`
+(`…/minicloud-backstage/main/templates/wrapper-service/template.yaml`) — **no image rebuild** to add/update
+a template; roll out a restart of the backstage deployment after the ConfigMap syncs. Source:
+`minicloud-backstage/templates/wrapper-service/`.
 
 ---
 
@@ -204,7 +274,7 @@ catalog:
   locations:
     ...
     - type: url
-      target: https://raw.githubusercontent.com/andrelair-platform/minicloud-backstage/main/templates/go-service/template.yaml
+      target: https://raw.githubusercontent.com/andrelair-platform/minicloud-backstage/main/templates/wrapper-service/template.yaml   # go-service retired 2026-11-13
 ```
 
 The `backstage-github-secret` Kubernetes Secret was created in the `backstage` namespace with the GITOPS_TOKEN value (stored in Vault at `secret/platform/ci-secrets.gitops-token` and patched into `secret/platform/backstage.github-token`):
