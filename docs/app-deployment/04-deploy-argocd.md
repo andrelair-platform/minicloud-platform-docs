@@ -224,6 +224,36 @@ standalone-vs-wrapper chart call, not pre-building a stateful scaffolder).
 > version → pull from upstream, one central values file.* The two patterns match two different realities;
 > vendors aren't "failing to follow" the custom path — the custom path is machinery for problems they don't have.
 
+### Vendor apps have no dev/prod — and that's correct, not a gap
+
+A custom app has **two** `Application`s (`<svc>-dev` + `<svc>-prod`); a vendor app has **one**. There is no
+`grafana-dev`/`grafana-prod` — one Grafana, one Vault, one Harbor, one Prometheus. This is deliberate:
+
+- **Why dev/prod exists at all:** to shield prod from **your own in-progress code**. You split a custom
+  app into dev+prod so a change can prove out in dev before it reaches prod. A vendor tool has no "your
+  in-progress work" — you consume a **mature, released, version-pinned chart**, so a single instance is the
+  right shape, not a missing one.
+- **Change-safety still exists, by a different mechanism:** not a standing dev copy, but
+  **pinned version → Renovate PR → review/merge → ArgoCD sync → `git revert` to roll back**. The pinned
+  `targetRevision` + the PR gate + rollback *are* the safety; you don't run a permanent second Grafana for
+  the rare upgrade.
+- **The deeper reason — vendor tools sit *above* the dev/prod line.** They are the **shared platform
+  substrate**: your custom app's **dev *and* prod** instances are both monitored by the *same* one Grafana,
+  get secrets from the *same* one Vault, pull images from the *same* one Harbor. dev/prod is a property of
+  **your apps** (two namespaces), not of the **infrastructure** (one shared layer underneath both).
+
+```
+                 ┌────────────── one shared platform substrate ──────────────┐
+                 │   Grafana · Vault · Harbor · Prometheus  (single instance) │
+                 └───────────────────────────┬────────────────────────────────┘
+                                 serves both ↓↓↓
+      custom app DEV  (ns: ktayl)     ←→     custom app PROD  (ns: ktayl-prod)
+```
+
+Duplicating the whole vendor stack into dev/prod copies would mean running two of everything on a 5-node
+cluster for no benefit — one well-run instance (version-pinned, Renovate-gated, rollback-able) already
+serves both your dev and prod workloads.
+
 :::tip Which path am I on?
 **Did you build the image?** Yes → custom wrapper (single-source, `services/<svc>/helm`, Kargo). No, it's
 an upstream chart → vendor multi-source (`helm-values/` + the pinned `targetRevision`, Renovate). The
