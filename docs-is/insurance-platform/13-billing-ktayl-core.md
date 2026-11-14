@@ -8,13 +8,14 @@ sidebar_position: 13
 # Billing — ktayl-core (insurance-LOB modular monolith)
 
 :::note Status
-🏗️ **Tier-1 money-chain kickoff (2026-10-05).** `ktayl-core` is the ktayl-solution **insurance-LOB
-modular monolith** (Spring Boot + Spring Modulith, Java 21), board **#28**. Its first module is
-**Billing** — the *premium → cash → GL* link the operating spine couldn't do. Live so far: **BILL-010**
-(app skeleton, image published + signed) and **BILL-011** (bound-premium ingest + the durable
-`UNDERWRITING_EVENTS` JetStream stream). The Billing **workload** is not yet deployed (BILL-016); the
-stream is already live and capturing. Detailed design (PRD, architecture, ADR-001/002/003, SPEC) lives
-in the **`ktayl-core` repo** `docs/`; this page is the org-site map.
+✅ **LIVE on dev AND prod (2026-11-14).** `ktayl-core` is the ktayl-solution **insurance-LOB modular
+monolith** (Spring Boot + Spring Modulith, Java 21), board **#28**. The Billing **workload is deployed**
+(GAP wrapper chart + Kargo git-Warehouse; ArgoCD `ktayl-core-dev` + `ktayl-core-prod`, both Synced/Healthy,
+prod 2/2 + R2 PITR backup). The **premium → cash money thread is proven end-to-end in prod**: a
+`bound-risk` event → `ingested_policy` → **invoice + installment** (reconciled). **Prod is the
+authoritative NATS consumer** (dev keeps it dormant → one consumer, no double-invoice). A 2nd module,
+**Complaints**, is also live (the hexagonal exemplar, ADR-013). Detailed design (PRD, architecture, ADRs,
+SPEC) lives in the **`ktayl-core` repo** `docs/`; this page is the org-site map.
 :::
 
 ## Why ktayl-core exists (and why a modular monolith)
@@ -63,10 +64,11 @@ via a durable JetStream consumer — zero Underwriting change — and an **L3 co
 |---|---|
 | **BILL-010** scaffold | Spring Boot + Spring Modulith skeleton; `billing` (CLOSED) + `shared` (OPEN) modules; `ModularityTests` boundary guard (green); Authentik OIDC security; Flyway schema-per-module; non-root Dockerfile; CI (build → Harbor+ghcr → Trivy CRITICAL → cosign + SBOM). Image **published + signed**. |
 | **BILL-011** ingest | `UnderwritingEventConsumer` (durable JetStream, ack/term/nak) → `PolicyIngestService` (idempotent by `policy_number`, validated, audited) → `ingested_policy` + `audit_log` (Flyway V2). The **`UNDERWRITING_EVENTS`** stream (gitops) durably captures the UW bind event. L1 + **L3 contract** tests green. |
-| BILL-012 invoice+installments | 🔜 next — raise the premium invoice + installment schedule (reconcile to Σ installments, idempotent). |
+| **BILL-012** invoice+installments | ✅ **live (prod-proven)** — `InvoiceService.raiseFor` raises the premium invoice + installment schedule (total reconciles to Σ installments, idempotent per `policy_number`); `InvoiceOnIngestListener` auto-chains it `AFTER_COMMIT` of the ingest. End-to-end verified in prod: `bound-risk → ingested_policy → invoice(issued) → installment(open)`. |
+| **BILL-016** deploy | ✅ **live** — GAP wrapper chart (`services/ktayl-core/helm/`) on `minicloud-app-deployment` + a `templates/` **CNPG** (prod: 2 instances + R2 PITR) + **Kargo git-Warehouse**; ArgoCD `ktayl-core-dev` + `ktayl-core-prod`. Phase-5 egress-netpol hardened (default-deny + allow-list). The consumer is **active in prod**. |
 | BILL-013a/b Stripe | planned — SEPA-DD PaymentIntent + signature-verified idempotent webhook capture. |
 | BILL-014 GL post | planned — balanced Journal Entries to ERPNext via a transactional outbox. |
-| BILL-015 / BILL-016 | planned — who-owes-what; GAP wrapper chart + **Kargo git-Warehouse** deploy (the consumer goes live). |
+| BILL-015 | planned — who-owes-what read model. |
 
 ## Security by design
 - **AuthN/AuthZ:** Authentik OIDC resource-server; `/api/**` authenticated + Finance-group (the Stripe
@@ -81,14 +83,17 @@ via a durable JetStream consumer — zero Underwriting change — and an **L3 co
 
 ## Operate / verify
 ```bash
-# the durable stream that captures the UW bound-risk event (live):
-ssh controller "kubectl exec -n messaging <nats-box> -- nats -s nats://nats:4222 stream info UNDERWRITING_EVENTS"
-#   → Subjects: insurance.underwriting.>  · File · Limits   (verified 2026-10-05)
-ssh controller "kubectl get application ktayl-core-infra -n argocd"      # Synced / Healthy
-# the signed, Trivy-clean image (BILL-010 main build):
-#   ghcr.io/andrelair-platform/ktayl-core:66a5b17   (cosign-signed + CycloneDX SBOM)
+# prod app + DB healthy:
+ssh controller "kubectl get application ktayl-core-prod -n argocd"        # Synced / Healthy
+ssh controller "kubectl get cluster ktayl-core-cnpg -n ktayl-core-prod"   # healthy, 2 instances
+# the prod Billing consumer is bound (durable billing-ingest on the UW stream):
+ssh controller "kubectl exec -n messaging deploy/nats-box -- nats -s nats://nats.messaging.svc:4222 consumer ls UNDERWRITING_EVENTS"
+#   → billing-ingest   (verified 2026-11-14)
+# end-to-end money thread (publish a synthetic bound-risk → invoice appears):
+#   nats pub insurance.underwriting.bound-risk '{"policy_number":"...","premium_minor":360000,"currency":"EUR",...}'
+#   → billing.ingested_policy + billing.invoice(issued) + billing.installment(open), total == Σ installments
 # build + the module-boundary guard locally:
-cd ktayl-core && ./mvnw verify      # Tests: ModularityTests (ApplicationModules.verify) + L1 + L3 → BUILD SUCCESS
+cd ktayl-core && ./mvnw verify      # ModularityTests + HexagonalArchitectureTests + L1 + L3 → BUILD SUCCESS
 ```
 
 ## Compliance mapping
@@ -98,13 +103,20 @@ cleanly for a later measurement slice) · **GDPR** (policyholder PII minimised +
 durable JetStream ingest + retried async GL post + idempotency) · **ACPR/EIOPA** (premium accounting via
 the ERPNext GL). Certification: **BC02 (concevoir/développer)** + **BC03 (déployer & sécuriser)**.
 
-## Status honesty — what's not done yet
-- **The Billing workload isn't deployed** (BILL-016). The stream captures events now; the consumer goes
-  live with the GAP wrapper chart + Kargo git-Warehouse. **Prod is the authoritative consumer** (dev's
-  `BILLING_NATS_URL` blank → one consumer, no double-invoice).
-- **No invoice/payment/GL yet** — BILL-012→014. The money chain is wired at the ingest end only.
-- **Stripe** needs a test account (free) → keys to Vault at BILL-013a.
-- **holder_name** enrichment from the PAS is deferred (display-only; the premium mechanics don't need it).
+## Status honesty — what's done, what's not
+- **Deployed + proven:** the workload is live on dev AND prod; the **ingest → invoice** thread is verified
+  end-to-end in prod (BILL-012 + BILL-016).
+- **Not done yet:** **payment (Stripe BILL-013a/b)** and **GL post (ERPNext BILL-014)** — the money chain
+  is proven from the UW event to the *invoice*; cash capture + ledger posting are the next slices. Stripe
+  needs a free test account → keys to Vault at BILL-013a. **holder_name** enrichment from the PAS is
+  deferred (display-only).
+- **Three first-exercised-in-prod bugs were found + fixed during the prod go-live** — all in the
+  consumer chain that is *dormant on dev*, so neither CI mocks nor the dev QA gate could catch them:
+  (1) wrong NATS address (`nats.nats.svc`→`nats.messaging.svc`); (2) `@ConditionalOnBean` silently
+  dropping the consumer bean (→ deterministic `@ConditionalOnExpression` property gate); (3) the
+  `AFTER_COMMIT` auto-invoice listener not committing (→ `@Transactional(REQUIRES_NEW)`). The systemic
+  gate owed is an **L2 integration test** (testcontainers NATS + Postgres) of publish→ingest→invoice,
+  which would have caught all three pre-merge.
 
 Full detail + rationale: `ktayl-core` repo `docs/`
 ([PRD](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/prd.md) ·
