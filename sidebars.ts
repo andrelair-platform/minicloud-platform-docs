@@ -526,6 +526,7 @@ const sidebars: SidebarsConfig = {
         'engineering-standards/bmad-operating-model',
         'engineering-standards/bmad-workflow',
         'engineering-standards/decision-records',
+        'engineering-standards/service-readiness',
         'engineering-standards/evidence-and-proof',
       ],
     },
