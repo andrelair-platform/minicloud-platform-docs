@@ -66,7 +66,7 @@ via a durable JetStream consumer — zero Underwriting change — and an **L3 co
 | **BILL-011** ingest | `UnderwritingEventConsumer` (durable JetStream, ack/term/nak) → `PolicyIngestService` (idempotent by `policy_number`, validated, audited) → `ingested_policy` + `audit_log` (Flyway V2). The **`UNDERWRITING_EVENTS`** stream (gitops) durably captures the UW bind event. L1 + **L3 contract** tests green. |
 | **BILL-012** invoice+installments | ✅ **live (prod-proven)** — `InvoiceService.raiseFor` raises the premium invoice + installment schedule (total reconciles to Σ installments, idempotent per `policy_number`); `InvoiceOnIngestListener` auto-chains it `AFTER_COMMIT` of the ingest. End-to-end verified in prod: `bound-risk → ingested_policy → invoice(issued) → installment(open)`. |
 | **BILL-016** deploy | ✅ **live** — GAP wrapper chart (`services/ktayl-core/helm/`) on `minicloud-app-deployment` + a `templates/` **CNPG** (prod: 2 instances + R2 PITR) + **Kargo git-Warehouse**; ArgoCD `ktayl-core-dev` + `ktayl-core-prod`. Phase-5 egress-netpol hardened (default-deny + allow-list). The consumer is **active in prod**. |
-| **BILL-013a/b** Stripe | ✅ **code-complete + tested (dormant until keys)** — `POST /api/billing/payments` creates an idempotent SEPA-DD PaymentIntent (`payment=pending`, rejects a paid installment with 409 before the PSP); `POST /webhooks/stripe` (M2M, `Stripe-Signature`-verified) captures on `payment_intent.succeeded` → payment `succeeded`, installment `paid`, invoice `settled` when all paid, idempotent by event id, parks-not-drops. Gated on `billing.stripe.secret-key` → returns 503 until keys exist (like the NATS consumer). L1+L2+L3 green. **Not live:** needs a free Stripe test account → `sk_test_`/`whsec_` to Vault + dev `stripe listen` / prod tunnel route (BILL-016). |
+| **BILL-013a/b** Stripe | ✅ **LIVE on prod — premium→cash proven end-to-end** — `POST /api/billing/payments` (Finance-gated) creates an idempotent SEPA-DD PaymentIntent (`payment=pending`, rejects a paid installment with 409 before the PSP); `POST /webhooks/stripe` (M2M, `Stripe-Signature`-verified) captures on `payment_intent.succeeded` → payment `succeeded`, installment `paid`, invoice `settled` when all paid, idempotent by event id, parks-not-drops. **Verified live:** a real Stripe test PaymentIntent (`pi_…`) + a signed webhook on the public `billing.devandre.sbs/webhooks/stripe` route → DB payment=succeeded/installment=paid/invoice=settled. Keys in Vault (`secret/platform/ktayl-core`) via ESO; the webhook uses the path-scoped tunnel pattern (no new ingress/cert). L1+L2+L3 green. |
 | BILL-014 GL post | planned — balanced Journal Entries to ERPNext via a transactional outbox. |
 | BILL-015 | planned — who-owes-what read model. |
 
@@ -106,10 +106,12 @@ the ERPNext GL). Certification: **BC02 (concevoir/développer)** + **BC03 (dépl
 ## Status honesty — what's done, what's not
 - **Deployed + proven:** the workload is live on dev AND prod; the **ingest → invoice** thread is verified
   end-to-end in prod (BILL-012 + BILL-016).
-- **Payment (Stripe BILL-013a/b): code-complete + tested, dormant until keys.** Initiate + the
-  signature-verified webhook capture are built with L1/L2/L3 coverage, but return 503 until a **free Stripe
-  test account**'s `sk_test_`/`whsec_` are in Vault and the webhook route is wired (dev `stripe listen` /
-  prod tunnel — BILL-016). Egress to `api.stripe.com` is already allowed.
+- **Payment (Stripe BILL-013a/b): LIVE on prod, premium→cash proven end-to-end.** Initiate creates a real
+  Stripe test PaymentIntent; the signature-verified webhook (public `billing.devandre.sbs/webhooks/stripe`,
+  path-scoped tunnel) captures it → installment `paid`, invoice `settled`. Test-mode only (no real money).
+  Honest scope: the success event in the live verify was self-signed with the real `whsec_` (validates our
+  signature-verify + capture exactly as prod); the ultimate test (confirm a test SEPA IBAN so Stripe itself
+  sends `succeeded`) needs a payment frontend — deferred.
 - **Not done yet:** **GL post (ERPNext BILL-014)** — ledger posting via a transactional outbox is the next
   slice (it listens for the `PaymentCaptured` event BILL-013 already emits). **holder_name** enrichment from
   the PAS is deferred (display-only).
