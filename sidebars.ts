@@ -30,6 +30,7 @@ const sidebars: SidebarsConfig = {
 
     architectureNav,
     {type: 'doc', id: 'developer-platform/production-stack-architecture', label: '🏛 Production Stack Architecture'},
+    {type: 'doc', id: 'platform-engineering/internal-developer-platform', label: '🧰 Internal Developer Platform'},
     {type: 'doc', id: 'platform-engineering/platform-backlog', label: '🗓 Platform Backlog'},
 
     // ── Infrastructure ───────────────────────────────────────────────
