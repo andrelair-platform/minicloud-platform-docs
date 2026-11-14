@@ -66,7 +66,7 @@ via a durable JetStream consumer — zero Underwriting change — and an **L3 co
 | **BILL-011** ingest | `UnderwritingEventConsumer` (durable JetStream, ack/term/nak) → `PolicyIngestService` (idempotent by `policy_number`, validated, audited) → `ingested_policy` + `audit_log` (Flyway V2). The **`UNDERWRITING_EVENTS`** stream (gitops) durably captures the UW bind event. L1 + **L3 contract** tests green. |
 | **BILL-012** invoice+installments | ✅ **live (prod-proven)** — `InvoiceService.raiseFor` raises the premium invoice + installment schedule (total reconciles to Σ installments, idempotent per `policy_number`); `InvoiceOnIngestListener` auto-chains it `AFTER_COMMIT` of the ingest. End-to-end verified in prod: `bound-risk → ingested_policy → invoice(issued) → installment(open)`. |
 | **BILL-016** deploy | ✅ **live** — GAP wrapper chart (`services/ktayl-core/helm/`) on `minicloud-app-deployment` + a `templates/` **CNPG** (prod: 2 instances + R2 PITR) + **Kargo git-Warehouse**; ArgoCD `ktayl-core-dev` + `ktayl-core-prod`. Phase-5 egress-netpol hardened (default-deny + allow-list). The consumer is **active in prod**. |
-| BILL-013a/b Stripe | planned — SEPA-DD PaymentIntent + signature-verified idempotent webhook capture. |
+| **BILL-013a/b** Stripe | ✅ **code-complete + tested (dormant until keys)** — `POST /api/billing/payments` creates an idempotent SEPA-DD PaymentIntent (`payment=pending`, rejects a paid installment with 409 before the PSP); `POST /webhooks/stripe` (M2M, `Stripe-Signature`-verified) captures on `payment_intent.succeeded` → payment `succeeded`, installment `paid`, invoice `settled` when all paid, idempotent by event id, parks-not-drops. Gated on `billing.stripe.secret-key` → returns 503 until keys exist (like the NATS consumer). L1+L2+L3 green. **Not live:** needs a free Stripe test account → `sk_test_`/`whsec_` to Vault + dev `stripe listen` / prod tunnel route (BILL-016). |
 | BILL-014 GL post | planned — balanced Journal Entries to ERPNext via a transactional outbox. |
 | BILL-015 | planned — who-owes-what read model. |
 
@@ -106,10 +106,13 @@ the ERPNext GL). Certification: **BC02 (concevoir/développer)** + **BC03 (dépl
 ## Status honesty — what's done, what's not
 - **Deployed + proven:** the workload is live on dev AND prod; the **ingest → invoice** thread is verified
   end-to-end in prod (BILL-012 + BILL-016).
-- **Not done yet:** **payment (Stripe BILL-013a/b)** and **GL post (ERPNext BILL-014)** — the money chain
-  is proven from the UW event to the *invoice*; cash capture + ledger posting are the next slices. Stripe
-  needs a free test account → keys to Vault at BILL-013a. **holder_name** enrichment from the PAS is
-  deferred (display-only).
+- **Payment (Stripe BILL-013a/b): code-complete + tested, dormant until keys.** Initiate + the
+  signature-verified webhook capture are built with L1/L2/L3 coverage, but return 503 until a **free Stripe
+  test account**'s `sk_test_`/`whsec_` are in Vault and the webhook route is wired (dev `stripe listen` /
+  prod tunnel — BILL-016). Egress to `api.stripe.com` is already allowed.
+- **Not done yet:** **GL post (ERPNext BILL-014)** — ledger posting via a transactional outbox is the next
+  slice (it listens for the `PaymentCaptured` event BILL-013 already emits). **holder_name** enrichment from
+  the PAS is deferred (display-only).
 - **Three first-exercised-in-prod bugs were found + fixed during the prod go-live** — all in the
   consumer chain that is *dormant on dev*, so neither CI mocks nor the dev QA gate could catch them:
   (1) wrong NATS address (`nats.nats.svc`→`nats.messaging.svc`); (2) `@ConditionalOnBean` silently
