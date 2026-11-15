@@ -73,7 +73,7 @@ orchestration, intake) is on the [IS Build Roadmap → business-operations compl
 | Tool | Purpose | Board | Status |
 |---|---|---|---|
 | **Servicing / self-service portal** | policyholder & broker self-service | [#13](https://github.com/orgs/andrelair-platform/projects/13) | 📋 Backlog |
-| **Contact center / omnichannel intake** | phone/email/chat → task/ticket | [#10](https://github.com/orgs/andrelair-platform/projects/10) | 🟡 mail live · Asterisk + SMS backlog |
+| **Contact center / omnichannel intake** | email/chat → task/ticket | [#10](https://github.com/orgs/andrelair-platform/projects/10) | 🟡 mail live · chat live · **desk telephony (Asterisk) out of scope** (BYOD — no managed endpoints/telephony, see project-governance) · SMS backlog |
 | **Operations Workbench (task-inbox)** | AI-native cross-domain cockpit for **exceptions** — one prioritised inbox, not per-app CRUD | — | 📋 **named, not built** (the main missing glue) |
 | **Notifications** | email / SMS status alerts | [#10](https://github.com/orgs/andrelair-platform/projects/10) | 🟡 mail live, SMS backlog |
 
@@ -81,7 +81,7 @@ orchestration, intake) is on the [IS Build Roadmap → business-operations compl
 
 | Tool | Purpose | Board | Status |
 |---|---|---|---|
-| **Enterprise Document Platform / DMS** | store, archive, retention | [#24](https://github.com/orgs/andrelair-platform/projects/24) | 🟡 Nextcloud/OnlyOffice live; Paperless-ngx backlog |
+| **Enterprise Document Platform / DMS** | store, archive, retention, OCR, search | [#24](https://github.com/orgs/andrelair-platform/projects/24) | 🟢 **Paperless-ngx live on dev** (capture/OCR/search — [DMS page](../apps/34-ktayl-dms-paperless.md)); Nextcloud/OnlyOffice (editing) + Docuseal (e-sign) live |
 | **Document-AI / IDP** | extract fields from submission packs | [#24](https://github.com/orgs/andrelair-platform/projects/24) | 🟡 RAG pipeline live substrate |
 | **E-signature** | sign contracts / broker agreements | [#10](https://github.com/orgs/andrelair-platform/projects/10) | ✅ Docuseal live |
 

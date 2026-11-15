@@ -200,7 +200,7 @@ the business. Today only **Policy Admin #6** is live, so this layer is mostly ah
 | 1 | **Domain engines** | the systems of record/lifecycle: Policy production/endorsement/renewal (#6), Claims FNOL→settle (#11), Billing/dunning (#14), Distribution/servicing (#13) | #6 🟢 live · #11 build-ready · #14 🟡 · #13 planned |
 | 2 | **Operations Workbench (task-inbox)** | the **cross-domain cockpit** where ops agents work **exceptions** — one prioritised inbox, not per-app CRUD screens. This is the platform's own **[AI-native principle](../insurance-platform/ai-first-operating-model)** ("system automates the rule, humans handle the exception") made into a **product**. | ⚠️ **the main NEW piece to add** — today a principle, not a build |
 | 3 | **Back-office workflow orchestration** | long-running processes: renewal runs, endorsement approvals, dunning cycles, claims SLAs/reserving steps | **Temporal** 🟢 live primitive → **wire per domain** |
-| 4 | **Omnichannel intake** | where work *enters* the back-office: email (shared mailboxes 🟢), **phone/contact-center** (Asterisk, backlog), chat → routed to a **task/ticket** | 🟡 mailboxes live · call-center backlog |
+| 4 | **Omnichannel intake** | where work *enters* the back-office: email (shared mailboxes 🟢), chat (🟢) → routed to a **task/ticket**. **Desk telephony (Asterisk) is out of scope** — BYOD, no managed endpoints/telephony (project-governance) | 🟡 mailboxes + chat live · phone out of scope · SMS backlog |
 | 5 | **Servicing self-service** | broker/customer portals that **deflect** back-office load (raise/track requests themselves) | Distribution #13 (portal) · DMS #24 (docs) |
 | 6 | **Operational reporting** | ops KPIs: cycle times, backlogs, SLA-compliance, straight-through-processing rate | Grafana (live) → Data Platform #5 for cross-domain |
 
@@ -208,7 +208,7 @@ the business. Today only **Policy Admin #6** is live, so this layer is mostly ah
 1. **Build the domain engines** on the Track-A sequence (that *is* most of business-ops) — nothing new here, it's the value chain.
 2. **Add the Operations Workbench as an explicit product** — the one genuinely missing cross-cutting piece. It's the AI-native task-inbox over the domain events (NATS) + read-models; give it a board when the **first two domains** (e.g. Policy live + Claims) emit real tasks, so it has inputs (need-first — an inbox with nothing in it is pointless).
 3. **Wire Temporal** into each domain's long-running process as that domain is built (not a standalone project).
-4. **Stand up omnichannel intake** — promote the **contact center (Asterisk)** + mailbox→task routing from backlog once claims/servicing volume justifies it.
+4. **Stand up omnichannel intake** — wire **mailbox/chat→task routing** once claims/servicing volume justifies it. (Desk telephony / a contact-center PBX is **out of scope** under BYOD — no managed endpoints or telephony; revisit only if real staffed call volume appears.)
 5. **Ops KPIs** ride along each domain (Grafana now; cross-domain via #5 later).
 
 > **The honest read:** business-ops completeness is **~85% "build the roadmap domains"** and **~15% one
