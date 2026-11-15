@@ -283,6 +283,7 @@ const sidebars: SidebarsConfig = {
         'developer-platform/backstage-plugins',
         'developer-platform/backstage-software-templates',
         'developer-platform/techdocs',
+        'developer-platform/api-management-strategy',
         'developer-platform/multi-env-namespaces',
       ],
     },
