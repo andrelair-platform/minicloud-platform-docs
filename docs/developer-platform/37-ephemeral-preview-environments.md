@@ -29,7 +29,7 @@ It is **not** on by default and **not** per-every-PR — add the `preview` label
 1. Open a PR on the app repo (`platform-demo`).
 2. Add the **`preview`** label.
 3. CI builds a `pr-<n>-<sha>` image and the environment comes up within a couple of minutes at:
-   **`https://demo-pr-<n>.10-0-0-200.nip.io`** (Tailscale + the minicloud CA; no SSO on previews).
+   **`https://pr<n>-preview.10.0.0.200.nip.io`** (Tailscale + the minicloud CA; no SSO on previews).
 4. Push more commits → the preview rebuilds and redeploys automatically (the `synchronize` event).
 5. **Remove the `preview` label** (or merge/close the PR) → the environment is **destroyed** (the
    ArgoCD `resources-finalizer` prunes the app's resources).
@@ -50,7 +50,7 @@ It is **not** on by default and **not** per-every-PR — add the `preview` label
    ArgoCD root-app (recurse) discovers it  ──►  syncs into ns preview-pd-<n>
         │
         ▼
-   Deployment + Service + Ingress + Certificate   →   https://demo-pr-<n>.10-0-0-200.nip.io
+   Deployment + Service + Ingress + Certificate   →   https://pr<n>-preview.10.0.0.200.nip.io
         │
    unlabel / close PR  ──►  teardown-preview removes the Application
         ▼
@@ -88,7 +88,7 @@ kubectl --context minicloud get ns | grep '^preview-pd-'
 kubectl --context minicloud -n preview-pd-<n> get deploy,pod,ingress,certificate
 
 # reach it (Tailscale + minicloud CA; no SSO):
-/usr/bin/curl --cacert ~/minicloud-ca.crt -sI https://demo-pr-<n>.10-0-0-200.nip.io/healthz   # HTTP 200
+/usr/bin/curl --cacert ~/minicloud-ca.crt -sI https://pr<n>-preview.10.0.0.200.nip.io/healthz   # HTTP 200
 ```
 
 **Teardown leaves an empty namespace.** ArgoCD's `CreateNamespace=true` auto-creates the preview namespace
@@ -97,9 +97,18 @@ lingers harmlessly. Remove it with `kubectl delete namespace preview-pd-<n>` whe
 
 ## Gotchas (all proven in the 2026-11-15 end-to-end run)
 
-- **nip.io host MUST use dash form for the IP.** `demo-pr-<n>.10.0.0.200.nip.io` resolves to garbage
-  (`49.10.0.0`) — the `-<n>` numeric label suffix collides with nip.io's dotted-octet IP parsing. Use the
-  **dash form `10-0-0-200.nip.io`** → `10.0.0.200`.
+- **The host must satisfy BOTH nip.io DNS and the Vault-PKI issuer** — the single trickiest thing here.
+  The `minicloud-CA` ClusterIssuer is a **Vault PKI** issuer whose `allowed_domains` has the **dotted**
+  `10.0.0.200.nip.io`. Two forms each break one half:
+  - `demo-pr-<n>.10.0.0.200.nip.io` — the `-<n>` numeric label suffix collides with nip.io's dotted-octet
+    parsing (`49.10.0.0.200` → it resolves to **`49.10.0.0`**). DNS broken.
+  - `demo-pr-<n>.10-0-0-200.nip.io` (dash form) — resolves fine, but Vault **refuses to sign** a cert for
+    the dash domain (not in `allowed_domains`). TLS broken.
+
+  The form that satisfies both: **`pr<n>-preview.10.0.0.200.nip.io`** — one label with the number
+  **mid-label** (so nip.io parses the octets correctly → `10.0.0.200`) over the **dotted** IP (so Vault
+  issues the cert, matching `*.10.0.0.200.nip.io` like every other app). Verified: `HTTP 200`,
+  `ssl_verify=0`.
 - **Neutralise overridden ingress annotations with `""`, not `null`.** Helm's **subchart** value-coalescing
   does not delete `null` keys (only top-level merging does), so a `null` SSO snippet leaves a `<nil>` value
   → ArgoCD's Ingress annotation accessor rejects it (*"contains non-string value"*). Empty string is a valid no-op.
