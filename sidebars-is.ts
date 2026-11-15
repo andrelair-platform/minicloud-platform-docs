@@ -118,6 +118,7 @@ const sidebars: SidebarsConfig = {
           collapsed: true,
           items: [
             'apps/docuseal',
+            'apps/ktayl-dms-paperless',
           ],
         },
         {
