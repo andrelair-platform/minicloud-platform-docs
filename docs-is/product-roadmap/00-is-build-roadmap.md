@@ -58,6 +58,37 @@ receiving + e-reporting apply; taxable B2B services must issue). See the obligat
 
 **Opportunistic quick win** (Enterprise-IT, not the value chain): GLPI/ITSM #16 — do when convenient.
 
+## What to build next — the P0→P4 value-chain priority (the overlay)
+
+The Track-A table above is the *value-chain sequence*; this is the **priority overlay** — what to actually
+do next, ranked on five axes in order: ① **control-criticality** (is the business doing something
+unsafe/non-compliant?) → ② **spine completeness** (does the end-to-end flow break?) → ③ **showcase value**
+(differentiated engineering) → ④ **leverage** (effort vs payoff) → ⑤ **dependencies**.
+
+> **Sizing fact that makes this realistic (not a multi-year wish-list):** per the **modular-monolith
+> decision** (2026-11-13), the missing business domains are now **`ktayl-core` modules, not new services** —
+> each is a *module + schema*, not a repo/CI/Kargo/CNPG/Helm/QA stack — and several are **adopt, not build**.
+
+| P | Item(s) | Build / adopt | Why here (the ranking) | Board |
+|---|---|---|---|---|
+| **P0** · do first | **RC-02 — AML / sanctions screening gates** | **adopt** yente (OpenSanctions) + **build** a `screening` module in ktayl-core | The one **genuine control gap**: ktayl binds + pays a party with **no sanctions/PEP screen** — a real compliance *failure* for a regulated insurer, not mere incompleteness. Already **fully planned** (ADR-001 + architecture + SPEC) → ready to execute, and a top-tier showcase (compliance-by-design + governed AI triage). Order = the SPEC slices: **S0 yente engine + freshness monitor → S1 gate-core → S2 bind-gate (HOLD blocks bind) → S4 payment-gate + freeze**. | [#15](https://github.com/orgs/andrelair-platform/projects/15) |
+| **P1** · the front door | **Submission intake #27 → Distribution / CRM #13** | build (ktayl-core modules) | The funnel today **begins at underwriting with nothing feeding it**. Intake (broker submits a risk → triage → feeds UW) + distribution (broker/agent mgmt, binders, commissions) give ktayl a real **front door**, making quote-to-cash demonstrable from the actual beginning. Submission first, distribution second. | [#27](https://github.com/orgs/andrelair-platform/projects/27) · [#13](https://github.com/orgs/andrelair-platform/projects/13) |
+| **P2** · financial depth | **Reinsurance #22 · Finance / IFRS 17 / reserving #14 · Investment & Treasury / ALM #29** | build modules (#22, #14) · **adopt** an engine (#29) | Risk-transfer is core and consumes the already-live policy + claims data **via events** (event-driven depth = strong showcase). IFRS 17 + technical reserves build on the **live ERPNext GL** (hard domain = high credibility). ALM = the insurer's "second business" (assets backing reserves, Solvency-II market risk) — **adopt** a portfolio/ALM engine, low build-effort. | [#22](https://github.com/orgs/andrelair-platform/projects/22) · [#14](https://github.com/orgs/andrelair-platform/projects/14) · [#29](https://github.com/orgs/andrelair-platform/projects/29) |
+| **P3** · transversal backbones | **MDM / party master #20 · Documents / DMS #24 · Integration #25** | build module (#20) · mostly **adopt** (#24) · need-first-deferred (#25) | **MDM** — one deduped party master; parked until there were real domains to master, now that policy/claims/UW/billing are live it has something to unify, and it de-risks the P0 screening + P1 distribution (clean party data). **DMS #24 is now largely built** (classifier + office-OCR + archive-only retention **live**; e-sign sketched). **Integration** — largely already covered (NATS + Authentik + ingress = the internal APIM); build the external broker-API gateway only at a real trigger. | [#20](https://github.com/orgs/andrelair-platform/projects/20) · [#24](https://github.com/orgs/andrelair-platform/projects/24) · [#25](https://github.com/orgs/andrelair-platform/projects/25) |
+| **P4** · regulatory + long tail | **rest-of-compliance (RC-01 GDPR Art.30 · RC-03 PIA · RC-04 BCP · RC-05 evidence hub) · Complaints #30 · Risk-Eng #21 · International #23 · Procurement #31** | mostly process + light tooling | Regulatory completeness (high audit/portfolio value, low build cost) + specialised depth that is **not spine-critical** — build each when a concrete reason appears. Complaints has a basic module live already. | [#30](https://github.com/orgs/andrelair-platform/projects/30) · [#21](https://github.com/orgs/andrelair-platform/projects/21) · [#23](https://github.com/orgs/andrelair-platform/projects/23) · [#31](https://github.com/orgs/andrelair-platform/projects/31) |
+
+**Recommended next two:** build **P0 (RC-02 screening)** now — unsafe-if-skipped, fully planned, best single
+showcase; start at **S0** (yente + the freshness monitor on gitops), then S1/S2 (the gate + the bind HOLD).
+Then **P1 Submission intake** — the highest-leverage completeness win (a real front door makes everything
+demo-able end-to-end). Everything P2+ is genuinely **need-first**: build the one you'll *demonstrate* next.
+
+:::note Discipline — this is a priority map, not a "build-11-domains" sprint
+The [synthetic-enterprise](../insurance-platform/ai-first-operating-model) rule is **build what you'll
+demonstrate**. The scaffold boards are the honest **deferred-by-design** map — which is itself the senior
+signal. **Each wave should leave a case study, not just a running pod.** The P2–P4 rows are pre-vetted
+*candidates*, not commitments.
+:::
+
 ## Track B — Governance & compliance (continuous, not a phase)
 
 The framework is **built** — it now **applies to every Track-A domain** as a gate, not a separate project:
