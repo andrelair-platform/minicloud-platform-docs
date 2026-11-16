@@ -103,3 +103,11 @@ Enterprise Landscape → Business Capabilities → IS Applications → Platform 
 
 > **Planned:** Architecture Decision Records (ADRs) under this section — *why* ArgoCD, Authentik, Cilium,
 > Longhorn, and the Platform/IS split were chosen — to show not just *what* was built but *why*.
+
+> **Why Crossplane (self-service infrastructure orchestration — IDP Core Component #2):** it was
+> *deferred for a year* — a bare-metal cluster with no cloud account has nothing for a cloud-orchestration
+> tool to provision. It was adopted the moment the **Backstage developer portal** gave it a real consumer:
+> Crossplane's value isn't a cloud account, it's a **self-service infrastructure API** (a developer claims
+> `PostgresInstance`/`AppBundle` and gets a database + network baseline, no Helm/kubectl). The rationale +
+> as-built is on the **[Crossplane page](../iac/02-crossplane.md)**; the decision story is the blog post
+> **[*Crossplane Without a Cloud*](/blog/crossplane-without-a-cloud)**.
