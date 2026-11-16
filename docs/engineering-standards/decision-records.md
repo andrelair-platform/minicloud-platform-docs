@@ -32,12 +32,30 @@ from the filename — **click through for the authoritative content**, which alw
 |  | Brief | [`docs/brief.md`](https://github.com/andrelair-platform/ktayl-claims/blob/main/docs/brief.md) |
 |  | Clm V1 Sprint Plan | [`docs/clm-v1-sprint-plan.md`](https://github.com/andrelair-platform/ktayl-claims/blob/main/docs/clm-v1-sprint-plan.md) |
 |  | Prd | [`docs/prd.md`](https://github.com/andrelair-platform/ktayl-claims/blob/main/docs/prd.md) |
-| **ktayl-compliance** | Obligations Register | [`docs/obligations-register.md`](https://github.com/andrelair-platform/ktayl-compliance/blob/main/docs/obligations-register.md) |
+| **ktayl-compliance** | Adr 001 Aml Sanctions Screening Build Approach | [`docs/architecture/adr/ADR-001-aml-sanctions-screening-build-approach.md`](https://github.com/andrelair-platform/ktayl-compliance/blob/main/docs/architecture/adr/ADR-001-aml-sanctions-screening-build-approach.md) |
+|  | Obligations Register | [`docs/obligations-register.md`](https://github.com/andrelair-platform/ktayl-compliance/blob/main/docs/obligations-register.md) |
 |  | Resilience Testing Programme | [`docs/resilience-testing-programme.md`](https://github.com/andrelair-platform/ktayl-compliance/blob/main/docs/resilience-testing-programme.md) |
 | **ktayl-core** | Architecture | [`docs/architecture.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture.md) |
 |  | Adr 001 Stack Spring Modulith | [`docs/architecture/adr/ADR-001-stack-spring-modulith.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-001-stack-spring-modulith.md) |
 |  | Adr 002 Payment Psp Stripe Sepa | [`docs/architecture/adr/ADR-002-payment-psp-stripe-sepa.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-002-payment-psp-stripe-sepa.md) |
 |  | Adr 003 Ingest Underwriting Event | [`docs/architecture/adr/ADR-003-ingest-underwriting-event.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-003-ingest-underwriting-event.md) |
+|  | Adr 004 Si Modular Monolith Target | [`docs/architecture/adr/ADR-004-si-modular-monolith-target.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-004-si-modular-monolith-target.md) |
+|  | Adr 005 Bounded Contexts And Module Ownership | [`docs/architecture/adr/ADR-005-bounded-contexts-and-module-ownership.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-005-bounded-contexts-and-module-ownership.md) |
+|  | Adr 006 Schema Ownership And Transactions | [`docs/architecture/adr/ADR-006-schema-ownership-and-transactions.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-006-schema-ownership-and-transactions.md) |
+|  | Adr 007 Internal Events Vs Nats Integration | [`docs/architecture/adr/ADR-007-internal-events-vs-nats-integration.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-007-internal-events-vs-nats-integration.md) |
+|  | Adr 008 Service Extraction Criteria | [`docs/architecture/adr/ADR-008-service-extraction-criteria.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-008-service-extraction-criteria.md) |
+|  | Adr 009 Strangler Migration And Rollback | [`docs/architecture/adr/ADR-009-strangler-migration-and-rollback.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-009-strangler-migration-and-rollback.md) |
+|  | Adr 010 Background Jobs And Idempotency | [`docs/architecture/adr/ADR-010-background-jobs-and-idempotency.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-010-background-jobs-and-idempotency.md) |
+|  | Adr 011 Product Configure Products As Data | [`docs/architecture/adr/ADR-011-product-configure-products-as-data.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-011-product-configure-products-as-data.md) |
+|  | Adr 012 Observability Otel Triad | [`docs/architecture/adr/ADR-012-observability-otel-triad.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-012-observability-otel-triad.md) |
+|  | Adr 013 Hexagonal Domain Independence | [`docs/architecture/adr/ADR-013-hexagonal-domain-independence.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-013-hexagonal-domain-independence.md) |
+|  | Adr 014 Fold Claims And Policy Into Core | [`docs/architecture/adr/ADR-014-fold-claims-and-policy-into-core.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-014-fold-claims-and-policy-into-core.md) |
+|  | Adr 015 Policy Module Folded Pas | [`docs/architecture/adr/ADR-015-policy-module-folded-pas.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-015-policy-module-folded-pas.md) |
+|  | Adr 016 Multi Issuer M2m Token Validation | [`docs/architecture/adr/ADR-016-multi-issuer-m2m-token-validation.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-016-multi-issuer-m2m-token-validation.md) |
+|  | Adr 017 Claims Fold Deferred | [`docs/architecture/adr/ADR-017-claims-fold-deferred.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture/adr/ADR-017-claims-fold-deferred.md) |
+|  | Deploy To Dev Plan | [`docs/deploy-to-dev-plan.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/deploy-to-dev-plan.md) |
+|  | Modernization Roadmap | [`docs/modernization-roadmap.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/modernization-roadmap.md) |
+|  | Phase 0 Inventory | [`docs/phase-0-inventory.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/phase-0-inventory.md) |
 |  | Prd | [`docs/prd.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/prd.md) |
 |  | Traceability Matrix | [`docs/traceability-matrix.md`](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/traceability-matrix.md) |
 | **ktayl-data-platform** | Architecture | [`docs/architecture.md`](https://github.com/andrelair-platform/ktayl-data-platform/blob/main/docs/architecture.md) |
@@ -45,6 +63,10 @@ from the filename — **click through for the authoritative content**, which alw
 |  | Adr 007 Data Platform Is The Gating Foundation | [`docs/architecture/adr/ADR-007-data-platform-is-the-gating-foundation.md`](https://github.com/andrelair-platform/ktayl-data-platform/blob/main/docs/architecture/adr/ADR-007-data-platform-is-the-gating-foundation.md) |
 |  | Adr 008 Hybrid S3 Lake Duckdb Transform Cnpg Serving | [`docs/architecture/adr/ADR-008-hybrid-s3-lake-duckdb-transform-cnpg-serving.md`](https://github.com/andrelair-platform/ktayl-data-platform/blob/main/docs/architecture/adr/ADR-008-hybrid-s3-lake-duckdb-transform-cnpg-serving.md) |
 |  | Prd | [`docs/prd.md`](https://github.com/andrelair-platform/ktayl-data-platform/blob/main/docs/prd.md) |
+| **ktayl-dms** | Adr 001 Dms Role And Optimised Build | [`docs/architecture/adr/ADR-001-dms-role-and-optimised-build.md`](https://github.com/andrelair-platform/ktayl-dms/blob/main/docs/architecture/adr/ADR-001-dms-role-and-optimised-build.md) |
+|  | Adr 002 Ocr Engine Indra | [`docs/architecture/adr/ADR-002-ocr-engine-indra.md`](https://github.com/andrelair-platform/ktayl-dms/blob/main/docs/architecture/adr/ADR-002-ocr-engine-indra.md) |
+|  | Esign Flow | [`docs/esign-flow.md`](https://github.com/andrelair-platform/ktayl-dms/blob/main/docs/esign-flow.md) |
+|  | Retention Policy | [`docs/retention-policy.md`](https://github.com/andrelair-platform/ktayl-dms/blob/main/docs/retention-policy.md) |
 | **ktayl-iam** | Access Role Model | [`docs/access-role-model.md`](https://github.com/andrelair-platform/ktayl-iam/blob/main/docs/access-role-model.md) |
 |  | App Authz Bindings | [`docs/app-authz-bindings.md`](https://github.com/andrelair-platform/ktayl-iam/blob/main/docs/app-authz-bindings.md) |
 |  | Index | [`docs/architecture/adr/000-index.md`](https://github.com/andrelair-platform/ktayl-iam/blob/main/docs/architecture/adr/000-index.md) |
@@ -55,7 +77,8 @@ from the filename — **click through for the authoritative content**, which alw
 |  | Iga V3 Lifecycle Retrospective | [`docs/iga-v3-lifecycle-retrospective.md`](https://github.com/andrelair-platform/ktayl-iam/blob/main/docs/iga-v3-lifecycle-retrospective.md) |
 |  | Iga V3 Lifecycle Sprint Plan | [`docs/iga-v3-lifecycle-sprint-plan.md`](https://github.com/andrelair-platform/ktayl-iam/blob/main/docs/iga-v3-lifecycle-sprint-plan.md) |
 |  | Prd | [`docs/prd.md`](https://github.com/andrelair-platform/ktayl-iam/blob/main/docs/prd.md) |
-| **ktayl-integration** | Legacy Wrapper Initiative Spec | [`docs/legacy-wrapper-initiative-spec.md`](https://github.com/andrelair-platform/ktayl-integration/blob/main/docs/legacy-wrapper-initiative-spec.md) |
+| **ktayl-integration** | Adr 0001 Api Management Strategy | [`docs/architecture/adr/ADR-0001-api-management-strategy.md`](https://github.com/andrelair-platform/ktayl-integration/blob/main/docs/architecture/adr/ADR-0001-api-management-strategy.md) |
+|  | Legacy Wrapper Initiative Spec | [`docs/legacy-wrapper-initiative-spec.md`](https://github.com/andrelair-platform/ktayl-integration/blob/main/docs/legacy-wrapper-initiative-spec.md) |
 | **ktayl-itsm** | Index | [`docs/architecture/adr/000-index.md`](https://github.com/andrelair-platform/ktayl-itsm/blob/main/docs/architecture/adr/000-index.md) |
 |  | Brief | [`docs/brief.md`](https://github.com/andrelair-platform/ktayl-itsm/blob/main/docs/brief.md) |
 |  | Deployment Architecture | [`docs/deployment-architecture.md`](https://github.com/andrelair-platform/ktayl-itsm/blob/main/docs/deployment-architecture.md) |
@@ -82,6 +105,7 @@ from the filename — **click through for the authoritative content**, which alw
 |  | Cnpg Standard | [`docs/cnpg-standard.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/cnpg-standard.md) |
 |  | Dns Naming And Externaldns | [`docs/dns-naming-and-externaldns.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/dns-naming-and-externaldns.md) |
 |  | Document Intelligence Spine | [`docs/document-intelligence-spine.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/document-intelligence-spine.md) |
+|  | Harbor Retirement | [`docs/harbor-retirement.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/harbor-retirement.md) |
 |  | Helm Golden Path | [`docs/helm-golden-path.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/helm-golden-path.md) |
 |  | Identity Two Layer | [`docs/identity-two-layer.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/identity-two-layer.md) |
 |  | Mail Ldap Federation | [`docs/mail-ldap-federation.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/mail-ldap-federation.md) |
