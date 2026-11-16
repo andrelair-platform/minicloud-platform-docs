@@ -6,6 +6,15 @@ sidebar_position: 8
 
 # Phase 13 — CI/CD pipeline
 
+:::note Superseded — registry is now ghcr-only (Harbor decommissioned 2026-11-16)
+The dev→**Harbor** / prod→**ghcr** *hybrid registry* described below is **retired**. **ghcr.io is now the
+single registry for dev AND prod.** Harbor was fully torn down (ArgoCD app removed, 48 Gi PVCs reclaimed,
+all 6 nodes cut off its pull-through proxy, `HARBOR_*` org secrets deleted), and the fleet CI was migrated
+to push **only** to `ghcr.io/andrelair-platform/<repo>:<sha>` (keyless cosign + SBOM; no Tailscale/CA/Harbor
+steps). The "Harbor" mentions on this and the other roadmap pages are **historical build-journey context**.
+Current rule of record: `minicloud-gitops/.claude/rules/gitops.md` *Container registry — ghcr.io ONLY*.
+:::
+
 Phase 12 gave us continuous delivery (ArgoCD reconciles the cluster against
 git). Phase 13 adds the upstream half: **continuous integration that
 produces images and updates git**, closing the loop end-to-end.
