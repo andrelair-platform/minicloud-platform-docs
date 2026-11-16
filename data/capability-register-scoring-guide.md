@@ -8,8 +8,35 @@
 > the xlsx is not coming back. Rule from the Capability Map §27: *a score must have measurable criteria —
 > never arbitrary.*
 
-Companion files (same folder): `capability-register.csv` (the 630-capability master) ·
+Companion files (same folder): `capability-register.csv` (the capability + system master) ·
 `maturity-assessment.csv` (per-domain first-pass maturity). Consumed by `scripts/gen-si-delivery.py`.
+
+---
+
+## 0. Register structure — three pillars (the `L0` column)
+
+The register is **one file, three pillars**, keyed by the `L0` column and the `Capability ID` prefix.
+A pillar is *what the row describes*: a business capability, a vendor system, or a built system.
+
+| `L0` pillar | ID prefix | One row = | Scope |
+|---|---|---|---|
+| **Industrial Insurance Enterprise** | `CAP-###` | a **business capability** | the target capability map (what the IS must *do*). May reference an app in `Current Application`. |
+| **Platform & Technical Services** | `SYS-###` | a **vendor / third-party system** | every third-party app deployed via ArgoCD (upstream Helm chart, raw manifest, wrapper, bundled component). `Sourcing = ADOPT`. |
+| **Custom Solutions (ktayl IS build)** | `APP-###` | a **built-in-house system** | each custom-built service that is **deployed** (verified vs gitops `apps/**`). `Sourcing = BUILD`. A retired system is kept with `Lifecycle = DECOMMISSIONED` as a cut-over trace. |
+
+**Capability (CAP) vs system (SYS/APP)** — a capability is a *need*; a system is a *thing that runs*. A
+system realises one or more capabilities; a capability may map to several systems or none (a GAP). Keep
+them in distinct pillars — never fold a vendor/custom system into a `CAP-` row, and never invent a
+capability for a tool.
+
+**Generator-safety rule for SYS/APP rows:** leave **`Product Board` empty** on every `SYS-`/`APP-` row
+(record the board in `Gap / Decision` instead). `gen-si-delivery.py` rolls up per-board maturity by
+counting `#N` in `Product Board`, so a populated value would inflate a board's capability count with
+infrastructure. Business-capability (`CAP-`) rows keep `Product Board` as normal.
+
+> **Keeping it current is a standing rule, not a one-off:** every time a tool is **built or adopted**
+> (new ArgoCD app / wrapper chart / vendor chart), add its `SYS-`/`APP-` row here in the same change.
+> See the gitops rule `capability-register.md`.
 
 ---
 
