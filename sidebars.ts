@@ -141,6 +141,7 @@ const sidebars: SidebarsConfig = {
             'security-enterprise/kubectl-oidc-access',
             'security-enterprise/iam-hardening',
             'security-enterprise/rbac-audit',
+            'security-enterprise/platform-access-matrix',
           ],
         },
         {
