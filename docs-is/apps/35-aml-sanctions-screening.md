@@ -1,15 +1,15 @@
 ---
 id: aml-sanctions-screening
-title: AML / Sanctions Screening — yente engine (RC-02 S0)
+title: AML / Sanctions Screening — yente engine (S0) + screening module (S1)
 sidebar_label: AML / Sanctions Screening
 ---
 
-# AML / Sanctions Screening — the yente engine (RC-02 S0)
+# AML / Sanctions Screening — the yente engine (S0) + the `screening` module (S1)
 
 The **sanctions/PEP screening capability** (epic **RC-02**, board [#15](https://github.com/orgs/andrelair-platform/projects/15)) closes the one **genuine control gap** in the ktayl IS: today a party can be **bound and paid with no sanctions screen** — a real compliance failure for a regulated insurer, not mere incompleteness. The design is an **adopt-the-engine + build-the-gate** split (ADR-001): adopt **yente** (OpenSanctions' matching API) as the engine; build a **`screening` module in `ktayl-core`** as the gate + workflow + audit.
 
-:::note This page = the ENGINE (S0, live). The GATE (S1+) is next.
-**S0 (this, live on dev):** yente + a dedicated OpenSearch index + the official free lists + a freshness monitor. **S1+ (next, `ktayl-core` modules):** the `screening` module (`ScreenParty`, append-only audit, the published `ScreeningGate`) → the **bind HOLD** gate → the **payment HOLD** + freeze → nightly re-screen → governed-AI triage. Planning of record: [`ktayl-compliance/docs/architecture/rc02-screening-architecture.md`](https://github.com/andrelair-platform/ktayl-compliance/blob/main/docs/architecture/rc02-screening-architecture.md) + ADR-001 + the SPEC.
+:::note S0 (engine) + S1 (module) are BOTH live on dev. The bind/payment HOLD gates (S2/S4) are next.
+**S0 (live):** yente + a dedicated OpenSearch index + the official free lists + a freshness monitor. **S1 (live):** the `ktayl-core` `screening` module — `ScreenParty` (fail-closed + idempotent), append-only audit, and the **published `ScreeningGate`** interface other modules call. **S2/S4 (next):** wire `ScreeningGate` at **bind** (HOLD blocks bind) and before **payment** + asset-freeze; then nightly re-screen (S5) + governed-AI triage (S6). Planning of record: [`ktayl-compliance/docs/architecture/rc02-screening-architecture.md`](https://github.com/andrelair-platform/ktayl-compliance/blob/main/docs/architecture/rc02-screening-architecture.md) + ADR-001 + the SPEC.
 :::
 
 ## What's deployed (S0)
@@ -37,8 +37,32 @@ Four fixes, each caught by **live verification** (not unit tests), worth knowing
 3. **manifest via `catalogs` (not `url`/`entities_url`)** — a per-dataset `url: …/index.json` mis-parses; `entities_url` hits a `307` yente's httpx won't follow. The native mechanism reads the main catalog's **absolute artifact URLs**.
 4. **freshness parse** — yente `/catalog` exposes recency as `version=YYYYMMDDHHMMSS` (compact, not ISO).
 
-## The invariant (carried into S1)
+## What's deployed (S1 — the `screening` module in `ktayl-core`)
 
-The gate (built in S1) must **fail CLOSED**: if yente is down/stale, a screen returns **HOLD**, never a silent allow (NFR-SCR-02). Authority is **server-side**; every match that could block a bind/payment goes to **human review** (HITL) — the AI triage (S6) never auto-clears a true hit.
+The gate + workflow + audit, as a **module inside the `ktayl-core` modular monolith** (not a new service — the modular-monolith decision), schema-per-module (`screening` schema, Flyway `V11`), hexagonal (domain ports + a `YenteClient` adapter):
 
-Detailed design lives with the code: [`ktayl-compliance/docs`](https://github.com/andrelair-platform/ktayl-compliance) — ADR-001 (adopt-vs-build), the screening architecture (C4 + threat model + the gates), the SPEC (the S0→S6 slice plan).
+| Piece | As-built |
+|---|---|
+| **`ScreenParty`** (application) | the use case: resolve/De-dupe the party (idempotent by `external_ref`), screen once per `(party, gate, UTC-day)`, persist the screening + any alerts, write an **append-only audit** row. **Fail-CLOSED:** any engine error → persist a `HOLD` screening (null `dataset_version`) + a `SCREEN_FAILCLOSED` audit → return `HOLD` (never a silent allow, NFR-SCR-02). |
+| **`ScreeningGate`** (`@NamedInterface`) | the **published, in-process interface** other `ktayl-core` modules call — `screen(PartyRef, gate) → ScreeningOutcome {verdict, alertId, datasetVersion}`. A match → `HOLD`; no hit → `ALLOW`. This is what S2/S4 wire at bind/payment. |
+| **Audit** | `screening_audit` — `bigint IDENTITY`, append-only (no update/delete), one row per screen/decision, actor from the JWT (`preferred_username`/subject). The DORA/AML evidence trail. |
+| **HITL decision** | `POST /alerts/{id}/decision` — **`@PreAuthorize("hasAuthority('GROUP_Compliance')")`**; every alert is a human review (the AI triage S6 never auto-clears a true hit). Authority is **server-side**. |
+| **Engine adapter** | `YenteClient` → `POST /match/default` on the S0 yente; score ≥ threshold → a `SANCTION` `Hit`; `GET /catalog` → the `dataset_version` logged as "the lists were current when we screened". |
+| **Network** | ktayl-core egress → ns `yente` :8000; yente ingress ← ns `ktayl-core`(+`-prod`). Both default-deny + explicit allow. |
+
+## Verified live (2026-11-16) — the full gate path, end-to-end on dev
+
+Screened via the `ktayl-core` API with a real M2M (Authentik client-credentials) token:
+- **`POST /v1/screening/screen` "Vladimir Putin" → `{"verdict":"HOLD", "alert_id":"eeabc8cb-…", "dataset_version":"20261116210012"}`** — a real alert, `bucket: SANCTION, score: 100, matched_entry: "Vladimir Vladimirovich Putin"`.
+- A **clean control name → `{"verdict":"ALLOW", …}`** (dataset_version stamped on both — the "lists were current" evidence).
+- **`GET /v1/screening/alerts`** lists the open alert; the fail-closed invariant proven separately (engine-unavailable → `HOLD` + null alert; unauthenticated → `401`).
+
+### S1 gotcha (worth knowing for any Spring-Boot → FastAPI/uvicorn call)
+
+The `ktayl-core` `YenteClient` (Spring Boot 3 `RestClient`) got **`400 "Invalid HTTP request received"` / `422 "body required"`** from yente while an identical `curl` from the same namespace worked. Cause: Spring Boot 3.2+'s default `RestClient` factory is the **JDK `java.net.http.HttpClient`**, which sends an **h2c upgrade** on cleartext `http://`. nginx/ERPNext tolerate it; **yente's uvicorn/h11 rejects it and drops the body**. Fix: `RestClient.builder().requestFactory(new SimpleClientHttpRequestFactory())` — `HttpURLConnection` speaks clean HTTP/1.1, no h2c. (And: a rollout leaves old+new pods briefly — verify on the pod matching the **new image digest**, not just the deploy tag; a stale pod gives a false fail-closed.)
+
+## The invariant
+
+The gate **fails CLOSED**: if yente is down/stale, a screen returns **HOLD**, never a silent allow (NFR-SCR-02). Authority is **server-side**; every match that could block a bind/payment goes to **human review** (HITL) — the AI triage (S6) never auto-clears a true hit.
+
+Detailed design lives with the code: [`ktayl-compliance/docs`](https://github.com/andrelair-platform/ktayl-compliance) — ADR-001 (adopt-vs-build), the screening architecture (C4 + threat model + the gates), the SPEC (the S0→S6 slice plan). The module source is in [`ktayl-core`](https://github.com/andrelair-platform/ktayl-core) (`src/main/java/com/ktayl/core/screening`).
