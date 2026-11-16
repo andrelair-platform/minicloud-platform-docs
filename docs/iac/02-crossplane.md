@@ -1,35 +1,78 @@
 ---
 id: crossplane
-title: Phase 11 — Crossplane (Deferred)
+title: Phase 11 — Crossplane
 sidebar_position: 2
 ---
 
-# Phase 11 — Crossplane (Deferred)
+# Phase 11 — Crossplane
 
-:::caution Status: Deferred to a later phase
-The original 22-phase plan paired **OpenTofu** and **Crossplane** in
-Phase 11. During execution we explicitly scoped Crossplane out, for two
-reasons:
-
-1. **Different paradigms.** OpenTofu manages external infrastructure from
-   *outside* Kubernetes; Crossplane manages external infrastructure
-   *as Kubernetes resources from inside the cluster*. Same problem
-   space, fundamentally different mental models. Doing both shallowly
-   in one phase is worse than doing one well.
-2. **No compelling external infrastructure to manage.** On a 3-node
-   bare-metal cluster, there are no AWS RDS instances, GCP GKE clusters,
-   or Azure subscriptions to provision. Crossplane's value lights up
-   when there's a cloud account or a self-service portal in front of it.
-   On this cluster, Phase 11 (OpenTofu against MAAS) is the right fit;
-   Crossplane lands later when there's a real use case.
-
-The most likely home for Crossplane is **Phase 18 (Backstage / developer
-portal)**, where Crossplane Compositions act as the templates a developer
-clicks "create" on. That's where it earns its weight.
-
-This page is kept as conceptual reference. The implementation has not
-been done.
+:::tip Status: Delivered (2026-11) — Infrastructure Orchestration (IDP Core Component #2)
+Crossplane was originally **deferred** (history below) because there was no real use case on a
+bare-metal cluster. **That condition is now met:** Crossplane **v2.4.3** runs as the platform's
+**self-service infrastructure control plane**, fronted by **Backstage golden paths** — exactly the
+"developer clicks *create*" trigger the deferral predicted. See **As-built** next.
 :::
+
+## As-built — the self-service catalog (2026-11)
+
+Crossplane is the **composition engine**: platform-authored **XRDs** (self-service APIs) +
+**Compositions** render real resources via `provider-kubernetes`. A developer applies a small claim
+(or clicks a Backstage template) and gets the infra — no Helm, no `kubectl`.
+
+| XRD (claim) | What one claim provisions | Pattern |
+|---|---|---|
+| **`PostgresInstance`** | a **CNPG** cluster (1 inst `small` / 2-inst HA `medium`) + a `NetworkPolicy` locking the DB to its namespace + the `<name>-cnpg-app` connection secret | one function-patch-and-transform Composition → two provider-kubernetes `Object`s |
+| **`AppBundle`** | an app's **whole infra baseline** in one claim — it **nests a `PostgresInstance`** (→ CNPG + secret + db-netpol) **and** renders a default-deny baseline `NetworkPolicy` for the app's pods (ingress from ingress-nginx, egress to DNS + its own DB) | **composite-of-composites**: the Composition composes *another XR* directly (not a provider Object) → Crossplane reconciles it via **its own** Composition |
+
+### The composite-of-composites (AppBundle nesting)
+
+```
+AppBundle/<app>            (one claim)
+├─ PostgresInstance/<app>   ← NESTED XR — composed directly; reconciled by its OWN Composition
+│   ├─ Cluster/<app>-cnpg        (CNPG database)
+│   └─ NetworkPolicy/<app>-db-netpol
+└─ NetworkPolicy/<app>-baseline  (the app's default-deny baseline)
+```
+
+Deleting the one `AppBundle` claim **GC-cascades** the entire tree. This is the advanced Crossplane
+pattern: a Composition composes managed resources **and other composites**, so a high-level claim
+assembles lower-level claims.
+
+### Boundary — infra vs deployment (no overlap)
+
+- **`AppBundle` (Crossplane)** owns the app's **infrastructure** (DB + network baseline).
+- **`wrapper-service` (Helm golden path)** owns the app's **deployment** (Deployment/Rollout, Service, Ingress, cert).
+- They **compose**: the Deployment mounts the bundle's `<app>-cnpg-app` secret, and its `app=<app>` pods are selected by the baseline netpol.
+
+### Self-service surfaces (how a developer consumes it)
+
+- **Backstage → Create → "Provision a Database"** → opens a gitops PR with a `PostgresInstance` claim.
+- **Backstage → Create → "Provision an App Bundle"** → opens a gitops PR with an `AppBundle` claim.
+- Claims land under **`platform/foundation/crossplane-claims/`**, synced by the `crossplane-claims`
+  ArgoCD app into their namespace. **Gated** — a DB holds persistent data, so the claim PR is
+  reviewed before merge (governed self-service), unlike ephemeral preview envs.
+
+```bash
+kubectl --context minicloud get xrd                              # the self-service APIs
+kubectl --context minicloud -n <ns> get appbundle,postgresinstance,cluster.postgresql.cnpg.io,netpol
+```
+
+The install details (the hardened-cluster fix cascade, the pinned-SA scoped RBAC) + the XRD/Composition
+sources live in `minicloud-gitops/platform/foundation/crossplane-config/`.
+
+## Why it was deferred (history — superseded)
+
+:::note Superseded
+The two reasons below were valid at the time; both are now resolved (a self-service portal + real
+claims exist). Kept for the decision trail.
+:::
+
+The original 22-phase plan paired **OpenTofu** and **Crossplane** in Phase 11. During execution we
+explicitly scoped Crossplane out because the paradigms differ (OpenTofu manages infra from *outside*
+the cluster; Crossplane from *inside* as k8s resources) and there was **no compelling external infra
+to manage** on bare metal. The deferral predicted Crossplane's home would be **Phase 18 (Backstage /
+developer portal)**, where Compositions are the templates a developer clicks "create" on — which is
+exactly where it landed.
 
 ---
 
