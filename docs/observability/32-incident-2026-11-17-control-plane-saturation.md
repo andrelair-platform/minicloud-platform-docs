@@ -77,7 +77,7 @@ paused prod promotion resumed safely.
 Considered and rejected: discarding Grafana frees ~nothing (it's a ~200Mi frontend; the memory is in
 Prometheus/Loki/Tempo). Moving the whole pipeline to Grafana Cloud free is blocked by its **10k-active-series
 cap** (kube-prometheus-stack emits 50k–200k+) and breaks the self-hosted / EU-sovereign / offline thesis.
-Grafana Cloud free only fits as a small **external SLO/uptime DR monitor** (curated <10k series), additive —
+Grafana Cloud free only fits as a small **external SLO/uptime DR monitor** (curated &lt;10k series), additive —
 not a replacement.
 
 ## Lessons / action items

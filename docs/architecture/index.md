@@ -23,6 +23,10 @@ The litmus test: *"If ktayl stopped selling insurance tomorrow, would this survi
 **Yes → Platform. No → Information System.** This is a question of **ownership, not deployment location**
 — a Claims app running on Kubernetes is still an IS application.
 
+> **New to the vocabulary?** The **[📖 Glossary](./glossary.md)** defines the recurring terms across all
+> themes — access/identity (SoR · PEP · RBAC · SoD), the two-layer models, delivery/GitOps, security,
+> reliability — each with one line + how it applies here.
+
 ---
 
 ## L1 — Enterprise Architecture Landscape
