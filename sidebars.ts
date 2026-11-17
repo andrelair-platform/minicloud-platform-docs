@@ -362,6 +362,7 @@ const sidebars: SidebarsConfig = {
           items: [
             'observability/incident-2026-09-16-swift-mac-outage',
             'observability/incident-2026-09-18-inbound-mail-stall',
+            'observability/incident-2026-11-17-control-plane-saturation',
           ],
         },
       ],
