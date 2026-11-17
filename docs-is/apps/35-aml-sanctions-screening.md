@@ -8,8 +8,8 @@ sidebar_label: AML / Sanctions Screening
 
 The **sanctions/PEP screening capability** (epic **RC-02**, board [#15](https://github.com/orgs/andrelair-platform/projects/15)) closes the one **genuine control gap** in the ktayl IS: today a party can be **bound and paid with no sanctions screen** — a real compliance failure for a regulated insurer, not mere incompleteness. The design is an **adopt-the-engine + build-the-gate** split (ADR-001): adopt **yente** (OpenSanctions' matching API) as the engine; build a **`screening` module in `ktayl-core`** as the gate + workflow + audit.
 
-:::note S0 (engine) + S1 (module) are BOTH live on dev. The bind/payment HOLD gates (S2/S4) are next.
-**S0 (live):** yente + a dedicated OpenSearch index + the official free lists + a freshness monitor. **S1 (live):** the `ktayl-core` `screening` module — `ScreenParty` (fail-closed + idempotent), append-only audit, and the **published `ScreeningGate`** interface other modules call. **S2/S4 (next):** wire `ScreeningGate` at **bind** (HOLD blocks bind) and before **payment** + asset-freeze; then nightly re-screen (S5) + governed-AI triage (S6). Planning of record: [`ktayl-compliance/docs/architecture/rc02-screening-architecture.md`](https://github.com/andrelair-platform/ktayl-compliance/blob/main/docs/architecture/rc02-screening-architecture.md) + ADR-001 + the SPEC.
+:::note S0 (engine) + S1 (module) + S2/S4 (the bind + payment HOLD gates) are all live on dev.
+**S0 (live):** yente + a dedicated OpenSearch index + the official free lists + a freshness monitor. **S1 (live):** the `ktayl-core` `screening` module — `ScreenParty` (fail-closed + idempotent), append-only audit, and the **published `ScreeningGate`** interface other modules call. **S2/S4 (live):** `ScreeningGate` wired at **bind** (HOLD blocks the bind) and before **payment** (HOLD = asset-freeze, no money moves). **Next:** nightly re-screen (S5) + governed-AI triage (S6). Planning of record: [`ktayl-compliance/docs/architecture/rc02-screening-architecture.md`](https://github.com/andrelair-platform/ktayl-compliance/blob/main/docs/architecture/rc02-screening-architecture.md) + ADR-001 + the SPEC.
 :::
 
 ## What's deployed (S0)
@@ -60,6 +60,26 @@ Screened via the `ktayl-core` API with a real M2M (Authentik client-credentials)
 ### S1 gotcha (worth knowing for any Spring-Boot → FastAPI/uvicorn call)
 
 The `ktayl-core` `YenteClient` (Spring Boot 3 `RestClient`) got **`400 "Invalid HTTP request received"` / `422 "body required"`** from yente while an identical `curl` from the same namespace worked. Cause: Spring Boot 3.2+'s default `RestClient` factory is the **JDK `java.net.http.HttpClient`**, which sends an **h2c upgrade** on cleartext `http://`. nginx/ERPNext tolerate it; **yente's uvicorn/h11 rejects it and drops the body**. Fix: `RestClient.builder().requestFactory(new SimpleClientHttpRequestFactory())` — `HttpURLConnection` speaks clean HTTP/1.1, no h2c. (And: a rollout leaves old+new pods briefly — verify on the pod matching the **new image digest**, not just the deploy tag; a stale pod gives a false fail-closed.)
+
+## What's deployed (S2 + S4 — the bind + payment HOLD gates)
+
+The `ScreeningGate` is now **wired into the two money/commitment paths** inside `ktayl-core`, so a sanctioned party is **held before** it can be bound or paid (not merely flagged after). Both are **in-process** calls to the published `screening.api` interface (no intra-monolith HTTP), **server-side** (the gate is in the application layer, not the caller), and **fail-CLOSED** (a yente outage → `HOLD` → the action is blocked, the intended compliance posture):
+
+| Gate | Where | Behaviour |
+|---|---|---|
+| **S2 — bind** | `PolicyService.activate()` (SUBMITTED→ACTIVE) | screens the holder at the `bind` gate **before** the transition; `HOLD` → **409** `held pending sanctions review` (+ `alertId`), the policy **stays SUBMITTED** (nothing saved), an auditable alert awaits the compliance officer. |
+| **S4 — payment** | `PaymentService.initiate()` | resolves the party (installment→invoice→`PolicyQuery`) and screens at the `payment` gate **before** the Stripe PSP call; `HOLD` → **409**, the PSP is **never called** — no money moves (the asset-freeze). |
+
+HITL clears a hold via the existing `POST /v1/screening/alerts/{id}/decision` (`GROUP_Compliance`). Module boundaries hold — `ApplicationModules.verify()` is green (policy→`screening.api`, billing→`screening.api`+`policy.api`).
+
+### Verified live (2026-11-17) — the bind gate, end-to-end on dev
+Drove a real bind through the `ktayl-core` policy API (create → submit → **activate**) with an M2M token:
+- **"Vladimir Putin" policy → `activate` = `409`** `{"gate":"bind","alertId":"6a2e1f2c-…","detail":"held pending sanctions review"}` — the bind is **blocked server-side** and a fresh auditable alert is created; the policy remains **SUBMITTED** (not bound).
+- **A clean-name policy → `activate` = `204`** — binds normally (ALLOW).
+
+S4 (payment) is wired identically and covered by the L2 integration + unit tests (`HOLD` → the PSP is never invoked); it uses the same `ScreeningGate`, so the live bind proof is the proof of the pattern.
+
+> Screening at these gates is **name-based** today (the `Policy` aggregate carries `holderName`; DOB/nationality enrichment is a later refinement) — yente matches on name, so this is the real-world baseline, not a stub.
 
 ## The invariant
 
