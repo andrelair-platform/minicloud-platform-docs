@@ -17,9 +17,32 @@ sidebar_label: Platform Access Matrix
 > request → approval → provision and writes the Authentik groups. This page implements that model at the
 > tool level — it **consumes** ktayl-iam's group names, it never mints its own.
 >
-> **Status (2026-11-16):** the engineering tools are **registered in the ktayl-iam catalog**
-> (migration `SeedPlatformToolsCatalog`, PR #77). Backstage RBAC enforcement is **live** (wave 0). The
-> remaining per-tool wiring is planned (waves 1–3).
+> **Status (2026-11-17):** tools **registered in the ktayl-iam catalog** (PR #77). **Native RBAC live on
+> Grafana · ArgoCD · Backstage**, each bound to the canonical groups, and **verified end-to-end with a
+> real second identity** (see *Verification (live)* below). SSO-gate of the binary tools (wave 3) + the
+> ktayl-iam provisioning engine (wave 4) remain; Vault + Kargo are blocked on prerequisites (below).
+
+## Concepts — SoR, PEP, and the two "segregations"
+
+Three terms used throughout this page (and across our IAM work):
+
+- **SoR — System of Record.** The *one* authoritative place a fact officially lives; if two systems
+  disagree, the SoR wins by definition. Here the **ktayl-iam catalog** (`application → role → group`) is
+  the SoR for *who may access what* — it **decides and records** the entitlement.
+- **PEP — Policy Enforcement Point.** The thing that *enforces* the decision at runtime but does **not**
+  own it. Here **Authentik** is the PEP — it checks group membership at login (the OIDC `groups` claim /
+  forward-auth). This matrix is neither: it is a **map** that *consumes* the SoR's group names and records
+  how each tool enforces them.
+
+**Two different "segregation" controls — do not conflate them:**
+
+| Control | Question it answers | Status here |
+|---|---|---|
+| **Segregation of privilege** (least privilege) | can a *lower tier* do a *higher tier's* action? → **no** (Developer → Viewer, not Admin) | ✅ **proven live** (see *Verification*) |
+| **Segregation of Duties (SoD)** | can *one person* hold two *conflicting duties*? e.g. **request** AND **approve** their own access → **no** (maker ≠ checker) | 🔵 a **ktayl-iam governance control** — its request → **dual-approval** → provision flow (access-role-model IGA-05); **planned, not yet exercised** in this rollout |
+
+SoD is an **anti-fraud / anti-collusion** control, not a "read vs write" control — it will be enforced by
+the ktayl-iam approval engine (wave 4), *separately* from the privilege tiers wired here.
 
 ## The one distinction that shapes everything: native RBAC vs SSO-gate
 
@@ -89,9 +112,10 @@ the Digital Workplace, not this engineering matrix.)
   `ktayl-observability-admin` → `GrafanaAdmin`, else `ktayl-observability-viewer` → `Viewer`). One values change.
 - **Vault** — OIDC auth role → an external **group alias** per Authentik group (`ktayl-vault-admin` /
   `ktayl-vault-readonly`) → a Vault **policy** (admin / app-read).
-- **Backstage** ✅ — the `PermissionPolicy` (done) reads the groups claim. **Reconciliation item
-  (wave 2):** its live `permission.rbac` still references the pre-SoR names `platform-admins` /
-  `developers` → align to `group:default/ktayl-admin` + `group:default/ktayl-developer` to match the SoR.
+- **Backstage** ✅ — the `PermissionPolicy` reads the groups claim; its `permission.rbac` was **repointed
+  to the canonical groups** (`group:default/ktayl-admin` + `group:default/ktayl-developer`, keeping
+  `user:default/kanmegnea` as a break-glass fallback) — the pre-SoR `platform-admins`/`developers` drift
+  is closed (live `[rbac] enforcing — admins=2, developerGroups=1`).
 
 ## How SSO-gated tools are scoped (the only lever)
 
@@ -106,11 +130,10 @@ that is the honest ceiling until/unless the tool grows real RBAC. No per-tool gr
 | Wave | Scope | Tools | Effort |
 |---|---|---|---|
 | **0 ✅ done** | Register tools in the ktayl-iam catalog | all | migration `SeedPlatformToolsCatalog` (PR #77) |
-| **0 ✅ done** | Backstage RBAC enforcement | Backstage | shipped (Admin/Developer/read-only live) |
-| **1** | Native-RBAC, highest value | ArgoCD · Grafana · Vault | map the groups → native roles (3 values/config changes) |
-| **2** | Native-RBAC, delivery + Backstage SoR align | Kargo · Backstage | per-project RBAC + repoint `permission.rbac` to `ktayl-admin`/`ktayl-developer` |
-| **3** | SSO-gate the binary tools | Prometheus/Alertmanager/Hubble/Polaris/NATS/MLflow/Langfuse/Flowise/Open WebUI/n8n/Temporal | one Authentik app↔`ktayl-engineering` policy each |
-| **4** | Governance lifecycle | all | ktayl-iam S005 sync engine **provisions** the groups + request→approval replaces manual membership |
+| **1 ✅ done** | Native-RBAC, highest value | Grafana · ArgoCD | canonical groups → native roles; **live + verified** (Grafana `role_attribute_path`, ArgoCD `policy.csv`) |
+| **2 ◑ partial** | Native-RBAC, delivery + Backstage SoR align | Backstage ✅ · Vault · Kargo | Backstage `permission.rbac` repointed ✅. **Vault** needs break-glass root (OIDC not gitops-managed); **Kargo** needs Authentik OIDC login stood up first (it's admin/PAT only) |
+| **3** | SSO-gate the binary tools | Prometheus/Alertmanager/Hubble/Polaris/NATS/MLflow/Langfuse/Flowise/Open WebUI/n8n/Temporal | one Authentik app↔`ktayl-engineering` binding each (`bind-app-group.sh`). The 3 native-RBAC tools are **already reach-bound** to `ktayl-engineering` |
+| **4** | Governance lifecycle | all | ktayl-iam S005 sync engine **provisions** group membership + request→approval replaces manual membership — **and enforces SoD** (requester ≠ approver) |
 
 **Pre-reqs (one-time, owned by ktayl-iam / Authentik):** create the Authentik groups the catalog names
 (`ktayl-devops`, `ktayl-developer`, `ktayl-sre`, `ktayl-engineering`, and the per-app `ktayl-<app>-<level>`)
@@ -119,10 +142,31 @@ that is the honest ceiling until/unless the tool grows real RBAC. No per-tool gr
 Attach each app's **groups scope-mapping** where a native-RBAC tool needs the claim (as was done for Backstage).
 Then each wave is independent and reversible.
 
+## Verification (live — real second identity)
+
+Admin `100001` is admin-everywhere, so tier isolation can't be proven with it alone. A **standing QA
+identity `ktayl-dev-demo`** (in `ktayl-developer` for the role tier + `ktayl-engineering` for reach) was
+created for exactly this — the reusable primitive for verifying any tool's access tier.
+
+- **Grafana — definitive.** A full OIDC login as `ktayl-dev-demo` → Grafana's own `grafanaBootData.user`
+  reported **`orgRole = "Viewer"`, `isGrafanaAdmin = false`**. So `ktayl-developer` → **Viewer, not Admin**:
+  the whole chain is proven — Authentik emits the `groups` claim → the `ktayl-engineering` binding grants
+  *reach* → `role_attribute_path` maps the group to Viewer. *This is **segregation of privilege**, demonstrated.*
+- **ArgoCD / Backstage — reach authorized, policy live.** Authentik **authorized** `ktayl-dev-demo` for
+  both (the login proceeded past the `ktayl-engineering` binding); the policies are live (`g,
+  ktayl-developer, role:readonly`; Backstage enforcing with `developerGroups=[ktayl-developer]`). The
+  *automated* browser couldn't finish the click-through — ArgoCD serves a **self-signed passthrough cert**
+  and Backstage uses **popup-OAuth** (both are test-harness quirks, not access failures) — they verify in
+  a normal CA-trusting browser.
+
+> Reminder: this proves **segregation of privilege** (a Viewer cannot act as an Admin), **not** SoD.
+> **Segregation of Duties** (requester ≠ approver) is a separate ktayl-iam governance control, planned for
+> the provisioning engine (wave 4).
+
 ## Principles
 
-- **One source of truth** — roles + entitlements live in ktayl-iam's catalog; this page only records the
-  per-tool enforcement. Never invent a group name here.
+- **One source of truth (SoR)** — roles + entitlements live in ktayl-iam's catalog; this page only records
+  the per-tool enforcement. Never invent a group name here.
 - **Identity is the perimeter** — every tool SSO-gated behind Authentik; the group claim drives role.
 - **Least privilege, graded** — read < operate < manage < admin; a role only gains what its job needs.
 - **Prod stays double-gated** — RBAC never loosens the CODEOWNERS/Kargo prod gate (`gitops.md`).
