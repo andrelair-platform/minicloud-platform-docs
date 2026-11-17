@@ -120,6 +120,7 @@ const sidebars: SidebarsConfig = {
             'apps/docuseal',
             'apps/ktayl-dms-paperless',
             'apps/aml-sanctions-screening',
+            'apps/submission-hub',
           ],
         },
         {
