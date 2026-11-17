@@ -97,9 +97,30 @@ Enterprise Landscape → Business Capabilities → IS Applications → Platform 
 | **[Enterprise Architecture Blueprint](/is/insurance-platform/enterprise-architecture-blueprint)** | the IS functional target + gap analysis | ✅ IS domains |
 | **[Business Capability Map](/is/insurance-platform/capability-map)** | ~150 L2/L3 capabilities × status/criticality/RTO-RPO | ✅ capabilities |
 | **[IS — Architecture at a Glance](/is/insurance-platform/architecture-at-a-glance)** | the IS one-screen mental model | ✅ IS overview |
+| **[Access Governance — Platform Access Matrix](../security-enterprise/18-platform-access-matrix.md)** | which role may reach + do what in each platform tool (SoR → enforcement) | ✅ access model |
 
 > The original hand-made HTML poster was **retired 2026-10-17** — superseded by the code-generated
 > [C4 System Design](./c4-system-design.md) + the [Platform Architecture](../developer-platform/29-production-stack-architecture.md) views (maintainable, accurate, no pixel-pushing).
+
+---
+
+## Access governance — *who may access what* (one source of truth)
+
+Access decisions live in exactly one place and are enforced in another — never re-invented:
+
+- **SoR (System of Record)** = the **ktayl-iam catalog** (`application → role → group`) — *decides and
+  records* who is allowed what. The authoritative model is
+  [ktayl-iam `access-role-model.md` (IGA-02)](https://github.com/andrelair-platform/ktayl-iam/blob/main/docs/access-role-model.md).
+- **PEP (Policy Enforcement Point)** = **Authentik** — *enforces* it at login via the OIDC `groups`
+  claim / forward-auth; it does not own the decision.
+- **Map** = the **[Platform Access Matrix](../security-enterprise/18-platform-access-matrix.md)** —
+  per-tool, native-RBAC vs SSO-gate + the wiring; it *consumes* the SoR's group names, never mints its own.
+
+**Two segregation controls — don't conflate them:** *segregation of **privilege*** (a lower tier can't do
+a higher tier's action — Developer → Viewer, not Admin; **proven live**) is distinct from *Segregation of
+**Duties*** / SoD (no one person both **requests** and **approves** access — maker ≠ checker), which is a
+**ktayl-iam** governance control (request → dual-approval → provision), **planned** for the provisioning
+engine. See the matrix's *Concepts* + *Verification* sections.
 
 > **Planned:** Architecture Decision Records (ADRs) under this section — *why* ArgoCD, Authentik, Cilium,
 > Longhorn, and the Platform/IS split were chosen — to show not just *what* was built but *why*.
