@@ -46,8 +46,13 @@ The behavioral flow (register → exposure → triage → route; and **a `HOLD` 
 - **Server-side authority** (the gate is in the application layer), **fail-CLOSED**, **HITL** to clear a hold, **append-only** triage log.
 - In-process cross-module calls via the published `@NamedInterface` **only** (submission → `screening.api`) — `ApplicationModules.verify()` + `HexagonalArchitectureTests` green; no boundary weakening.
 
-## Next (SUB-02)
+## SUB-02 — live handoff to underwriting (#12), dev + prod
 
-Route currently records the routing locally; **SUB-02** wires the live M2M handoff to the underwriting service (#12) — creating a UW submission from the dossier — which also provides the authenticated `GROUP_Underwriting` driver for an end-to-end live walk of the gated workbench flow.
+Route no longer just records locally — it **hands the ROUTED submission off to the underwriting service** (`POST /v1/submissions`), creating a real UW submission from the exposure dossier. `route()` transitions + saves locally **first**, then maps the dossier and calls underwriting via the `UnderwritingPort` (hexagonal); on a handoff failure the submission stays `ROUTED` with a null `uw_submission_ref` (retryable, the call returns `502`), on success it records the returned `uw_submission_ref`.
+
+- **Increment 1 (dev)** — the handoff, unauthenticated (dev underwriting's API auth is OFF). Live-verified: a routed dev submission creates a UW submission in the dev underwriting service.
+- **Increment 2 (prod M2M)** — underwriting's API auth is **ON in prod**, so the handoff authenticates with an **OAuth2 client-credentials bearer**. A `UnderwritingTokenProvider` mints + caches an Authentik token scoped `underwriting:write` (client `ktayl-core-uw-m2m`), enabled only when `underwriting.oauth2.client-id` is set → **dev stays unauthenticated** (no client-id), the **same artifact** authenticates in prod. The token endpoint is the Authentik **ingress** host (reuses the existing egress allowance — no netpol change); underwriting validates **signature + scope**, so the issuer host is irrelevant. Creds come from Vault (`secret/platform/ktayl-core-underwriting`) via an ESO `ExternalSecret` → `UNDERWRITING_OAUTH_*` env. The M2M pattern mirrors underwriting→ktayl-core (ADR-016).
+
+**Prod acceptance (live):** from `ktayl-core-prod`, the `ktayl-core-uw-m2m` client mints a token and `POST /v1/submissions` against **underwriting-prod** returns **`201`** (a real UW submission created); the same call **without** a bearer returns **`401`** — proving the handoff is authenticated and auth is enforced. Prod is on `ktayl-core:604c7d3`, 2/2, `Synced/Healthy`.
 
 Module source: [`ktayl-core`](https://github.com/andrelair-platform/ktayl-core) (`src/main/java/com/ktayl/core/submission`). The modular-monolith rationale lives in `ktayl-core/docs` (ADR-004..011).
