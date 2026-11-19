@@ -12,9 +12,13 @@ sidebar_position: 11
 approval → Authentik group provisioning → who-has-what + audit** (v1) — plus **multi-user login** (v2)
 and the **HR Joiner/Leaver lifecycle** (v3: HR event → auto-provision identity + mailbox + birthright
 access on a Joiner; auto-revoke **all** access the day after a Leaver's HR leave date) is built,
-unit-tested (98 backend tests), QA'd on live dev, and promoted to **prod** (`iam.10.0.0.200.nip.io`,
-ArgoCD Synced/Healthy) via the Kargo → CODEOWNERS gate. Detailed design (PRD, solution architecture,
-NFR register, threat model, ADRs) lives in the **`ktayl-iam` repo** (`docs/`); this page is the org-site map.
+unit-tested, QA'd on live dev, and promoted to **prod** (`iam.10.0.0.200.nip.io`, ArgoCD Synced/Healthy)
+via the Kargo → CODEOWNERS gate. **Extended since (2026-11-19):** **IGA-06 governed service accounts**
+(non-human identities, four-eyes + Vault-stored token), **IGA-07 external collaborators** (governed
+human non-employees — sponsor + Security four-eyes, hard expiry, daily sentinel), and a full
+**shadcn/ui console redesign** with an **axe a11y gate** (RGAA) — all merged (154 backend tests). Detailed
+design (PRD, solution architecture, NFR register, threat model, ADRs) lives in the **`ktayl-iam` repo**
+(`docs/`); this page is the org-site map.
 :::
 
 **ktayl-iam** is the ktayl-solution **Access Governance / IGA platform**, board **#17** (IS Foundations)
@@ -75,6 +79,57 @@ This is the *least-privilege-by-default-for-business, earn-it-for-sensitive* sha
 password — so the leaver sweep **also** clears the Stalwart credential. Clearing (vs destroying) keeps the
 account + mail for retention and is reversible. Verified live: `credentials:{}` → IMAP `AUTHENTICATIONFAILED`,
 mail preserved.
+
+## As-built — governed service accounts (IGA-06, S021–S024)
+
+Non-human (service/technical) identities, governed with the **same four-eyes discipline** as human access.
+A `service_account` is distinct from a human `identity`: no HR record, no manager, no mailbox — accountable
+to a human **owner**, provisioned to Authentik as a `service_account` user in one or more `GROUP_<name>`
+groups, with its credential kept **only as a Vault ref** (never stored in the IAM DB or audit log).
+
+| Story | What's live |
+|---|---|
+| **S021** entity + persistence | the `service_account` table (unique name, type, owner, scoped groups, status) |
+| **S022** request + dual-approval | reuses the human four-eyes resolver — **Security approver** leg (no HR manager for a non-human) + **owner** leg; mandatory justification; nothing reaches Authentik until both approve |
+| **S023** provision | on approval → Authentik `service_account` user + each group + **minted app-password token written to Vault KV-v2** (config-gated; the token value never touches the DB/audit); idempotent + retryable |
+| **S024** recertification + UI | owner/admin re-attestation (stamps `last_recertified_at`) + a due-campaign query; the admin console surface |
+
+## As-built — external collaborators (IGA-07, ADR-009 + S025–S030)
+
+Governed onboarding of **human non-employees** (contractors, brokers, auditors, partners) who need scoped
+access but are **not in the HR system**. **IT/Admin-only** (`collaborators:manage`) — never HR, never
+employee self-service. Shaped like IGA-06 plus the human/sponsor/expiry rules, cleared through an
+**architecture + security governance gate** (ADR-009) before build.
+
+| Story | What's live |
+|---|---|
+| **S025** entity | the `external_collaborator` table (sponsor, scoped groups, hard `expires_at`, status `requested→active→expired/flagged/disabled`) |
+| **S026** request + four-eyes | **Sponsor + Security** approval; the **sponsor is validated as an ACTIVE employee** at request time (rejected otherwise); expiry **capped at a 180-day ceiling** |
+| **S027** provision | on approval → Authentik user (filed under `external-collaborators`) + the **scoped** groups + an **invitation/recovery link** so the human sets their own credential (**no machine token**) |
+| **S028** expiry + renewal | `renew` (extend ≤ ceiling + stamp recert) + a `due` worklist + endpoints |
+| **S029** sponsor-Leaver sentinel | a **self-contained daily `@Cron` sweep**: expired → auto-suspend (status + Authentik disable); sponsor no longer active → `flagged` + disable. Chosen over a one-shot JML hook — re-checks daily, catches a sponsor deactivated for any reason, so orphaned access can never stand |
+| **S030** admin UI | the `/admin/external-collaborators` console (lifecycle cards, expiry countdown, flagged banner, renew/provision) |
+
+**The HR boundary (decisive):** the console **never creates employees** and **never writes back to
+ERPNext** — employee identity + J/M/L lives in the HR system and *feeds* IAM; external collaborators are
+**IAM-only identities** with no workforce record. Full model: the repo's
+[`operation-authorization-model.md`](https://github.com/andrelair-platform/ktayl-iam/blob/main/docs/operation-authorization-model.md)
++ [`external-collaborator-onboarding.md`](https://github.com/andrelair-platform/ktayl-iam/blob/main/docs/external-collaborator-onboarding.md).
+
+## As-built — the console redesign (shadcn/ui, persona-gated, a11y-gated)
+
+The whole admin + employee console was rebuilt on a **shadcn/ui + Tailwind v4** design system (Phases 0–5):
+a role-aware app shell, **lifecycle-over-lists** (a request is a card with a status stepper, not a row),
+people resolved to **name · matricule**, real states/toasts/confirm dialogs, and an **axe accessibility gate
+in CI** (RGAA / BC02). Authorization is by **capability flags** (`can('collaborators:manage')`), not a raw
+`isAdmin`, so an `IT Operator` split is a config change. Spec:
+[`frontend-redesign.md`](https://github.com/andrelair-platform/ktayl-iam/blob/main/docs/frontend-redesign.md).
+
+:::note OIDC session-login fix
+A `super.logIn()`-missing bug in `OidcAuthGuard` meant the token exchange succeeded but the session never
+persisted `passport.user` → a "please sign in" loop despite a 200 exchange. Fixed by overriding the guard's
+`canActivate` to establish the passport session on a successful callback (ktayl-iam #92/#93).
+:::
 
 ## Security by design (threat model)
 
