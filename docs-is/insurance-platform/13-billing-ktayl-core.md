@@ -13,9 +13,10 @@ monolith** (Spring Boot + Spring Modulith, Java 21), board **#28**. The Billing 
 (GAP wrapper chart + Kargo git-Warehouse; ArgoCD `ktayl-core-dev` + `ktayl-core-prod`, both Synced/Healthy,
 prod 2/2 + R2 PITR backup). The **full premium → cash → ledger chain is proven end-to-end in prod**: a
 `bound-risk` event → **invoice** → **payment** (Stripe test SEPA) → **double-entry Journal Entries in
-ERPNext**. **Prod is the authoritative NATS consumer** (dev keeps it dormant → one consumer, no double-invoice). A 2nd module,
-**Complaints**, is also live (the hexagonal exemplar, ADR-013). Detailed design (PRD, architecture, ADRs,
-SPEC) lives in the **`ktayl-core` repo** `docs/`; this page is the org-site map.
+ERPNext**. **Prod is the authoritative NATS consumer** (dev keeps it dormant → one consumer, no double-invoice). Two more modules are
+live in prod: **Complaints** (the hexagonal exemplar, ADR-013) and **Finance** (2026-11-19) — the period-end
+**GL reconciliation** + an **auditable period close**, see *As-built — epic FINCLOSE* below. Detailed design
+(PRD, architecture, ADRs) lives in the **`ktayl-core` repo** `docs/`; this page is the org-site map.
 :::
 
 ## Why ktayl-core exists (and why a modular monolith)
@@ -70,6 +71,25 @@ via a durable JetStream consumer — zero Underwriting change — and an **L3 co
 | **BILL-014** GL post | ✅ **LIVE on prod — money→ledger proven end-to-end** — a **transactional outbox** (`ledger_outbox`, V8): a plain `@EventListener` writes the GL intent **in the same transaction** as the business fact (`PremiumInvoiced`→DR Receivable/CR Income; `PaymentCaptured`→DR Bank/CR Receivable) — never a half-post (proven by a publish-in-rollback test); balance (Σdr=Σcr) enforced at construction; a `@Scheduled` drainer posts to the live **ERPNext** (`https://erp.devandre.sbs`, Frappe token auth, idempotent by `cheque_no`), a GL outage leaves rows pending→retried (billing never blocked). **Verified live:** a bound-risk → invoice → pay produced two **submitted, balanced Journal Entries** in ERPNext (French PCG CoA, company Ktayl Solutions: 4111/706/5121, a Customer party on the receivable). L1+L2 green. |
 | **BILL-013c** dunning | ✅ **LIVE on prod — non-payment path verified** — the webhook handles `payment_intent.payment_failed`: payment→`failed`, **installment stays open**, a **`dunning_case` per installment** (V9) opens/increments; at the lapse threshold (default 3) → `lapse_pending` + emits **`PolicyLapseRecommended`** (a recommendation for human/regulatory review — IDD notice rules — not auto-cancellation); a later success **resolves** the case. Idempotent + parks-not-drops. **Verified live:** 3 signed failure webhooks → dunning `lapse_pending` (attempts 3), installment open. L1+L2+L3 green. |
 | BILL-015 | planned — who-owes-what read model. |
+
+## As-built — epic FINCLOSE (period close & GL reconciliation)
+
+The **`finance` module** is the period-end layer on top of Billing — the *auditable close*. Billing already
+posts each premium/payment to the GL (BILL-014); Finance answers **"does the ledger agree, and is the period
+locked?"** It is a **read/close layer, never a second ledger**, consuming Billing only through a published
+Spring-Modulith named interface (`ledger-view`) — the boundary is enforced by `ModularityTests`.
+
+| Story | What's live (prod, 2026-11-19) |
+|---|---|
+| **FINCLOSE-01** reconciliation + register | ✅ **LIVE on prod** — `GET /api/finance/periods/{YYYY-MM}/reconciliation` (billing subledger POSTED vs the ERPNext GL total → **drift** + stuck-count) and `/register` (gross premium invoiced · cash received · receivable outstanding). `GROUP_Finance`-gated; GL unconfigured → `glStatus=UNAVAILABLE` (never a 5xx); single-currency EUR guard; period attribution = outbox `created_at` (UTC). Flyway **V14** (`finance` schema + `accounting_period`). Added Billing's `ledger-view` published interface. |
+| **FINCLOSE-02** close/reopen + audit | ✅ **LIVE on prod** — `POST …/close` locks a period behind preconditions (each a 409: period **ended** · subledger **settled** · GL **reconciled**, or `force`+reason), `POST …/reopen` (reason-gated → 422), `GET …/close` history. An **immutable append-only closing audit** (Flyway **V15**) records who/when + the attested figures. **ADR-019 — the close is a CONTROL/attestation + detection, NOT a physical lock on billing** (a `billing→finance` lock would be a module cycle `ModularityTests` rejects); a `postCloseMovement` flag detects any GL movement after close. Lifecycle `OPEN ⇄ CLOSED` only. |
+| **FINCLOSE-03** | planned (#77) — a close **dashboard** (recent periods × status/drift/stuck in one call) + GL **outbox-drift** metrics & a Prometheus alert + a Grafana panel. |
+
+**Verified live (prod):** pods on the finance build, **`V14`+`V15` applied in the prod CNPG**
+(`accounting_period` + `period_close_audit`), `/actuator/health` 200, all finance routes SSO +
+`GROUP_Finance`-gated (401 without a token), `ktayl-core-prod` ArgoCD `Synced/Healthy`. CI **222 tests green**
+(L1 · L2 real-Postgres full close lifecycle · L3 web; `ModularityTests` + `HexagonalArchitectureTests`).
+Design: ADR-018 (read-layer, not a second ledger) + ADR-019 (control-not-lock) in the `ktayl-core` repo.
 
 ## Security by design
 - **AuthN/AuthZ:** Authentik OIDC resource-server; `/api/**` authenticated + Finance-group (the Stripe
