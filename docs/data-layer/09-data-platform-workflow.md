@@ -79,7 +79,16 @@ kubectl --context minicloud get deploy dagster -n data-platform
 
 ## Status + what's deferred (need-first)
 
-**Production-adopted (right-sized)** — runs in the live `data-platform` namespace. Deliberately deferred to
-their volume/automation triggers (ADR-009/010): Cube **HA (Cube Store)**, Dagster **daemon + K8sRunLauncher
-+ HA**, and **CDC** ingestion (Debezium→NATS) in place of full-refresh. The cross-domain KPIs (GWP,
-combined ratio) are blocked on ktayl-core Phase-1b data ([issue #28](https://github.com/andrelair-platform/ktayl-data-platform/issues/28)).
+**Production-adopted (right-sized)** — runs in the live `data-platform` namespace. What's deliberately
+deferred, and the **exact trigger** for each, is the standing
+**[ADR-011 deferred-capability trigger register](https://github.com/andrelair-platform/ktayl-data-platform/blob/main/docs/architecture/adr/ADR-011-right-sizing-deferred-capability-triggers.md)**:
+
+| Deferred | Category | Trigger (not before) |
+|---|---|---|
+| Cube **Store** (HA + pre-aggs) | tooling | multi-consumer load (≳10 concurrent) **or** heavy SQL expressions — watch latency + concurrency, *not* row-count alone |
+| Dagster **daemon** (schedules/sensors) | tooling | you want the graph to run itself — **the designated next move** (cheap, in-process) |
+| Dagster **K8sRunLauncher / HA** | tooling | runs become heavy/parallel or risk UI contention (separate trigger from the daemon) |
+| **CDC** (Debezium→NATS) | tooling | tables large / near-real-time need — then handle deletes + late updates + schema drift in dbt |
+| **GWP / combined ratio** (cross-domain KPIs) | **data-blocked** | ktayl-core **Phase-1b** (premiums/coverages) + claims in the warehouse — [issue #28](https://github.com/andrelair-platform/ktayl-data-platform/issues/28). *Not* a tooling trigger. |
+
+The one upgrade that already earned its place — **persistent run history on CNPG** — is built.
