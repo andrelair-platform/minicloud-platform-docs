@@ -6,11 +6,13 @@ sidebar_position: 7
 
 # Data Platform — Slice 1 (LIVE, ktayl IS #5)
 
-:::tip This is deployed and proven (2026-09-27)
-Unlike the heavier design-reference stack in the rest of this section (Kafka/Redpanda → ClickHouse →
-Superset → OpenMetadata — still **planned / need-first-deferred**), **Slice 1 is a light-first
-implementation that actually runs**: **dbt + CNPG Postgres + Metabase**. It is the first thin vertical
-slice of the ktayl IS Data Platform (#5).
+:::note Historical — Slice 1 (the first thin slice). Superseded by the as-built Workflow
+This documents the **first** vertical slice (2026-09-27): a light-first **dbt + CNPG + Metabase**
+implementation of `policy_portfolio`. It has since grown into the full hybrid lakehouse + semantic layer +
+orchestration — see **[Data Platform — Workflow (as-built)](./data-platform-workflow)** for what runs
+today. Note: the original policy source (`ktayl-policy-service`) was **folded into `ktayl-core`**, so the
+ingest now reads `ktayl-core`; the code moved from `manifests/` to
+`minicloud-gitops/platform/data/data-platform/`. Kept as the origin-slice record.
 :::
 
 > Two-layer model: this is the **ktayl-solution IS** analytics platform, not Retrieva.

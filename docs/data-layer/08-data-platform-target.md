@@ -6,12 +6,14 @@ sidebar_position: 8
 
 # Data Platform — Target Architecture (ktayl IS #5)
 
-:::info This is the TARGET, not yet built
-[Slice 1](./data-platform-slice1) (dbt + CNPG + Metabase) is **live**. This page is the **target
-system design** the next slices build toward — a **hybrid lakehouse**: an AWS **S3 raw lake**, a
-**DuckDB** transform engine, **CNPG** as the serving store, **Metabase** for BI. Authoritative
-decisions: `ktayl-data-platform` **ADR-006** (governed lakehouse), **ADR-007** (Data-Platform-first
-gating), **ADR-008** (this S3 + DuckDB + CNPG hybrid).
+:::tip Largely REALISED — see the as-built workflow
+This target is now **mostly built and running**: the **S3 raw lake** + **DuckDB** transform + **CNPG**
+serving (ADR-008) are live, plus a **Cube** semantic layer (ADR-009) and **dlt + Dagster** ingest/
+orchestration (ADR-010). The authoritative as-built process is **[Data Platform — Workflow](./data-platform-workflow)**;
+this page remains the design rationale for the hybrid-lakehouse decision. Authoritative decisions:
+`ktayl-data-platform` **ADR-006** (governed lakehouse), **ADR-007** (Data-Platform-first gating),
+**ADR-008** (S3 + DuckDB + CNPG hybrid), **ADR-009** (Cube), **ADR-010** (dlt + Dagster).
+Still-deferred (need-first): CDC ingestion, Cube/Dagster HA, cross-domain KPIs (blocked on ktayl-core Phase-1b).
 :::
 
 [![Data Platform — Target Architecture](/img/architecture/data-platform-target.svg)](/img/architecture/data-platform-target.svg)

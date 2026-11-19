@@ -4,12 +4,14 @@ title: Data Layer Overview
 sidebar_position: 1
 ---
 
-:::info Status — Slice 1 is LIVE; the heavy stack is still design-reference
-**[Data Platform — Slice 1](./data-platform-slice1) is deployed and proven** (2026-09-27): a *light-first*
-implementation (**dbt + CNPG Postgres + Metabase**) delivering the `policy_portfolio` data product from the
-live policy service. The **heavier stack on the other pages** (Kafka/Redpanda → ClickHouse → Superset →
-OpenMetadata) remains **planned / need-first-deferred** — those pages are design references for the future
-target, not what runs today. Build order: thin vertical slices per live source, not a big OLAP cluster up-front.
+:::info Status — the as-built platform is LIVE (start at the Workflow page)
+The data platform now runs an end-to-end **hybrid lakehouse**: **dlt** ingest → **AWS S3** raw lake →
+**DuckDB + dbt** transform → **CloudNativePG** serving → **Cube** semantic layer → **Metabase** BI, with
+**Dagster** orchestration + **MLflow** ML. Start at **[Data Platform — Workflow (as-built)](./data-platform-workflow)**.
+**The Kafka/Redpanda, ClickHouse and OpenMetadata pages describe a path the platform did NOT take** —
+eventing went to **NATS**, the analytics engine to **CNPG + DuckDB**, catalog/lineage to **Dagster assets +
+dbt docs**. They remain clearly-marked design references for the alternatives considered. Doctrine
+throughout: thin vertical slices per live source, need-first — not a big OLAP cluster up-front.
 :::
 
 
