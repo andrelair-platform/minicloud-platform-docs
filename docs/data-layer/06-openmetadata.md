@@ -4,8 +4,11 @@ title: OpenMetadata (Data Catalog)
 sidebar_position: 6
 ---
 
-:::caution Not yet deployed — planned for a future phase
-OpenMetadata has **not been deployed** on this cluster. This is a design reference doc.
+:::caution Not deployed — catalog/lineage is served by Dagster + dbt docs for now
+OpenMetadata is **not deployed**. The catalog/lineage need is currently met **need-first** by **Dagster's
+software-defined-asset lineage** (dlt + dbt + ML as one asset graph) + **dbt docs**. OpenMetadata remains a
+design reference for a dedicated enterprise catalog if cross-system discovery/governance later warrants it.
+As-built: **[Data Platform — Workflow](./data-platform-workflow)**.
 :::
 
 

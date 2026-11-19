@@ -4,14 +4,16 @@ title: dbt (Data Transformation)
 sidebar_position: 4
 ---
 
-:::caution Not yet deployed — planned for a future phase
-dbt has **not been deployed** on this cluster. This is a design reference doc.
+:::tip LIVE — dbt is the data platform's transform layer
+dbt **is deployed and runs daily**: `dbt-postgres` (the in-CNPG medallion) and `dbt-duckdb` (the S3-lake
+transform), over **DuckDB + CloudNativePG** — not ClickHouse. See the
+[as-built workflow](./data-platform-workflow); source lives in `ktayl-data-platform/dbt` + `lake/dbt_duckdb`.
 :::
 
 
 # dbt — SQL Transformation Layer
 
-dbt (data build tool) turns raw ClickHouse tables into clean, tested, documented data marts using version-controlled SQL. Every transformation is a SELECT statement — dbt handles the CREATE TABLE/VIEW, testing, and documentation automatically.
+dbt (data build tool) turns raw tables into clean, tested, documented data marts using version-controlled SQL. Every transformation is a SELECT statement — dbt handles the CREATE TABLE/VIEW, testing, and documentation automatically. *(On this platform dbt runs over **DuckDB** (lake transform) + **CloudNativePG** (serving), orchestrated by Dagster — see the [workflow page](./data-platform-workflow).)*
 
 ---
 

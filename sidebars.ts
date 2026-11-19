@@ -475,6 +475,7 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: [
         'data-layer/data-layer-overview',
+        'data-layer/data-platform-workflow',
         'data-layer/data-platform-slice1',
         'data-layer/data-platform-target',
         'data-layer/kafka-redpanda',

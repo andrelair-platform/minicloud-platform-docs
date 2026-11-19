@@ -4,8 +4,12 @@ title: ClickHouse (Analytics Warehouse)
 sidebar_position: 3
 ---
 
-:::caution Not yet deployed — planned for a future phase
-ClickHouse has **not been deployed** on this cluster. This is a design reference doc.
+:::caution Path not taken as the data warehouse — CNPG + DuckDB was chosen
+ClickHouse is **not the data-platform warehouse**: the analytics engine is **DuckDB** (OLAP over the S3
+lake) with **CloudNativePG** as the serving store (ADR-008) — sovereign, zero standing-OLAP cost.
+(ClickHouse *does* run on the cluster, but only as **Langfuse's** backing store, not for data-platform
+analytics.) This stays a design reference for the columnar-warehouse alternative. As-built:
+**[Data Platform — Workflow](./data-platform-workflow)**.
 :::
 
 

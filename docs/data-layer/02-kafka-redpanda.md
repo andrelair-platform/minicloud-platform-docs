@@ -4,8 +4,11 @@ title: Kafka / Redpanda (Event Streaming)
 sidebar_position: 2
 ---
 
-:::caution Not yet deployed — planned for a future phase
-Kafka / Redpanda has **not been deployed** on this cluster. This is a design reference doc.
+:::caution Path not taken — the platform uses NATS, not Kafka
+Kafka / Redpanda is **not deployed** and is **not the chosen direction**: the event backbone is **NATS
+JetStream** (lighter, already run), and the data platform ingests via **dlt** (not a Kafka→ClickHouse
+stream). This stays a design reference for the streaming alternative considered. As-built:
+**[Data Platform — Workflow](./data-platform-workflow)**.
 :::
 
 
