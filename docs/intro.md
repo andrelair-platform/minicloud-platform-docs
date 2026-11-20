@@ -15,7 +15,8 @@ slug: /
 
 This documentation is organised in **two layers** that mirror how the system really works: an application layer running **on top of** an infrastructure layer. Use the top navigation.
 
-- **🏗 Platform** — *minicloud*: the infrastructure & engineering that runs everything — MAAS bare-metal, k3s, networking, storage, GitOps/CI-CD, security, observability, and the AI platform. → Start at **[Production Stack Architecture](/platform/developer-platform/production-stack-architecture)**.
+- **🏗 Platform** — *minicloud*: a sovereign **private cloud** *and* an **Internal Developer Platform (IDP)** — i.e. two hats on one stack. The **cloud** half *provides* the capabilities a public cloud sells (MAAS bare-metal, k3s, networking, storage, registry, secrets, identity-as-a-service, observability, the AI & data platforms) — all FOSS, self-hosted, EU-sovereign; the **IDP** half is the **golden paths developers self-serve on** so they don't hand-roll infra (Backstage portal + scaffolders, GitOps/ArgoCD, Kargo dev→prod promotion, the wrapper-chart standard, CI guardrails). → Start at **[Production Stack Architecture](/platform/developer-platform/production-stack-architecture)**.
+  > *(“IDP” here = **Internal Developer Platform**, the paved-road layer — not to be confused with **IdP**, an **Identity Provider**; that’s Authentik, one of the capabilities the platform provides.)*
 - **🏢 Information System** — *ktayl-solution*: the business system that runs **on** the platform — a simulated commercial-lines (IARD) insurer's IS (business applications, insurance domains, data platform, governance). → Start at **[Insurance Platform → Architecture at a Glance](/is/insurance-platform/architecture-at-a-glance)**.
 
 *(This page is the neutral home — reach it any time via the minicloud logo.)*
@@ -72,8 +73,7 @@ The phases below record *what was built and when* — some entries name things s
 are flagged inline with **⚠️** where a reader might otherwise take them as current. Known supersessions:
 **Ollama → retired in favour of vLLM**; **Flannel → migrated to Cilium** (Phase 22 since executed);
 **`staging` environment retired (2026-08-30) → the standard is now exactly two environments, `dev` + `prod`**;
-**ArgoCD image-bump promotion → Kargo** (multi-stage `dev → prod`, protected prod PR with required checks and maintainer merge); **Harbor is now
-dev-only → prod images live on ghcr.io** (SHA-tagged, hybrid registry); earlier k3s versions;
+**ArgoCD image-bump promotion → Kargo** (multi-stage `dev → prod`, protected prod PR with required checks and maintainer merge); **Harbor fully decommissioned (2026-11-16) → ghcr.io is the single registry for dev AND prod** (the earlier "Harbor dev-only / hybrid" note is itself superseded); earlier k3s versions;
 "4-node" / "23-namespace" counts predate the current **6-node** cluster
 (`loving-gannet` added) and its ~74 namespaces. For the authoritative **current live state**, see
 [Current Stack (Live)](#current-stack-live) below. History is kept as-is; only the current-state
@@ -154,14 +154,14 @@ k3s v1.36.3+k3s1 → Kubernetes cluster (1 control-plane + 5 workers, upgraded v
 MetalLB       → load balancer IPs (10.0.0.200)
 Longhorn       → distributed block storage
 local-path     → NVMe-backed storage (LLM model weights)
-Harbor        → dev/ephemeral container registry (Trivy scanning); prod images live on ghcr.io (SHA-tagged, cosign-signed)
+ghcr.io       → the single container registry for dev AND prod (SHA-tagged, Trivy-scanned, cosign-signed + SBOM). Harbor decommissioned 2026-11-16 — the old dev→Harbor/prod→ghcr hybrid is retired.
 
 ── AUTOMATION & DELIVERY ───────────────────────────────────────────
 Ansible       → infrastructure automation
 OpenTofu      → IaC for MAAS resources
 ArgoCD        → GitOps app-of-apps (AppProject with explicit whitelist)
 Kargo         → multi-stage promotion (dev auto; prod protected PR + required checks + maintainer merge; 6 custom services)
-GitHub Actions→ CI/CD (cosign-signed, GPG-signed; dual-push Harbor + ghcr.io)
+GitHub Actions→ CI/CD (cosign-signed, GPG-signed; push to ghcr.io)
 ESO           → External Secrets Operator (9 ExternalSecrets ← Vault)
 
 ── PLATFORM SERVICES ───────────────────────────────────────────────
