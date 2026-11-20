@@ -110,11 +110,48 @@ employee self-service. Shaped like IGA-06 plus the human/sponsor/expiry rules, c
 | **S029** sponsor-Leaver sentinel | a **self-contained daily `@Cron` sweep**: expired → auto-suspend (status + Authentik disable); sponsor no longer active → `flagged` + disable. Chosen over a one-shot JML hook — re-checks daily, catches a sponsor deactivated for any reason, so orphaned access can never stand |
 | **S030** admin UI | the `/admin/external-collaborators` console (lifecycle cards, expiry countdown, flagged banner, renew/provision) |
 
-**The HR boundary (decisive):** the console **never creates employees** and **never writes back to
-ERPNext** — employee identity + J/M/L lives in the HR system and *feeds* IAM; external collaborators are
-**IAM-only identities** with no workforce record. Full model: the repo's
+**The HR boundary (decisive):** the console **never creates employees** and **IAM never writes to
+ERPNext** — employee identity + J/M/L lives in the HR system and *feeds* IAM. Full model: the repo's
 [`operation-authorization-model.md`](https://github.com/andrelair-platform/ktayl-iam/blob/main/docs/operation-authorization-model.md)
 + [`external-collaborator-onboarding.md`](https://github.com/andrelair-platform/ktayl-iam/blob/main/docs/external-collaborator-onboarding.md).
+
+:::note Revised by ADR-012/013 (2026-11-20)
+The original "external collaborators are IAM-only identities with **no workforce record**" boundary was
+**deliberately revised** — see the next section. They now DO get a **non-payroll ERPNext HR worker**, created
+by **n8n** on an event. IAM still never writes ERPNext directly (n8n is the only writer) — so the ADR-009
+boundary holds while the person is correctly modelled as a *worker*, not left out of HR.
+:::
+
+## As-built — the workforce engagement model + n8n onboarding (ADR-012 / ADR-013)
+
+The owner corrected the model: an external collaborator is a **worker** (employed by an **ESN**, or
+**freelance**) — **not a supplier** and **not our payroll employee**. (*"Paid" ≠ "salary"*: a prestataire is
+paid by **invoice** via Accounts Payable at the firm level, never payroll — payroll would be *salariat
+déguisé*.) Engagement type, grade, salary and dates are **HR master data → ERPNext HR is the system of
+record**; IAM consumes a projection and reads its user directory from **Authentik**, never from ERPNext.
+
+**The engagement taxonomy (ERPNext `Employment Type`):**
+
+| Engagement | Our employee? | Paid via | Payroll? | End date |
+|---|---|---|---|---|
+| CDI (cadre/non-cadre) · CDD · Alternance | yes | salary | ✅ | CDI none; others fixed |
+| Stage | no (student) | *gratification* | ⚠️ not real | fixed |
+| **Prestataire** (ESN) · **Freelance** | **no** | **invoice (AP)** | ❌ (no Salary Structure) | mission |
+
+**The onboarding loop (live + QA-verified on dev, 2026-11-20):**
+```
+collaborator provisioned → IAM emits signed `onboarded` event → n8n webhook
+  → n8n creates the non-payroll ERPNext Employee (Prestataire/Freelance, NO Salary Structure → never payroll)
+  → n8n binds the HR-EMP id back → IAM `hr_worker_ref` (the console flips from `pending` to HR-EMP-xxxxx)
+```
+IAM carries an `hr_worker_ref` (replaces the earlier mislabelled `supplier_ref`), emits the event + accepts a
+**service-key-guarded** writeback (`X-IAM-Service-Key`, fail-closed); **n8n is the only ERPNext writer**
+(ADR-009). `cadre`/`non-cadre` = native `Employee Grade` (internal-only); `gender`/`date_of_birth` were made
+non-mandatory for externals. Decisions: ADR-012 (engagement model) + ADR-013 (webhook transport + service-key
+bind-back), repo
+[`architecture/adr/000-index.md`](https://github.com/andrelair-platform/ktayl-iam/blob/main/docs/architecture/adr/000-index.md);
+the n8n workflow + wiring: [`integration/n8n/`](https://github.com/andrelair-platform/ktayl-iam/tree/main/integration/n8n).
+**Prod enablement** waits on adding the IAM-callback base-URL to the event (dev/prod routing).
 
 ## As-built — the console redesign (shadcn/ui, persona-gated, a11y-gated)
 
