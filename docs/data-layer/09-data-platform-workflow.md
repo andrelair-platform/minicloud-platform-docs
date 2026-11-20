@@ -28,7 +28,7 @@ Graphviz) — regenerated from source, not hand-drawn.*
 | **Serving warehouse** | **CloudNativePG** (ADR-008) | gold marts land in `analytics.business.* / lake.* / dlt_marts.*`. HA (2 instances) + R2 PITR. DuckDB is the OLAP engine; **CNPG is the serving tier** (good at concurrent low-latency queries). |
 | **Semantic layer** | **Cube** (ADR-009) | business metrics defined **once** (measures + dimensions over the gold mart). **Metabase consumes Cube natively via its pg-wire SQL API** (Cube looks like a database); REST/GraphQL for apps + AI. |
 | **BI** | **Metabase** | dashboards over the semantic layer, behind Authentik SSO. |
-| **ML** | **scikit-learn + MLflow** (ADR-010) | models are **Dagster assets** (`features → model → evaluation`) trained, tracked + **registered in the platform MLflow** — governed, reproducible (EU AI Act / DORA). |
+| **ML (MLOps)** | **scikit-learn + MLflow** (ADR-010) | a **demonstration** ML asset (`features → model → evaluation`, a Dagster asset) proves the MLOps loop — train, track + **register in the platform MLflow** (experiment tracking + model registry). **Not yet a production model**; first real use cases (need-first) = **claims-fraud / policy-lapse scoring**. The value is the governed, reproducible, versioned pipeline (EU AI Act / DORA). |
 | **Orchestration** | **Dagster** (ADR-010) | dlt + dbt + ML as **one asset graph** with lineage, partition backfills, and run observability. |
 
 ## The daily flow
