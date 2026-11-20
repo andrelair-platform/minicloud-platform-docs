@@ -26,10 +26,15 @@ swappable IS layer — see *Domain-agnostic* below.*
 ![minicloud Data Platform — end-to-end workflow: sources → dlt → S3 lake → DuckDB/dbt → CloudNativePG → Cube → Metabase + MLflow, orchestrated by Dagster](/img/architecture/data-platform-workflow.png)
 
 *Boxes are grouped by **capability category** (same colour = same category): **Data Ingestion & Pipelines**
-(dlt + Dagster) · **Data Lake** (S3 — raw object store) · **Data Warehouse** (CNPG — structured serving
-store) · **Transformation & Semantic Layer** (DuckDB/dbt + Cube) · **BI & AI Analytics** (Metabase + MLflow).
-The **lake** (raw, schema-on-read) and the **warehouse** (structured, serving) are deliberately **distinct
-stores** at different stages — not the same thing.*
+(dlt + Dagster) · **Data Lake** (S3 — raw object store) · **Transformation & Semantic Layer** (DuckDB OLAP
+engine + dbt + Cube) · **Serving Store** (CNPG — gold marts) · **BI & AI Analytics** (Metabase + MLflow).*
+
+:::note The "data warehouse" is not a single box — it's the lakehouse pattern
+A classic warehouse (Snowflake/BigQuery) bundles storage + query engine + serving into one product. Here
+that's **unbundled**: **Data Lake** (S3 — storage) + **DuckDB** (the OLAP / lakehouse *query engine*) +
+**Serving Store** (CNPG — persistent, concurrent serving marts) **together = the data-warehouse capability**.
+No single box is "the warehouse"; DuckDB is the engine, CNPG is the serving tier it materialises into.
+:::
 
 ---
 
@@ -39,9 +44,9 @@ stores** at different stages — not the same thing.*
 |---|---|---|
 | **dlt** | Ingest (source → raw lake) | A Python library (zero standing infra); schema inference + incremental; replaces a hand-written script per source. (Over Airbyte/Meltano — adopt those only if broad SaaS-connector coverage becomes the need.) |
 | **AWS S3** (eu-west-1) | Raw lake | Parquet, versioned, SSE-encrypted, private. **Keyless** — short-lived STS via the **Vault AWS secrets engine**; no static keys in k8s/Git. The one deliberate cloud dependency. |
-| **DuckDB** | OLAP engine | Reads Parquet from S3 over `httpfs` — real storage/compute separation; the analytical engine, no always-on warehouse cluster. |
+| **DuckDB** | OLAP engine (lakehouse warehouse engine) | The analytical **query engine** — reads Parquet from S3 over `httpfs` (real storage/compute separation); runs the dbt transforms. Ephemeral/in-process (runs in the transform Job), so it's the engine, not a standing store. |
 | **dbt** (dbt-duckdb / dbt-postgres) | Transformation | Version-controlled, tested SQL; `staging → curated → marts` + MDM conformed dims (`dim_policy/customer/lob/period`) + `fact_policy`. |
-| **CloudNativePG** | Serving warehouse | Gold marts land in `analytics.*` / `lake.*`; HA (2 instances) + R2 PITR. DuckDB is the OLAP engine; CNPG is the low-latency **serving** tier. |
+| **CloudNativePG** | Serving store (gold marts) | The persistent, concurrent, HA **serving tier** BI connects to — gold marts in `analytics.*` / `lake.*`; R2 PITR. DuckDB is the OLAP engine; CNPG is what it materialises *into* (not "the warehouse" on its own). |
 | **Cube** | Semantic layer | Business metrics defined **once** (measures + dimensions over the gold mart); **Metabase consumes it natively via its pg-wire SQL API**; REST/GraphQL for apps + AI. |
 | **Metabase** | BI | Dashboards over the semantic layer, behind Authentik SSO. |
 | **scikit-learn + MLflow** | ML (MLOps) | **MLflow = experiment tracking + model registry** (the shared MLOps backbone). Today a **demonstration** ML asset proves the loop end-to-end (features → train → track → **register** in MLflow) — *not yet a production model*. The first real use cases (need-first) are **claims-fraud / policy-lapse scoring**; the value is the governed, reproducible, versioned pipeline (EU AI Act / DORA). |
