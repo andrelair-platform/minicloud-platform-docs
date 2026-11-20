@@ -4,27 +4,15 @@ title: Data Layer Overview
 sidebar_position: 1
 ---
 
-:::info Status — the as-built platform is LIVE (this page is the map; the detail is the Workflow page)
-The data platform runs an end-to-end **hybrid lakehouse**, live in the `data-platform` namespace:
-**dlt** ingest → **AWS S3** raw lake → **DuckDB + dbt** transform → **CloudNativePG** serving → **Cube**
-semantic layer → **Metabase** BI, with **Dagster** orchestration (webserver + daemon, a daily schedule) +
-**MLflow** ML. The stage-by-stage detail lives on **[Data Platform — Workflow (as-built)](./data-platform-workflow)** —
-this page is the orientation map. Decisions: [ADR-006..011](https://github.com/andrelair-platform/ktayl-data-platform/tree/main/docs/architecture/adr).
-:::
+# ktayl Data Platform
 
+The shared, domain-agnostic **data platform** — it turns the insurer's live operational data into governed
+business intelligence and ML. The full hybrid-lakehouse pipeline is **live** in the `data-platform`
+namespace; this page is the map, the **[Workflow page](./data-platform-workflow)** has the depth.
+Decisions: [ADR-006..011](https://github.com/andrelair-platform/ktayl-data-platform/tree/main/docs/architecture/adr).
 
-# Data Layer — the ktayl Data Platform (as-built)
-
-The data layer turns the insurer's live operational data into governed business intelligence and ML. It
-covers the full chain — **ingest → raw lake → transform → serving warehouse → semantic layer →
-BI / ML**, orchestrated as one asset graph.
-
-:::note Two-layer model — this is a **Platform** capability
-The Data Platform (ingest, OLAP lake, transformation, semantic layer, orchestration) is a **shared,
-domain-agnostic infrastructure capability** — the data equivalent of the [AI Platform](../ai-ml/12-ai-gateway.md).
-The **business data products** built on it (e.g. the `policy_portfolio` mart + dashboards) belong to the
-**Information System** — they are the *consumers* of this capability. Engine → Platform; data products → IS.
-:::
+*A **Platform** capability (the engine, the data equivalent of the [AI Platform](../ai-ml/12-ai-gateway.md));
+the insurance data products built on it (`policy_portfolio` + dashboards) belong to the **IS** (the consumers).*
 
 ---
 
