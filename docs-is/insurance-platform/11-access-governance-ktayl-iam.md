@@ -81,6 +81,17 @@ IMAP/SMTP at once; the mailbox store + its mail are left intact (retention) and 
 re-enabling the user. *(Pre-federation this needed a second step — clearing the Stalwart credential; that
 `createMailbox`/credential path is retired under LDAP, ADR-016.)*
 
+**Password recovery — help-desk-assisted, by deliberate decision (ADR-016).** Authentik now has a **recovery
+flow** (the token-path, set as the brand's `flow_recovery`), so an admin can issue a one-time reset link for
+any user (`createRecoveryLink`) + an external collaborator sets their own initial password via the same invite
+link. **Full *user-initiated* self-service reset is intentionally NOT enabled yet** — and *email* self-service
+can't be the answer here: this is a **unified-credential** platform (mail auth = the SSO password via LDAP), so
+a reset email to the user's own `@devandre.sbs` mailbox is unreadable when they've forgotten that password
+(chicken-and-egg), and most users have no second channel (1/27 have TOTP; no secondary recovery email). So
+reset is **help-desk-assisted** (verify out-of-band → issue the link) — a standard, secure enterprise pattern.
+**Planned (later): mandatory MFA + a TOTP-based self-reset flow** (identify → verify authenticator → set
+password — no email) → tracked as `ktayl-iam#131`; trigger = when TOTP enrollment can be mandated for all users.
+
 ## As-built — governed service accounts (IGA-06, S021–S024)
 
 Non-human (service/technical) identities, governed with the **same four-eyes discipline** as human access.
