@@ -30,10 +30,10 @@ The **business data products** built on it (e.g. the `policy_portfolio` mart + d
 
 ## The real data chain (what runs today)
 
-![ktayl Data Platform — end-to-end workflow: sources → dlt → S3 lake → DuckDB/dbt → CloudNativePG → Cube → Metabase + MLflow, orchestrated by Dagster](/img/architecture/data-platform-workflow.svg)
+![ktayl Data Platform — end-to-end workflow: sources → dlt → S3 lake → DuckDB/dbt → CloudNativePG → Cube → Metabase + MLflow, orchestrated by Dagster](/img/architecture/data-platform-workflow.png)
 
-*Diagram-as-code — [`ktayl-data-platform/docs/diagrams/data_platform_workflow.py`](https://github.com/andrelair-platform/ktayl-data-platform/blob/main/docs/diagrams/data_platform_workflow.py)
-(mingrammer `diagrams` + Graphviz), regenerated from source, not hand-drawn. Solid = data flow · green = serving · dashed amber = Dagster orchestration.*
+*Diagram-as-code — [`data_platform_workflow.py`](https://github.com/andrelair-platform/ktayl-data-platform/blob/main/docs/diagrams/data_platform_workflow.py)
+(mingrammer `diagrams` + Graphviz), regenerated from source. Solid edge = data flow · green = serving · dashed amber = Dagster orchestration.*
 
 ---
 
