@@ -4,145 +4,92 @@ title: Data Layer Overview
 sidebar_position: 1
 ---
 
-:::info Status — the as-built platform is LIVE (start at the Workflow page)
-The data platform now runs an end-to-end **hybrid lakehouse**: **dlt** ingest → **AWS S3** raw lake →
-**DuckDB + dbt** transform → **CloudNativePG** serving → **Cube** semantic layer → **Metabase** BI, with
-**Dagster** orchestration + **MLflow** ML. Start at **[Data Platform — Workflow (as-built)](./data-platform-workflow)**.
-**The Kafka/Redpanda, ClickHouse and OpenMetadata pages describe a path the platform did NOT take** —
-eventing went to **NATS**, the analytics engine to **CNPG + DuckDB**, catalog/lineage to **Dagster assets +
-dbt docs**. They remain clearly-marked design references for the alternatives considered. Doctrine
-throughout: thin vertical slices per live source, need-first — not a big OLAP cluster up-front.
+:::info Status — the as-built platform is LIVE (this page is the map; the detail is the Workflow page)
+The data platform runs an end-to-end **hybrid lakehouse**, live in the `data-platform` namespace:
+**dlt** ingest → **AWS S3** raw lake → **DuckDB + dbt** transform → **CloudNativePG** serving → **Cube**
+semantic layer → **Metabase** BI, with **Dagster** orchestration (webserver + daemon, a daily schedule) +
+**MLflow** ML. The stage-by-stage detail lives on **[Data Platform — Workflow (as-built)](./data-platform-workflow)** —
+this page is the orientation map. Decisions: [ADR-006..011](https://github.com/andrelair-platform/ktayl-data-platform/tree/main/docs/architecture/adr).
 :::
 
 
-# Data Layer — Complete Enterprise Data Platform
+# Data Layer — the ktayl Data Platform (as-built)
 
-The data layer transforms raw events from your platform into actionable business intelligence. It covers the full chain: event ingestion → storage → transformation → orchestration → visualization → governance.
+The data layer turns the insurer's live operational data into governed business intelligence and ML. It
+covers the full chain — **ingest → raw lake → transform → serving warehouse → semantic layer →
+BI / ML**, orchestrated as one asset graph.
 
 :::note Two-layer model — this is a **Platform** capability
-The Data Platform (streaming, OLAP, transformation, catalog) is a **shared, domain-agnostic infrastructure capability** — the data equivalent of the [AI Platform](../ai-ml/12-ai-gateway.md). The **business data products** built on it (e.g. the `policy_portfolio` from [Data Platform — Slice 1](./07-data-platform-slice1.md), insurance BI/dashboards) belong to the **Information System** — they are the *consumers* of this capability. Engine → Platform; data products → IS.
+The Data Platform (ingest, OLAP lake, transformation, semantic layer, orchestration) is a **shared,
+domain-agnostic infrastructure capability** — the data equivalent of the [AI Platform](../ai-ml/12-ai-gateway.md).
+The **business data products** built on it (e.g. the `policy_portfolio` mart + dashboards) belong to the
+**Information System** — they are the *consumers* of this capability. Engine → Platform; data products → IS.
 :::
 
 ---
 
-## Complete Data Chain
+## The real data chain (what runs today)
 
-```text
-┌─────────────────────────────────────────────────────────────────────┐
-│                        DATA SOURCES                                  │
-│  Microservices  │  Databases (CDC)  │  Logs  │  k8s Metrics         │
-└────────┬────────┴────────┬──────────┴───┬────┴────────┬─────────────┘
-         │                 │              │              │
-         ▼                 ▼              ▼              ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                    INGESTION (Kafka / Redpanda)                      │
-│   Topics: events.orders  events.users  db.changes  platform.logs    │
-└──────────────────────────────┬──────────────────────────────────────┘
-                               │
-              ┌────────────────┴────────────────┐
-              ▼                                 ▼
-┌─────────────────────────┐      ┌──────────────────────────┐
-│  Stream Processing      │      │  Batch Loading           │
-│  (Kafka Streams / KSQL) │      │  (Airflow → ClickHouse)  │
-└────────────┬────────────┘      └─────────────┬────────────┘
-             │                                 │
-             └──────────────┬──────────────────┘
-                            ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                    STORAGE (ClickHouse)                              │
-│   raw_events  │  orders  │  users  │  metrics  │  audit_logs        │
-└──────────────────────────┬──────────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                  TRANSFORMATION (dbt)                                │
-│   staging →  intermediate →  marts (finance, product, ops)          │
-└──────────────────────────┬──────────────────────────────────────────┘
-                           │
-              ┌────────────┴────────────┐
-              ▼                         ▼
-┌─────────────────────────┐   ┌────────────────────────────┐
-│   VISUALIZATION         │   │   GOVERNANCE               │
-│   Apache Superset       │   │   OpenMetadata             │
-│   Dashboards / Alerts   │   │   Catalog / Lineage        │
-└─────────────────────────┘   └────────────────────────────┘
-```
+![ktayl Data Platform — end-to-end workflow: sources → dlt → S3 lake → DuckDB/dbt → CloudNativePG → Cube → Metabase + MLflow, orchestrated by Dagster](/img/architecture/data-platform-workflow.svg)
+
+*Diagram-as-code — [`ktayl-data-platform/docs/diagrams/data_platform_workflow.py`](https://github.com/andrelair-platform/ktayl-data-platform/blob/main/docs/diagrams/data_platform_workflow.py)
+(mingrammer `diagrams` + Graphviz), regenerated from source, not hand-drawn. Solid = data flow · green = serving · dashed amber = Dagster orchestration.*
 
 ---
 
-## Stack Components
+## Stack Components (as-built)
 
-| Component | Role | Why This One |
+| Component | Role | Why this one |
 |---|---|---|
-| **Kafka / Redpanda** | Event streaming backbone + CDC | Industry standard; Redpanda is Kafka-compatible without JVM |
-| **ClickHouse** | Columnar analytics warehouse | 100-1000x faster than Postgres for analytics; native Kubernetes support |
-| **dbt** | SQL transformation layer | Version-controlled, tested SQL; model dependency DAGs |
-| **Apache Airflow** | Pipeline orchestration | Already in Phase 16; reused for data pipeline scheduling |
-| **Apache Superset** | Self-hosted BI & dashboards | 40+ chart types; OIDC login via Authentik |
-| **OpenMetadata** | Data catalog, lineage, quality | Unified governance; auto-discovers ClickHouse, dbt, Airflow |
+| **dlt** | Ingest (source → raw lake) | A Python library (zero standing infra); schema inference + incremental; replaces a hand-written script per source. (Over Airbyte/Meltano — adopt those only if broad SaaS-connector coverage becomes the need.) |
+| **AWS S3** (eu-west-1) | Raw lake | Parquet, versioned, SSE-encrypted, private. **Keyless** — short-lived STS via the **Vault AWS secrets engine**; no static keys in k8s/Git. The one deliberate cloud dependency. |
+| **DuckDB** | OLAP engine | Reads Parquet from S3 over `httpfs` — real storage/compute separation; the analytical engine, no always-on warehouse cluster. |
+| **dbt** (dbt-duckdb / dbt-postgres) | Transformation | Version-controlled, tested SQL; `staging → curated → marts` + MDM conformed dims (`dim_policy/customer/lob/period`) + `fact_policy`. |
+| **CloudNativePG** | Serving warehouse | Gold marts land in `analytics.*` / `lake.*`; HA (2 instances) + R2 PITR. DuckDB is the OLAP engine; CNPG is the low-latency **serving** tier. |
+| **Cube** | Semantic layer | Business metrics defined **once** (measures + dimensions over the gold mart); **Metabase consumes it natively via its pg-wire SQL API**; REST/GraphQL for apps + AI. |
+| **Metabase** | BI | Dashboards over the semantic layer, behind Authentik SSO. |
+| **scikit-learn + MLflow** | ML | Models are Dagster assets, trained + tracked + **registered** in the platform MLflow (governed, reproducible — EU AI Act / DORA). |
+| **Dagster** | Orchestration | dlt + dbt + ML as **one asset graph** with lineage, backfills, run observability; webserver + daemon run a **daily** schedule. |
 
 ---
 
-## Data Namespace Layout
+## Where it lives
 
 ```bash
-kubectl get namespaces | grep data
-# data-platform        kafka, redpanda, schema-registry
-# data-warehouse       clickhouse
-# data-transform       dbt (k8s Job / Airflow tasks)
-# data-viz             superset
-# data-catalog         openmetadata
+# one namespace holds the whole platform
+kubectl --context minicloud get all -n data-platform
+# the ingest + transform CronJobs
+kubectl --context minicloud get cronjob -n data-platform
+# Dagster (asset graph + lineage UI; webserver + daemon)
+kubectl --context minicloud get deploy dagster -n data-platform
 ```
+
+GitOps: `minicloud-gitops/platform/data/data-platform/`. Code: the
+[`ktayl-data-platform`](https://github.com/andrelair-platform/ktayl-data-platform) repo (dlt sources, the
+dbt project, the Cube model, the Dagster definitions).
 
 ---
 
-## Kafka Topic Naming Convention
+## Paths considered but NOT taken (design references, not the as-built)
 
-```text
-<domain>.<entity>.<event-type>
+Three pages in this section describe a **different architecture that was evaluated and deliberately not
+built** — kept as honest "alternatives considered" references, each marked with a banner:
 
-Examples:
-  orders.order.created
-  orders.order.fulfilled
-  payments.payment.processed
-  users.user.registered
-  platform.k8s.pod-started
-  db.postgres.changes           ← CDC via Debezium
-```
+| Page | Planned for | What we run instead | Why |
+|---|---|---|---|
+| [Kafka / Redpanda](./kafka-redpanda) | event streaming backbone | **NATS** (already the platform bus) + **dlt** batch ingest | no second broker to run; need-first, not a streaming platform up-front |
+| [ClickHouse](./clickhouse) | columnar OLAP warehouse | **DuckDB** over the **S3** lake + **CNPG** serving | storage/compute separation without a standing analytics cluster |
+| [OpenMetadata](./openmetadata) | catalog + lineage | **Dagster assets** (lineage) + **dbt docs** | lineage comes free from the asset graph; no separate catalog service to operate |
 
----
-
-## Data Flow: Order Processing Example
-
-```text
-1. Order service publishes to Kafka topic: orders.order.created
-2. ClickHouse Kafka engine ingests rows in real time
-3. Airflow triggers dbt daily run at 06:00 UTC
-4. dbt builds mart_orders (aggregated, enriched)
-5. Superset dashboard "Orders KPIs" auto-refreshes
-6. OpenMetadata shows lineage: kafka → clickhouse → dbt → superset
-```
+Doctrine throughout: **thin vertical slices per live source, need-first** — not a big OLAP cluster
+up-front. What's deliberately deferred (and the exact trigger for each) is the standing
+[ADR-011 deferred-capability register](https://github.com/andrelair-platform/ktayl-data-platform/blob/main/docs/architecture/adr/ADR-011-right-sizing-deferred-capability-triggers.md).
 
 ---
 
-## Infrastructure Requirements
+## Read next
 
-| Component | CPU | Memory | Storage | Notes |
-|---|---|---|---|---|
-| Redpanda (3 brokers) | 2 CPU each | 4 Gi each | 50 Gi SSD | Use Longhorn storage class |
-| ClickHouse | 4 CPU | 8 Gi | 200 Gi | ReplicatedMergeTree for HA |
-| dbt | 0.5 CPU | 512 Mi | — | Runs as k8s Job / Airflow task |
-| Superset | 1 CPU | 2 Gi | 10 Gi | Postgres for metadata |
-| OpenMetadata | 2 CPU | 4 Gi | 20 Gi | Elasticsearch + MySQL backend |
-
----
-
-## Done When
-
-```text
-✔ Kafka topics receive events from at least one microservice
-✔ ClickHouse ingesting from Kafka in real time
-✔ dbt models transform raw → mart tables on schedule
-✔ Superset dashboard shows live order/user metrics
-✔ OpenMetadata catalogs all datasets with lineage
-```
+- **[Data Platform — Workflow (as-built)](./data-platform-workflow)** — the stage-by-stage detail + the live diagram (start here for depth).
+- **[Slice 1](./07-data-platform-slice1.md)** — the first vertical slice (`policy_portfolio`), the historical starting point.
+- **[Target Architecture](./08-data-platform-target.md)** — the direction this realises.
+- **[dbt](./dbt)** — the transformation layer in detail.
