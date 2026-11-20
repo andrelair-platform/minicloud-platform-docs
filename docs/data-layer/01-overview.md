@@ -25,6 +25,10 @@ swappable IS layer — see *Domain-agnostic* below.*
 
 ![minicloud Data Platform — end-to-end workflow: sources → dlt → S3 lake → DuckDB/dbt → CloudNativePG → Cube → Metabase + MLflow, orchestrated by Dagster](/img/architecture/data-platform-workflow.png)
 
+*Boxes are grouped by **capability category** (same colour = same category): **Data Ingestion & Pipelines**
+(dlt + Dagster) · **Data Lakes & Warehouses** (S3 raw lake + CNPG serving warehouse) · **Transformation &
+Semantic Layer** (DuckDB/dbt + Cube) · **BI & AI Analytics** (Metabase + MLflow).*
+
 ---
 
 ## Stack Components (as-built)
