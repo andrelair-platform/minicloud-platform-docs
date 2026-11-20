@@ -92,6 +92,24 @@ reset is **help-desk-assisted** (verify out-of-band → issue the link) — a st
 **Planned (later): mandatory MFA + a TOTP-based self-reset flow** (identify → verify authenticator → set
 password — no email) → tracked as `ktayl-iam#131`; trigger = when TOTP enrollment can be mandated for all users.
 
+## As-built — self-service "My Access" + batch access-requests (ADR-017)
+
+Two user-facing additions (live dev+prod):
+- **My Access** (`/me/access`, `GET /access/me`) — any employee sees their **own complete access picture** in a
+  table, each row tagged by **why** they have it: **Governed** (earned via four-eyes — the governance platform's
+  assignments), **Birthright** (the `Workplace Users` baseline), or **Direct** (another Authentik group). It
+  merges the governed assignments with the user's **live Authentik group memberships**. Self-scoped (the matricule
+  comes from the session, never the path); read-only — grants only ever change via request → four-eyes. The
+  admin-only who-has-what/audit views are unchanged (`@AdminOnly` moved to those methods).
+- **Batch access-requests** — request **several roles as one *demande*** under a single trackable **`batch_id`
+  instance**. Crucially **each role keeps its own two-leg four-eyes** (manager + *that role's* owner) — the batch
+  is a grouping, not a combined approval — so a role is **granted as soon as its own two approvals clear**, and a
+  batch is "complete" only when every role's four-eyes does. `POST /requests/batch` + `GET /requests/batch/:id`
+  (a tracking view with a derived summary) make it obvious **which role is blocked and on which leg** (e.g.
+  *Underwriting: manager ✓ / owner ⏳ → waiting on the owner*). The request form gains a multi-role basket;
+  **My requests** groups by batch instance. Per-leg approval tracking + the stable `request.id` already existed —
+  this adds the self-view + the batch grouping on top, with the four-eyes guarantee unchanged.
+
 ## As-built — governed service accounts (IGA-06, S021–S024)
 
 Non-human (service/technical) identities, governed with the **same four-eyes discipline** as human access.
