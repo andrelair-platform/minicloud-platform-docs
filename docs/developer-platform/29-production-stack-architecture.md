@@ -134,8 +134,8 @@ hard pin.
 |-----------|-------|
 | Nodes | 5 ThinkPads + MacBook Pro 2012 — 44 cores / ~84 GiB (1 control-plane + 5 workers) |
 | k3s version | v1.36.3+k3s1 (all 6 nodes) |
-| ArgoCD apps | ~93 live applications |
-| PrometheusRule objects | 53 (monitoring ns + podinfo) |
+| ArgoCD apps | ~119 live applications |
+| PrometheusRule objects | 68 (cluster-wide) |
 | Grafana dashboards | 43+ |
 | GitOps repos | 11 (all images → ghcr.io, SHA-tagged, cosign-signed + SBOM — dev AND prod) |
 | Phases complete | 0–90 |
@@ -178,7 +178,7 @@ Developer push to main → GitHub Actions (CI)
                               └── CODEOWNERS-gated PR → prod     (Argo CD syncs)
 ```
 
-ArgoCD manages ~93 apps via the app-of-apps pattern from `minicloud-gitops`. All Helm values live in `helm-values/`, never in `minicloud-ansible/`.
+ArgoCD manages ~119 apps via the app-of-apps pattern from `minicloud-gitops`. All Helm values live in `helm-values/`, never in `minicloud-ansible/`.
 
 **Argo Rollouts** handles progressive delivery:
 - `platform-demo`: Canary 50% → AnalysisRun (Prometheus gates) → 100%
@@ -190,7 +190,7 @@ ArgoCD manages ~93 apps via the app-of-apps pattern from `minicloud-gitops`. All
 |-----------|------|
 | Vault (HashiCorp CE) | PKI, secrets, AWS KMS auto-unseal, fast-heron pinned |
 | ESO | ExternalSecrets from Vault KV to k8s Secrets |
-| Gatekeeper OPA | 18 constraints: require-non-root, no-privilege-escalation, no-hostpath, block-capabilities, require-seccomp, and more |
+| Gatekeeper OPA | 14 constraints: require-non-root, no-privilege-escalation, no-hostpath, block-capabilities, require-seccomp, and more |
 | Falco | Runtime syscall monitoring, DaemonSet |
 | cert-manager | Let's Encrypt (public) + minicloud CA (internal) |
 | Vaultwarden | Timshel fork 1.34.1-6, SSO via Authentik |
@@ -258,7 +258,7 @@ The observability stack uses five complementary tools:
 
 | Tool | Purpose | Key metric |
 |------|---------|-----------|
-| Prometheus | metrics collection + alerting | 53 PrometheusRule objects |
+| Prometheus | metrics collection + alerting | 68 PrometheusRule objects |
 | Grafana | dashboards + explore | 43+ dashboards, TraceQL, LogQL |
 | Loki | log aggregation | OTLP native, 30-day retention, LogQL ruler |
 | Tempo 2.9.0 | distributed tracing | TraceQL, tracesToLogsV2, 14-day retention |
