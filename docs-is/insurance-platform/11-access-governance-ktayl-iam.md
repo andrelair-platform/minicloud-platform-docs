@@ -209,11 +209,16 @@ Certification: **BC03 (déployer & sécuriser)**.
 - **Initial mailbox password is deliver-then-rotate (MVP)** — the Joiner stores a generated password to
   hand off; a self-service first-login rotation is a follow-up.
 - **MemoryStore sessions** (single-replica) → move to a shared store before prod HA.
-- **Internal-employee contract-end access-expiry (ADR-014) — designed, build-deferred (need-first).** A
-  fixed-term employee (CDD/Alternance/Stage) should tie access-expiry to their ERPNext `contract_end_date` by
-  **reusing the existing leaver sweep** (scheduled revocation; CDI = open-ended). Design is accepted; build
-  waits on the **first real fixed-term employee** (today all internal staff are CDI) + the ERPNext HR-lifecycle
-  producer emitting `employment_type`/`contract_end_date`. A documented scope boundary, not a gap.
+
+**Internal-employee contract-end access-expiry (ADR-014) — BUILT + LIVE on dev+prod (2026-11-20).** A
+fixed-term employee (CDD/Alternance/Stage) now ties access-expiry to their ERPNext `contract_end_date` by
+**reusing the existing leaver sweep** (scheduled revocation; CDI = open-ended, no expiry). The identity mirrors
+`employment_type` + `contract_end_date` from the HR-lifecycle event; `onJoinerOrMover` revokes immediately if the
+contract already ended (catch-up), and the daily sweep revokes fixed-term identities whose contract end has passed
+— one `revokeAccess` path shared with the Leaver flow (DRY). Shipped as the IAM mirror (ktayl-iam #124) + the
+ERPNext producer emitting the two fields (minicloud-erpnext #29). Verified end-to-end on prod through the real
+signed producer: future-dated CDD → mirror only; past-dated CDD → mirror + auto-revoke. It is **inert for CDI**
+(today all internal staff are CDI) so it waits harmlessly for the first fixed-term hire.
 
 Full detail + rationale: `ktayl-iam` repo `docs/` (brief · prd · `architecture/solution-architecture` ·
 `nfr-register` · `threat-model` · `adr` · access-role-model · app-authz-bindings) + the HR-lifecycle module
