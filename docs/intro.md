@@ -11,12 +11,20 @@ slug: /
 
 ---
 
+## In 20 seconds
+
+> **minicloud** is a sovereign **private cloud *and* Internal Developer Platform** (IDP), built from open-source tools on **6 second-hand laptops** — and **ktayl-solution**, a simulated insurer's **information system**, runs on top of it. A third thing, **Retrieva** (RNCP39583 / DORA third-party-risk), is a *separate product* that also runs on it.
+>
+> *The Platform **provides** the capabilities; the IS **consumes** them to do insurance. Litmus test — "if ktayl stopped selling insurance tomorrow, would this survive?" → **Yes = Platform · No = IS**.*
+
+---
+
 ## Two pillars — pick your layer
 
 This documentation is organised in **two layers** that mirror how the system really works: an application layer running **on top of** an infrastructure layer. Use the top navigation.
 
 - **🏗 Platform** — *minicloud*: a sovereign **private cloud** *and* an **Internal Developer Platform (IDP)** — i.e. two hats on one stack. The **cloud** half *provides* the capabilities a public cloud sells (MAAS bare-metal, k3s, networking, storage, registry, secrets, identity-as-a-service, observability, the AI & data platforms) — all FOSS, self-hosted, EU-sovereign; the **IDP** half is the **golden paths developers self-serve on** so they don't hand-roll infra (Backstage portal + scaffolders, GitOps/ArgoCD, Kargo dev→prod promotion, the wrapper-chart standard, CI guardrails). → Start at **[Production Stack Architecture](/platform/developer-platform/production-stack-architecture)**.
-  > *(“IDP” here = **Internal Developer Platform**, the paved-road layer — not to be confused with **IdP**, an **Identity Provider**; that’s Authentik, one of the capabilities the platform provides.)*
+  > *("IDP" here = **Internal Developer Platform**, the paved-road layer — not to be confused with **IdP**, an **Identity Provider**; that's Authentik, one of the capabilities the platform provides.)*
 - **🏢 Information System** — *ktayl-solution*: the business system that runs **on** the platform — a simulated commercial-lines (IARD) insurer's IS (business applications, insurance domains, data platform, governance). → Start at **[Insurance Platform → Architecture at a Glance](/is/insurance-platform/architecture-at-a-glance)**.
 
 *(This page is the neutral home — reach it any time via the minicloud logo.)*
@@ -55,198 +63,9 @@ The platform alone is equivalent to: AWS EC2 + VPC + auto-provisioning — but l
 
 ---
 
-## Complete Roadmap
+## Dig deeper
 
-Each phase builds directly on the previous one — nothing requires something that hasn't been set up yet.
-
-**How to read this table:**
-
-| Column | What it means |
-|---|---|
-| **Phase** | The build step's number, in the order it was implemented (each builds on the ones before). A few later entries are named by theme (e.g. *AI Gateway*, *Security gaps*) rather than a number. |
-| **Topic** | *What* was built in that phase + the key decisions/results (and anything deliberately deferred). |
-| **Key Technology** | The main tools/components introduced in that phase. |
-| **Status** | Delivery state — ✅ Done (built + verified) · 🔜 planned/next. |
-
-:::note This is a historical log
-The phases below record *what was built and when* — some entries name things since **superseded**, and
-are flagged inline with **⚠️** where a reader might otherwise take them as current. Known supersessions:
-**Ollama → retired in favour of vLLM**; **Flannel → migrated to Cilium** (Phase 22 since executed);
-**`staging` environment retired (2026-08-30) → the standard is now exactly two environments, `dev` + `prod`**;
-**ArgoCD image-bump promotion → Kargo** (multi-stage `dev → prod`, protected prod PR with required checks and maintainer merge); **Harbor fully decommissioned (2026-11-16) → ghcr.io is the single registry for dev AND prod** (the earlier "Harbor dev-only / hybrid" note is itself superseded); earlier k3s versions;
-"4-node" / "23-namespace" counts predate the current **6-node** cluster
-(`loving-gannet` added) and its ~74 namespaces. For the authoritative **current live state**, see
-[Current Stack (Live)](#current-stack-live) below. History is kept as-is; only the current-state
-sections are updated.
-:::
-
-| Phase | Topic | Key Technology | Status |
-|---|---|---|---|
-| **0** | MAAS + bare-metal provisioning (4× ThinkPad via PXE + 1× MacBook Pro via USB) | MAAS, PXE, cloud-init | ✅ Done |
-| **1** | Kubernetes cluster | k3s | ✅ Done |
-| **2** | kubectl local access | kubeconfig | ✅ Done |
-| **3** | Remote access from anywhere | Tailscale, Cloudflare Tunnel, Homer | ✅ Done |
-| **4** | Load balancer IPs on bare-metal | MetalLB | ✅ Done |
-| **5** | Persistent storage | Longhorn, NFS | ✅ Done |
-| **6** | Expose apps to the network | F5 NGINX Ingress | ✅ Done |
-| **7** | Private container registry | Harbor + Trivy | ✅ Done |
-| **8** | Cluster monitoring | Prometheus, Grafana | ✅ Done |
-| **9** | First real workload | podinfo, HPA, ServiceMonitor | ✅ Done |
-| **10** | Infrastructure automation | Ansible | ✅ Done |
-| **11** | Infrastructure as Code | OpenTofu (MAAS) — Crossplane deferred | ✅ Done |
-| **12** | GitOps deployment | ArgoCD (App-of-Apps) | ✅ Done |
-| **13** | CI/CD pipelines | GitHub Actions + ghcr.io + ArgoCD image promotion | ✅ Done |
-| **14** | Backup & disaster recovery | Velero + MinIO on controller + hourly k3s SQLite pull | ✅ Done |
-| **15** | TLS / cert-manager (internal PKI) — Vault + RBAC deferred | cert-manager, self-signed root CA | ✅ Done |
-| **16** | Harbor as Sovereign Registry — 4 proxy-cache projects, mirror+fallback, supply-chain control point. Original n8n/Temporal/Airflow plan deferred. | Harbor proxy cache | ✅ Done |
-| **17** | Event-driven autoscaling — KEDA + NATS JetStream HA, scale-to-zero verified end-to-end | KEDA, NATS | ✅ Done |
-| **18** | Backstage minimal IDP — catalog-only, off-the-shelf image, Vault/plugins/templates deferred | Backstage | ✅ Done |
-| **19** | Self-hosted AI — Ollama (CPU, llama3.2:3b, ~13 TPS) + Open WebUI chat. MLflow + Kubeflow deferred. **⚠️ Ollama since retired → replaced by vLLM (see Current Stack).** | Ollama *(retired)*, Open WebUI | ✅ Done |
-| **20** | Reliability & chaos engineering — 3 validation experiments on podinfo: PodChaos (0 ms downtime under 5 pod kills), NetworkChaos (200 ms latency injection + clean recovery), StressChaos (contained cgroup OOM, 0 node-mate restarts). NodeChaos / dashboard Ingress / automated GameDays deferred. | Chaos Mesh | ✅ Done |
-| **21** | Logs (Loki single-binary, Promtail DaemonSet, Grafana datasource) + Alertmanager 3-tier routing tree + in-cluster webhook receiver + custom `PodinfoAvailabilityLost` rule. End-to-end alert validated via Chaos Mesh kill-both-replicas → webhook receives FIRING JSON. **Jaeger / distributed tracing deferred** — no multi-service topology to trace. | Loki, Promtail, Alertmanager | ✅ Done |
-| **22** | eBPF networking — **migration runbook authored, execution deferred to fresh-cluster rebuild**. cilium CLI installed on controller; dry-run helm values captured. Senior scope-reduction call: 111 live pods + 22 phases of validated infrastructure on top of Flannel make hot CNI swap not worth it at our cluster scale. **⚠️ Since executed — Cilium is now the live CNI (Flannel retired); Cilium + cilium-envoy DaemonSets run 6/6.** | Cilium, Hubble | ✅ Done |
-| **23** | Enterprise SSO — Authentik as IdP; 11/13 apps on SSO. 5 via native OIDC (ArgoCD, Grafana, Harbor, MinIO, Open WebUI), 5 via forward-auth Outpost (Homer, podinfo, platform-demo, whoami, NATS). Backstage + MAAS deferred. | Authentik, OIDC, forward-auth | ✅ Done |
-| **24** | Backstage custom image — org-owned build (bcec03f); Authentik OIDC SSO; Kubernetes, ArgoCD, TechDocs, Grafana plugins; published to Harbor. | Backstage, crane, Harbor, Authentik | ✅ Done |
-| **25** | Public access via Cloudflare Tunnel — `*.devandre.sbs` live (10/10 apps, no Tailscale). Authentik OIDC issuers migrated to `auth.devandre.sbs`. Forward-auth extended to `devandre.sbs` cookie domain. `originServerName` per cloudflared rule to fix TLS SNI on IP origin. UFW host firewall on controller. All smoke tests green. | Cloudflare Tunnel, cloudflared, Authentik forward-auth, UFW | ✅ Done |
-| **26** | Secrets management — Vault 2.0.2 with Raft on Longhorn. KV v2 (5 platform credentials + demo secret). Kubernetes auth backend. Agent Injector verified on platform-demo (2/2 pods, /vault/secrets/config injected). ArgoCD proxy fix (MAAS Squid) as bonus fix. | HashiCorp Vault, Raft, Vault Agent Injector | ✅ Done |
-| **27** | Policy as code — OPA/Gatekeeper 3.22.2 admission controller. 3 enforced policies: block `:latest` tags, no privileged containers, require resource limits. Audit cycle confirmed 0 violations across all platform namespaces. All 3 rejection demos verified live. | OPA, Gatekeeper, Rego | ✅ Done |
-| **28** | Runtime threat detection — Falco 0.44.1 DaemonSet (3/3 nodes) via modern_ebpf driver (BPF CO-RE, kernel 6.8, no headers). 2 live detections: `Contact K8S API Server From Container` (Vault pod, MITRE T1565) + `Read sensitive file untrusted` (cat /etc/shadow). Two install gotchas: Squid proxy for falcoctl + inotify exhaustion on control-plane. | Falco, eBPF, BPF CO-RE | ✅ Done |
-| **29** | CIS Kubernetes Benchmark — kube-bench v0.9.4 scored against k3s-cis-1.8. Control-plane: 49 PASS / 6 FAIL / 55 WARN. All 6 FAILs are k3s false positives (kube-bench scans kubelet CLI args; k3s configures these through config file + auto-provisioned certs). Verified: anonymous-auth disabled (401), read-only-port closed. Gatekeeper + Vault already satisfy 4 of the WARN items. | kube-bench, CIS Benchmark | ✅ Done |
-| **30** | Supply chain security — Cosign keyless signing (GitHub OIDC → Sigstore Fulcio CA, no key management) + syft CycloneDX SBOM generation integrated into platform-demo GHA CI. Signatures and SBOM attached as OCI referrers on ghcr.io. Gatekeeper `K8sAllowedRegistries` policy (warn): 116 violations audited across Helm workloads; platform-demo compliant (Harbor proxy prefix). Full chain: GHAS → Cosign/SBOM → Harbor Trivy → Gatekeeper → Falco. | Cosign, syft, Sigstore, OCI referrers | ✅ Done |
-| **56** | Multi-environment namespaces — namespace-based isolation (`{team}-{env}` convention) for `insurance` and `collab` teams across dev/staging/prod. ArgoCD ApplicationSet matrix generator creates 6 apps automatically. Per-env ResourceQuota (dev: 500m/1Gi, staging: 1/2Gi, prod: none) + LimitRange defaults. 15 Cloudflare Tunnel routes for env-prefixed public subdomains. CI pipeline yq bug fixed (Deployment-only targeting) + Harbor push via crane. **⚠️ Since superseded — `staging` retired (2026-08-30); the standard is now exactly two environments (`dev` + `prod`). The `{team}-{env}` ApplicationSet matrix was replaced by per-service Kustomize overlays (`base` + `minicloud-1/{dev,prod}`), now migrating to Helm wrapper charts (GAP golden path); promotion is via **Kargo** (`dev → prod`, protected production PR + required checks + maintainer merge), not the matrix generator.** | ArgoCD ApplicationSet, Kustomize, ResourceQuota, LimitRange | ✅ Done |
-| **57** | Nextcloud 33 + Authentik OIDC — on-cluster document collaboration; `user_oidc` 8.10.1 auto-provisions users from Authentik; available at `cloud.devandre.sbs`. | Nextcloud, user_oidc, Authentik | ✅ Done |
-| **58** | Vault GitOps migration + CoreDNS completions — Vault adopted into ArgoCD app-of-apps (multi-source Helm); all 12 `*.devandre.sbs` hostnames resolve in-cluster via CoreDNS `coredns-custom` ConfigMap. | ArgoCD multi-source, CoreDNS | ✅ Done |
-| **59** | External Secrets Operator + Vault KV — ESO 0.10.7, ClusterSecretStore `vault-backend` (Kubernetes auth), 9 ExternalSecrets (all platform credentials pulled from Vault KV v2 into cluster Secrets). | ESO, Vault KV v2 | ✅ Done |
-| **60** | Cert observability — `cert-manager` ServiceMonitor scraped by Prometheus, Grafana dashboard 20842, 3 PrometheusRule alerts (expiring within 14 d warning, 3 d critical, not-ready). | cert-manager, Prometheus, Grafana | ✅ Done |
-| **62** | IAM hardening — Ansible-managed k3s OIDC authenticator, kubelogin-based `minicloud-oidc` context, and dedicated Authentik access groups (`k8s-cluster-admins`, `k8s-cluster-viewers`, `k8s-dev-editors`) mapped through GitOps RBAC; direct OIDC user binding removed after fresh-token validation. | kubelogin, OIDC, RBAC | ✅ Done |
-| **63** | Cluster hardening — SSH hardened on all 4 nodes (`PasswordAuthentication no`, `PermitRootLogin no`), UFW default-deny on all nodes, k3s audit policy + AES-CBC-256 secrets encryption at rest, k3s upgraded to v1.36.1. | UFW, k3s audit, encryption-at-rest | ✅ Done |
-| **64** | Namespace isolation — default-deny NetworkPolicy ingress on all 23 platform namespaces, ResourceQuota + LimitRange on 8 namespaces, flannel VTEP fix (`10.42.0.0/24` in webhook allowlists). | NetworkPolicy, ResourceQuota, flannel | ✅ Done |
-| **65** | Vault auto-unseal via AWS KMS — KMS key `vault-auto-unseal` (eu-west-1), IAM user `vault-kms-unseal` scoped to `kms:Encrypt/Decrypt/DescribeKey`, seal migration verified (delete pod → 1/1 Ready in ~30 s, zero human input). | Vault, AWS KMS | ✅ Done |
-| **66** | Ollama local-path migration — both Ollama instances (fast-heron + star-kitten) pinned via `nodeSelector`, PVCs migrated Longhorn → local-path NVMe (model weights are re-downloadable). 4 models: phi3-financial, phi3.5, llama3.2:3b, llama3.2:1b. **⚠️ Ollama since retired → vLLM (Phi-3) is the current local backend.** | Ollama *(retired)*, local-path, nodeSelector | ✅ Done |
-| **67** | Pod security hardening — PSA `warn:restricted` on all 23 namespaces, `enforce:restricted` on homer/podinfo/collab/insurance, 9 Gatekeeper admission policies in **deny** mode with **0 violations** (no-root, no-privileged, approved-registry, resource-limits, TLS-only ingress, no-LB-in-dev, no-hostPath, no-latest-tag, no-privilege-escalation). | PSA, Gatekeeper, Rego | ✅ Done |
-| **AI Gateway** | Enterprise LLM gateway — LiteLLM 1.90.3 proxy with 7 cloud providers (Groq, OpenAI, Gemini, DeepSeek, Mistral, Anthropic Claude, HuggingFace featherless-ai) + a local **vLLM** backend (Phi-3, on-cluster CPU; *Ollama retired*). Fallback chain (cloud primary → local vLLM, weight 1). **Circuit breaker** (3 failures → 60 s cooldown). **3-tier dept key governance** — 15 virtual keys with $5/$30/$100 monthly budget caps and 50k/100k/200k TPM limits. Valkey exact-match prompt cache (10 min TTL). Presidio PII/DLP pre-call guardrail. detect_secrets credential scanner. Langfuse tracing on every call. **Grafana cost dashboard** (8 SQL panels against LiteLLM PostgreSQL). | LiteLLM, Ollama, Valkey, Presidio, Langfuse | ✅ Done |
-| **LLM Observability** | Langfuse 3.201.1 — traces every LiteLLM call with token counts, cost, model, department metadata, and latency. ClickHouse columnar store + Valkey + PostgreSQL + MinIO (S3 blobs). Authentik OIDC SSO; pre-provisioned org `minicloud-platform` + project `ai-gateway` via init env vars. | Langfuse, ClickHouse, Valkey | ✅ Done |
-| **Security gaps** | Full security hardening — supply chain (Cosign + SBOM on both CIs, Dependabot on 4 repos, GPG-signed commits + branch protection on main), ingress & edge (HSTS globally, rate limiting, Authentik forward-auth on Prometheus/Alertmanager/Polaris), ArgoCD hardening (admin disabled, AppProject with explicit source/destination/resource whitelist). Regression check #19: **42 PASS / 0 FAIL / 0 WARN**. | Cosign, GPG, AppProject, NGINX | ✅ Done |
-| **Observability gaps** | Full observability — Falco Sidekick → Alertmanager pipeline (failed logins, new cluster-admin, privileged pod alerts), Polaris workload quality scorer at `polaris.10.0.0.200.nip.io`, DB backup scripts (pg_dump → MinIO nightly), Vault raft snapshots (nightly), backup DR PrometheusRules (VeleroBackupFailed, MinioDiskFull), DR runbook (7 scenarios). | Falco Sidekick, Polaris, Alertmanager | ✅ Done |
-| **Monitoring audit** | Full k8s monitoring gap analysis — `PodStuckPending` + `ContainerOOMKilled` PrometheusRules, 9-panel Workload Health Grafana dashboard, Alertmanager SMTP receiver (Phase 78 Stalwart), socat DaemonSet proxy for scheduler + controller-manager (`hostNetwork: true` on set-hog). Kine/SQLite discovery: cluster has no embedded etcd — `kine_sql_*` metrics already flow via `kps-apiserver`. **Verdict: 6/6 data sources ✅ · 9/9 important metrics ✅ · 3/3 tools ✅** | PrometheusRule, Grafana ConfigMap, socat, kube-state-metrics | ✅ Done |
-| **App monitoring** | Application-level RED metrics (Rate · Errors · Duration) — `platform-demo` + `minicloud-plane` instrumented with `prometheus/client_golang`, ServiceMonitors wired per overlay, NGINX Ingress PodMonitor + `enableLatencyMetrics`, CI bump-gitops used `--admin` at the time; this historical bypass is superseded by normal protected PR merges. Three blocking fixes: wrong Prometheus service name in AnalysisTemplate (`kube-prometheus-stack-prometheus` → `kps-prometheus`), NetworkPolicy blocking Argo Rollouts → Prometheus, `kubectl-argo-rollouts` plugin missing. **Canary AnalysisRuns now pass.** | prometheus/client_golang, ServiceMonitor, PodMonitor, Argo Rollouts | ✅ Done |
-| **68–69** | minicloud-plane — Go microservice: Plane CE API client + webhook→NATS bridge + Backstage plugin (`EntityPlaneIssuesContent`) | Go, NATS JetStream, Plane CE, Backstage plugin | ✅ Done |
-| **70** | Backstage Software Templates — `go-service` golden-path scaffold (service + gitops + catalog auto-generated, CI skeleton, PR workflow) | Backstage scaffolder, Nunjucks | ✅ Done |
-| **71** | Backstage TechDocs — MkDocs local builder + publisher, `mkdocs-techdocs-core`, docs scaffolded into every new service | TechDocs, MkDocs | ✅ Done |
-| **73** | Argo Rollouts — canary deployment for `platform-demo` (50 % → Prometheus `AnalysisTemplate` → 100 %) | Argo Rollouts v1.9, canary, Prometheus | ✅ Done |
-| **74** | VPA `updateMode:Auto` — backstage, langfuse-web, litellm; ClickHouse + Prometheus stay Off | VPA Fairwinds v4, vertical autoscaling | ✅ Done |
-| **75** | Stakater Reloader + ArgoCD controller memory fix (OOMKill at 1 Gi / 183 restarts) | Reloader v1.4, ArgoCD 2 Gi controller | ✅ Done |
-| **76** | Matrix Synapse + Element Web — federated instant messaging, Authentik OIDC SSO, 9 installation gotchas resolved | Matrix Synapse v1.156, Element Web v1.11 | ✅ Done |
-| **77** | Jitsi Meet — self-hosted video conferencing, JVB hostNetwork on star-kitten, Authentik forward-auth | Jitsi Meet v2.21, JVB, WebRTC | ✅ Done |
-| **78** | Stalwart Mail Server — SMTP/IMAP/IMAPS, JMAP management API, Alertmanager STARTTLS integration, Onboard Employee template | Stalwart v0.16.13, JMAP | ✅ Done |
-| **79** | ERPNext / Frappe HR — HR source of truth, Authentik OIDC SSO, employee-created webhook triggers Backstage scaffolder | ERPNext v16.28, Frappe, MariaDB | ✅ Done |
-| **80** | Amazon SES outbound relay — STARTTLS relay via Stalwart, SPF / DKIM / DMARC, production access submitted | Amazon SES eu-west-1, SMTP relay | ✅ Done |
-| **—** | **Data Layer** | Kafka/Redpanda, ClickHouse, dbt, Superset, OpenMetadata | 🔜 |
-
----
-
-## Current Stack (Live)
-
-```text
-── INFRASTRUCTURE ──────────────────────────────────────────────────
-MAAS          → bare-metal provisioning (ThinkPads via PXE, MacBook via USB)
-k3s v1.36.3+k3s1 → Kubernetes cluster (1 control-plane + 5 workers, upgraded via system-upgrade-controller)
-MetalLB       → load balancer IPs (10.0.0.200)
-Longhorn       → distributed block storage
-local-path     → NVMe-backed storage (LLM model weights)
-ghcr.io       → the single container registry for dev AND prod (SHA-tagged, Trivy-scanned, cosign-signed + SBOM). Harbor decommissioned 2026-11-16 — the old dev→Harbor/prod→ghcr hybrid is retired.
-
-── AUTOMATION & DELIVERY ───────────────────────────────────────────
-Ansible       → infrastructure automation
-OpenTofu      → IaC for MAAS resources
-ArgoCD        → GitOps app-of-apps (AppProject with explicit whitelist)
-Kargo         → multi-stage promotion (dev auto; prod protected PR + required checks + maintainer merge; 6 custom services)
-GitHub Actions→ CI/CD (cosign-signed, GPG-signed; push to ghcr.io)
-ESO           → External Secrets Operator (9 ExternalSecrets ← Vault)
-
-── PLATFORM SERVICES ───────────────────────────────────────────────
-Velero + MinIO → backup & disaster recovery (daily + k3s snapshots)
-Vault         → secrets management (AWS KMS auto-unseal, Raft)
-KEDA          → event-driven autoscaling (NATS JetStream)
-NATS          → message broker (JetStream HA)
-Backstage     → developer portal (Authentik OIDC, TechDocs, Software Templates, K8s + ArgoCD + Grafana plugins)
-Argo Rollouts → canary progressive delivery (platform-demo, analysis via Prometheus)
-VPA           → vertical pod autoscaler (Auto mode: backstage, litellm, langfuse-web)
-Reloader      → zero-downtime ConfigMap/Secret hot-reload (homer, backstage, litellm, searxng)
-Plane CE      → project management (plane.devandre.sbs)
-minicloud-plane → Go Level 4 API: Plane ↔ NATS ↔ Backstage integration
-ERPNext v16   → HR source of truth + employee onboarding webhook (erp.devandre.sbs)
-
-── COLLABORATION ────────────────────────────────────────────────────
-Stalwart v0.16 → self-hosted mail (SMTP/IMAP, Amazon SES relay, JMAP API)
-Matrix Synapse→ federated chat server (Authentik OIDC, PostgreSQL, Redis)
-Element Web   → Matrix client (element.devandre.sbs)
-Jitsi Meet    → video conferencing (JVB hostNetwork on star-kitten, Tailscale-only ICE)
-Nextcloud     → file collaboration + OnlyOffice .docx editing (Authentik SSO)
-
-── OBSERVABILITY ───────────────────────────────────────────────────
-Prometheus    → metrics (kube-prometheus-stack)
-Grafana       → dashboards (LiteLLM cost dashboard, cert expiry, backup DR)
-Loki + Promtail → logs
-Alertmanager  → 3-tier alert routing + Falco Sidekick webhook
-Chaos Mesh    → reliability testing
-Falco         → runtime threat detection (eBPF, modern_ebpf driver)
-Falco Sidekick→ Falco → Alertmanager pipeline
-Polaris       → workload quality scorer
-Langfuse      → LLM observability (ClickHouse + Valkey, traces every AI call)
-Tailscale     → remote access VPN
-Cloudflare Tunnel → public access for business/employee apps (*.devandre.sbs); operator tools are Tailscale-only (3-tier access model)
-
-── SECURITY LAYER ──────────────────────────────────────────────────
-Authentik     → SSO / OIDC (16 dept groups, 16 demo personas, MFA enforced)
-OPA/Gatekeeper→ 9 admission policies, deny mode, 0 violations
-cert-manager  → internal PKI + cert observability PrometheusRules
-Cosign + syft → keyless image signing + CycloneDX SBOM in CI
-ESO + Vault KV→ all platform secrets in Vault (no plaintext in git)
-NetworkPolicy  → default-deny ingress/egress (all namespaces)
-PSA           → enforce:restricted on 8 namespaces
-GPG commits   → signed commits + branch protection on critical repos
-UFW           → host firewall on controller + all cluster nodes
-HSTS + rate-limit → global HSTS, 20r/s public, 5r/s auth (NGINX ConfigMap)
-
-── AI / ML ─────────────────────────────────────────────────────────
-LiteLLM       → OpenAI-compatible gateway (7 cloud providers + local vLLM)
-vLLM          → local LLM serving on NVMe (Ollama retired — see roadmap)
-Qdrant        → vector database (RAG embeddings)
-rag-ingest    → RAG pipeline: convert → chunk → embed (Docling + markitdown)
-Docling / markitdown → document OCR / conversion (PDF/Office → text)
-minicloud-agent / minicloud-crew-agent → LangGraph + CrewAI agents
-Valkey        → exact-match prompt cache (10 min TTL, ~80ms cache hit)
-Presidio      → PII/DLP pre-call guardrail (anonymizes before cloud APIs)
-detect_secrets→ credential scanner on all prompts
-Open WebUI    → chat interface (Authentik OIDC, CA bundle init container)
-MLflow        → ML experiment tracking
-Langfuse      → per-call traces with cost, model, department, latency
-
-── DATA LAYER (future) ──────────────────────────────────────────────
-Redpanda      → event streaming (Kafka-compatible)
-ClickHouse    → columnar analytics warehouse
-dbt           → SQL transformation layer
-Superset      → self-hosted BI dashboards
-OpenMetadata  → data catalog, lineage, governance
-```
-
----
-
-## CV / LinkedIn Summary
-
-- Designed and deployed a 6-node bare-metal Kubernetes platform (Lenovo ThinkPads + 1× MacBook Pro 2012, 44 cores / ~84 GiB RAM) using MAAS (Metal as a Service), PXE provisioning for ThinkPads, and USB install for Apple hardware incompatible with standard PXE
-- Achieved **~$16,000–$19,000 / year in cloud cost avoidance** by running equivalent capacity on owned hardware at ~$20–35/mo electricity, versus compute-optimized cloud equivalents (~11× AWS c6i.xlarge / 44 vCPU-equivalent — On-Demand pricing, US regions)
-- Implemented full GitOps delivery pipeline: ArgoCD app-of-apps, GitHub Actions CI/CD, Cosign keyless image signing, CycloneDX SBOM, GPG-signed commits, and branch protection on critical repos
-- Built enterprise AI gateway (LiteLLM 1.90.3) routing across 7 cloud providers and local vLLM serving — with cloud fallback chain, circuit breaker (3 failures → 60 s cooldown), 3-tier department budget governance ($5/$30/$100 / 30 d), Valkey prompt cache, and Grafana cost dashboard backed by PostgreSQL SQL
-- Deployed PII/DLP and credential guardrails: Microsoft Presidio anonymizes prompts before any cloud API receives them; detect_secrets blocks credential leakage at inference time
-- Implemented Langfuse LLM observability (ClickHouse + Valkey + PostgreSQL) tracing every AI Gateway call with token counts, cost, model, and department metadata
-- Enforced 9 OPA/Gatekeeper admission control policies in deny mode with 0 violations: no-root containers, no-privileged pods, approved registry only, resource limits required, TLS-only ingress, no LoadBalancer in dev, no hostPath, no latest tag, no privilege escalation
-- Applied defence-in-depth: default-deny NetworkPolicy across all namespaces, PSA enforce:restricted on 8 namespaces, AES-CBC-256 secrets encryption at rest, k3s audit logs, SSH hardening + UFW default-deny on all 6 cluster nodes, HSTS globally, rate limiting, and Authentik forward-auth on internal dashboards
-- Achieved zero-touch Vault auto-unseal via AWS KMS (scoped IAM policy, seal migration verified — pod deletion → 1/1 Ready in ~30 s with no human input)
-- Deployed External Secrets Operator with Vault KV v2 backend (9 ExternalSecrets — all platform credentials pulled from Vault; no plaintext secrets in git)
-- Implemented full backup & DR: Velero + MinIO (daily cluster backup), nightly DB dumps (pg_dump → MinIO), Vault raft snapshots, PrometheusRule alerts (VeleroBackupFailed, MinioDiskFull), and validated restore test
-- Built Authentik-based department RBAC: 16 groups, 16 demo personas with group-based policy bindings across ArgoCD, Grafana, Harbor, Open WebUI, and Nextcloud; MFA enforced on all accounts
-- Established full platform health suite: regression check script covering cluster, security, observability, AI Gateway, and backups — Regression check #40: **22 PASS / 0 FAIL / 0 WARN** (all drifts resolved)
-- Implemented remote access via Tailscale VPN and Cloudflare Tunnel (`*.devandre.sbs` public edge, no Tailscale required)
-- Applied chaos engineering with Chaos Mesh: PodChaos (0 ms downtime under 5 simultaneous kills), NetworkChaos (200 ms latency injection + clean recovery), StressChaos (contained cgroup OOM)
+- **The current live stack & topology** → [Production Stack Architecture](/platform/developer-platform/production-stack-architecture)
+- **How the two pillars fit together** → [🧭 Architecture Hub](/platform/architecture)
+- **The insurance information system** → [Insurance Platform → Architecture at a Glance](/is/insurance-platform/architecture-at-a-glance)
+- **Write-ups & decisions** → the **Blog** in the top navigation.
