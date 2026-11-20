@@ -209,6 +209,11 @@ Certification: **BC03 (déployer & sécuriser)**.
 - **Initial mailbox password is deliver-then-rotate (MVP)** — the Joiner stores a generated password to
   hand off; a self-service first-login rotation is a follow-up.
 - **MemoryStore sessions** (single-replica) → move to a shared store before prod HA.
+- **Internal-employee contract-end access-expiry (ADR-014) — designed, build-deferred (need-first).** A
+  fixed-term employee (CDD/Alternance/Stage) should tie access-expiry to their ERPNext `contract_end_date` by
+  **reusing the existing leaver sweep** (scheduled revocation; CDI = open-ended). Design is accepted; build
+  waits on the **first real fixed-term employee** (today all internal staff are CDI) + the ERPNext HR-lifecycle
+  producer emitting `employment_type`/`contract_end_date`. A documented scope boundary, not a gap.
 
 Full detail + rationale: `ktayl-iam` repo `docs/` (brief · prd · `architecture/solution-architecture` ·
 `nfr-register` · `threat-model` · `adr` · access-role-model · app-authz-bindings) + the HR-lifecycle module
