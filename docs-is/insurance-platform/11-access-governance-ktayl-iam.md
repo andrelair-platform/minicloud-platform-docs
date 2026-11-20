@@ -66,19 +66,20 @@ state. **Exactly ONE environment owns the durable** — **prod** is the authorit
 | Story | What's live |
 |---|---|
 | **S015** HR event bus | ERPNext HR → NATS `HR_LIFECYCLE` (signed J/M/L events); ktayl-iam durable consumer (`HrLifecycleConsumer`), HMAC verified over Python-canonical JSON |
-| **S016** Joiner handler | on a Joiner: derive the workplace email `firstname.lastname@devandre.sbs` (collision-safe) → **provision the Stalwart mailbox** (JMAP) → **create the Authentik user** (username = matricule) + add to the **`Workplace Users` birthright group** → persist an `Identity` (keyed by matricule) so the person becomes a requestable **subject** of the dual-approval flow. Idempotent + best-effort per leg |
-| **S017** Leaver | HR sets the relieving date → the system **auto-revokes ALL access the day STRICTLY AFTER** it: a daily 02:00 sweep (`@Cron`) revokes every due leaver — removes every active DB assignment **and** its business Authentik group, removes the `Workplace Users` birthright group, **disables the Authentik user** (`is_active=false`, the catch-all SSO block), and **archives the Stalwart mailbox** (clears credentials → direct IMAP/SMTP refused, mail **preserved** for retention). A backdated leave date revokes immediately. Idempotent |
+| **S016** Joiner handler | on a Joiner: derive the workplace email `firstname.lastname@devandre.sbs` (collision-safe across employees **and** external collaborators) → **create the Authentik user** (username = matricule) **with `email` = that mailbox address** + add to the **`Workplace Users` birthright group** → persist an `Identity` so the person becomes a requestable **subject** of the dual-approval flow. **ADR-016:** under the Mail↔Authentik LDAP federation the mailbox **is** the Authentik email — Stalwart auto-creates the box on first delivery; IAM does **not** call Stalwart `createMailbox` (forbidden for LDAP-directory accounts + redundant). Idempotent + best-effort per leg |
+| **S017** Leaver | HR sets the relieving date → the system **auto-revokes ALL access the day STRICTLY AFTER** it: a daily 02:00 sweep (`@Cron`) revokes every due leaver — removes every active DB assignment **and** its business Authentik group, removes the `Workplace Users` birthright group, and **disables the Authentik user** (`is_active=false`) — which, under the LDAP federation, blocks **both** SSO **and** mail (Stalwart binds against Authentik → a disabled user can't IMAP/SMTP either). A backdated leave date revokes immediately. Idempotent |
 
 **Birthright access model:** every new employee gets the whole **workplace suite by default** via the
 `Workplace Users` group (Nextcloud, mail, Matrix/Element, Jitsi, Vaultwarden, Plane, ERPNext self-service,
 BookStack intranet). **Technical/LOB apps are NOT birthright** — they go through request → dual-approval.
 This is the *least-privilege-by-default-for-business, earn-it-for-sensitive* shape.
 
-**Mailbox archival vs SSO disable (why both on a leaver):** disabling the Authentik user cuts every
-**SSO/browser** path, but the Stalwart principal still accepts **direct IMAP/SMTP** with the mailbox
-password — so the leaver sweep **also** clears the Stalwart credential. Clearing (vs destroying) keeps the
-account + mail for retention and is reversible. Verified live: `credentials:{}` → IMAP `AUTHENTICATIONFAILED`,
-mail preserved.
+**Mail block on a leaver (ADR-016 — one control, not two):** since the **Mail↔Authentik LDAP federation**,
+Stalwart has no local password to clear — it **binds against Authentik** for every IMAP/SMTP login. So
+**disabling the Authentik user** (`is_active=false`) is the single catch-all that blocks SSO **and** direct
+IMAP/SMTP at once; the mailbox store + its mail are left intact (retention) and the block is reversible by
+re-enabling the user. *(Pre-federation this needed a second step — clearing the Stalwart credential; that
+`createMailbox`/credential path is retired under LDAP, ADR-016.)*
 
 ## As-built — governed service accounts (IGA-06, S021–S024)
 
