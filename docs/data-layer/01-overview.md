@@ -26,8 +26,10 @@ swappable IS layer — see *Domain-agnostic* below.*
 ![minicloud Data Platform — end-to-end workflow: sources → dlt → S3 lake → DuckDB/dbt → CloudNativePG → Cube → Metabase + MLflow, orchestrated by Dagster](/img/architecture/data-platform-workflow.png)
 
 *Boxes are grouped by **capability category** (same colour = same category): **Data Ingestion & Pipelines**
-(dlt + Dagster) · **Data Lakes & Warehouses** (S3 raw lake + CNPG serving warehouse) · **Transformation &
-Semantic Layer** (DuckDB/dbt + Cube) · **BI & AI Analytics** (Metabase + MLflow).*
+(dlt + Dagster) · **Data Lake** (S3 — raw object store) · **Data Warehouse** (CNPG — structured serving
+store) · **Transformation & Semantic Layer** (DuckDB/dbt + Cube) · **BI & AI Analytics** (Metabase + MLflow).
+The **lake** (raw, schema-on-read) and the **warehouse** (structured, serving) are deliberately **distinct
+stores** at different stages — not the same thing.*
 
 ---
 
@@ -42,7 +44,7 @@ Semantic Layer** (DuckDB/dbt + Cube) · **BI & AI Analytics** (Metabase + MLflow
 | **CloudNativePG** | Serving warehouse | Gold marts land in `analytics.*` / `lake.*`; HA (2 instances) + R2 PITR. DuckDB is the OLAP engine; CNPG is the low-latency **serving** tier. |
 | **Cube** | Semantic layer | Business metrics defined **once** (measures + dimensions over the gold mart); **Metabase consumes it natively via its pg-wire SQL API**; REST/GraphQL for apps + AI. |
 | **Metabase** | BI | Dashboards over the semantic layer, behind Authentik SSO. |
-| **scikit-learn + MLflow** | ML | Models are Dagster assets, trained + tracked + **registered** in the platform MLflow (governed, reproducible — EU AI Act / DORA). |
+| **scikit-learn + MLflow** | ML (MLOps) | **MLflow = experiment tracking + model registry** (the shared MLOps backbone). Today a **demonstration** ML asset proves the loop end-to-end (features → train → track → **register** in MLflow) — *not yet a production model*. The first real use cases (need-first) are **claims-fraud / policy-lapse scoring**; the value is the governed, reproducible, versioned pipeline (EU AI Act / DORA). |
 | **Dagster** | Orchestration | dlt + dbt + ML as **one asset graph** with lineage, backfills, run observability; webserver + daemon run a **daily** schedule. |
 
 ---
