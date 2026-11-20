@@ -69,6 +69,40 @@ dbt project, the Cube model, the Dagster definitions).
 
 ---
 
+## Architecture pattern — a modern ELT lakehouse
+
+This is a textbook **ELT** architecture (Extract → **Load raw** → Transform), not classic ETL: raw data
+lands **first**, and transformation happens **after**, driven by dbt. It also realises the **medallion /
+lakehouse** shape (bronze → silver → gold) with real **storage/compute separation** (DuckDB queries the
+S3 lake directly), orchestrated as one asset graph.
+
+| Stage | What runs | Pattern signal |
+|---|---|---|
+| **Extract** | **dlt** pulls from the source Postgres (ktayl-core `policy`, underwriting) | — |
+| **Load (raw)** | raw **Parquet → S3** lake (schema-on-read) = *bronze* | load-before-transform → **ELT** |
+| **Transform** | **DuckDB + dbt** build `staging → curated → marts` (*silver → gold*) **after** load | dbt-after-load → **ELT** |
+| **Serve** | gold marts in **CloudNativePG** → **Cube** metrics → **Metabase** / **MLflow** | — |
+
+## Domain-agnostic — re-homeable to any organisation
+
+The Data Platform is a **Platform** capability, not an insurance thing — it passes the gold litmus test
+(*"if ktayl stopped selling insurance tomorrow, would this survive unchanged?"* → **yes**). The **engine**
+is generic; only the thin **data-product layer** encodes the insurance domain. To re-home it to another
+org/domain (retail, healthcare, logistics…):
+
+| | What it is | Re-home it to a new domain? |
+|---|---|---|
+| **Engine (Platform)** | dlt · S3 lake · DuckDB · the dbt framework · CloudNativePG · Cube · Metabase · Dagster · Vault-STS access · the GitOps deploy | **unchanged** — none of it knows anything about insurance |
+| **Data products (IS)** | dlt source configs · the dbt models (`fact_policy`, `dim_policy/lob`, medallion SQL) · the Cube semantic model · Metabase dashboards · the ML feature/model assets | **swapped** — point at the new sources, write the new models/metrics |
+
+So the whole infrastructure + pipeline framework is portable; only the SQL models, source definitions,
+metrics and dashboards are domain-specific. One portability caveat: the single external dependency is
+**AWS S3** for the raw lake (keyless via Vault STS) — a one-line swap to an **S3-compatible** store
+(**MinIO** / **Cloudflare R2**) if a new org needs full sovereignty or zero cloud; everything else is
+already self-hosted and generic.
+
+---
+
 ## Alternatives considered but NOT taken
 
 An earlier design targeted a heavier streaming/OLAP stack. Each piece was evaluated and **deliberately
