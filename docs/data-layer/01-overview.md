@@ -70,20 +70,23 @@ dbt project, the Cube model, the Dagster definitions).
 
 ---
 
-## Paths considered but NOT taken (design references, not the as-built)
+## Alternatives considered but NOT taken
 
-Three pages in this section describe a **different architecture that was evaluated and deliberately not
-built** — kept as honest "alternatives considered" references, each marked with a banner:
+An earlier design targeted a heavier streaming/OLAP stack. Each piece was evaluated and **deliberately
+not built** in favour of a lighter, sovereign, need-first equivalent — the decision for each lives in the
+ADRs:
 
-| Page | Planned for | What we run instead | Why |
-|---|---|---|---|
-| [Kafka / Redpanda](./kafka-redpanda) | event streaming backbone | **NATS** (already the platform bus) + **dlt** batch ingest | no second broker to run; need-first, not a streaming platform up-front |
-| [ClickHouse](./clickhouse) | columnar OLAP warehouse | **DuckDB** over the **S3** lake + **CNPG** serving | storage/compute separation without a standing analytics cluster |
-| [OpenMetadata](./openmetadata) | catalog + lineage | **Dagster assets** (lineage) + **dbt docs** | lineage comes free from the asset graph; no separate catalog service to operate |
+| Considered | Planned for | What we run instead | Why | Decision |
+|---|---|---|---|---|
+| **Kafka / Redpanda** | event streaming backbone | **NATS** (already the platform bus) + **dlt** batch ingest | no second broker to run; need-first, not a streaming platform up-front | ADR-010 |
+| **ClickHouse** | columnar OLAP warehouse | **DuckDB** over the **S3** lake + **CNPG** serving | storage/compute separation without a standing analytics cluster | ADR-008 |
+| **OpenMetadata** | catalog + lineage | **Dagster assets** (lineage) + **dbt docs** | lineage comes free from the asset graph; no separate catalog service to operate | ADR-010 |
 
 Doctrine throughout: **thin vertical slices per live source, need-first** — not a big OLAP cluster
-up-front. What's deliberately deferred (and the exact trigger for each) is the standing
-[ADR-011 deferred-capability register](https://github.com/andrelair-platform/ktayl-data-platform/blob/main/docs/architecture/adr/ADR-011-right-sizing-deferred-capability-triggers.md).
+up-front. These capabilities remain on the shelf with explicit **re-adoption triggers** (e.g. CDC when
+tables get large / near-real-time is needed) in the standing
+[ADR-011 deferred-capability register](https://github.com/andrelair-platform/ktayl-data-platform/blob/main/docs/architecture/adr/ADR-011-right-sizing-deferred-capability-triggers.md);
+the [ADRs](https://github.com/andrelair-platform/ktayl-data-platform/tree/main/docs/architecture/adr) hold the full context.
 
 ---
 
