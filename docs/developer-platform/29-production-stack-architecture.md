@@ -40,7 +40,7 @@ flowchart TB
   subgraph DELIV["① Developer &amp; Delivery (GitOps)"]
     direction LR
     SRC["Source &amp; CI<br/>GitHub · Actions · Trivy/Cosign/SBOM"]
-    REG["Registries<br/>Harbor (dev) · ghcr (prod)"]
+    REG["Registry<br/>ghcr.io (dev + prod)"]
     PROMO["Promotion<br/>Kargo → ArgoCD"]
     SRC --> REG --> PROMO
   end
@@ -137,7 +137,7 @@ hard pin.
 | ArgoCD apps | ~93 live applications |
 | PrometheusRule objects | 53 (monitoring ns + podinfo) |
 | Grafana dashboards | 43+ |
-| GitOps repos | 11 (dev images → Harbor via Tailscale; prod images → ghcr.io, SHA-tagged) |
+| GitOps repos | 11 (all images → ghcr.io, SHA-tagged, cosign-signed + SBOM — dev AND prod) |
 | Phases complete | 0–90 |
 
 ---
@@ -159,24 +159,23 @@ Cloudflare Tunnel moved from a controller systemd service to a 2-replica Kuberne
 
 ### GitOps & Automation
 
-:::note Promotion is now Kargo-driven (staging retired)
-The flow below is the **historical** CI-drives-promotion shape. Since 2026-08, promotion is
-**trunk-based**: CI on `main` builds + proves one immutable artifact, **Kargo** promotes it
-`dev → prod` (protected PR, required checks, maintainer merge), and Argo CD deploys it. The `staging` environment/branch was
-removed. See the [Delivery Workflow](https://andrelair-platform.github.io/minicloud-platform-docs/developer-platform/delivery-workflow)
-and Kargo pages for the current model.
+:::note Promotion is Kargo-driven + trunk-based (staging retired; Harbor decommissioned)
+Promotion is **trunk-based**: CI on `main` builds + proves **one immutable artifact** (pushed to
+**ghcr.io** — the single registry since Harbor was decommissioned 2026-11-16), **Kargo** promotes it
+`dev → prod`, and Argo CD deploys it. There is no `staging` environment/branch. See the
+[Delivery Workflow](https://andrelair-platform.github.io/minicloud-platform-docs/developer-platform/delivery-workflow)
+and Kargo pages for the full model.
 :::
 
 ```
-Developer push → GitHub Actions (CI)
+Developer push to main → GitHub Actions (CI)
                     ├── Build → Trivy scan → Cosign sign → syft SBOM
-                    ├── Push → Harbor (via Tailscale tag:ci)
-                    └── bump-gitops (GPG-signed PR) → ArgoCD auto-sync
+                    ├── Push → ghcr.io (SHA-tagged, dev + prod)
+                    └── Kargo Warehouse detects the new image/commit
                               │
-                              ├── canary-load (parallel) — k6 5 min sustained
-                              └── rollout-gate (parallel) — polls Rollout phase
-                                        │
-                                        └── promote-staging (needs both pass)
+                              ├── auto-promote → dev            (Argo CD syncs)
+                              ├── live QA gate on dev           (blockers gate prod)
+                              └── CODEOWNERS-gated PR → prod     (Argo CD syncs)
 ```
 
 ArgoCD manages ~93 apps via the app-of-apps pattern from `minicloud-gitops`. All Helm values live in `helm-values/`, never in `minicloud-ansible/`.
@@ -352,7 +351,7 @@ ssh controller "docker restart minio"
 
 **Why app-of-apps?** Single ArgoCD application (`minicloud-gitops`) owns everything. New services are added by dropping an `apps/<name>.yaml` file — no manual ArgoCD config.
 
-**Why a hybrid Harbor + ghcr.io registry?** Since 2026-08-27 the split is deliberate: **dev/ephemeral images live in Harbor** (on-premises via Tailscale — air-gap-capable, Trivy CVE scanning, keep-10 retention + daily GC to bound controller disk), while **prod images live in ghcr.io** (free, durable, off local disk, SHA-tagged + Cosign-signed with SBOM attached). This keeps the controller's disk budget bounded without giving up supply-chain guarantees on production artifacts.
+**Why ghcr.io only (Harbor decommissioned 2026-11-16)?** The platform ran a deliberate dev→Harbor / prod→ghcr **hybrid** from 2026-08-27, but it earned its keep only while controller disk was the binding constraint. Harbor was fully torn down (ArgoCD app removed, 48Gi PVCs reclaimed, all 6 nodes cut off its pull-through proxy, `HARBOR_*` org secrets deleted) in favour of **ghcr.io as the single registry for dev AND prod** — free, durable, off local disk, SHA-tagged + Cosign-signed with SBOM attached. One registry removes the Tailscale push path, the CA-trust steps, and the keep-N/GC tuning, with no loss of supply-chain guarantees (Trivy scanning moved into CI; retention is the ghcr keep-5 workflow). Restarting a workload whose Harbor-only dev image had been GC'd was itself an outage class — gone now that every image lives on ghcr.
 
 **Why OTel Collector instead of Promtail?** Stack-agnostic — only the exporter block changes when swapping backends. OTTL transforms handle cardinality normalization and label extraction without coupling to Loki's scrape config format.
 
