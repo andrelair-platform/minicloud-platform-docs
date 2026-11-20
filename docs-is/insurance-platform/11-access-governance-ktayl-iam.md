@@ -105,9 +105,9 @@ employee self-service. Shaped like IGA-06 plus the human/sponsor/expiry rules, c
 |---|---|
 | **S025** entity | the `external_collaborator` table (sponsor, scoped groups, hard `expires_at`, status `requested→active→expired/flagged/disabled`) |
 | **S026** request + four-eyes | **Sponsor + Security** approval; the **sponsor is validated as an ACTIVE employee** at request time (rejected otherwise); expiry **capped at a 180-day ceiling** |
-| **S027** provision | on approval → Authentik user (filed under `external-collaborators`) + the **scoped** groups + an **invitation/recovery link** so the human sets their own credential (**no machine token**) |
+| **S027** provision | on approval → Authentik user (filed under `external-collaborators`) + the **scoped** groups + an **invitation/recovery link** so the human sets their own credential (**no machine token**). **ADR-015: also the SAME workplace tier as an employee** — the `Workplace Users` birthright group + a company mailbox (`firstname.lastname@devandre.sbs`), so a contractor can actually collaborate (Nextcloud/Matrix/Jitsi/…) while **business apps stay request→four-eyes** |
 | **S028** expiry + renewal | `renew` (extend ≤ ceiling + stamp recert) + a `due` worklist + endpoints |
-| **S029** sponsor-Leaver sentinel | a **self-contained daily `@Cron` sweep**: expired → auto-suspend (status + Authentik disable); sponsor no longer active → `flagged` + disable. Chosen over a one-shot JML hook — re-checks daily, catches a sponsor deactivated for any reason, so orphaned access can never stand |
+| **S029** sponsor-Leaver sentinel | a **self-contained daily `@Cron` sweep**: expired → auto-suspend (status + Authentik disable **+ company mailbox disable**, ADR-015 leaver parity); sponsor no longer active → `flagged` + disable. Chosen over a one-shot JML hook — re-checks daily, catches a sponsor deactivated for any reason, so orphaned access can never stand |
 | **S030** admin UI | the `/admin/external-collaborators` console (lifecycle cards, expiry countdown, flagged banner, renew/provision) |
 
 **The HR boundary (decisive):** the console **never creates employees** and **IAM never writes to
