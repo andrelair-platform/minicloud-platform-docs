@@ -4,15 +4,18 @@ title: Data Layer Overview
 sidebar_position: 1
 ---
 
-# ktayl Data Platform
+# minicloud Data Platform
 
-The shared, domain-agnostic **data platform** — it turns the insurer's live operational data into governed
-business intelligence and ML. The full hybrid-lakehouse pipeline is **live** in the `data-platform`
-namespace; this page is the map, the **[Workflow page](./data-platform-workflow)** has the depth.
-Decisions: [ADR-006..011](https://github.com/andrelair-platform/ktayl-data-platform/tree/main/docs/architecture/adr).
+A **platform capability of minicloud** — the shared, domain-agnostic data engine (ingest → lake → transform
+→ serve → BI/ML). **ktayl-solution is its current consumer, not its owner:** it serves the insurer's data
+today, but the platform is independent of the business — change the organisation or the domain and it lives
+on. **Live** in the `data-platform` namespace (deployed from the Platform pillar
+`minicloud-gitops/platform/…`, not `is/`); this page is the map, the **[Workflow page](./data-platform-workflow)**
+has the depth. Decisions: [ADR-006..011](https://github.com/andrelair-platform/ktayl-data-platform/tree/main/docs/architecture/adr).
 
-*A **Platform** capability (the engine, the data equivalent of the [AI Platform](../ai-ml/12-ai-gateway.md));
-the insurance data products built on it (`policy_portfolio` + dashboards) belong to the **IS** (the consumers).*
+*minicloud **provides** the engine (**Platform**, the data twin of the [AI Platform](../ai-ml/12-ai-gateway.md));
+ktayl **consumes** it (**IS**). The insurance data products (`policy_portfolio` + dashboards) are the
+swappable IS layer — see *Domain-agnostic* below.*
 
 ---
 
@@ -20,7 +23,7 @@ the insurance data products built on it (`policy_portfolio` + dashboards) belong
 
 **End-to-end workflow — sources → dlt → S3 lake → DuckDB/dbt → CloudNativePG → Cube → Metabase + MLflow, orchestrated by Dagster**
 
-![ktayl Data Platform — end-to-end workflow: sources → dlt → S3 lake → DuckDB/dbt → CloudNativePG → Cube → Metabase + MLflow, orchestrated by Dagster](/img/architecture/data-platform-workflow.png)
+![minicloud Data Platform — end-to-end workflow: sources → dlt → S3 lake → DuckDB/dbt → CloudNativePG → Cube → Metabase + MLflow, orchestrated by Dagster](/img/architecture/data-platform-workflow.png)
 
 ---
 
