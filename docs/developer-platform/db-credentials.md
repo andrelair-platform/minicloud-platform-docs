@@ -64,3 +64,29 @@ kubectl --context minicloud-oidc -n <ns> get secret <name> \
   -o go-template='{{range $k,$v := .data}}{{$k}}{{"\n"}}{{end}}'
 ```
 The `*-cnpg-r2` secrets alongside a CNPG cluster are **R2 backup** credentials, not a DB login.
+
+## One server, many databases — database isolation ≠ operational isolation
+
+A single Postgres **server** (one instance / one host:port, one login) can hold **many databases**. Most
+apps use one (`retrieva` server → `retrieva` DB), but two are deliberately multi-database:
+
+- **`ai platform pg`** (`postgresql-ai`) — one shared server with a database per AI tool: `openwebui`,
+  `litellm`, `ragdb`, `vaultwarden`, `flowise`, `mlflow` (**6**).
+- **`backstage`** — *database-per-plugin* mode: `backstage_plugin_catalog`, `_auth`, `_scaffolder`, … (**13**).
+
+Think of the server as an apartment building and each database as an apartment: the `postgres` superuser
+is the master key, but you still pick **which database** to open (in DBeaver, set the connection's
+**Database** field — the default empty `postgres` DB shows no tables).
+
+Hosting many app databases on one server is a **deliberate placement choice** with a sharp distinction:
+
+| **Database isolation** (DB + role per app) | **Operational isolation** (a dedicated cluster) |
+|---|---|
+| controls **access** — what each app can read/write | controls **blast radius** — CPU/mem/storage-I/O, a cluster-wide outage/upgrade, **and the backup/PITR recovery boundary** |
+
+The boundary people miss: a CNPG physical backup restores the **whole cluster**, not one database.
+Recovering only `litellm` to yesterday means restoring the cluster to a **temporary** instance and
+extracting the `litellm` DB. So: consolidate low-risk apps as **DB + role per app on a shared CNPG cluster**
+(with per-role connection limits); keep **Authentik** and **Vaultwarden** on **dedicated** clusters (their
+outage/recovery must be independent). The authoritative decision rule + per-workload table:
+[`datastore-selection.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/.claude/rules/datastore-selection.md).
