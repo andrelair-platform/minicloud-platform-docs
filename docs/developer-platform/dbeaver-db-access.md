@@ -89,6 +89,9 @@ kubectl --context minicloud-oidc -n <ns> get secret <name> -o go-template='{{ran
 ```
 Paste the password into DBeaver on first connect (master-password store); it is never written to the file.
 
+> **Where these credentials actually come from** (Vault → ESO vs CNPG operator-generated, and the storage
+> discipline) → [Where database credentials live](/platform/developer-platform/db-credentials).
+
 ## Companion tools (out of DBeaver CE scope)
 | Store | Tool |
 |---|---|

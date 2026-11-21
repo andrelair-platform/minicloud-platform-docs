@@ -216,6 +216,7 @@ const sidebars: SidebarsConfig = {
             'developer-platform/gitops-directory-patterns',
             'developer-platform/cnpg-standard',
             'developer-platform/dbeaver-db-access',
+            'developer-platform/db-credentials',
             'developer-platform/migrations-on-boot',
             'developer-platform/docker-course',
             'platform-roadmap/phase-12-gitops',
