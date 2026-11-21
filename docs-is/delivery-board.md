@@ -42,7 +42,7 @@ Underwriting ~60%).
 ---
 
 {/* SI-DELIVERY:START */}
-_Auto-generated 2026-10-31 by `scripts/gen-si-delivery.py` from the live GitHub product boards + the gitops `apps/**` manifests + repo sizes — do not hand-edit between the markers._
+_Auto-generated 2026-11-02 by `scripts/gen-si-delivery.py` from the live GitHub product boards + the gitops `apps/**` manifests + repo sizes — do not hand-edit between the markers._
 
 **At a glance:** 🟢 12 · 🔵 1 · 🔶 1 · ❌ 12 · ⏸ 3  (of 29 product boards)
 
@@ -79,13 +79,13 @@ _Auto-generated 2026-10-31 by `scripts/gen-si-delivery.py` from the live GitHub 
 
 | Board | Domain | Maturity | Evidence |
 |---|---|---|---|
-| [#13](https://github.com/orgs/andrelair-platform/projects/13) | ktayl Distribution & CRM | not assessed · 32 caps | scaffold repo (5 KB): ktayl-distribution |
-| [#14](https://github.com/orgs/andrelair-platform/projects/14) | ktayl Insurance Finance & Billing | not assessed · 60 caps | scaffold repo (5 KB): ktayl-finance |
-| [#15](https://github.com/orgs/andrelair-platform/projects/15) | Regulatory & Compliance | not assessed · 29 caps | scaffold repo (25 KB): ktayl-compliance |
-| [#21](https://github.com/orgs/andrelair-platform/projects/21) | ktayl Risk Engineering | not assessed · 14 caps | scaffold repo (6 KB): ktayl-risk-engineering |
-| [#22](https://github.com/orgs/andrelair-platform/projects/22) | ktayl Reinsurance | not assessed · 30 caps | scaffold repo (6 KB): ktayl-reinsurance |
-| [#23](https://github.com/orgs/andrelair-platform/projects/23) | ktayl International Programs | not assessed · 29 caps | scaffold repo (6 KB): ktayl-international-programs |
-| [#24](https://github.com/orgs/andrelair-platform/projects/24) | ktayl Documents & DMS | not assessed · 16 caps | scaffold repo (6 KB): ktayl-dms |
+| [#13](https://github.com/orgs/andrelair-platform/projects/13) | ktayl Distribution & CRM | not assessed · 33 caps | scaffold repo (5 KB): ktayl-distribution |
+| [#14](https://github.com/orgs/andrelair-platform/projects/14) | ktayl Insurance Finance & Billing | not assessed · 67 caps | scaffold repo (5 KB): ktayl-finance |
+| [#15](https://github.com/orgs/andrelair-platform/projects/15) | Regulatory & Compliance | not assessed · 32 caps | scaffold repo (25 KB): ktayl-compliance |
+| [#21](https://github.com/orgs/andrelair-platform/projects/21) | ktayl Risk Engineering | not assessed · 15 caps | scaffold repo (6 KB): ktayl-risk-engineering |
+| [#22](https://github.com/orgs/andrelair-platform/projects/22) | ktayl Reinsurance | not assessed · 33 caps | scaffold repo (6 KB): ktayl-reinsurance |
+| [#23](https://github.com/orgs/andrelair-platform/projects/23) | ktayl International Programs | not assessed · 32 caps | scaffold repo (6 KB): ktayl-international-programs |
+| [#24](https://github.com/orgs/andrelair-platform/projects/24) | ktayl Documents & DMS | not assessed · 25 caps | scaffold repo (6 KB): ktayl-dms |
 | [#25](https://github.com/orgs/andrelair-platform/projects/25) | ktayl Integration Platform | not assessed · 24 caps | scaffold repo (31 KB): ktayl-integration |
 | [#27](https://github.com/orgs/andrelair-platform/projects/27) | ktayl Submission Hub | not assessed · 20 caps | repo not found / empty: ktayl-submission |
 | [#29](https://github.com/orgs/andrelair-platform/projects/29) | ktayl Investment & Treasury (ALM) | 0% · not started (18 caps) | repo not found / empty: ktayl-investment |
