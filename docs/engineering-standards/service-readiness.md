@@ -49,10 +49,9 @@ emitted by the generator).
 {/* SCORECARD:START */}
 | Repo | Score | README | LICENSE | CONTRIB | CI | Catalog | Release | Tests | Docs | Deploy |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **ktayl-policy-service** | 8/8 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🚀 Kargo |
+| **ktayl-core** | 8/8 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🚀 Kargo |
 | **ktayl-underwriting** | 8/8 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🚀 Kargo |
 | **minicloud-backstage** | 8/8 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| **ktayl-core** | 7/8 | ✅ | ✅ | ✅ | ✅ | ⬜ | ✅ | ✅ | ✅ | 🚀 Kargo |
 | **ktayl-data-platform** | 7/8 | ✅ | ✅ | ✅ | ✅ | ⬜ | ✅ | ✅ | ✅ | — |
 | **minicloud-open-webui** | 7/8 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | ✅ | — |
 | **minicloud-plane** | 7/8 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | 🚀 Kargo |
@@ -68,6 +67,7 @@ emitted by the generator).
 | **bff-auth** | 5/8 | ✅ | ✅ | ⬜ | ✅ | ⬜ | ✅ | ✅ | ⬜ | — |
 | **claude-platform-plugin** | 5/8 | ✅ | ✅ | ✅ | ✅ | ⬜ | ⬜ | ✅ | ⬜ | — |
 | **ktayl-claims** | 5/8 | ✅ | ✅ | ⬜ | ✅ | ⬜ | ⬜ | ✅ | ✅ | 🚀 Kargo |
+| **ktayl-dms** | 5/8 | ✅ | ✅ | ⬜ | ✅ | ⬜ | ⬜ | ✅ | ✅ | Helm |
 | **ktayl-iam** | 5/8 | ✅ | ✅ | ⬜ | ✅ | ⬜ | ⬜ | ✅ | ✅ | 🚀 Kargo |
 | **minicloud-cloud** | 5/8 | ✅ | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ✅ | — |
 | **minicloud-markitdown-proxy** | 5/8 | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | — |
@@ -79,7 +79,6 @@ emitted by the generator).
 | **minicloud-erpnext** | 4/8 | ⬜ | ⬜ | ⬜ | ✅ | ✅ | ⬜ | ✅ | ✅ | — |
 | **minicloud-litellm-custom** | 4/8 | ✅ | ⬜ | ⬜ | ✅ | ✅ | ⬜ | ⬜ | ✅ | — |
 | **ktayl-distribution** | 3/8 | ✅ | ✅ | ⬜ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | — |
-| **ktayl-dms** | 3/8 | ✅ | ✅ | ⬜ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | — |
 | **ktayl-finance** | 3/8 | ✅ | ✅ | ⬜ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | — |
 | **ktayl-international-programs** | 3/8 | ✅ | ✅ | ⬜ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | — |
 | **ktayl-reinsurance** | 3/8 | ✅ | ✅ | ⬜ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | — |
