@@ -83,15 +83,24 @@ def main() -> int:
                 break
 
         if dm_path:
-            tables = sum(
-                1
-                for b in blobs
-                if b.startswith(f"{dm_path}/")
-                and b.endswith(".md")
-                and not b.rsplit("/", 1)[-1].lower().startswith("readme")
-            )
             link = f"[{dm_path}](https://github.com/{ORG}/{name}/blob/main/{dm_path}/README.md)"
-            rows.append((name, infer_toolchain(paths, blobs), str(tables or "—"), link))
+            if is_dbt:
+                # a dbt repo that ALSO commits an ERD stays in the carve-out section (NOT a migration
+                # repo → never a `tbls` row with a misleading toolchain) but links its committed ERD.
+                dbt_rows.append(
+                    f"| {name} | **dbt (carve-out)** | — | {link} — self-documented by committed dbt "
+                    f"**model contracts** (`models/**/_*.yml`) + CI `dbt parse`; tbls is the wrong tool "
+                    f"for a *derived* warehouse (not a migration-owned schema) |"
+                )
+            else:
+                tables = sum(
+                    1
+                    for b in blobs
+                    if b.startswith(f"{dm_path}/")
+                    and b.endswith(".md")
+                    and not b.rsplit("/", 1)[-1].lower().startswith("readme")
+                )
+                rows.append((name, infer_toolchain(paths, blobs), str(tables or "—"), link))
         elif is_dbt:
             dbt_rows.append(
                 f"| {name} | **dbt (carve-out)** | — | self-documented by committed dbt "
