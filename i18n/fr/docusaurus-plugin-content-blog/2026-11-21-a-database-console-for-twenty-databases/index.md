@@ -56,6 +56,27 @@ seul outil gratuit qui parle mes trois moteurs SQL dans une même fenêtre *et* 
 c'est une appli bureau qui passe par mon propre `kubectl`. TablePlus et Beekeeper sont vraiment bien ; ils
 n'ont simplement pas battu *gratuit + tous-mes-moteurs + empreinte-nulle* sur ce tableau précis.
 
+### Face à face : Adminer contre DBeaver, facteur par facteur
+
+En zoomant sur les deux qui ont réellement tourné ici — le sortant et son remplaçant :
+
+| Facteur | Adminer (appli web dans le cluster) | DBeaver (bureau local + tunnel k8s) |
+|---|---|---|
+| **Sécurité & surface d'attaque** | tourne dans Kubernetes, exposé via Ingress + SSO ; une seule mauvaise config met chaque base qu'il atteint derrière un onglet de navigateur | **empreinte cluster nulle** — rien de déployé ; l'accès est strictement mon propre RBAC kubeconfig |
+| **Sécurité prod vs dev** | tous les onglets se ressemblent — facile de lancer un `DELETE` sur `ktayl-core-prod` en croyant être en dev | **les connexions Production s'affichent en rouge, s'ouvrent en lecture seule** et demandent confirmation à l'exécution |
+| **Gérer 23+ instances** | retaper hôte/utilisateur/secret à chaque connexion, ou coder les identifiants en dur | connexions rangées en dossiers **Production / Development** ; mots de passe tirés du Secret de chaque base par session, gardés dans le coffre local chiffré |
+| **Support ClickHouse** | aucun — impossible d'ouvrir `langfuse-clickhouse` | complet, dans la même fenêtre que Postgres et MariaDB |
+| **Profondeur fonctionnelle** | navigateur de tables + une boîte SQL brute | autocomplétion, diagrammes ER, plans `EXPLAIN` visuels, export inter-bases, historique de requêtes multi-onglets |
+
+### Le seul cas où Adminer aurait encore du sens
+
+Pour être juste envers le fichier de 400 Ko : il *existe* un scénario où il gagne — **un accès d'urgence,
+uniquement navigateur, depuis un appareil sans `kubectl` ni ordinateur portable** (par exemple un
+collègue non-développeur qui atteint une base derrière le SSO Authentik depuis un téléphone). Si ce besoin
+devient réel un jour, la bonne réponse est un Adminer *restreint* pointé vers le **non-prod uniquement** —
+pas la console à l'échelle du cluster qu'il était devenu. Aujourd'hui ce besoin n'existe pas, donc la
+surface d'attaque permanente ne valait pas d'être gardée au cas où.
+
 ### Les magasins non-SQL vont à des compagnons spécialisés
 
 La limite honnête : DBeaver CE ne couvre pas **Redis/Valkey** (~11), **OpenSearch** (criblage des

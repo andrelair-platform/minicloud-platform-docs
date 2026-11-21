@@ -55,6 +55,26 @@ free tool that speaks all three of my SQL engines in one window *and* adds nothi
 desktop app that talks over my own `kubectl`. TablePlus and Beekeeper are genuinely nice; they just didn't
 beat *free + all-my-engines + zero-footprint* on this particular board.
 
+### Head-to-head: Adminer vs DBeaver, factor by factor
+
+Zooming into the two that actually ran here — the incumbent and its replacement:
+
+| Factor | Adminer (in-cluster web app) | DBeaver (local desktop + k8s tunnel) |
+|---|---|---|
+| **Security & attack surface** | runs inside Kubernetes, exposed via Ingress + SSO; one misconfiguration puts every database it can reach behind a browser tab | **zero cluster footprint** — nothing deployed; access is strictly my own kubeconfig RBAC |
+| **Prod vs dev safety** | every tab looks identical — easy to run a `DELETE` on `ktayl-core-prod` thinking it's dev | **Production connections render red, open read-only**, and confirm on execute |
+| **Managing 23+ instances** | retype host/user/secret on each login, or hardcode creds into config | connections saved in **Production / Development folders**; passwords pulled from each DB's Secret per session, kept in the encrypted local store |
+| **ClickHouse support** | none — can't open `langfuse-clickhouse` at all | full, in the same window as Postgres and MariaDB |
+| **Feature depth** | table browser + a raw SQL box | autocomplete, ER diagrams, visual `EXPLAIN` plans, cross-DB export, multi-tab query history |
+
+### The one case where Adminer would still make sense
+
+To be fair to the 400 KB file: there *is* a scenario it wins — **emergency, browser-only access from a
+device with no `kubectl` and no laptop** (say, a non-developer teammate reaching a database behind Authentik
+SSO from a phone). If that need ever becomes real, the right answer is a *scoped* Adminer pointed at
+**non-prod only** — not the cluster-wide console it had drifted into being. Today that need doesn't exist,
+so the standing attack surface wasn't worth keeping on the bet that it might.
+
 ### The non-SQL stores go to purpose-built companions
 
 The honest limit: DBeaver CE does not cover **Redis/Valkey** (~11 of them), **OpenSearch** (sanctions
