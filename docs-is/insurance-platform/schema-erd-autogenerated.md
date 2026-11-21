@@ -105,6 +105,6 @@ This table is **auto-generated** by `scripts/gen-erd-index.py` (discovers every 
   from the running DB with `minicloud-ops/scripts/db-erd/generate-erd.sh` over a `kubectl port-forward`
   (creds from the k8s Secret at runtime, nothing uploaded), for schemas with no in-repo migrations.
 
-Interactive inspection/debugging of a live DB is a separate concern — the locked-down SSO'd
-[Adminer cockpit](/platform/developer-platform/adminer-db-cockpit) or `kubectl port-forward`; schema *changes*
+Interactive inspection/debugging of a live DB is a separate concern — the local
+[DBeaver cockpit](/platform/developer-platform/dbeaver-db-access) over `kubectl port-forward`; schema *changes*
 always go through migrations (Flyway/Alembic/golang-migrate/Drizzle/TypeORM), never a GUI.

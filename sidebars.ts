@@ -215,7 +215,7 @@ const sidebars: SidebarsConfig = {
             'developer-platform/branch-strategy-cicd',
             'developer-platform/gitops-directory-patterns',
             'developer-platform/cnpg-standard',
-            'developer-platform/adminer-db-cockpit',
+            'developer-platform/dbeaver-db-access',
             'developer-platform/migrations-on-boot',
             'developer-platform/docker-course',
             'platform-roadmap/phase-12-gitops',
