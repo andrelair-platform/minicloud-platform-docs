@@ -87,18 +87,17 @@ This table is **auto-generated** by `scripts/gen-erd-index.py` (discovers every 
 {/* ERD-INDEX:START */}
 | Repo | Migration toolchain | Tables | Committed ERD |
 |---|---|---:|---|
-| ktayl-claims | Flyway | 1 | [docs/data-model](https://github.com/andrelair-platform/ktayl-claims/blob/main/docs/data-model/README.md) |
-| ktayl-core | Flyway | 5 | [docs/data-model](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/data-model/README.md) |
-| ktayl-iam | TypeORM | 6 | [backend/docs/data-model](https://github.com/andrelair-platform/ktayl-iam/blob/main/backend/docs/data-model/README.md) |
-| ktayl-policy-service | golang-migrate | 5 | [docs/data-model](https://github.com/andrelair-platform/ktayl-policy-service/blob/main/docs/data-model/README.md) |
+| ktayl-claims | Flyway | 2 | [docs/data-model](https://github.com/andrelair-platform/ktayl-claims/blob/main/docs/data-model/README.md) |
+| ktayl-core | Flyway | 25 | [docs/data-model](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/data-model/README.md) |
+| ktayl-iam | TypeORM | 10 | [backend/docs/data-model](https://github.com/andrelair-platform/ktayl-iam/blob/main/backend/docs/data-model/README.md) |
 | ktayl-underwriting | Alembic | 8 | [docs/data-model](https://github.com/andrelair-platform/ktayl-underwriting/blob/main/docs/data-model/README.md) |
-| retrieva-backend | Drizzle | 24 | [docs/data-model](https://github.com/andrelair-platform/retrieva-backend/blob/main/docs/data-model/README.md) |
-| ktayl-data-platform | **dbt (carve-out)** | — | self-documented by committed dbt **model contracts** (`models/**/_*.yml`) + CI `dbt parse` — tbls is the wrong tool for a *derived* warehouse (not a migration-owned schema) |
+| retrieva-backend | Drizzle | 41 | [docs/data-model](https://github.com/andrelair-platform/retrieva-backend/blob/main/docs/data-model/README.md) |
+| ktayl-data-platform | **dbt (carve-out)** | — | [docs/data-model](https://github.com/andrelair-platform/ktayl-data-platform/blob/main/docs/data-model/README.md) — self-documented by committed dbt **model contracts** (`models/**/_*.yml`) + CI `dbt parse`; tbls is the wrong tool for a *derived* warehouse (not a migration-owned schema) |
 {/* ERD-INDEX:END */}
 
 **Two generation modes** (both committed, both drift-gated):
 
-- **Migration-sourced (the 6 `tbls` repos above — all but ktayl-data-platform)** — CI applies the repo's migrations to an ephemeral Postgres
+- **Migration-sourced (the `tbls` repos above — every row but the ktayl-data-platform dbt carve-out)** — CI applies the repo's migrations to an ephemeral Postgres
   and runs `tbls` → the ERD is a pure function of the migrations. Pinned for determinism (digest-pinned
   `tbls`, `postgres:17.4`, x86_64 baseline, explicit `-t mermaid --sort -j`).
 - **Live-DB (adopted/vendor schemas** — ERPNext, GLPI, BookStack, Authentik…**)** — reverse-engineered
