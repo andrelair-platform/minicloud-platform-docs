@@ -26,8 +26,8 @@ What the pods, and the DBeaver `kubectl … get secret … | base64 -d` one-line
 
 | Source | Databases | Rotate by |
 |---|---|---|
-| **Vault `secret/platform/*` → ESO** *(authoritative — the standard)* | all plain/vendor DBs (ai, backstage, temporal, bookstack, itsm, erp, ktayl-iam-dev, langfuse-clickhouse) **+** the CNPG clusters with a `*-cnpg-role`/`*-role` ExternalSecret: **authentik · synapse (chat) · data-platform · ktayl-iam (prod) · langfuse · nextcloud · retrieva** | edit Vault → ESO re-renders the k8s Secret → CNPG reconciles |
-| **CNPG operator-generated** *(the `-app` secret is the **only** store — not in Vault)* | **claims (+prod) · ktayl-core (+prod) · underwriting (+prod) · paperless (ktayl-dms)** | via CNPG (no central record — the gap) |
+| **Vault `secret/platform/*` → ESO** *(authoritative — the standard)* | all plain/vendor DBs (ai, backstage, temporal, bookstack, itsm, erp, ktayl-iam-dev, langfuse-clickhouse) **+** the CNPG clusters with a `*-role` ExternalSecret: **authentik · synapse (chat) · data-platform · ktayl-iam (prod) · langfuse · nextcloud · retrieva · ktayl-core (prod) · claims (prod) · underwriting (prod) · paperless** *(last 4 backfilled 2026-11-21)* | edit Vault → ESO re-renders the k8s Secret → CNPG reconciles |
+| **CNPG operator-generated** *(the `-app` secret is the only store — acceptable for dev)* | the **dev** instances of claims · ktayl-core · underwriting (regenerable, low-stakes) | via CNPG |
 
 How the Vault-sourced CNPG case works: the cluster's `spec.managed.roles[].passwordSecret` points at an
 ESO-rendered secret (e.g. `retrieva-cnpg-role`), so the role password **traces to Vault**; the operator
@@ -47,10 +47,10 @@ needs no human key.
   `managed.roles[].passwordSecret`. Do **not** ship a cluster whose only store is the operator `-app` secret.
 - **Plain/vendor DB** → credential via ESO from Vault; never a chart default, never a literal in values,
   never committed (the `guard-write` hook blocks secret material).
-- **Known gap (backfill, prioritised by criticality):** claims, ktayl-core, underwriting, paperless are
-  operator-generated-only; the three prod insurance domains rank first. Backfill = add a `*-cnpg-role`
-  ExternalSecret + wire `managed.roles` (mirror `retrieva-cnpg`). Revisit trigger: a rotation, a
-  restore-from-Vault drill, or a DORA secret-management assertion.
+- **Former gap — now closed (2026-11-21):** the 4 operator-generated-only prod clusters (ktayl-core,
+  claims, underwriting, paperless) were backfilled — Vault seeded with the current `-app` password, then
+  `managed.roles` + a `-role` ExternalSecret wired (no-outage: CNPG re-applied the identical value).
+  Only the **dev** instances remain operator-generated (acceptable — regenerable).
 
 Full rule (authoritative): [`db-credentials.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/.claude/rules/db-credentials.md).
 
