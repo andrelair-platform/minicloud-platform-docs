@@ -42,26 +42,25 @@ Underwriting ~60%).
 ---
 
 {/* SI-DELIVERY:START */}
-_Auto-generated 2026-10-31 by `scripts/gen-si-delivery.py` from the live GitHub product boards + the gitops `apps/**` manifests + repo sizes — do not hand-edit between the markers._
+_Auto-generated 2026-11-16 by `scripts/gen-si-delivery.py` from the live GitHub product boards + the gitops `apps/**` manifests + repo sizes — do not hand-edit between the markers._
 
-**At a glance:** 🟢 12 · 🔵 1 · 🔶 1 · ❌ 12 · ⏸ 3  (of 29 product boards)
+**At a glance:** 🟢 11 · 🔵 1 · 🔶 3 · ❌ 11 · ⏸ 3  (of 29 product boards)
 
 ## 🟢 Live — a prod deployment is defined
 
 | Board | Domain | Maturity | Evidence |
 |---|---|---|---|
 | [#2](https://github.com/orgs/andrelair-platform/projects/2) | Retrieva — RNCP39583 Certification | ~80% (est.) | dev+prod · apps: retrieva, retrieva-assessment-crew |
-| [#3](https://github.com/orgs/andrelair-platform/projects/3) | GitOps — Platform Engineering | ~88% (est.) | prod · apps: argo-cd, backstage, harbor, vault |
+| [#3](https://github.com/orgs/andrelair-platform/projects/3) | GitOps — Platform Engineering | ~88% (est.) | prod · apps: argo-cd, backstage, vault, vaultwarden |
 | [#4](https://github.com/orgs/andrelair-platform/projects/4) | AI Platform | ~72% (est.) | dev+prod · apps: langfuse, litellm, minicloud-agent, minicloud-crew-agent |
 | [#5](https://github.com/orgs/andrelair-platform/projects/5) | Data Platform | ~48% (est.) | prod · apps: data-platform |
-| [#6](https://github.com/orgs/andrelair-platform/projects/6) | ktayl Policy Service | ~60% (est.) | dev+prod · apps: ktayl-policy-service |
 | [#7](https://github.com/orgs/andrelair-platform/projects/7) | ktayl Public Web | ~44% (est.) | live off-cluster (GitHub Pages) |
 | [#8](https://github.com/orgs/andrelair-platform/projects/8) | ERPNext (HR-Finance) | ~56% (est.) | prod · apps: erpnext |
 | [#10](https://github.com/orgs/andrelair-platform/projects/10) | Digital Workplace (M365 Alternative) | ~68% (est.) | prod · apps: bookstack, docuseal, jitsi, matrix-synapse |
 | [#11](https://github.com/orgs/andrelair-platform/projects/11) | ktayl Claims | ~68% (est.) | dev+prod · apps: ktayl-claims |
 | [#12](https://github.com/orgs/andrelair-platform/projects/12) | ktayl Underwriting & Pricing | ~60% (est.) | dev+prod · apps: ktayl-underwriting |
 | [#17](https://github.com/orgs/andrelair-platform/projects/17) | Access Governance (IAM/IGA) | ~72% (est.) | dev+prod · apps: ktayl-iam |
-| [#28](https://github.com/orgs/andrelair-platform/projects/28) | ktayl-core — Insurance LOB (modular monolith) | ~24% (est.) | prod · apps: ktayl-core-infra |
+| [#28](https://github.com/orgs/andrelair-platform/projects/28) | ktayl-core — Insurance LOB (modular monolith) | ~24% (est.) | dev+prod · apps: ktayl-core, ktayl-core-infra |
 
 ## 🔵 On dev — deployed to dev, not yet promoted to prod
 
@@ -74,19 +73,20 @@ _Auto-generated 2026-10-31 by `scripts/gen-si-delivery.py` from the live GitHub 
 | Board | Domain | Maturity | Evidence |
 |---|---|---|---|
 | [#9](https://github.com/orgs/andrelair-platform/projects/9) | ktayl Insurance LOB — Product Lines | ~32% (est.) | repo has content (261 KB), no Application yet: ktayl-solution-web |
+| [#15](https://github.com/orgs/andrelair-platform/projects/15) | Regulatory & Compliance | not assessed · 32 caps | repo has content (53 KB), no Application yet: ktayl-compliance |
+| [#24](https://github.com/orgs/andrelair-platform/projects/24) | ktayl Documents & DMS | not assessed · 25 caps | repo has content (78 KB), no Application yet: ktayl-dms |
 
 ## ❌ Not started — scaffold or no repo yet
 
 | Board | Domain | Maturity | Evidence |
 |---|---|---|---|
-| [#13](https://github.com/orgs/andrelair-platform/projects/13) | ktayl Distribution & CRM | not assessed · 32 caps | scaffold repo (5 KB): ktayl-distribution |
-| [#14](https://github.com/orgs/andrelair-platform/projects/14) | ktayl Insurance Finance & Billing | not assessed · 60 caps | scaffold repo (5 KB): ktayl-finance |
-| [#15](https://github.com/orgs/andrelair-platform/projects/15) | Regulatory & Compliance | not assessed · 29 caps | scaffold repo (25 KB): ktayl-compliance |
-| [#21](https://github.com/orgs/andrelair-platform/projects/21) | ktayl Risk Engineering | not assessed · 14 caps | scaffold repo (6 KB): ktayl-risk-engineering |
-| [#22](https://github.com/orgs/andrelair-platform/projects/22) | ktayl Reinsurance | not assessed · 30 caps | scaffold repo (6 KB): ktayl-reinsurance |
-| [#23](https://github.com/orgs/andrelair-platform/projects/23) | ktayl International Programs | not assessed · 29 caps | scaffold repo (6 KB): ktayl-international-programs |
-| [#24](https://github.com/orgs/andrelair-platform/projects/24) | ktayl Documents & DMS | not assessed · 16 caps | scaffold repo (6 KB): ktayl-dms |
-| [#25](https://github.com/orgs/andrelair-platform/projects/25) | ktayl Integration Platform | not assessed · 24 caps | scaffold repo (31 KB): ktayl-integration |
+| [#6](https://github.com/orgs/andrelair-platform/projects/6) | ktayl Policy Service | ~60% (est.) | repo not found / empty: ktayl-policy-service |
+| [#13](https://github.com/orgs/andrelair-platform/projects/13) | ktayl Distribution & CRM | not assessed · 33 caps | scaffold repo (5 KB): ktayl-distribution |
+| [#14](https://github.com/orgs/andrelair-platform/projects/14) | ktayl Insurance Finance & Billing | not assessed · 67 caps | scaffold repo (5 KB): ktayl-finance |
+| [#21](https://github.com/orgs/andrelair-platform/projects/21) | ktayl Risk Engineering | not assessed · 15 caps | scaffold repo (6 KB): ktayl-risk-engineering |
+| [#22](https://github.com/orgs/andrelair-platform/projects/22) | ktayl Reinsurance | not assessed · 33 caps | scaffold repo (6 KB): ktayl-reinsurance |
+| [#23](https://github.com/orgs/andrelair-platform/projects/23) | ktayl International Programs | not assessed · 32 caps | scaffold repo (6 KB): ktayl-international-programs |
+| [#25](https://github.com/orgs/andrelair-platform/projects/25) | ktayl Integration Platform | not assessed · 24 caps | scaffold repo (34 KB): ktayl-integration |
 | [#27](https://github.com/orgs/andrelair-platform/projects/27) | ktayl Submission Hub | not assessed · 20 caps | repo not found / empty: ktayl-submission |
 | [#29](https://github.com/orgs/andrelair-platform/projects/29) | ktayl Investment & Treasury (ALM) | 0% · not started (18 caps) | repo not found / empty: ktayl-investment |
 | [#30](https://github.com/orgs/andrelair-platform/projects/30) | ktayl Complaints & Disputes | 0% · not started (13 caps) | repo not found / empty: ktayl-complaints |
