@@ -18,8 +18,19 @@ const architectureNav = {
     'architecture/is-application-landscape',
     'architecture/platform-is-dependency-matrix',
     'architecture/repo-taxonomy-contract',
-    'architecture/adr-document-intelligence-spine',
-    'architecture/adr-ai-domain-copilots',
+    {
+      type: 'category',
+      label: '📐 Platform ADRs (cross-cutting)',
+      collapsed: true,
+      items: [
+        'architecture/adr/document-intelligence-spine',
+        'architecture/adr/ai-domain-copilots',
+        'architecture/adr/cdc-eventing-backbone',
+        'architecture/adr/identity-two-layer',
+        'architecture/adr/modular-monolith-first',
+        'architecture/adr/software-adoption-decisions',
+      ],
+    },
   ],
 } as const;
 

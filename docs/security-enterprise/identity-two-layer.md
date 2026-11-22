@@ -49,5 +49,5 @@ here (a 2-user personal tenant has no population to federate) — Entra's real v
 ## Full ADR
 
 Decision, alternatives, the full spike write-up + teardown, and compliance mapping:
-[**`docs/identity-two-layer.md`**](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/identity-two-layer.md).
+[**Platform ADR — Two-Layer Identity**](../architecture/adr/identity-two-layer.md).
 Related: [SSO via Authentik](./sso-authentik).
