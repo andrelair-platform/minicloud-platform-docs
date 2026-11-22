@@ -51,7 +51,7 @@ self-hostability / **sovereignty** · FOSS/licence · **SSO-able** (Authentik) �
 |---|---|
 | The process (source of truth) | [`.claude/rules/software-evaluation.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/.claude/rules/software-evaluation.md) |
 | The scorecard template | [`docs/templates/software-evaluation-scorecard.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/templates/software-evaluation-scorecard.md) |
-| The decision register (ADR home) | [`docs/software-adoption-decisions.md`](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/software-adoption-decisions.md) |
+| The decision register (ADR home) | [`docs/architecture/adr/software-adoption-decisions.md`](https://github.com/andrelair-platform/minicloud-platform-docs/blob/main/docs/architecture/adr/software-adoption-decisions.md) |
 | A live evaluation (record of truth) | **Retrieva** |
 
 Reuses: need-first (`cloud-adoption`), adopt-vs-build (`architecture-strategy`), the governance gate

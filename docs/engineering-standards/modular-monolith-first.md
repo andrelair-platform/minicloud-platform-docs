@@ -62,4 +62,4 @@ framework import in the domain. As-built + ERD + API:
 ## Full ADR
 
 Decision, the full ground-truth review, the anti-patterns, and the extraction phases:
-[**`docs/modular-monolith-first.md`**](https://github.com/andrelair-platform/minicloud-gitops/blob/main/docs/modular-monolith-first.md).
+[**Platform ADR — Modular-Monolith-First**](../architecture/adr/modular-monolith-first.md).
