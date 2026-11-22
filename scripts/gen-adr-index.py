@@ -27,7 +27,9 @@ import sys
 from pathlib import Path
 
 ORG = "andrelair-platform"
-SELF = "minicloud-platform-docs"  # the central map repo — never index its own docs/
+SELF = "minicloud-platform-docs"  # the central map repo
+CENTRAL_ADR_HOME = "docs/architecture/adr/"  # the ONE indexable area of the central repo: the
+#                                              cross-cutting PLATFORM ADRs (no single service owner)
 PAGE = Path(__file__).resolve().parent.parent / "docs" / "engineering-standards" / "decision-records.md"
 START, END = "{/* ADR-INDEX:START */}", "{/* ADR-INDEX:END */}"
 
@@ -91,10 +93,20 @@ def main() -> int:
     by_repo: dict[str, list[tuple[str, str]]] = {}
 
     for r in sorted(repos, key=lambda x: x["name"]):
-        if r.get("isArchived") or r["name"] == SELF:
+        if r.get("isArchived"):
             continue
         name = r["name"]
-        records = [(title_from(p), p) for p in repo_tree(name) if is_decision_record(p)]
+        paths = repo_tree(name)
+        if name == SELF:
+            # The central map repo is NOT skipped wholesale: it is the home for the cross-cutting
+            # PLATFORM ADRs (no single service owner). Index ONLY its dedicated ADR dir —
+            # docs/architecture/adr/** — never the rest of the site (overview/map pages, the index
+            # page itself, etc.). This is the "authoritative platform ADR" half of the convention:
+            # service-scoped ADRs live with their repo; platform-scoped ADRs live in the central hub.
+            records = [(title_from(p), p) for p in paths
+                       if p.startswith(CENTRAL_ADR_HOME) and is_decision_record(p)]
+        else:
+            records = [(title_from(p), p) for p in paths if is_decision_record(p)]
         if records:
             by_repo[name] = sorted(records, key=lambda t: t[1])
 
