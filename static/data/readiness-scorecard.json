@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-14T23:13:57Z",
+  "generated": "2026-11-23T17:08:48Z",
   "rubric": [
     "readme",
     "license",
@@ -114,11 +114,11 @@
       "license": true,
       "contributing": true,
       "ci": true,
-      "catalog": false,
+      "catalog": true,
       "release": true,
       "tests": true,
       "docs": true,
-      "score": 7,
+      "score": 8,
       "max": 8,
       "helm": true,
       "kargo": true
@@ -158,11 +158,11 @@
       "ci": true,
       "catalog": false,
       "release": false,
-      "tests": false,
-      "docs": false,
-      "score": 3,
+      "tests": true,
+      "docs": true,
+      "score": 5,
       "max": 8,
-      "helm": false,
+      "helm": true,
       "kargo": false
     },
     "ktayl-docker-course": {
@@ -262,20 +262,6 @@
       "max": 8,
       "helm": false,
       "kargo": false
-    },
-    "ktayl-policy-service": {
-      "readme": true,
-      "license": true,
-      "contributing": true,
-      "ci": true,
-      "catalog": true,
-      "release": true,
-      "tests": true,
-      "docs": true,
-      "score": 8,
-      "max": 8,
-      "helm": true,
-      "kargo": true
     },
     "ktayl-reinsurance": {
       "readme": true,
@@ -565,8 +551,8 @@
       "catalog": true,
       "release": false,
       "tests": false,
-      "docs": false,
-      "score": 5,
+      "docs": true,
+      "score": 6,
       "max": 8,
       "helm": false,
       "kargo": false
