@@ -87,7 +87,7 @@ This table is **auto-generated** by `scripts/gen-erd-index.py` (discovers every 
 {/* ERD-INDEX:START */}
 | Repo | Migration toolchain | Tables | Committed ERD |
 |---|---|---:|---|
-| ktayl-claims | Flyway | 2 | [docs/data-model](https://github.com/andrelair-platform/ktayl-claims/blob/main/docs/data-model/README.md) |
+| ktayl-claims | Flyway | 4 | [docs/data-model](https://github.com/andrelair-platform/ktayl-claims/blob/main/docs/data-model/README.md) |
 | ktayl-core | Flyway | 25 | [docs/data-model](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/data-model/README.md) |
 | ktayl-iam | TypeORM | 10 | [backend/docs/data-model](https://github.com/andrelair-platform/ktayl-iam/blob/main/backend/docs/data-model/README.md) |
 | ktayl-underwriting | Alembic | 8 | [docs/data-model](https://github.com/andrelair-platform/ktayl-underwriting/blob/main/docs/data-model/README.md) |
