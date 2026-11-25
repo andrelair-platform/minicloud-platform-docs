@@ -2,7 +2,7 @@
 slug: ktayl-core-finance-close-to-production
 title: "Closing the Books: an Auditable Period Close — and Why the 'Lock' Is a Polite Fiction"
 authors: [andrelair]
-tags: [ktayl-core, finance, modular-monolith, spring-modulith, observability, production]
+tags: [ktayl-core, finance, modular-monolith, spring-modulith, observability, production, carnets]
 date: 2026-11-19
 description: "Shipping the ktayl-core finance module — GL reconciliation and an auditable period close — to production. The interesting part wasn't the code; it was discovering that a 'period lock' can't physically exist without breaking the architecture, and what an honest close does instead."
 ---

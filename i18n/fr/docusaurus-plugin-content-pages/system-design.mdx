@@ -1,0 +1,113 @@
+---
+title: System Design
+description: Découvrir le travail par problème de conception — où faire tourner un service, comment livrer une application, comment concevoir un processus métier. Chaque cas mène à l'étude de fond et à son schéma.
+---
+
+# System Design
+
+Trois angles sur la même plateforme, chacun répondant à une question de conception différente :
+
+- **Infrastructure hybride** — *où* tourne un service (mes machines ou un service cloud managé), et pourquoi.
+- **Developer Platform** — *comment* une application est livrée et exploitée.
+- **Système d'information d'assurance** — *comment* un processus métier est conçu.
+
+Chaque cas suit le même fil — **Problème → Conséquence → Choix → Compromis → Vérifié** — et, pour un choix
+hybride, précise **ce que j'exploite moi-même, ce que je délègue et pourquoi**. Chaque fiche est un cadre
+court ; le raisonnement complet vit dans l'article de fond sur le [Blog](/blog), et le schéma de référence
+dans la documentation.
+
+---
+
+## 🏗 Infrastructure hybride
+
+### Pourquoi garder une sauvegarde sur mes machines *et* une autre hors site ?
+
+- **Problème** — Je copie déjà mes sauvegardes vers Cloudflare R2. Alors pourquoi garder un serveur MinIO
+  sur le contrôleur ? Ne pourrais-je pas le retirer et tout basculer dans le cloud ?
+- **Conséquence** — Le tout-cloud, c'est un seul domaine d'exploitation. Une mauvaise suppression, une fuite
+  de credential, un blocage du fournisseur, et la sauvegarde et son unique copie tombent ensemble.
+- **Choix** — Garder un MinIO local **et** une copie hors site dans R2. Le local offre des restaurations
+  rapides et souveraines ; le hors site survit à la perte de tout le site. J'**exploite** le serveur MinIO ;
+  je **délègue** le stockage durable hors site à R2 — car une copie hors site est exactement le risque qu'un
+  service managé couvre le mieux.
+- **Compromis** — Un deuxième stockage à exploiter et à rapprocher, en échange d'un chemin de restauration
+  qui survit à la panne de l'une ou l'autre couche.
+- **Vérifié** — Une heure après ce raisonnement, j'ai supprimé le mauvais préfixe de bucket — et le choix a
+  tenu : l'autre copie l'a restauré.
+
+**Lire l'étude de fond →** [3-2-1, pas 1 : pourquoi j'ai gardé MinIO](/blog/dont-retire-minio-3-2-1-backup) ·
+**Voir le schéma →** [Sauvegarde & PRA — Velero / hors site](/platform/backup-dr/velero)
+
+---
+
+## 🧰 Developer Platform
+
+### À quel moment une personne valide-t-elle une mise en production ?
+
+- **Problème** — Je veux de la livraison continue, mais tout changement ne doit pas atteindre la production
+  sans contrôle. Où une personne intervient-elle ?
+- **Conséquence** — Tout automatiser, et un mauvais changement se livre tout seul ; tout verrouiller, et la
+  livraison se bloque sous la charge manuelle.
+- **Choix** — Déploiement automatique en **développement**, puis promotion vers la production **validée par
+  une personne**. **Kargo** promeut une image immuable en ouvrant le changement Git ; **Argo CD** le
+  réconcilie. La validation vit dans Git (une PR gardée par CODEOWNERS), donc la réconciliation continue
+  n'est jamais rompue.
+- **Compromis** — Une barrière humaine volontaire sur le chemin de la production, en échange d'une promotion
+  sûre et traçable plutôt qu'un tag d'image modifié à la main.
+- **Vérifié** — Le flux de livraison tourne pour chaque service maison ; une promotion dev se fusionne
+  automatiquement, la PR de prod attend la relecture.
+
+**Voir le flux de livraison →** [C4 System Design — *Comment le code atteint la production*](/platform/architecture/c4-system-design) ·
+**Vocabulaire →** [Glossaire : Kargo, Argo CD, GitOps](/glossary)
+
+---
+
+## 🏦 Système d'information d'assurance
+
+### Comment vérifier que ce qu'on a facturé correspond à ce qu'on a comptabilisé ?
+
+- **Problème** — Un auditeur pose une question simple : *le grand livre concorde-t-il avec ce que vous avez
+  facturé ce mois-ci, et pouvez-vous le prouver ?*
+- **Conséquence** — Sans étape de rapprochement, une prime peut être facturée mais jamais comptabilisée au
+  grand livre — et personne ne le remarque avant que ce soit un problème de clôture annuelle.
+- **Choix** — Une clôture comptable qui suit chaque prime de la facture jusqu'au grand livre, compare les
+  montants et révèle tout écart — avec un enregistrement d'audit en ajout seul. La « clôture » d'une période
+  est un contrôle, pas un verrou physique.
+- **Compromis** — La clôture ne peut pas *physiquement* geler le grand livre sans casser l'architecture ;
+  à la place, elle détecte et signale tout mouvement post-clôture — honnête plutôt qu'absolu.
+- **Vérifié** — Livré en environnement de développement ; le rapprochement signale un écart et
+  l'enregistrement de clôture est immuable.
+
+**Lire l'étude de fond →** [Clôture des comptes : une clôture de période auditable](/blog/ktayl-core-finance-close-to-production) ·
+**Voir le module →** [ktayl-core — Facturation & Finance](/is/insurance-platform/billing-ktayl-core)
+
+---
+
+## Autres cas
+
+<div className="row">
+  <div className="col col--6" style={{marginBottom: '1rem'}}>
+    <div className="card">
+      <div className="card__header"><h3>🏗 Que se passe-t-il quand des applications partagent un serveur de données ?</h3></div>
+      <div className="card__body">La maintenance commune, le risque de panne simultanée et les critères qui me font isoler certaines applications sur leur propre cluster Postgres.</div>
+      <div className="card__footer">
+        <a href="/blog/database-isolation-vs-operational-isolation">Lire l'étude →</a><br/>
+        <a href="/is/insurance-platform/data-stores-inventory">Voir l'inventaire des stockages →</a>
+      </div>
+    </div>
+  </div>
+  <div className="col col--6" style={{marginBottom: '1rem'}}>
+    <div className="card">
+      <div className="card__header"><h3>🏦 Pourquoi garder plusieurs fonctions d'assurance dans une seule application ?</h3></div>
+      <div className="card__body">Les frontières entre modules dans <code>ktayl-core</code> et les conditions qui me feraient extraire un module vers son propre service.</div>
+      <div className="card__footer">
+        <a href="/is/insurance-platform/architecture-at-a-glance">Voir l'architecture en un coup d'œil →</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+---
+
+*Chaque cas ici est aussi un numéro des [Carnets de MiniCloud](/carnets) — le même raisonnement, raconté
+pour le blog, la newsletter, LinkedIn et à l'oral.*

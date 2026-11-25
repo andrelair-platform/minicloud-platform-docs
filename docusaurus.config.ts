@@ -105,14 +105,13 @@ const config: Config = {
           label: 'Platform',
         },
         {
-          type: 'docSidebar',
-          sidebarId: 'isSidebar',
-          docsPluginId: 'is',
+          // Land the IS menu on the business mental-model page; the isSidebar still renders on /is/* pages.
+          to: '/is/insurance-platform/architecture-at-a-glance',
           position: 'left',
           label: 'Information System',
         },
         {
-          to: '/platform/architecture/c4-system-design',
+          to: '/system-design',
           label: 'System Design',
           position: 'left',
         },
@@ -124,6 +123,11 @@ const config: Config = {
         {
           to: '/blog',
           label: 'Blog',
+          position: 'left',
+        },
+        {
+          to: '/carnets',
+          label: 'Carnets',
           position: 'left',
         },
         {

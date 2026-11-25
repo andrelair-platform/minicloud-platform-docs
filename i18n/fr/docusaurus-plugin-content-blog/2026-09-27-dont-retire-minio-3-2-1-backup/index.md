@@ -2,7 +2,7 @@
 slug: dont-retire-minio-3-2-1-backup
 title: "3-2-1, pas 1 : pourquoi j'ai gardé MinIO plutôt que de tout basculer dans le cloud"
 authors: [andrelair]
-tags: [backup, disaster-recovery, minio, cloudflare-r2, velero, dora, 3-2-1, object-storage, platform-engineering, reliability]
+tags: [backup, disaster-recovery, minio, cloudflare-r2, velero, dora, 3-2-1, object-storage, platform-engineering, reliability, carnets]
 date: 2026-09-27
 description: "Il est tentant de supprimer le serveur de sauvegarde et de tout pousser vers du stockage objet cloud bon marché. Sur la plateforme ktayl-solution, j'ai décidé de ne pas le faire — et une heure plus tard, une suppression de bucket à côté de la plaque m'a prouvé exactement pourquoi. Voici le raisonnement derrière la conservation d'un MinIO local aux côtés de Cloudflare R2, et là où l'instinct cloud est réellement pertinent."
 ---

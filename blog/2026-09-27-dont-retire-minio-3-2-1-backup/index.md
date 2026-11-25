@@ -2,7 +2,7 @@
 slug: dont-retire-minio-3-2-1-backup
 title: "3-2-1, Not 1: Why I Kept MinIO Instead of Going Cloud-Only for Backups"
 authors: [andrelair]
-tags: [backup, disaster-recovery, minio, cloudflare-r2, velero, dora, 3-2-1, object-storage, platform-engineering, reliability]
+tags: [backup, disaster-recovery, minio, cloudflare-r2, velero, dora, 3-2-1, object-storage, platform-engineering, reliability, carnets]
 date: 2026-09-27
 description: "It's tempting to delete the backup server and push everything to cheap cloud object storage. On the ktayl-solution platform I decided not to — and an hour later I fat-fingered a bucket delete that proved exactly why. This is the reasoning behind keeping a local MinIO alongside Cloudflare R2, and where the cloud instinct is actually right."
 ---

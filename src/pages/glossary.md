@@ -39,6 +39,10 @@ the first two entries, which are the single most important distinction to keep s
   durable, immutable-SHA prod images.
 - **cosign / SBOM / Trivy** — supply-chain controls: keyless image signing, a software bill of materials
   attached to the image, and a CRITICAL-severity vulnerability scan gate.
+- **Release to production** (*mise en production*) — the moment a validated change reaches the prod
+  environment. Here it is a human-approved, CODEOWNERS-gated promotion: Kargo opens the Git change, ArgoCD
+  reconciles it. *Example:* a custom service auto-deploys to dev, then waits for a reviewed prod PR — see the
+  [System Design case](/system-design).
 
 ## Engineering process
 
@@ -61,6 +65,11 @@ the first two entries, which are the single most important distinction to keep s
 - **cert-manager** — issues TLS certificates from the internal `minicloud-ca` ClusterIssuer.
 - **NATS / JetStream** — the messaging backbone for event-driven, asynchronous workflows.
 - **Tailscale / Cloudflare Tunnel** — private mesh access (internal) and public ingress (for published apps).
+- **Managed cloud service** (*service cloud managé*) — a capability I rent and someone else operates,
+  instead of running it on my own hardware. The hybrid rule: self-host by default, use a managed service
+  where it covers a risk better than I can. *Example:* Cloudflare R2 holds the off-site backup copy and
+  Amazon SES sends outbound mail — the responsibilities I deliberately delegate (see the
+  [System Design hybrid case](/system-design)).
 
 ## Reliability
 
@@ -78,3 +87,7 @@ the first two entries, which are the single most important distinction to keep s
 - **EU AI Act** — risk-tiered obligations for AI systems; controls scale with the tier.
 - **GDPR** — EU data-protection regulation governing personal-data handling.
 - **Solvency II** — the EU prudential framework for insurers (the regulatory spine of the IS).
+- **Accounting reconciliation** (*rapprochement comptable*) — confirming that two records of the same money
+  agree: here, that each premium billed this month is also posted to the general ledger, with any gap
+  surfaced. The basis of an honest period close. *Example:* the `ktayl-core` finance close walks invoice →
+  GL and flags mismatches — see the [System Design case](/system-design).
