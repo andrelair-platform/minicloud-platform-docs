@@ -1,0 +1,42 @@
+---
+title: Carnets de MiniCloud
+description: The decisions I make while building my hybrid platform and the insurance information system that runs on it — one issue per concrete problem, with the choice, the trade-off and what I could verify.
+---
+
+# Carnets de MiniCloud
+
+> I share the decisions I make while building my hybrid platform and the insurance information system that
+> runs on it. Each issue starts from a concrete problem and shows the choice I made, the trade-off I accept,
+> and what I was able to verify.
+
+Each issue maps to a [System Design](/system-design) case. The deep write-up lives on the
+[Blog](/blog); this page is the series home.
+
+## Start here
+
+Three issues, one per angle:
+
+1. **Hybrid infrastructure — backups.** Why I keep one copy on my own hardware and one off-site.
+   → [3-2-1, Not 1: Why I Kept MinIO](/blog/dont-retire-minio-3-2-1-backup)
+2. **Developer platform — releases.** When a person validates a push to production.
+   → [How code reaches production (C4 delivery flow)](/platform/architecture/c4-system-design)
+3. **Insurance IS — the books.** How I check that what was billed matches what was booked.
+   → [Closing the Books: an Auditable Period Close](/blog/ktayl-core-finance-close-to-production)
+
+**All issues →** [the `carnets` archive](/blog/tags/carnets)
+
+## How one case travels
+
+One deep write-up per subject is enough. The blog hosts the article, [System Design](/system-design) lets
+you discover it by question, and the docs hold the reference diagram. The same case is then retold per
+channel:
+
+| Format | What I share |
+|---|---|
+| **Blog** | The full reasoning — what I'm protecting, why a local copy, what an off-site copy adds, and the restores I actually tested. |
+| **Newsletter** | The story. *"If the machines running my apps become unreachable, can I still recover their data?"* — then how that question drove the choice. |
+| **LinkedIn** | A question and one idea. *"If all my machines go dark, where is my backup?"* — then the criterion and a link to the case. |
+| **Out loud** | *"I want to recover my data even if I lose the machines running my apps. An off-site copy covers that. Then I have to prove I can actually restore it."* |
+
+For a hybrid choice, I always name **what I operate myself, what I delegate, and why** — those concrete
+responsibilities are what give meaning to *open source*, *self-hosted* and *managed cloud service*.

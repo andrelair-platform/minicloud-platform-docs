@@ -1,10 +1,19 @@
 ---
 id: index
 title: Architecture Hub
-sidebar_label: 🧭 Architecture Hub
+sidebar_label: Architecture Hub
 ---
 
 # Architecture Hub
+
+<div className="row" style={{marginBottom: '1rem'}}>
+  <div className="col col--6" style={{marginBottom: '0.5rem'}}>
+    <a className="button button--primary button--lg button--block" href="/platform">Explore the Platform →</a>
+  </div>
+  <div className="col col--6" style={{marginBottom: '0.5rem'}}>
+    <a className="button button--primary button--lg button--block" href="/is/insurance-platform/architecture-at-a-glance">Explore the Insurance IS →</a>
+  </div>
+</div>
 
 > **One enterprise, two architectural pillars, one entry point.** This is the pillar-neutral
 > navigation layer for the whole architecture — it does **not** restate the authoritative docs, it
@@ -15,15 +24,15 @@ sidebar_label: 🧭 Architecture Hub
 The platform runs on a strict boundary (`platform-vs-information-system.md`), also stated in
 [the two-pillar intro](../intro.md#two-pillars--pick-your-layer):
 
-- **🏗 PLATFORM (minicloud)** — the shared **technical capabilities** (the internal cloud provider).
-- **🏢 INFORMATION SYSTEM (ktayl-solution)** — the **business applications, data and processes** of the
+- **PLATFORM (minicloud)** — the shared **technical capabilities** (the internal cloud provider).
+- **INFORMATION SYSTEM (ktayl-solution)** — the **business applications, data and processes** of the
   insurer, which *run on and consume* the platform.
 
 The litmus test: *"If ktayl stopped selling insurance tomorrow, would this survive unchanged?"*
 **Yes → Platform. No → Information System.** This is a question of **ownership, not deployment location**
 — a Claims app running on Kubernetes is still an IS application.
 
-> **New to the vocabulary?** The **[📖 Glossary](./glossary.md)** defines the recurring terms across all
+> **New to the vocabulary?** The **[Glossary](./glossary.md)** defines the recurring terms across all
 > themes — access/identity (SoR · PEP · RBAC · SoD), the two-layer models, delivery/GitOps, security,
 > reliability — each with one line + how it applies here.
 
@@ -36,7 +45,7 @@ capabilities/domains (drill down via the L2 views below).
 
 ```mermaid
 flowchart TB
-  subgraph IS["🏢 INFORMATION SYSTEM — ktayl-solution · the insurance business (consumer)"]
+  subgraph IS["INFORMATION SYSTEM — ktayl-solution · the insurance business (consumer)"]
     direction LR
     FO["Front office<br/>Distribution · CRM · Submission · Public Web"]
     CORE["Core insurance<br/>Underwriting · Policy · Claims · Billing"]
@@ -46,7 +55,7 @@ flowchart TB
     DW["Digital Workplace<br/>Mail · Files · Chat · Meetings · e-Sign · Projects"]
   end
 
-  subgraph PLAT["🏗 PLATFORM — minicloud · shared technical capabilities (provider)"]
+  subgraph PLAT["PLATFORM — minicloud · shared technical capabilities (provider)"]
     direction LR
     RT["Compute &amp; Runtime<br/>k3s · Cilium CNI · ingress"]
     DEL["Delivery<br/>GitOps (ArgoCD) · Kargo · CI/CD"]
@@ -94,14 +103,14 @@ Enterprise Landscape → Business Capabilities → IS Applications → Platform 
 | View | What it answers | Authoritative? |
 |---|---|---|
 | **L1 — Enterprise Landscape** (above) | how Platform & IS relate | navigation |
-| **[C4 System Design (Platform)](./c4-system-design.md)** | the complete platform as a C4 model — Context → Container → Deployment (Structurizr, as code) | ✅ system design |
-| **[L2 — Platform Architecture / Topology](../developer-platform/29-production-stack-architecture.md)** | the platform's technical capabilities (icon topology) | ✅ platform topology |
+| **[C4 System Design (Platform)](./c4-system-design.md)** | the complete platform as a C4 model — Context → Container → Deployment (Structurizr, as code) | system design |
+| **[L2 — Platform Architecture / Topology](../developer-platform/29-production-stack-architecture.md)** | the platform's technical capabilities (icon topology) | platform topology |
 | **[L2 — IS Application Landscape](./is-application-landscape.md)** | the business apps by insurance domain + maturity | navigation → per-app docs |
-| **[Platform ↔ IS Dependency Matrix](./platform-is-dependency-matrix.md)** | consumer · capability · interface · ownership · evidence | ✅ the contract map |
-| **[Enterprise Architecture Blueprint](/is/insurance-platform/enterprise-architecture-blueprint)** | the IS functional target + gap analysis | ✅ IS domains |
-| **[Business Capability Map](/is/insurance-platform/capability-map)** | ~150 L2/L3 capabilities × status/criticality/RTO-RPO | ✅ capabilities |
-| **[IS — Architecture at a Glance](/is/insurance-platform/architecture-at-a-glance)** | the IS one-screen mental model | ✅ IS overview |
-| **[Access Governance — Platform Access Matrix](../security-enterprise/18-platform-access-matrix.md)** | which role may reach + do what in each platform tool (SoR → enforcement) | ✅ access model |
+| **[Platform ↔ IS Dependency Matrix](./platform-is-dependency-matrix.md)** | consumer · capability · interface · ownership · evidence | the contract map |
+| **[Enterprise Architecture Blueprint](/is/insurance-platform/enterprise-architecture-blueprint)** | the IS functional target + gap analysis | IS domains |
+| **[Business Capability Map](/is/insurance-platform/capability-map)** | ~150 L2/L3 capabilities × status/criticality/RTO-RPO | capabilities |
+| **[IS — Architecture at a Glance](/is/insurance-platform/architecture-at-a-glance)** | the IS one-screen mental model | IS overview |
+| **[Access Governance — Platform Access Matrix](../security-enterprise/18-platform-access-matrix.md)** | which role may reach + do what in each platform tool (SoR → enforcement) | access model |
 
 > The original hand-made HTML poster was **retired 2026-10-17** — superseded by the code-generated
 > [C4 System Design](./c4-system-design.md) + the [Platform Architecture](../developer-platform/29-production-stack-architecture.md) views (maintainable, accurate, no pixel-pushing).

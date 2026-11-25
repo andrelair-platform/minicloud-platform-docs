@@ -1,0 +1,42 @@
+---
+title: Carnets de MiniCloud
+description: Les décisions que je prends en construisant ma plateforme hybride et le système d'information d'assurance qui s'appuie dessus — un numéro par problème concret, avec le choix, le compromis et ce que j'ai pu vérifier.
+---
+
+# Carnets de MiniCloud
+
+> Je partage les décisions que je prends en construisant ma plateforme hybride et le système d'information
+> d'assurance qui s'appuie dessus. Chaque numéro part d'un problème concret et montre le choix que j'ai fait,
+> le compromis que j'accepte et ce que j'ai pu vérifier.
+
+Chaque numéro correspond à un cas de [System Design](/system-design). L'article de fond vit sur le
+[Blog](/blog) ; cette page est l'accueil de la série.
+
+## Commencer ici
+
+Trois numéros, un par angle :
+
+1. **Infrastructure hybride — les sauvegardes.** Pourquoi je garde une copie sur mes machines et une hors site.
+   → [3-2-1, pas 1 : pourquoi j'ai gardé MinIO](/blog/dont-retire-minio-3-2-1-backup)
+2. **Developer platform — les mises en production.** À quel moment une personne valide une mise en production.
+   → [Comment le code atteint la production (flux de livraison C4)](/platform/architecture/c4-system-design)
+3. **SI d'assurance — les comptes.** Comment je vérifie que le facturé correspond au comptabilisé.
+   → [Clôture des comptes : une clôture de période auditable](/blog/ktayl-core-finance-close-to-production)
+
+**Tous les numéros →** [l'archive `carnets`](/blog/tags/carnets)
+
+## Comment un cas voyage
+
+Un article de fond par sujet suffit. Le blog héberge l'article, [System Design](/system-design) permet de le
+découvrir par question, et la documentation fournit le schéma de référence. Le même cas est ensuite décliné
+par canal :
+
+| Format | Ce que je partage |
+|---|---|
+| **Blog** | Le raisonnement complet — ce que je protège, pourquoi une copie locale, ce qu'apporte une copie hors site, et les restaurations que j'ai réellement testées. |
+| **Newsletter** | Le récit. *« Si les machines qui hébergent mes applications deviennent inaccessibles, est-ce que je peux encore récupérer leurs données ? »* — puis comment cette question a guidé le choix. |
+| **LinkedIn** | Une question et une idée. *« Si toutes mes machines deviennent inaccessibles, où est ma sauvegarde ? »* — puis le critère et un lien vers le cas. |
+| **À l'oral** | *« Je veux pouvoir récupérer mes données même si je perds l'accès aux machines qui font tourner mes applications. Une copie hors site couvre ce scénario. Ensuite, je dois vérifier que je peux vraiment restaurer les données. »* |
+
+Pour un choix hybride, je précise toujours **ce que j'exploite moi-même, ce que je délègue et pourquoi** —
+ces responsabilités concrètes donnent du sens aux mots *open source*, *auto-hébergé* et *service cloud managé*.

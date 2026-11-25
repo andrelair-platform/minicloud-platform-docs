@@ -2,7 +2,7 @@
 slug: database-isolation-vs-operational-isolation
 title: "Database Isolation Is Not Operational Isolation — When Postgres Apps Should Share a Cluster"
 authors: [andrelair]
-tags: [databases, postgresql, cnpg, backup, disaster-recovery, architecture, dora]
+tags: [databases, postgresql, cnpg, backup, disaster-recovery, architecture, dora, carnets]
 date: 2026-11-21
 description: "Browsing the platform's databases, I noticed two Postgres servers host many databases — Backstage 13, the AI server 6. That raised the real design question: when should apps share a Postgres cluster, and when should they get their own? The answer turns on a distinction that's easy to miss — separate databases isolate access, not operations, and especially not recovery."
 ---

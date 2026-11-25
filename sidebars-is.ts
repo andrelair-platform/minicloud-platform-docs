@@ -7,7 +7,7 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
  */
 const architectureLink = {
   type: 'link',
-  label: '🧭 Architecture (Platform)',
+  label: 'Architecture (Platform)',
   href: '/platform/architecture/',
 } as const;
 
@@ -17,17 +17,17 @@ const sidebars: SidebarsConfig = {
     architectureLink,
 
     // ── Global Delivery Board (live status: ready vs missing) ────────
-    {type: 'doc', id: 'delivery-board', label: '📊 SI Delivery Board'},
+    {type: 'doc', id: 'delivery-board', label: 'SI Delivery Board'},
 
     // ── Business Applications ────────────────────────────────────────
     {
       type: 'category',
-      label: '🏢 Business Applications',
+      label: 'Business Applications',
       collapsed: false,
       items: [
         {
           type: 'category',
-          label: '🏦 Insurance Platform',
+          label: 'Insurance Platform',
           collapsed: false,
           items: [
             'insurance-platform/architecture-at-a-glance',
@@ -138,7 +138,7 @@ const sidebars: SidebarsConfig = {
     // ── IS Build Roadmap ─────────────────────────────────────────────
     {
       type: 'category',
-      label: '🗓 IS Build Roadmap',
+      label: 'IS Build Roadmap',
       collapsed: true,
       items: [
         'product-roadmap/is-build-roadmap',
@@ -149,7 +149,7 @@ const sidebars: SidebarsConfig = {
     // ── Project Governance ───────────────────────────────────────────
     {
       type: 'category',
-      label: '📐 Project Governance',
+      label: 'Project Governance',
       collapsed: true,
       items: [
         'project-governance/project-governance-standard',
@@ -160,7 +160,7 @@ const sidebars: SidebarsConfig = {
     // ── IS Governance ────────────────────────────────────────────────
     {
       type: 'category',
-      label: '📋 IS Governance',
+      label: 'IS Governance',
       collapsed: true,
       items: [
         'apps/is-governance-scrumban-prince2',

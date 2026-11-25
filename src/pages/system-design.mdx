@@ -1,0 +1,111 @@
+---
+title: System Design
+description: Discover the work by design question — where to run a service, how to ship an app, and how to design a business process. Each case links to the deep write-up and its diagram.
+---
+
+# System Design
+
+Three angles on the same platform, each answering a different design question:
+
+- **Hybrid Infrastructure** — *where* a service runs (my hardware vs. a managed cloud service), and why.
+- **Developer Platform** — *how* an application is delivered and operated.
+- **Insurance Information System** — *how* a business process is designed.
+
+Every case below follows the same thread — **Problem → Consequence → Choice → Trade-off → Verified** —
+and, for a hybrid choice, names **what I operate myself, what I delegate, and why**. Each card is a short
+frame; the full reasoning lives in the linked write-up on the [Blog](/blog), and the reference diagram
+in the docs.
+
+---
+
+## Hybrid Infrastructure
+
+### Why keep one backup on my hardware *and* one off-site?
+
+- **Problem** — I already mirror backups to Cloudflare R2. So why keep a MinIO server running on the
+  controller at all? Couldn't I retire it and go cloud-only?
+- **Consequence** — Cloud-only means a single operational domain. One fat-fingered delete, one credential
+  leak, one provider lockout, and the backup and its only copy can fail together.
+- **Choice** — Keep a local MinIO **and** an off-site copy in R2. Local gives fast, sovereign restores;
+  off-site survives losing the whole site. I **operate** the MinIO server; I **delegate** durable off-site
+  storage to R2 — because an off-site copy is exactly the risk a managed service covers best.
+- **Trade-off** — A second store to run and reconcile, in exchange for a restore path that survives either
+  layer failing.
+- **Verified** — An hour after reasoning this through I deleted the wrong bucket prefix — and the design
+  held: the other copy restored it.
+
+**Read the full write-up →** [3-2-1, Not 1: Why I Kept MinIO](/blog/dont-retire-minio-3-2-1-backup) ·
+**See the diagram →** [Backup & DR — Velero / off-site](/platform/backup-dr/velero)
+
+---
+
+## Developer Platform
+
+### When does a person validate a release?
+
+- **Problem** — I want continuous delivery, but not every change should reach production unseen. Where does
+  a human step in?
+- **Consequence** — Automate everything and a bad change ships itself; gate everything and delivery stalls
+  under manual toil.
+- **Choice** — Automatic deploy to the **dev** environment, then a **human-approved** promotion to prod.
+  **Kargo** promotes one immutable image by opening the Git change; **Argo CD** reconciles it. The approval
+  lives in Git (a CODEOWNERS-gated PR), so continuous reconciliation is never broken.
+- **Trade-off** — One deliberate human gate on the prod path, in exchange for a safe, auditable promotion
+  instead of a hand-edited image tag.
+- **Verified** — The delivery flow runs on every custom service; a dev promotion auto-merges, the prod PR
+  waits for review.
+
+**See the delivery flow →** [C4 System Design — *How code reaches production*](/platform/architecture/c4-system-design) ·
+**Vocabulary →** [Glossary: Kargo, Argo CD, GitOps](/glossary)
+
+---
+
+## Insurance Information System
+
+### How do I check that what was billed matches what was booked?
+
+- **Problem** — An auditor asks a simple question: *does the ledger agree with what you billed this month,
+  and can you prove it?*
+- **Consequence** — Without a reconciliation step, a premium can be invoiced but never posted to the general
+  ledger — and nobody notices until it's a year-end problem.
+- **Choice** — A finance close that walks each premium from invoice to the general ledger, compares the
+  amounts, and surfaces any gap — with an append-only audit record. The period "close" is a control, not a
+  physical lock.
+- **Trade-off** — The close can't *physically* freeze the ledger without breaking the architecture; instead
+  it detects and flags any post-close movement — honest over absolute.
+- **Verified** — Shipped to the dev environment; the reconciliation flags a mismatch and the close record is
+  immutable.
+
+**Read the full write-up →** [Closing the Books: an Auditable Period Close](/blog/ktayl-core-finance-close-to-production) ·
+**See the module →** [ktayl-core — Billing & Finance](/is/insurance-platform/billing-ktayl-core)
+
+---
+
+## More cases
+
+<div className="row">
+  <div className="col col--6" style={{marginBottom: '1rem'}}>
+    <div className="card">
+      <div className="card__header"><h3>What happens when apps share a data server?</h3></div>
+      <div className="card__body">Shared maintenance, the risk of a simultaneous outage, and the criteria that make me isolate some apps onto their own Postgres cluster.</div>
+      <div className="card__footer">
+        <a href="/blog/database-isolation-vs-operational-isolation">Read the write-up →</a><br/>
+        <a href="/is/insurance-platform/data-stores-inventory">See the data-store inventory →</a>
+      </div>
+    </div>
+  </div>
+  <div className="col col--6" style={{marginBottom: '1rem'}}>
+    <div className="card">
+      <div className="card__header"><h3>Why keep several insurance functions in one app?</h3></div>
+      <div className="card__body">The module boundaries inside <code>ktayl-core</code> and the conditions that would make me extract a module into its own service.</div>
+      <div className="card__footer">
+        <a href="/is/insurance-platform/architecture-at-a-glance">See the architecture at a glance →</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+---
+
+*Each case here is also an issue of [the Carnets de MiniCloud](/carnets) — the same reasoning, retold for
+the blog, the newsletter, LinkedIn and out loud.*

@@ -9,7 +9,7 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 // Pillar-neutral Architecture Hub — the SAME nav referenced by both sidebars (not duplicated).
 const architectureNav = {
   type: 'category',
-  label: '🧭 Architecture',
+  label: 'Architecture',
   collapsed: false,
   link: {type: 'doc', id: 'architecture/index'},
   items: [
@@ -20,7 +20,7 @@ const architectureNav = {
     'architecture/repo-taxonomy-contract',
     {
       type: 'category',
-      label: '📐 Platform ADRs (cross-cutting)',
+      label: 'Platform ADRs (cross-cutting)',
       collapsed: true,
       items: [
         'architecture/adr/document-intelligence-spine',
@@ -41,14 +41,30 @@ const sidebars: SidebarsConfig = {
   platformSidebar: [
 
     architectureNav,
-    {type: 'doc', id: 'developer-platform/production-stack-architecture', label: '🏛 Production Stack Architecture'},
-    {type: 'doc', id: 'platform-engineering/internal-developer-platform', label: '🧰 Internal Developer Platform'},
-    {type: 'doc', id: 'platform-engineering/platform-backlog', label: '🗓 Platform Backlog'},
+
+    // ══ Internal Developer Platform — how applications are delivered ══
+    {
+      type: 'category',
+      label: 'Internal Developer Platform',
+      collapsed: false,
+      items: [
+    {type: 'doc', id: 'developer-platform/production-stack-architecture', label: 'Production Stack Architecture'},
+    {type: 'doc', id: 'platform-engineering/internal-developer-platform', label: 'Internal Developer Platform'},
+    {type: 'doc', id: 'platform-engineering/platform-backlog', label: 'Platform Backlog'},
+    ],
+    },
+
+    // ══ Infrastructure & Cloud — where services run ══
+    {
+      type: 'category',
+      label: 'Infrastructure & Cloud',
+      collapsed: false,
+      items: [
 
     // ── Infrastructure ───────────────────────────────────────────────
     {
       type: 'category',
-      label: '🏗 Infrastructure',
+      label: 'Infrastructure',
       collapsed: false,
       items: [
         {
@@ -138,7 +154,7 @@ const sidebars: SidebarsConfig = {
     // ── Security & Identity ──────────────────────────────────────────
     {
       type: 'category',
-      label: '🔐 Security & Identity',
+      label: 'Security & Identity',
       collapsed: true,
       items: [
         {
@@ -211,7 +227,7 @@ const sidebars: SidebarsConfig = {
     // ── GitOps & CI/CD ───────────────────────────────────────────────
     {
       type: 'category',
-      label: '🚀 GitOps & CI/CD',
+      label: 'GitOps & CI/CD',
       collapsed: true,
       items: [
         {
@@ -288,10 +304,20 @@ const sidebars: SidebarsConfig = {
       ],
     },
 
+    ],
+    },
+
+    // ══ Shared Services & Operations — the running shared services ══
+    {
+      type: 'category',
+      label: 'Shared Services & Operations',
+      collapsed: false,
+      items: [
+
     // ── Developer Platform (IDP) ─────────────────────────────────────
     {
       type: 'category',
-      label: '👨‍💻 Developer Platform',
+      label: 'Developer Platform',
       collapsed: true,
       items: [
         'developer-platform/backstage',
@@ -306,7 +332,7 @@ const sidebars: SidebarsConfig = {
     // ── Observability ────────────────────────────────────────────────
     {
       type: 'category',
-      label: '📊 Observability',
+      label: 'Observability',
       collapsed: true,
       items: [
         {
@@ -384,7 +410,7 @@ const sidebars: SidebarsConfig = {
     // ── AI & ML (AI Platform) ────────────────────────────────────────
     {
       type: 'category',
-      label: '🤖 AI & ML',
+      label: 'AI & ML',
       collapsed: true,
       items: [
         {
@@ -483,7 +509,7 @@ const sidebars: SidebarsConfig = {
     // ── Data Platform (shared data-infra capability — like the AI platform) ──
     {
       type: 'category',
-      label: '🗄 Data Platform',
+      label: 'Data Platform',
       collapsed: true,
       items: [
         'data-layer/data-layer-overview',
@@ -497,7 +523,7 @@ const sidebars: SidebarsConfig = {
     // ── Automation & Workflows ───────────────────────────────────────
     {
       type: 'category',
-      label: '⚡ Automation & Workflows',
+      label: 'Automation & Workflows',
       collapsed: true,
       items: [
         'automation/n8n',
@@ -511,7 +537,7 @@ const sidebars: SidebarsConfig = {
     // ── Backup, DR & Reliability ─────────────────────────────────────
     {
       type: 'category',
-      label: '💾 Backup, DR & Reliability',
+      label: 'Backup, DR & Reliability',
       collapsed: true,
       items: [
         'backup-dr/velero',
@@ -527,11 +553,13 @@ const sidebars: SidebarsConfig = {
         'reliability/slo-and-postmortems',
       ],
     },
+    ],
+    },
 
     // ── Engineering Standards ─────────────────────────────────────────
     {
       type: 'category',
-      label: '🧪 Engineering Standards',
+      label: 'Engineering Standards',
       collapsed: false,
       items: [
         'engineering-standards/documentation-standard',
