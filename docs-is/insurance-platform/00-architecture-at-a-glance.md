@@ -79,8 +79,12 @@ legacy core that one domain wraps → the shared Data/AI/**Document** platforms 
 
 ## What's live vs planned
 
-The single source of truth for the picture above — every box, with its **verified** status (checked against
-the running cluster on 2026-09-30, not the roadmap). 🟢 prod · 🔵 dev only · 🟡 partial · ⚪ planned.
+The diagram above already tags each box. For the **authoritative, continuously-verified** status, see the
+**[SI Delivery Board](../delivery-board)** (generated from the live cluster). The box-by-box snapshot below
+(verified 2026-09-30) is kept for context:
+
+<details>
+<summary>Show the box-by-box status snapshot</summary>
 
 | Box | Status | Note |
 |---|---|---|
@@ -102,6 +106,8 @@ the running cluster on 2026-09-30, not the roadmap). 🟢 prod · 🔵 dev only 
 > **Reading the value chain honestly:** it is live **at both ends** (Policy + Claims in prod) with the
 > operational **middle** (Underwriting on dev; Pricing/Billing planned) still in progress — not a fully
 > running end-to-end insurer yet.
+
+</details>
 
 ## The three tracks (why nothing is scattered)
 

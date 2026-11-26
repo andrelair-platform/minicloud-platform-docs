@@ -20,6 +20,10 @@ the first two entries, which are the single most important distinction to keep s
 - **Retrieva** — the RNCP39583 certification project: a real DORA third-party-ICT compliance product that
   *runs on and benefits from* the IS. Distinct from the IS itself (the IS is its organisational context).
 
+- **IDP vs IdP** (same letters, different things) — **IDP** = *Internal Developer Platform*, the paved-road
+  self-service layer (Backstage, GitOps/ArgoCD, Kargo, the wrapper-chart golden path). **IdP** = *Identity
+  Provider*, the SSO/OIDC service (Authentik). These docs mean **IDP** unless they say *Identity Provider*.
+
 ## Delivery & GitOps
 
 - **GitOps** — Git is the single source of truth for the desired cluster state; a controller continuously
