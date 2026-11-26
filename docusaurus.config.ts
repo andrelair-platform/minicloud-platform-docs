@@ -51,6 +51,10 @@ const config: Config = {
         sidebarPath: './sidebars-is.ts',
       },
     ],
+    [
+      '@docusaurus/plugin-client-redirects',
+      {redirects: [{from: '/platform/architecture/glossary', to: '/glossary'}]},
+    ],
   ],
 
   presets: [

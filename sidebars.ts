@@ -13,7 +13,7 @@ const architectureNav = {
   collapsed: false,
   link: {type: 'doc', id: 'architecture/index'},
   items: [
-    'architecture/glossary',
+    {type: 'link', label: 'Glossary', href: '/glossary'},
     'architecture/c4-system-design',
     'architecture/is-application-landscape',
     'architecture/platform-is-dependency-matrix',
