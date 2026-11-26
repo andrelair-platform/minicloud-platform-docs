@@ -57,7 +57,7 @@ then Kargo/Argo CD). Cluster access is only for **reading/debugging** the dev en
 
 **You almost never start from a blank repo** — scaffold from a **Backstage** [software template](/platform/developer-platform/backstage-software-templates), or clone the closest reference below and find-replace.
 
-| Your stack | Reference service to clone |
+| Your stack | Reference service to clone *(ktayl examples — any works as a starting skeleton)* |
 |---|---|
 | Python / FastAPI | `ktayl-underwriting` |
 | Java / Spring (a module in the monolith) | `ktayl-core` |
