@@ -44,7 +44,7 @@ The litmus test: *"If ktayl stopped selling insurance tomorrow, would this survi
 
 The one-screen relationship: the **Information System consumes the Platform**. Each box is a *group* of
 capabilities/domains (drill down via the L2 views below). The Platform's three groups —
-**Infrastructure & Cloud · Internal Developer Platform · Shared Services & Operations** — are exactly the
+**Cluster & infrastructure · Internal Developer Platform (IDP) · Shared Services & Operations** — are exactly the
 three sections in the Platform sidebar, so the diagram and the navigation tell the same story.
 
 ```mermaid
@@ -61,7 +61,7 @@ flowchart TB
 
   subgraph PLAT["PLATFORM — minicloud · shared technical capabilities (provider)"]
     direction LR
-    subgraph P1["Infrastructure &amp; Cloud — where it runs"]
+    subgraph P1["Cluster &amp; infrastructure — where it runs"]
       RT["Compute &amp; Runtime<br/>k3s · Cilium CNI · ingress"]
       SEC["Identity &amp; Security<br/>Authentik SSO · Vault · Gatekeeper/Falco"]
     end

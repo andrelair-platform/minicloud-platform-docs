@@ -48,14 +48,14 @@ const sidebars: SidebarsConfig = {
       items: ['getting-started/day-1-setup'],
     },
     architectureNav,
-    {type: 'doc', id: 'build-the-cluster', label: 'How the cluster was built'},
 
-    // ══ Infrastructure & Cloud — where services run ══
+    // ══ Cluster & infrastructure — everything built for the cluster ══
     {
       type: 'category',
-      label: 'Infrastructure & Cloud',
+      label: 'Cluster & infrastructure',
       collapsed: true,
       items: [
+    {type: 'doc', id: 'build-the-cluster', label: 'How the cluster was built'},
 
         {
           type: 'category',
@@ -217,10 +217,10 @@ const sidebars: SidebarsConfig = {
     ],
     },
 
-    // ══ Internal Developer Platform — how applications are delivered ══
+    // ══ Internal Developer Platform (IDP) — how applications are delivered ══
     {
       type: 'category',
-      label: 'Internal Developer Platform',
+      label: 'Internal Developer Platform (IDP)',
       collapsed: true,
       items: [
     {type: 'doc', id: 'developer-platform/production-stack-architecture', label: 'Production Stack Architecture'},
