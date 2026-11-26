@@ -68,9 +68,20 @@ The platform alone is equivalent to: AWS EC2 + VPC + auto-provisioning — but l
 
 ---
 
-## Dig deeper
+## Start here — pick your path
+
+New here? Follow one of these short reading paths instead of hunting through the sidebar:
+
+- **🏗 Understand the platform** (≈15 min) → [Architecture Hub](/platform/architecture) (how it fits together) → [Production Stack Architecture](/platform/developer-platform/production-stack-architecture) (what's actually running) → [System Design](/system-design) (*why* it's built this way).
+- **🏢 Understand the insurance system** → [Architecture at a Glance](/is/insurance-platform/architecture-at-a-glance) (the whole IS on one screen) → [Business Journey: contract → ledger](/is/insurance-platform/business-journey) (the end-to-end flow, no assembly required).
+- **🧭 Follow the reasoning** → [System Design](/system-design) (case studies by question) → the **Blog** / [Carnets](/carnets) (write-ups & decisions).
+
+<details>
+<summary>Dig deeper (all entry points)</summary>
 
 - **The current live stack & topology** → [Production Stack Architecture](/platform/developer-platform/production-stack-architecture)
-- **How the two pillars fit together** → [🧭 Architecture Hub](/platform/architecture)
+- **How the two pillars fit together** → [Architecture Hub](/platform/architecture)
 - **The insurance information system** → [Insurance Platform → Architecture at a Glance](/is/insurance-platform/architecture-at-a-glance)
 - **Write-ups & decisions** → the **Blog** in the top navigation.
+
+</details>
