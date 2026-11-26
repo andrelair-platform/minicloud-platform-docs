@@ -1,0 +1,262 @@
+[
+  {
+    "category": "Core model",
+    "term": "Platform (minicloud)",
+    "definition": "the technical *capabilities* layer: compute, networking, storage, delivery (GitOps/CI/Kargo), secrets, identity-as-a-service, observability, the AI platform and the data platform. Business-agnostic — it would survive unchanged if the company stopped selling insurance."
+  },
+  {
+    "category": "Core model",
+    "term": "Information System (ktayl-solution)",
+    "definition": "the *applications, data and processes* that run the insurer: policy, claims, underwriting, billing, the digital workplace, ERP, ITSM, IAM governance, compliance. It *consumes* platform capabilities. (Provider ↔ consumer: Platform provides, the IS consumes.)"
+  },
+  {
+    "category": "Core model",
+    "term": "Retrieva",
+    "definition": "the RNCP39583 certification project: a real DORA third-party-ICT compliance product that *runs on and benefits from* the IS. Distinct from the IS itself (the IS is its organisational context)."
+  },
+  {
+    "category": "Core model",
+    "term": "IDP vs IdP",
+    "definition": "(same letters, different things) — **IDP** = *Internal Developer Platform*, the paved-road self-service layer (Backstage, GitOps/ArgoCD, Kargo, the wrapper-chart golden path). **IdP** = *Identity Provider*, the SSO/OIDC service (Authentik). These docs mean **IDP** unless they say *Identity Provider*."
+  },
+  {
+    "category": "Access & Identity",
+    "term": "SoR — System of Record",
+    "definition": "The *one* authoritative place a fact officially lives; if two systems disagree, the SoR wins. For access, the **ktayl-iam catalog** (`application → role → group`) is the SoR for *who may access what*."
+  },
+  {
+    "category": "Access & Identity",
+    "term": "IdP — Identity Provider",
+    "definition": "The system that authenticates users and issues identity tokens. Here = **Authentik** (SSO for every app). *(Not the same as **IDP** = Internal Developer Platform.)*"
+  },
+  {
+    "category": "Access & Identity",
+    "term": "PEP — Policy Enforcement Point",
+    "definition": "Enforces an access decision at runtime but doesn't *own* it. Here = **Authentik** (checks the group at login)."
+  },
+  {
+    "category": "Access & Identity",
+    "term": "PDP / PAP",
+    "definition": "**PDP** = Policy *Decision* Point (evaluates the rule); **PAP** = Policy *Administration* Point (where rules are authored). ktayl-iam is the PAP/decision source; Authentik enforces."
+  },
+  {
+    "category": "Access & Identity",
+    "term": "RBAC",
+    "definition": "Role-Based Access Control — access via *roles* (groups), not per-user. Tools map the OIDC `groups` claim → a role."
+  },
+  {
+    "category": "Access & Identity",
+    "term": "ABAC",
+    "definition": "Attribute-Based Access Control — access from *attributes* (country, line-of-business), layered on RBAC."
+  },
+  {
+    "category": "Access & Identity",
+    "term": "IGA",
+    "definition": "Identity Governance & Administration — the lifecycle of *who should have what* (request, approval, provision, recertify). The **ktayl-iam** product."
+  },
+  {
+    "category": "Access & Identity",
+    "term": "JML — Joiner/Mover/Leaver",
+    "definition": "The identity lifecycle events IGA governs (onboard → role change → offboard)."
+  },
+  {
+    "category": "Access & Identity",
+    "term": "SSO",
+    "definition": "Single Sign-On — one login (Authentik) for all apps."
+  },
+  {
+    "category": "Access & Identity",
+    "term": "OIDC",
+    "definition": "OpenID Connect — the SSO protocol; carries identity + a **`groups` claim** the tools read for RBAC."
+  },
+  {
+    "category": "Access & Identity",
+    "term": "forward-auth",
+    "definition": "An ingress-level auth check for apps that can't speak OIDC — Authentik authorizes the request before it reaches the app."
+  },
+  {
+    "category": "Access & Identity",
+    "term": "claim",
+    "definition": "A field inside the OIDC token (e.g. `email`, `groups`) the app trusts."
+  },
+  {
+    "category": "Access & Identity",
+    "term": "Segregation of privilege",
+    "definition": "(least privilege) — A lower tier **cannot** perform a higher tier's action (Developer → Viewer, not Admin). A *read-vs-write* control."
+  },
+  {
+    "category": "Access & Identity",
+    "term": "SoD — Segregation of Duties",
+    "definition": "No *one person* holds two **conflicting** duties — e.g. **request** AND **approve** their own access (maker ≠ checker). An *anti-fraud* control, distinct from least-privilege."
+  },
+  {
+    "category": "Access & Identity",
+    "term": "break-glass",
+    "definition": "An emergency credential/path used only when normal SSO is down (e.g. Vaultwarden master login)."
+  },
+  {
+    "category": "Delivery & GitOps",
+    "term": "GitOps",
+    "definition": "Git is the single source of truth for the desired cluster state; a controller continuously reconciles the cluster to match it."
+  },
+  {
+    "category": "Delivery & GitOps",
+    "term": "ArgoCD",
+    "definition": "the GitOps controller here: it reconciles one environment from Git and auto-syncs it."
+  },
+  {
+    "category": "Delivery & GitOps",
+    "term": "Kargo",
+    "definition": "promotes one immutable image across stages by *writing the Git change* (opening PRs) that ArgoCD then deploys. Division of labour: **CI builds & proves the artifact; Kargo promotes it; ArgoCD deploys it.**"
+  },
+  {
+    "category": "Delivery & GitOps",
+    "term": "Warehouse / Freight / Stage",
+    "definition": "(Kargo) — a *Warehouse* watches for new artifacts; a *Freight* is a promotable set (an image or a commit); a *Stage* (dev, prod) is an environment a Freight is promoted to."
+  },
+  {
+    "category": "Delivery & GitOps",
+    "term": "GAP wrapper chart",
+    "definition": "the Helm golden path: a custom app is a thin chart depending on the shared `minicloud-app-deployment` library chart. One Helm render, one ArgoCD source."
+  },
+  {
+    "category": "Delivery & GitOps",
+    "term": "CODEOWNERS gate",
+    "definition": "the prod approval lives in Git: a PR touching a gated path (prod overlays, `services/*/helm`, `apps/`, `helm-values/`, `.claude/`) requires code-owner review before merge."
+  },
+  {
+    "category": "Delivery & GitOps",
+    "term": "merge-gate",
+    "definition": "an always-on required CI check that scans every PR for unresolved git conflict markers."
+  },
+  {
+    "category": "Delivery & GitOps",
+    "term": "Harbor / ghcr",
+    "definition": "the hybrid registry: **Harbor** holds dev/ephemeral images; **ghcr.io** holds the durable, immutable-SHA prod images."
+  },
+  {
+    "category": "Delivery & GitOps",
+    "term": "cosign / SBOM / Trivy",
+    "definition": "supply-chain controls: keyless image signing, a software bill of materials attached to the image, and a CRITICAL-severity vulnerability scan gate."
+  },
+  {
+    "category": "Delivery & GitOps",
+    "term": "Release to production",
+    "definition": "(*mise en production*) — the moment a validated change reaches the prod environment. Here it is a human-approved, CODEOWNERS-gated promotion: Kargo opens the Git change, ArgoCD reconciles it. *Example:* a custom service auto-deploys to dev, then waits for a reviewed prod PR — see the [System Design case](/system-design)."
+  },
+  {
+    "category": "Engineering process",
+    "term": "BMAD",
+    "definition": "the story-authoring workflow (intent → spec → stories → build → review), organised per product."
+  },
+  {
+    "category": "Engineering process",
+    "term": "Delivery paths (A/B/C/E)",
+    "definition": "the artefact burden scales to the work: **A** small change · **B** feature/epic · **C** new product/major initiative · **E** emergency/hotfix."
+  },
+  {
+    "category": "Engineering process",
+    "term": "Test pyramid (L0–L4)",
+    "definition": "L0 static · L1 unit · L2 integration (real DB/queue) · L3 contract · L4 e2e/smoke."
+  },
+  {
+    "category": "Engineering process",
+    "term": "QA gate (L5)",
+    "definition": "an adversarial test pass against the *live dev* service, mandatory before prod promotion (catches integration/deploy/runtime bugs that mocked tests cannot)."
+  },
+  {
+    "category": "Infrastructure",
+    "term": "k3s",
+    "definition": "the lightweight Kubernetes distribution the cluster runs on (6 nodes)."
+  },
+  {
+    "category": "Infrastructure",
+    "term": "Cilium",
+    "definition": "the eBPF CNI (networking + NetworkPolicy + Hubble observability)."
+  },
+  {
+    "category": "Infrastructure",
+    "term": "Longhorn",
+    "definition": "the distributed block storage providing network-attached PersistentVolumes."
+  },
+  {
+    "category": "Infrastructure",
+    "term": "CNPG (CloudNativePG)",
+    "definition": "the Postgres operator and the database standard: HA failover + PITR backups."
+  },
+  {
+    "category": "Infrastructure",
+    "term": "ESO + Vault",
+    "definition": "External Secrets Operator delivers secrets from HashiCorp Vault into pods; no secret material is ever committed to Git."
+  },
+  {
+    "category": "Infrastructure",
+    "term": "Authentik",
+    "definition": "the identity provider: SSO/OIDC + MFA that every app trusts. Identity is the perimeter."
+  },
+  {
+    "category": "Infrastructure",
+    "term": "cert-manager",
+    "definition": "issues TLS certificates from the internal `minicloud-ca` ClusterIssuer."
+  },
+  {
+    "category": "Infrastructure",
+    "term": "NATS / JetStream",
+    "definition": "the messaging backbone for event-driven, asynchronous workflows."
+  },
+  {
+    "category": "Infrastructure",
+    "term": "Tailscale / Cloudflare Tunnel",
+    "definition": "private mesh access (internal) and public ingress (for published apps)."
+  },
+  {
+    "category": "Infrastructure",
+    "term": "Managed cloud service",
+    "definition": "(*service cloud managé*) — a capability I rent and someone else operates, instead of running it on my own hardware. The hybrid rule: self-host by default, use a managed service where it covers a risk better than I can. *Example:* Cloudflare R2 holds the off-site backup copy and Amazon SES sends outbound mail — the responsibilities I deliberately delegate (see the [System Design hybrid case](/system-design))."
+  },
+  {
+    "category": "Reliability",
+    "term": "SLO / SLI / error budget",
+    "definition": "the reliability *objective*, the *indicator* that measures it, and the `1 − SLO` allowance whose burn gates risky changes."
+  },
+  {
+    "category": "Reliability",
+    "term": "RTO / RPO",
+    "definition": "Recovery Time Objective (how fast service is restored) and Recovery Point Objective (how much data loss is tolerable) — proven by DR drills."
+  },
+  {
+    "category": "Reliability",
+    "term": "Game Day",
+    "definition": "a deliberately induced failure, measured and written up in a postmortem — reliability as evidence."
+  },
+  {
+    "category": "Reliability",
+    "term": "MTTR",
+    "definition": "Mean Time To Recovery: how long it takes to recover from an incident."
+  },
+  {
+    "category": "Compliance",
+    "term": "DORA",
+    "definition": "the EU Digital Operational Resilience Act (ICT risk, third-party-ICT, resilience testing)."
+  },
+  {
+    "category": "Compliance",
+    "term": "EU AI Act",
+    "definition": "risk-tiered obligations for AI systems; controls scale with the tier."
+  },
+  {
+    "category": "Compliance",
+    "term": "GDPR",
+    "definition": "EU data-protection regulation governing personal-data handling."
+  },
+  {
+    "category": "Compliance",
+    "term": "Solvency II",
+    "definition": "the EU prudential framework for insurers (the regulatory spine of the IS)."
+  },
+  {
+    "category": "Compliance",
+    "term": "Accounting reconciliation",
+    "definition": "(*rapprochement comptable*) — confirming that two records of the same money agree: here, that each premium billed this month is also posted to the general ledger, with any gap surfaced. The basis of an honest period close. *Example:* the `ktayl-core` finance close walks invoice → GL and flags mismatches — see the [System Design case](/system-design)."
+  }
+]
