@@ -40,8 +40,9 @@ Three layers, each answering a **different** failure (not "more providers for th
 > (Velero/Longhorn/barman) — those tools **must** delete old backups to manage incremental chains, and
 > Object Lock would break their GC → pile-up/errors.
 >
-> **Off-site freshness is NOT monitored (gap):** the MinIO→R2 mirror silently lagged **~3 days** during
-> the 2026-11-23→26 outage (newest off-site copy = 2026-11-23). See gap #6.
+> **Off-site freshness IS alerted in-cluster** (`MinioR2MirrorStale` on the `backup-offsite-mirror`
+> CronJob, 26 h; + `OffsiteRestoreVerifyStale`). The ~3-day lag in the 2026-11-23→26 outage was the
+> **whole cluster being off** (Prometheus down too) → an *external* heartbeat is the residual. See gap #6.
 
 **Only one restore is drill-proven:** `chat/synapse` via `app-restore-drill` (CronJob 02:45 UTC →
 restores the latest dump into a throwaway Postgres and asserts table/row counts → `AppRestoreDrillStale`
@@ -105,10 +106,14 @@ To reach level 5 (regularly-tested DR), the ordered gaps:
    + 1 critical CNPG). Object Lock **only** on these self-managed copies, **never** on tool-GC'd prefixes.
    Pair it with **scoped IAM** (Backup-Writer: put-only, no delete · Recovery-Reader · Infra-Admin via
    OpenTofu · Break-glass) — the creds to recover Vault must **not** live only in Vault.
-6. **Off-site mirror freshness is unmonitored** — the MinIO→R2 mirror to `minicloud-backup-offsite`
-   silently lagged **~3 days** during the 2026-11-23→26 outage (newest off-site copy = 2026-11-23); no
-   staleness alert (unlike `AppRestoreDrillStale`). **Action:** a freshness check + alert on the newest
-   off-site object per critical prefix.
+6. **No EXTERNAL (off-cluster) monitoring for a full-site outage** — in-cluster freshness **is** already
+   alerted (`MinioR2MirrorStale` on the `backup-offsite-mirror` CronJob @26 h, `OffsiteRestoreVerifyStale`,
+   `K3sSQLiteBackupStale`, `CNPGBackupStale` — all in `00-prometheusrule.yaml`). But those alerts live
+   **inside** the cluster: when the whole platform is powered off (the 2026-11-23→26 outage), Prometheus +
+   Alertmanager are down too, so the ~3-day off-site lag passed **silently** until power-on. **Action:** an
+   **off-cluster heartbeat** (the `cloud-adoption.md` always-free AWS Lambda *Anchor 1*) that watches
+   backup freshness / cluster liveness and pages when the platform itself is dark — the one thing in-cluster
+   monitoring structurally cannot do.
 7. **Full-site rebuild ("from zero") not drilled end-to-end** — Scenario F/G are documented, but the
    RTO/RPO of a complete reconstruction (bootstrap → infra → control-plane → Vault unseal → platform →
    data → IS) is **not measured**. The **break-glass kit** (Shamir recovery keys + R2/S3 reader creds +
@@ -119,7 +124,11 @@ To reach level 5 (regularly-tested DR), the ordered gaps:
 - Every PVC is offsited (Velero → R2) and the **R2 BSL is `Available`** again (P0-2b).
 - **Crown jewels ARE off-site** — kine + the Vault raft snapshot mirror to R2
   `minicloud-backup-offsite/db-backups/` (verified 2026-11-26), **not** MinIO-only. *(What's still
-  missing is immutability + freshness monitoring, not the off-site copy itself — gaps #5/#6.)*
+  missing is immutability + external-outage monitoring, not the off-site copy itself — gaps #5/#6.)*
+- **Off-site is monitored AND restore-verified in-cluster** — the `backup-offsite-mirror` CronJob
+  (04:30 UTC, MinIO→R2) is alerted by `MinioR2MirrorStale`, and `offsite-restore-verify` +
+  `OffsiteRestoreVerifyStale` prove the R2 copy actually restores (not just exists). The one blind spot is
+  a *full-cluster* outage (in-cluster monitoring is down with it) → gap #6.
 - Synapse restore is **continuously proven** (drill + alert).
 - Control-plane (kine) backups are **integrity-checked at write time** + have a rehearsable
   [rebuild runbook](./04-dr-runbook.md) (Scenario G).
