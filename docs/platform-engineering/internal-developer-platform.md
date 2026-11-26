@@ -3,6 +3,7 @@ id: internal-developer-platform
 title: Internal Developer Platform (IDP)
 sidebar_label: Internal Developer Platform
 image: /img/minicloud-social-card.png
+tags: [explanation]
 ---
 
 # minicloud as an Internal Developer Platform

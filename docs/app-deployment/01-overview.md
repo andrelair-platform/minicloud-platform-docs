@@ -2,6 +2,7 @@
 id: deploy-overview
 title: Application Delivery Overview
 sidebar_position: 1
+tags: [explanation]
 ---
 
 # Application Delivery Overview
