@@ -4,14 +4,16 @@ title: Architecture Hub
 sidebar_label: Architecture Hub
 ---
 
+import Link from '@docusaurus/Link';
+
 # Architecture Hub
 
 <div className="row" style={{marginBottom: '1rem'}}>
   <div className="col col--6" style={{marginBottom: '0.5rem'}}>
-    <a className="button button--primary button--lg button--block" href="/platform">Explore the Platform →</a>
+    <Link className="button button--primary button--lg button--block" to="/platform">Explore the Platform →</Link>
   </div>
   <div className="col col--6" style={{marginBottom: '0.5rem'}}>
-    <a className="button button--primary button--lg button--block" href="/is/insurance-platform/architecture-at-a-glance">Explore the Insurance IS →</a>
+    <Link className="button button--primary button--lg button--block" to="/is/insurance-platform/architecture-at-a-glance">Explore the Insurance IS →</Link>
   </div>
 </div>
 

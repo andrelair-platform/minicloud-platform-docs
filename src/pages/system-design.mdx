@@ -3,6 +3,8 @@ title: System Design
 description: Discover the work by design question — where to run a service, how to ship an app, and how to design a business process. Each case links to the deep write-up and its diagram.
 ---
 
+import Link from '@docusaurus/Link';
+
 # System Design
 
 Three angles on the same platform, each answering a different design question:
@@ -89,8 +91,8 @@ in the docs.
       <div className="card__header"><h3>What happens when apps share a data server?</h3></div>
       <div className="card__body">Shared maintenance, the risk of a simultaneous outage, and the criteria that make me isolate some apps onto their own Postgres cluster.</div>
       <div className="card__footer">
-        <a href="/blog/database-isolation-vs-operational-isolation">Read the write-up →</a><br/>
-        <a href="/is/insurance-platform/data-stores-inventory">See the data-store inventory →</a>
+        <Link to="/blog/database-isolation-vs-operational-isolation">Read the write-up →</Link><br/>
+        <Link to="/is/insurance-platform/data-stores-inventory">See the data-store inventory →</Link>
       </div>
     </div>
   </div>
@@ -99,7 +101,7 @@ in the docs.
       <div className="card__header"><h3>Why keep several insurance functions in one app?</h3></div>
       <div className="card__body">The module boundaries inside <code>ktayl-core</code> and the conditions that would make me extract a module into its own service.</div>
       <div className="card__footer">
-        <a href="/is/insurance-platform/architecture-at-a-glance">See the architecture at a glance →</a>
+        <Link to="/is/insurance-platform/architecture-at-a-glance">See the architecture at a glance →</Link>
       </div>
     </div>
   </div>

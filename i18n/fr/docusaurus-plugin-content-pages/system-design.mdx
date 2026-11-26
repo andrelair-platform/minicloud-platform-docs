@@ -3,6 +3,8 @@ title: System Design
 description: Découvrir le travail par problème de conception — où faire tourner un service, comment livrer une application, comment concevoir un processus métier. Chaque cas mène à l'étude de fond et à son schéma.
 ---
 
+import Link from '@docusaurus/Link';
+
 # System Design
 
 Trois angles sur la même plateforme, chacun répondant à une question de conception différente :
@@ -91,8 +93,8 @@ dans la documentation.
       <div className="card__header"><h3>Que se passe-t-il quand des applications partagent un serveur de données ?</h3></div>
       <div className="card__body">La maintenance commune, le risque de panne simultanée et les critères qui me font isoler certaines applications sur leur propre cluster Postgres.</div>
       <div className="card__footer">
-        <a href="/blog/database-isolation-vs-operational-isolation">Lire l'étude →</a><br/>
-        <a href="/is/insurance-platform/data-stores-inventory">Voir l'inventaire des stockages →</a>
+        <Link to="/blog/database-isolation-vs-operational-isolation">Lire l'étude →</Link><br/>
+        <Link to="/is/insurance-platform/data-stores-inventory">Voir l'inventaire des stockages →</Link>
       </div>
     </div>
   </div>
@@ -101,7 +103,7 @@ dans la documentation.
       <div className="card__header"><h3>Pourquoi garder plusieurs fonctions d'assurance dans une seule application ?</h3></div>
       <div className="card__body">Les frontières entre modules dans <code>ktayl-core</code> et les conditions qui me feraient extraire un module vers son propre service.</div>
       <div className="card__footer">
-        <a href="/is/insurance-platform/architecture-at-a-glance">Voir l'architecture en un coup d'œil →</a>
+        <Link to="/is/insurance-platform/architecture-at-a-glance">Voir l'architecture en un coup d'œil →</Link>
       </div>
     </div>
   </div>
