@@ -2,6 +2,7 @@
 id: regulatory-operating-model
 title: Regulatory Operating Model (overview)
 sidebar_label: Regulatory Operating Model
+tags: [explanation]
 ---
 
 # Regulatory Operating Model (overview)
@@ -60,3 +61,9 @@ HR AI, autonomous decisions) where **GDPR Art. 22** often bites harder than the 
 
 The register + gate are **governance (cheap, done now)**; actual **controls are implemented per
 capability as each domain is built** (business-tools-first). The map fills itself in as domains stand up.
+
+## Related
+
+- [Access Governance (IAM)](./access-governance-ktayl-iam)
+- [EA Blueprint](./enterprise-architecture-blueprint)
+- [Architecture at a Glance](./architecture-at-a-glance)

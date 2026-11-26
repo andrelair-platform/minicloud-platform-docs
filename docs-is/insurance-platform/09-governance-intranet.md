@@ -3,6 +3,7 @@ id: governance-intranet
 title: Governance Framework & Intranet (BookStack) — scoping
 sidebar_label: 🏛 Governance Framework & Intranet
 sidebar_position: 9
+tags: [explanation]
 ---
 
 # Governance Framework & Intranet — Scoping
@@ -193,3 +194,9 @@ DORA (ICT governance family) · EU AI Act (AI-governance family) · ACPR (writte
 2. **Critical-policy corpus:** ⬜ currently **all in BookStack** (simulation). The git+CODEOWNERS option for the hardest Solvency-II policies (timestamped four-eyes) remains available for when real policies are authored.
 3. **MariaDB:** ✅ **dedicated** small MariaDB StatefulSet (not reusing ERPNext's) — recorded as the one MySQL deviation.
 4. **Phase-1 pilot shelves:** ✅ **RH + Juridique + Underwriting** (+ IT/Security/DORA added for the platform capabilities in the registry).
+
+## Related
+
+- [Regulatory Operating Model](./regulatory-operating-model)
+- [Access Governance (IAM)](./access-governance-ktayl-iam)
+- [Architecture at a Glance](./architecture-at-a-glance)

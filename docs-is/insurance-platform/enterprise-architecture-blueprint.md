@@ -1,6 +1,7 @@
 ---
 title: Enterprise Architecture Blueprint — the ktayl IARD Insurer IS
 sidebar_label: 🏛 EA Blueprint (Insurer IS)
+tags: [reference]
 ---
 
 # Enterprise Architecture Blueprint — the ktayl IARD Insurer IS

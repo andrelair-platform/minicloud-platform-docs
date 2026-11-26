@@ -3,6 +3,7 @@ id: billing-ktayl-core
 title: Billing — ktayl-core (insurance-LOB modular monolith) · as-built
 sidebar_label: 💶 Billing (ktayl-core)
 sidebar_position: 13
+tags: [explanation]
 ---
 
 # Billing — ktayl-core (insurance-LOB modular monolith)
@@ -157,3 +158,10 @@ Full detail + rationale: `ktayl-core` repo `docs/`
 [architecture](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/architecture.md) ·
 [ADR-001/002/003](https://github.com/andrelair-platform/ktayl-core/tree/main/docs/architecture/adr) ·
 [SPEC](https://github.com/andrelair-platform/ktayl-core/blob/main/docs/specs/spec-billing-mvp/SPEC.md)).
+
+## Related
+
+- [Business Journey — invoice → payment → GL (steps 4–6)](./business-journey)
+- [Claims settlement & GL](./claims-settlement-gl)
+- [System of Record](./system-of-record)
+- [SI Delivery Board](../delivery-board)

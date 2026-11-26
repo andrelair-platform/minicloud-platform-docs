@@ -1,6 +1,7 @@
 ---
 title: Canonical Insurance Data Model — ktayl IS
 sidebar_label: 🧩 Canonical Data Model
+tags: [reference]
 ---
 
 # Canonical Insurance Data Model — ktayl IS

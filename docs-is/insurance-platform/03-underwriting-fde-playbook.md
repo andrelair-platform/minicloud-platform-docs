@@ -2,6 +2,7 @@
 id: underwriting-fde-playbook
 title: Underwriting — FDE Playbook (overview)
 sidebar_label: Underwriting FDE Playbook
+tags: [how-to]
 ---
 
 # Underwriting & Pricing — FDE Playbook (overview)
@@ -49,3 +50,9 @@ document-heavy, referral-heavy. The full playbook walks the domain end-to-end:
 - **Bind target** — [`ktayl-policy-service`](./ktayl-policy-service) (Policy Admin), already live.
 - **MDM** — client/broker/insured are shared master data; MDM (#20) is parked and *emerges* as this
   domain needs shared entities — UW-01 is **not** blocked on it.
+
+## Related
+
+- [ktayl Underwriting — the service this playbook drives](./ktayl-underwriting)
+- [Business Journey — underwriting (step 2)](./business-journey)
+- [Architecture at a Glance](./architecture-at-a-glance)

@@ -2,6 +2,7 @@
 id: ktayl-policy-service
 title: ktayl Policy Service
 sidebar_label: ktayl Policy Service
+tags: [explanation]
 ---
 
 # ktayl Policy Service
@@ -57,3 +58,10 @@ All monetary values (insured amount, deductible, premium amount) are stored as *
 - [Service documentation](https://andrelair-platform.github.io/ktayl-policy-service/)
 - [GitHub repository](https://github.com/andrelair-platform/ktayl-policy-service)
 - [Platform backlog #203](https://github.com/andrelair-platform/platform-backlog/issues/203)
+
+## Related
+
+- [Business Journey — the bound contract (step 3)](./business-journey)
+- [System of Record — Policy ownership](./system-of-record)
+- [Architecture at a Glance](./architecture-at-a-glance)
+- [SI Delivery Board](../delivery-board)
