@@ -3,6 +3,7 @@ id: business-journey
 title: "Business Journey — from contract to the ledger"
 sidebar_label: Business Journey (contract → ledger)
 sidebar_position: 1
+tags: [explanation]
 ---
 
 # Business Journey — contract → invoice → payment → accounting

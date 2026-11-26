@@ -2,6 +2,7 @@
 id: ai-first-operating-model
 title: AI-First Insurance Operating Model
 sidebar_label: AI-First Operating Model (Vision)
+tags: [explanation]
 ---
 
 # AI-First Insurance Operating Model — the ktayl-solution vision
@@ -155,3 +156,9 @@ expert-judgment-intensive — AI doesn't replace the expert; it removes the oper
 *surrounding* the expert. That is a far stronger claim than "we use AI," and it is the strategic
 frame for both the platform and the **IA Integration Lab** thesis: *we design the AI operating
 architecture that lets an insurer become AI-first.*
+
+## Related
+
+- [Architecture at a Glance](./architecture-at-a-glance)
+- [EA Blueprint](./enterprise-architecture-blueprint)
+- [SI Delivery Board](../delivery-board)

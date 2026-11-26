@@ -3,6 +3,7 @@ id: itsm-glpi
 title: ITSM — GLPI (ITIL v4) · as-built
 sidebar_label: 🛠 ITSM (GLPI)
 sidebar_position: 10
+tags: [explanation]
 ---
 
 # ITSM — GLPI (ITIL v4)
@@ -142,3 +143,9 @@ memory `project_ktayl_itsm_glpi`.
 ITIL v4 service management · **DORA** (ICT incident management + change governance — the ITSM record is
 evidence) · **ACPR / Solvency II** operational-risk + incident logging · GDPR (ticket-PII retention,
 handled in S003). Certification: **BC03 (déployer & sécuriser)**.
+
+## Related
+
+- [Access Governance (IAM)](./access-governance-ktayl-iam)
+- [Architecture at a Glance](./architecture-at-a-glance)
+- [SI Delivery Board](../delivery-board)

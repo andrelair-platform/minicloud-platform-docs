@@ -3,6 +3,7 @@ id: operating-sequence
 title: Operating Sequence — what to build next, and why
 sidebar_label: 🧭 Operating Sequence (priority map)
 sidebar_position: 12
+tags: [explanation]
 ---
 
 # Operating Sequence — the program priority map
@@ -74,3 +75,9 @@ end-to-end before starting any new domain.
 
 > Revisit this map at each sprint boundary; it's a living view over the
 > [catalog](./business-applications-catalog), not a fixed roadmap.
+
+## Related
+
+- [Business Journey](./business-journey)
+- [IS Build Roadmap](../product-roadmap/is-build-roadmap)
+- [SI Delivery Board](../delivery-board)

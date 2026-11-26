@@ -1,6 +1,7 @@
 ---
 title: System-of-Record Registry — ktayl IS
 sidebar_label: 🗂 System of Record
+tags: [explanation]
 ---
 
 # System-of-Record (SoR) Registry — ktayl IS

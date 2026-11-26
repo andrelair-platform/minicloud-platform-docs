@@ -1,6 +1,7 @@
 ---
 title: Capability Map & Registry — ktayl IS
 sidebar_label: 🗺 Capability Map & Registry
+tags: [reference]
 ---
 
 # Capability Map & Registry — ktayl IS

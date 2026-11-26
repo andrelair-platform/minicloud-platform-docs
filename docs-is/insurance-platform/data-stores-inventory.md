@@ -2,6 +2,7 @@
 id: data-stores-inventory
 title: Data stores inventory (as-built)
 sidebar_label: 🗄️ Data stores inventory
+tags: [reference]
 ---
 
 # Data stores inventory — the ktayl-solution IS

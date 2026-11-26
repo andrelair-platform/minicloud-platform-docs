@@ -4,6 +4,7 @@ image: /img/ktayl-is-card.png
 title: Architecture at a Glance — read this first
 sidebar_label: 🗺 Architecture at a Glance (start here)
 sidebar_position: 0
+tags: [explanation]
 ---
 
 # ktayl IS — Architecture at a Glance

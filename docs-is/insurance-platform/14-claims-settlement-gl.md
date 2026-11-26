@@ -3,6 +3,7 @@ id: claims-settlement-gl
 title: Claims settlement, reserving & GL (CLM-FIN) · as-built
 sidebar_label: 🧾 Claims settlement & GL (CLM-FIN)
 sidebar_position: 14
+tags: [explanation]
 ---
 
 # Claims settlement, reserving & GL — four-eyes controls + double-entry (CLM-FIN)
@@ -86,3 +87,10 @@ audit = the threat-T7 control, a payout above authority can't be self-applied). 
 Detailed design: **ADR-021** + the case study `ktayl-core/docs/evidence/case-studies/clm-fin-claims-money-control.md`
 (both in the `ktayl-core` repo). Related: the [Billing as-built](./13-billing-ktayl-core.md) (the premium chain)
 and the [legacy-core modernization](./06-legacy-core-modernization.md) (the claims Strangler).
+
+## Related
+
+- [Legacy-core modernization](./legacy-core-modernization)
+- [Billing (ktayl-core)](./billing-ktayl-core)
+- [Business Journey — the claims money path](./business-journey)
+- [SI Delivery Board](../delivery-board)

@@ -2,6 +2,7 @@
 id: legacy-core-modernization
 title: Legacy-Core Modernization (GlobalCore + the strangler)
 sidebar_label: Legacy-Core Modernization
+tags: [explanation]
 ---
 
 # Legacy-Core Modernization — the Oracle legacy (GlobalCore) & the strangler
@@ -133,3 +134,10 @@ default-deny egress to the controller only, PII masking before AI, identity prop
 - [IS Build Roadmap](../product-roadmap/is-build-roadmap) — Track C (Modernization Practice Lab)
 - Wrapper initiative spec: `ktayl-integration/docs/legacy-wrapper-initiative-spec.md`
 - Legacy engine: `globalcore-legacy` · Claims wrap: `ktayl-claims` (#11)
+
+## Related
+
+- [Claims settlement & GL](./claims-settlement-gl)
+- [Business Journey — the claims money path](./business-journey)
+- [System of Record](./system-of-record)
+- [Architecture at a Glance](./architecture-at-a-glance)

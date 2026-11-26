@@ -3,6 +3,7 @@ id: access-governance-ktayl-iam
 title: Access Governance — ktayl-iam (custom IGA) · as-built
 sidebar_label: 🔑 Access Governance (ktayl-iam)
 sidebar_position: 11
+tags: [explanation]
 ---
 
 # Access Governance — ktayl-iam (custom IGA)
@@ -255,3 +256,10 @@ Full detail + rationale: `ktayl-iam` repo `docs/` (brief · prd · `architecture
 `backend/src/lifecycle/` (Joiner/Leaver handler, Stalwart JMAP client, NATS consumer); and the platform
 memories `project_iam_custom_access_governance`, `project_iam_deploy_specifics`,
 `reference_stalwart_jmap_provisioning` + `feedback_hr12_glpi_n8n_gotchas`.
+
+## Related
+
+- [Regulatory Operating Model](./regulatory-operating-model)
+- [Governance Intranet](./governance-intranet)
+- [System of Record](./system-of-record)
+- [Architecture at a Glance](./architecture-at-a-glance)

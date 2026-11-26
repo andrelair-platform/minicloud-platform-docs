@@ -2,6 +2,7 @@
 id: business-operations-tooling
 title: Business Operations Tooling — what the business teams use to run the insurer
 sidebar_label: 🧰 Business Operations Tooling
+tags: [explanation]
 ---
 
 # Business Operations Tooling
@@ -123,3 +124,9 @@ orchestration, intake) is on the [IS Build Roadmap → business-operations compl
 [🧭 IS Build Roadmap](../product-roadmap/is-build-roadmap) ·
 [Business Applications Catalog](./business-applications-catalog) ·
 [EA Blueprint](./enterprise-architecture-blueprint).
+
+## Related
+
+- [EA Blueprint](./enterprise-architecture-blueprint)
+- [Business Applications Catalog](./business-applications-catalog)
+- [Architecture at a Glance](./architecture-at-a-glance)

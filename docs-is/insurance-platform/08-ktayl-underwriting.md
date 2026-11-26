@@ -2,6 +2,7 @@
 id: ktayl-underwriting
 title: ktayl Underwriting & Pricing
 sidebar_label: ktayl Underwriting & Pricing
+tags: [explanation]
 ---
 
 # ktayl Underwriting & Pricing
@@ -64,3 +65,10 @@ All money is **eurocents** (`int64` minor units); the rating breakdown reconcile
 
 - **Full test pyramid enforced** — L2 integration (real Postgres), L3 contract (against the Policy Service OpenAPI), L4 smoke, and a live **L5 QA gate** against the running dev service before any prod promotion. "Unit-only" is treated as an anti-pattern.
 - **Governance:** the Path-C artefact set (PRD, solution architecture, NFR register, threat model, ADR log, UX DESIGN/EXPERIENCE) lives in the repo; this page is the map.
+
+## Related
+
+- [Business Journey — underwriting (step 2)](./business-journey)
+- [Underwriting FDE Playbook](./underwriting-fde-playbook)
+- [System of Record](./system-of-record)
+- [SI Delivery Board](../delivery-board)

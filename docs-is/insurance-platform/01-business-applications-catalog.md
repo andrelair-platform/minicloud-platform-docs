@@ -2,6 +2,7 @@
 id: business-applications-catalog
 title: Business Applications Catalog
 sidebar_label: Business Applications Catalog
+tags: [reference]
 ---
 
 # Business Applications Catalog

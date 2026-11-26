@@ -2,6 +2,7 @@
 id: hr-tooling
 title: HR / Human Resources Tooling
 sidebar_label: HR Tooling
+tags: [reference]
 ---
 
 # HR / Human Resources Tooling
