@@ -24,6 +24,28 @@ the first two entries, which are the single most important distinction to keep s
   self-service layer (Backstage, GitOps/ArgoCD, Kargo, the wrapper-chart golden path). **IdP** = *Identity
   Provider*, the SSO/OIDC service (Authentik). These docs mean **IDP** unless they say *Identity Provider*.
 
+## Access & Identity
+
+| Term | Meaning (as used here) |
+|---|---|
+| **SoR — System of Record** | The *one* authoritative place a fact officially lives; if two systems disagree, the SoR wins. For access, the **ktayl-iam catalog** (`application → role → group`) is the SoR for *who may access what*. |
+| **IdP — Identity Provider** | The system that authenticates users and issues identity tokens. Here = **Authentik** (SSO for every app). *(Not the same as **IDP** = Internal Developer Platform.)* |
+| **PEP — Policy Enforcement Point** | Enforces an access decision at runtime but doesn't *own* it. Here = **Authentik** (checks the group at login). |
+| **PDP / PAP** | **PDP** = Policy *Decision* Point (evaluates the rule); **PAP** = Policy *Administration* Point (where rules are authored). ktayl-iam is the PAP/decision source; Authentik enforces. |
+| **RBAC** | Role-Based Access Control — access via *roles* (groups), not per-user. Tools map the OIDC `groups` claim → a role. |
+| **ABAC** | Attribute-Based Access Control — access from *attributes* (country, line-of-business), layered on RBAC. |
+| **IGA** | Identity Governance & Administration — the lifecycle of *who should have what* (request, approval, provision, recertify). The **ktayl-iam** product. |
+| **JML — Joiner/Mover/Leaver** | The identity lifecycle events IGA governs (onboard → role change → offboard). |
+| **SSO** | Single Sign-On — one login (Authentik) for all apps. |
+| **OIDC** | OpenID Connect — the SSO protocol; carries identity + a **`groups` claim** the tools read for RBAC. |
+| **forward-auth** | An ingress-level auth check for apps that can't speak OIDC — Authentik authorizes the request before it reaches the app. |
+| **claim** | A field inside the OIDC token (e.g. `email`, `groups`) the app trusts. |
+| **Segregation of privilege** (least privilege) | A lower tier **cannot** perform a higher tier's action (Developer → Viewer, not Admin). A *read-vs-write* control. |
+| **SoD — Segregation of Duties** | No *one person* holds two **conflicting** duties — e.g. **request** AND **approve** their own access (maker ≠ checker). An *anti-fraud* control, distinct from least-privilege. |
+| **break-glass** | An emergency credential/path used only when normal SSO is down (e.g. Vaultwarden master login). |
+
+See: [Platform Access Matrix](/platform/security-enterprise/platform-access-matrix) · [SSO with Authentik](/platform/security-enterprise/sso-authentik) · [How SSO works](/platform/security-enterprise/how-sso-works).
+
 ## Delivery & GitOps
 
 - **GitOps** — Git is the single source of truth for the desired cluster state; a controller continuously
