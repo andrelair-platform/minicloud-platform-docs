@@ -90,6 +90,7 @@ New here? Use the **search** (top-right) to jump straight to a topic — or foll
 
 Jump straight to the answer — or use the **search** box (top-right):
 
+- **I'm a new developer — where do I start?** → [Getting Started (A→Z)](/platform/getting-started)
 - **How was the cluster built?** → [bare metal → Kubernetes, step by step](/platform/build-the-cluster)
 - **How do I deploy an app?** → [Application delivery — zero → prod](/platform/app-deployment/deploy-overview)
 - **How does SSO / login work?** → [How SSO & login work](/platform/security-enterprise/how-sso-works)
