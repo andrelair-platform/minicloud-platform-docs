@@ -14,8 +14,8 @@ tags: [how-to]
 
 | What | How to get it |
 |---|---|
-| **GitHub org** (`andrelair-platform`) | Ask the platform owner to add you to the **`andrelair-platform`** GitHub org. Repos are **public**, so you can clone immediately; org membership is what lets you open PRs. Then run `gh auth login`. *(Who grants this + the exact request path is owner-specific — ask André.)* |
-| **SSO account** (Authentik) | You log into every internal app through **Authentik** (one login + MFA). Ask the owner to create your Authentik account, then **enrol MFA (TOTP)** on first login. → [How SSO & login work](/platform/security-enterprise/how-sso-works) |
+| **GitHub org** (`andrelair-platform`) | Ping **André** (Matrix, or open an onboarding issue in `andrelair-platform/.github`) to be invited to the org; accept the email invite. Repos are **public** so you can clone before the invite — org membership is what lets you **open PRs**. Then `gh auth login`. |
+| **SSO account** (Authentik) | The owner creates your account in Authentik (admin → Directory → Users) and adds you to your team group (e.g. `ktayl-developer`). On first login at `auth.devandre.sbs` you set your password and **enrol TOTP (MFA)** — then it's one login for every internal app. → [How SSO & login work](/platform/security-enterprise/how-sso-works) |
 | **Private mesh** (Tailscale) — only for internal tools | Internal tools (ArgoCD, Grafana, Backstage…) are reached over **Tailscale** + the **minicloud CA cert**. Business apps are public (SSO only). Follow the 3-tier model: → [Onboarding a colleague](/platform/remote-access/onboarding-a-colleague) |
 | **Backstage** (developer portal) | No separate account — log in with **SSO**. It's your **catalog · scaffolder · TechDocs · New BMAD Sprint**. → [Backstage](/platform/developer-platform/backstage) |
 
