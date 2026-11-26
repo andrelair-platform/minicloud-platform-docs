@@ -70,6 +70,23 @@ not a measured restore — those are the gaps to close.
 *RTO estimates assume the primary site is up and the restore target exists; a full site loss adds the
 DR-node / rebuild time (see Scenario F/G in the [DR Runbook](./04-dr-runbook.md)).*
 
+## Recovery objectives — targets (by criticality tier)
+
+The matrix above is *today's estimate*; these are the **objectives** that should drive backup frequency,
+retention and the immutable-copy scope (objectives first, mechanism second):
+
+| Tier | Scope | RPO target | RTO target |
+|---|---|---|---|
+| **P0** | Vault · kine / K3s | ≤ 24 h | 30 min – 1 h |
+| **P0** | IAM / Authentik | ≤ 15 min (WAL) | 1 h |
+| **P1** | Ktayl business data | ≤ 15 min (WAL) | 2 h |
+| **P1** | Platform services | ≤ 24 h | 4 h |
+| **P2** | AI Platform | ≤ 24 h | 8 h |
+| **P3** | Observability history | ≤ 48 h | 24 h |
+
+*The "≤ 15 min" RPO is met **only** where CNPG WAL PITR is wired (authentik etc.); `ktayl-prod` /
+`erpnext` are **volume-only** today → see gap #1. Targets are proposed, not yet validated by drill.*
+
 ## Honest DR posture + the gaps to close (priority order)
 
 **Maturity ≈ level 3–4** (automated backups + offsite + documented restore + **one** tested restore).
@@ -82,9 +99,27 @@ To reach level 5 (regularly-tested DR), the ordered gaps:
    `erpnext`, `authentik-cnpg` (a CNPG PITR restore drill) — so their RTO/RPO become *measured*.
 3. **Drill a full CNPG PITR restore** for `authentik-cnpg` (only the replica-rebuild path is proven).
 4. **Vault data-restore drill** (the KMS auto-unseal path is proven; a raft-snapshot data restore is not).
+5. **No immutable / cyber-recovery copy** — every off-site copy is **STANDARD (deletable)**: an operator
+   or attacker holding the MinIO/R2 creds can erase *all* backups. **Action:** an **AWS S3 + Object Lock**
+   vault (independent provider, Governance → Compliance) for the crown jewels (Vault raft snapshot + kine
+   + 1 critical CNPG). Object Lock **only** on these self-managed copies, **never** on tool-GC'd prefixes.
+   Pair it with **scoped IAM** (Backup-Writer: put-only, no delete · Recovery-Reader · Infra-Admin via
+   OpenTofu · Break-glass) — the creds to recover Vault must **not** live only in Vault.
+6. **Off-site mirror freshness is unmonitored** — the MinIO→R2 mirror to `minicloud-backup-offsite`
+   silently lagged **~3 days** during the 2026-11-23→26 outage (newest off-site copy = 2026-11-23); no
+   staleness alert (unlike `AppRestoreDrillStale`). **Action:** a freshness check + alert on the newest
+   off-site object per critical prefix.
+7. **Full-site rebuild ("from zero") not drilled end-to-end** — Scenario F/G are documented, but the
+   RTO/RPO of a complete reconstruction (bootstrap → infra → control-plane → Vault unseal → platform →
+   data → IS) is **not measured**. The **break-glass kit** (Shamir recovery keys + R2/S3 reader creds +
+   age identity) must be proven reachable **off-cluster** — Vault auto-unseals via **AWS KMS**, so a
+   "lost AWS" scenario needs the offline recovery keys, and Vaultwarden (on-cluster) can't be the only home.
 
 ## What IS solid today
 - Every PVC is offsited (Velero → R2) and the **R2 BSL is `Available`** again (P0-2b).
+- **Crown jewels ARE off-site** — kine + the Vault raft snapshot mirror to R2
+  `minicloud-backup-offsite/db-backups/` (verified 2026-11-26), **not** MinIO-only. *(What's still
+  missing is immutability + freshness monitoring, not the off-site copy itself — gaps #5/#6.)*
 - Synapse restore is **continuously proven** (drill + alert).
 - Control-plane (kine) backups are **integrity-checked at write time** + have a rehearsable
   [rebuild runbook](./04-dr-runbook.md) (Scenario G).
