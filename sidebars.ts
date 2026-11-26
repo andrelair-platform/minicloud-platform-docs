@@ -45,7 +45,7 @@ const sidebars: SidebarsConfig = {
       label: 'Getting Started',
       collapsed: false,
       link: {type: 'doc', id: 'getting-started/index'},
-      items: ['getting-started/day-1-setup'],
+      items: ['getting-started/day-1-setup', 'getting-started/run-locally', 'getting-started/add-a-secret', 'getting-started/troubleshooting'],
     },
     architectureNav,
 
