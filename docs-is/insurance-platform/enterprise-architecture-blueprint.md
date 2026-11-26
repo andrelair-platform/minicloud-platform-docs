@@ -5,11 +5,13 @@ sidebar_label: 🏛 EA Blueprint (Insurer IS)
 
 # Enterprise Architecture Blueprint — the ktayl IARD Insurer IS
 
+> **IS architecture views:** [Overview](./architecture-at-a-glance) · [Journey](./business-journey) · [Target](./enterprise-architecture-blueprint) · [Registry](./capability-map) · [Apps](./business-applications-catalog) — *you are on **Target***.
+
 > **This is the authoritative functional target for the ktayl-solution IS.** It models ktayl as a
 > real commercial-lines / large-risk **IARD** insurer, so every
 > product board, repo and roadmap item hangs off a named domain here. The detailed inventory lives in
 > the [Business Applications Catalog](./business-applications-catalog); the AI vision in the
-> [AI-First Operating Model](./ai-first-operating-model). **This page is the map.**
+> [AI-First Operating Model](./ai-first-operating-model). **This is the *Target* view — the authoritative domain model; the view-selector above links the siblings.**
 >
 > **Fine-grained target + the *why*:** the [Capability Map & Registry](./capability-map) breaks the IS
 > into 19 domains → ~150 capabilities (each mapped to our system, status, criticality, RTO/RPO) and frames

@@ -6,6 +6,8 @@ sidebar_label: 🗄️ Data stores inventory
 
 # Data stores inventory — the ktayl-solution IS
 
+> **Data views:** [Logical](./canonical-data-model) · [Authority](./system-of-record) · [Physical](./data-stores-inventory) — *you are on **Physical***.
+
 :::note Verified, live
 Produced by querying the **running cluster** (CNPG clusters + StatefulSets + Deployments + NATS + the
 control-plane store), not from memory. Snapshot date: **2026-10-06**. Reproduce with the commands in

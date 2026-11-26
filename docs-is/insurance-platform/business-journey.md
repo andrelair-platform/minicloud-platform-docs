@@ -7,6 +7,8 @@ sidebar_position: 1
 
 # Business Journey — contract → invoice → payment → accounting
 
+> **IS architecture views:** [Overview](./architecture-at-a-glance) · [Journey](./business-journey) · [Target](./enterprise-architecture-blueprint) · [Registry](./capability-map) · [Apps](./business-applications-catalog) — *you are on **Journey***.
+
 > **One page for the end-to-end money path.** Instead of assembling it from five domain pages, this
 > follows a premium from the moment a policy is bound to the moment it lands — reconciled — in the
 > general ledger. Each step names the **live system**, its **status**, and a link to the detailed docs.
