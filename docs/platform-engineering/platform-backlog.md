@@ -1,6 +1,7 @@
 ---
 title: Platform Engineering Backlog
 sidebar_label: Platform Engineering Backlog
+tags: [reference]
 ---
 
 # Platform Engineering Backlog
