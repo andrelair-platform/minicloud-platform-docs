@@ -46,15 +46,9 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Infrastructure & Cloud',
-      collapsed: false,
+      collapsed: true,
       items: [
 
-    // ── Infrastructure ───────────────────────────────────────────────
-    {
-      type: 'category',
-      label: 'Infrastructure',
-      collapsed: false,
-      items: [
         {
           type: 'category',
           label: 'MAAS & Bare-Metal Provisioning',
@@ -136,8 +130,6 @@ const sidebars: SidebarsConfig = {
             'iac/crossplane',
           ],
         },
-      ],
-    },
 
     // ── Security & Identity ──────────────────────────────────────────
     {
@@ -220,7 +212,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Internal Developer Platform',
-      collapsed: false,
+      collapsed: true,
       items: [
     {type: 'doc', id: 'developer-platform/production-stack-architecture', label: 'Production Stack Architecture'},
     {type: 'doc', id: 'platform-engineering/internal-developer-platform', label: 'Internal Developer Platform'},
@@ -327,7 +319,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Shared Services & Operations',
-      collapsed: false,
+      collapsed: true,
       items: [
 
 
@@ -562,7 +554,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Engineering Standards',
-      collapsed: false,
+      collapsed: true,
       items: [
         'engineering-standards/documentation-standard',
         'engineering-standards/code-review',
