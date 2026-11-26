@@ -83,7 +83,24 @@ const config: Config = {
   markdown: {
     mermaid: true,
   },
-  themes: ['@docusaurus/theme-mermaid'],
+  themes: [
+    '@docusaurus/theme-mermaid',
+    // Offline local search (no Algolia account) — indexes both docs instances + blog at build time.
+    [
+      '@easyops-cn/docusaurus-search-local',
+      {
+        hashed: true,
+        indexDocs: true,
+        indexBlog: true,
+        indexPages: true,
+        docsDir: ['docs', 'docs-is'],
+        docsRouteBasePath: ['platform', 'is'],
+        language: ['en', 'fr'],
+        highlightSearchTermsOnTargetPage: true,
+        searchResultLimits: 8,
+      },
+    ],
+  ],
 
   themeConfig: {
     // minicloud social card (LinkedIn/OG preview)

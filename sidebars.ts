@@ -41,6 +41,7 @@ const sidebars: SidebarsConfig = {
   platformSidebar: [
 
     architectureNav,
+    {type: 'doc', id: 'build-the-cluster', label: 'How the cluster was built'},
 
     // ══ Infrastructure & Cloud — where services run ══
     {
