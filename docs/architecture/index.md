@@ -43,7 +43,9 @@ The litmus test: *"If ktayl stopped selling insurance tomorrow, would this survi
 ## L1 — Enterprise Architecture Landscape
 
 The one-screen relationship: the **Information System consumes the Platform**. Each box is a *group* of
-capabilities/domains (drill down via the L2 views below).
+capabilities/domains (drill down via the L2 views below). The Platform's three groups —
+**Infrastructure & Cloud · Internal Developer Platform · Shared Services & Operations** — are exactly the
+three sections in the Platform sidebar, so the diagram and the navigation tell the same story.
 
 ```mermaid
 flowchart TB
@@ -59,12 +61,18 @@ flowchart TB
 
   subgraph PLAT["PLATFORM — minicloud · shared technical capabilities (provider)"]
     direction LR
-    RT["Compute &amp; Runtime<br/>k3s · Cilium CNI · ingress"]
-    DEL["Delivery<br/>GitOps (ArgoCD) · Kargo · CI/CD"]
-    SEC["Identity &amp; Security<br/>Authentik SSO · Vault · Gatekeeper/Falco"]
-    DATA["Data &amp; Messaging<br/>PostgreSQL/CNPG · NATS · object storage"]
-    AIR["AI Runtime<br/>LiteLLM gateway · Qdrant · Langfuse"]
-    OBS["Observability<br/>Prometheus · Grafana · Loki · Tempo"]
+    subgraph P1["Infrastructure &amp; Cloud — where it runs"]
+      RT["Compute &amp; Runtime<br/>k3s · Cilium CNI · ingress"]
+      SEC["Identity &amp; Security<br/>Authentik SSO · Vault · Gatekeeper/Falco"]
+    end
+    subgraph P2["Internal Developer Platform — how apps ship"]
+      DEL["Delivery<br/>GitOps (ArgoCD) · Kargo · CI/CD"]
+    end
+    subgraph P3["Shared Services &amp; Operations — what runs on it"]
+      DATA["Data &amp; Messaging<br/>PostgreSQL/CNPG · NATS · object storage"]
+      AIR["AI Runtime<br/>LiteLLM gateway · Qdrant · Langfuse"]
+      OBS["Observability<br/>Prometheus · Grafana · Loki · Tempo"]
+    end
   end
 
   IS ==>|"consumes: SSO · DB · events · AI · storage · telemetry"| PLAT

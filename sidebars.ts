@@ -42,113 +42,6 @@ const sidebars: SidebarsConfig = {
 
     architectureNav,
 
-    // ══ Internal Developer Platform — how applications are delivered ══
-    {
-      type: 'category',
-      label: 'Internal Developer Platform',
-      collapsed: false,
-      items: [
-    {type: 'doc', id: 'developer-platform/production-stack-architecture', label: 'Production Stack Architecture'},
-    {type: 'doc', id: 'platform-engineering/internal-developer-platform', label: 'Internal Developer Platform'},
-    {type: 'doc', id: 'platform-engineering/platform-backlog', label: 'Platform Backlog'},
-
-    // ── Developer Platform (IDP) ─────────────────────────────────────
-    {
-      type: 'category',
-      label: 'Developer Platform',
-      collapsed: true,
-      items: [
-        'developer-platform/backstage',
-        'developer-platform/backstage-plugins',
-        'developer-platform/backstage-software-templates',
-        'developer-platform/techdocs',
-        'developer-platform/api-management-strategy',
-        'developer-platform/multi-env-namespaces',
-      ],
-    },
-
-    // ── GitOps & CI/CD ───────────────────────────────────────────────
-    {
-      type: 'category',
-      label: 'GitOps & CI/CD',
-      collapsed: true,
-      items: [
-        {
-          type: 'category',
-          label: 'GitOps Foundation',
-          collapsed: true,
-          items: [
-            'developer-platform/delivery-workflow',
-            'developer-platform/kargo-promotion',
-            'developer-platform/ephemeral-preview-environments',
-            'developer-platform/dns-naming-externaldns',
-            'developer-platform/branch-strategy-cicd',
-            'developer-platform/gitops-directory-patterns',
-            'developer-platform/cnpg-standard',
-            'developer-platform/dbeaver-db-access',
-            'developer-platform/db-credentials',
-            'developer-platform/migrations-on-boot',
-            'developer-platform/docker-course',
-            'platform-roadmap/phase-12-gitops',
-            'developer-platform/third-party-charts',
-            'developer-platform/helm-argocd-migration',
-            'developer-platform/helm-vs-kustomize',
-            'developer-platform/backstage-helm-kustomize',
-          ],
-        },
-        {
-          type: 'category',
-          label: 'CI/CD Pipeline',
-          collapsed: true,
-          items: [
-            'platform-roadmap/phase-13-cicd',
-            'developer-platform/ci-registry-migration',
-            'developer-platform/custom-images',
-            'platform-roadmap/phase-8-containers',
-          ],
-        },
-        {
-          type: 'category',
-          label: 'App Deployment Guide',
-          collapsed: true,
-          items: [
-            'app-deployment/deploy-overview',
-            'app-deployment/new-business-service',
-            'app-deployment/helm-chart',
-            'app-deployment/deploy-helm',
-            'app-deployment/deploy-argocd',
-            'app-deployment/deploy-yaml',
-            'app-deployment/cicd-pipeline',
-            'app-deployment/per-env-isolation',
-            'app-deployment/enterprise-gitops-controls',
-            'app-deployment/third-party-app-integration',
-            'platform-roadmap/phase-9-workload',
-          ],
-        },
-        {
-          type: 'category',
-          label: 'Progressive Delivery',
-          collapsed: true,
-          items: [
-            'developer-platform/argo-rollouts',
-            'developer-platform/vpa-auto',
-            'developer-platform/keda-cron-scale-to-zero',
-          ],
-        },
-        {
-          type: 'category',
-          label: 'Quality Gates & Gap Analysis',
-          collapsed: true,
-          items: [
-            'developer-platform/cicd-gap-analysis',
-            'developer-platform/automated-regression-detection',
-          ],
-        },
-      ],
-    },
-    ],
-    },
-
     // ══ Infrastructure & Cloud — where services run ══
     {
       type: 'category',
@@ -320,6 +213,113 @@ const sidebars: SidebarsConfig = {
     },
 
 
+    ],
+    },
+
+    // ══ Internal Developer Platform — how applications are delivered ══
+    {
+      type: 'category',
+      label: 'Internal Developer Platform',
+      collapsed: false,
+      items: [
+    {type: 'doc', id: 'developer-platform/production-stack-architecture', label: 'Production Stack Architecture'},
+    {type: 'doc', id: 'platform-engineering/internal-developer-platform', label: 'Internal Developer Platform'},
+    {type: 'doc', id: 'platform-engineering/platform-backlog', label: 'Platform Backlog'},
+
+    // ── Developer Platform (IDP) ─────────────────────────────────────
+    {
+      type: 'category',
+      label: 'Developer Platform',
+      collapsed: true,
+      items: [
+        'developer-platform/backstage',
+        'developer-platform/backstage-plugins',
+        'developer-platform/backstage-software-templates',
+        'developer-platform/techdocs',
+        'developer-platform/api-management-strategy',
+        'developer-platform/multi-env-namespaces',
+      ],
+    },
+
+    // ── GitOps & CI/CD ───────────────────────────────────────────────
+    {
+      type: 'category',
+      label: 'GitOps & CI/CD',
+      collapsed: true,
+      items: [
+        {
+          type: 'category',
+          label: 'GitOps Foundation',
+          collapsed: true,
+          items: [
+            'developer-platform/delivery-workflow',
+            'developer-platform/kargo-promotion',
+            'developer-platform/ephemeral-preview-environments',
+            'developer-platform/dns-naming-externaldns',
+            'developer-platform/branch-strategy-cicd',
+            'developer-platform/gitops-directory-patterns',
+            'developer-platform/cnpg-standard',
+            'developer-platform/dbeaver-db-access',
+            'developer-platform/db-credentials',
+            'developer-platform/migrations-on-boot',
+            'developer-platform/docker-course',
+            'platform-roadmap/phase-12-gitops',
+            'developer-platform/third-party-charts',
+            'developer-platform/helm-argocd-migration',
+            'developer-platform/helm-vs-kustomize',
+            'developer-platform/backstage-helm-kustomize',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'CI/CD Pipeline',
+          collapsed: true,
+          items: [
+            'platform-roadmap/phase-13-cicd',
+            'developer-platform/ci-registry-migration',
+            'developer-platform/custom-images',
+            'platform-roadmap/phase-8-containers',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'App Deployment Guide',
+          collapsed: true,
+          items: [
+            'app-deployment/deploy-overview',
+            'app-deployment/new-business-service',
+            'app-deployment/helm-chart',
+            'app-deployment/deploy-helm',
+            'app-deployment/deploy-argocd',
+            'app-deployment/deploy-yaml',
+            'app-deployment/cicd-pipeline',
+            'app-deployment/per-env-isolation',
+            'app-deployment/enterprise-gitops-controls',
+            'app-deployment/third-party-app-integration',
+            'platform-roadmap/phase-9-workload',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Progressive Delivery',
+          collapsed: true,
+          items: [
+            'developer-platform/argo-rollouts',
+            'developer-platform/vpa-auto',
+            'developer-platform/keda-cron-scale-to-zero',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Quality Gates & Gap Analysis',
+          collapsed: true,
+          items: [
+            'developer-platform/cicd-gap-analysis',
+            'developer-platform/automated-regression-detection',
+          ],
+        },
+      ],
+    },
     ],
     },
 
