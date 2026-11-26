@@ -9,7 +9,7 @@ slug: /
 
 > Built from scratch on bare metal: a **platform** (MAAS, k3s, GitOps, observability, AI) **and the applications running on it** (a simulated insurer's information system).
 
-**MiniCloud is a hybrid platform I build and operate.** I run most of it on my own hardware using
+**minicloud is a hybrid platform I build and operate.** I run most of it on my own hardware using
 open-source software and use managed cloud services for specific operational needs. Its internal developer
 platform helps me deliver and operate applications, including those that make up Ktayl Solution's insurance
 information system. See the reasoning behind these choices under **[System Design](/system-design)**.
