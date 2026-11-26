@@ -40,6 +40,13 @@ const sidebars: SidebarsConfig = {
   // ══════════════════════════════════════════════════════════════════
   platformSidebar: [
 
+    {
+      type: 'category',
+      label: 'Getting Started',
+      collapsed: false,
+      link: {type: 'doc', id: 'getting-started/index'},
+      items: ['getting-started/day-1-setup'],
+    },
     architectureNav,
     {type: 'doc', id: 'build-the-cluster', label: 'How the cluster was built'},
 
