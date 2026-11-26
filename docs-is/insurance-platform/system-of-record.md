@@ -5,6 +5,8 @@ sidebar_label: 🗂 System of Record
 
 # System-of-Record (SoR) Registry — ktayl IS
 
+> **Data views:** [Logical](./canonical-data-model) · [Authority](./system-of-record) · [Physical](./data-stores-inventory) — *you are on **Authority***.
+
 > **One business object → one authoritative source.** Other systems hold projections/copies, never
 > become the official source. This is the rule that stops "Customer Name" differing across CRM / Policy /
 > Claims / Finance / Excel. Companion: [Canonical Data Model](./canonical-data-model) · [Capability Map](./capability-map).

@@ -8,6 +8,8 @@ sidebar_position: 0
 
 # ktayl IS — Architecture at a Glance
 
+> **IS architecture views:** [Overview](./architecture-at-a-glance) · [Journey](./business-journey) · [Target](./enterprise-architecture-blueprint) · [Registry](./capability-map) · [Apps](./business-applications-catalog) — *you are on **Overview***.
+
 > **If you read one page to understand ktayl, read this.** It is the whole business-application
 > architecture on a single screen: who uses it, the insurance value chain, the legacy core it wraps,
 > the shared platforms (Data · AI · **Documents**), and the foundations everything runs on — plus a

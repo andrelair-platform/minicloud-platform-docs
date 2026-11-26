@@ -6,6 +6,8 @@ sidebar_label: Business Applications Catalog
 
 # Business Applications Catalog
 
+> **IS architecture views:** [Overview](./architecture-at-a-glance) · [Journey](./business-journey) · [Target](./enterprise-architecture-blueprint) · [Registry](./capability-map) · [Apps](./business-applications-catalog) — *you are on **Apps***.
+
 :::note Authoritative model
 The functional target for the ktayl IARD insurer IS — the 12 domains + 4 transversal layers, gap
 analysis and build order — is the **[Enterprise Architecture Blueprint](./enterprise-architecture-blueprint)**.
@@ -494,3 +496,10 @@ Docuseal, Stalwart mail, Matrix/Element, the AI Platform.
 | 6 Risk Engineering | — | 🔴 | gap |
 | L Documents (GED/OCR/IDP) | — | 🔴 | Nextcloud storage only; IDP is a gap |
 | L Integration (API/ESB/ETL/MFT/EDI) | — | 🔴 | gap (biggest) |
+
+## Related
+
+- [EA Blueprint](./enterprise-architecture-blueprint) — the authoritative domain **target** this catalog implements
+- [Capability Map](./capability-map) — the ~150-capability **registry** (status · criticality · RTO/RPO)
+- [Architecture at a Glance](./architecture-at-a-glance) — the one-screen **overview**
+- [SI Delivery Board](../delivery-board) — live vs planned, verified against the cluster (authoritative status)

@@ -5,6 +5,8 @@ sidebar_label: 🧩 Canonical Data Model
 
 # Canonical Insurance Data Model — ktayl IS
 
+> **Data views:** [Logical](./canonical-data-model) · [Authority](./system-of-record) · [Physical](./data-stores-inventory) — *you are on **Logical***.
+
 > The **shared business model every domain builds against**. One definition of Customer, Policy, Claim…
 > so APIs, integrations, reporting, AI and audit all speak the same language. This is the *conceptual*
 > model (entities + relationships + the **system of record** that owns each); each domain service keeps

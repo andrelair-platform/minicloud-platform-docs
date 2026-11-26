@@ -5,6 +5,8 @@ sidebar_label: 🗺 Capability Map & Registry
 
 # Capability Map & Registry — ktayl IS
 
+> **IS architecture views:** [Overview](./architecture-at-a-glance) · [Journey](./business-journey) · [Target](./enterprise-architecture-blueprint) · [Registry](./capability-map) · [Apps](./business-applications-catalog) — *you are on **Registry***.
+
 > The **fine-grained functional target**: 19 L1 domains → ~150 L2/L3 capabilities, each mapped to our
 > actual system, status, criticality and resilience target. This is the machine-readable companion to the
 > [EA Blueprint](./enterprise-architecture-blueprint) (the narrative map). The full registry is the
