@@ -128,6 +128,29 @@ hard pin.
 
 ---
 
+## 4. L0 Network & Boot Topology  ·  current → target
+
+The layer *below* the workloads — the **network/boot plumbing** the cluster stands on, and why the
+controller is a single point of failure for it
+([`platform_network_boot.py`](https://github.com/andrelair-platform/minicloud-platform-docs/blob/main/diagrams/src/platform_network_boot.py)).
+Open the **[▶ vector SVG →](/img/architecture/platform-network-boot.svg)** ·
+**[PNG →](/img/architecture/platform-network-boot.png)**.
+
+[![minicloud L0 network & boot topology](/img/architecture/platform-network-boot.png)](/img/architecture/platform-network-boot.svg)
+
+**Legend** — **CURRENT** (left, red): the controller is the *whole L0 tier* — gateway + NAT + MAAS
+DHCP/PXE + MinIO + Tailscale on one box, reached through a **USB→ethernet dongle** (the fragile link, red
+edge); the **built-in gigabit NIC sits unused** (green *Niveau 0, 0€* move). Node IPs are **static** and
+nodes now **boot disk-first** ([minicloud-ansible #31](https://github.com/andrelair-platform/minicloud-ansible/pull/31)),
+so the cluster forms over the L2 switch **even if the controller is off** — only *internet* (the `10.0.0.1`
+gateway) waits for it. **TARGET** (right, green): *Niveau 1* — a **dedicated gateway** owns NAT/routing at
+`10.0.0.254` (the nodes' default route repointed via one Ansible file,
+`roles/network/files/99-default-gateway.yaml`); the controller becomes a **services-only, sometimes-on**
+host. The cluster then has internet whether or not the controller is up. **Niveau 2** (not shown) = two
+gateways + VRRP/keepalived for L0 high-availability.
+
+---
+
 ## Platform at a Glance
 
 | Dimension | Value |
