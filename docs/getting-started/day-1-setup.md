@@ -17,6 +17,7 @@ tags: [how-to]
 | **GitHub org** (`andrelair-platform`) | Ask the platform owner to add you to the **`andrelair-platform`** GitHub org. Repos are **public**, so you can clone immediately; org membership is what lets you open PRs. Then run `gh auth login`. *(Who grants this + the exact request path is owner-specific — ask André.)* |
 | **SSO account** (Authentik) | You log into every internal app through **Authentik** (one login + MFA). Ask the owner to create your Authentik account, then **enrol MFA (TOTP)** on first login. → [How SSO & login work](/platform/security-enterprise/how-sso-works) |
 | **Private mesh** (Tailscale) — only for internal tools | Internal tools (ArgoCD, Grafana, Backstage…) are reached over **Tailscale** + the **minicloud CA cert**. Business apps are public (SSO only). Follow the 3-tier model: → [Onboarding a colleague](/platform/remote-access/onboarding-a-colleague) |
+| **Backstage** (developer portal) | No separate account — log in with **SSO**. It's your **catalog · scaffolder · TechDocs · New BMAD Sprint**. → [Backstage](/platform/developer-platform/backstage) |
 
 ## 2. Install the tools (local)
 
@@ -54,7 +55,7 @@ then Kargo/Argo CD). Cluster access is only for **reading/debugging** the dev en
 
 ## 4. Pick your stack & clone a reference service
 
-**You almost never start from a blank repo — you clone the closest reference and find-replace.**
+**You almost never start from a blank repo** — scaffold from a **Backstage** [software template](/platform/developer-platform/backstage-software-templates), or clone the closest reference below and find-replace.
 
 | Your stack | Reference service to clone |
 |---|---|
