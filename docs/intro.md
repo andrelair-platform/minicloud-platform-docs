@@ -72,7 +72,6 @@ The platform alone is equivalent to: AWS EC2 + VPC + auto-provisioning — but l
 
 New here? Use the **search** (top-right) to jump straight to a topic — or follow one of these short reading paths:
 
-- **🛠 How was the cluster built?** → [How the cluster was built](/platform/build-the-cluster) — bare metal (MAAS) → Kubernetes (k3s) → networking → first workload, step by step.
 - **🏗 Understand the platform** (≈15 min) → [Architecture Hub](/platform/architecture) (how it fits together) → [Production Stack Architecture](/platform/developer-platform/production-stack-architecture) (what's actually running) → [System Design](/system-design) (*why* it's built this way).
 - **🏢 Understand the insurance system** → [Architecture at a Glance](/is/insurance-platform/architecture-at-a-glance) (the whole IS on one screen) → [Business Journey: contract → ledger](/is/insurance-platform/business-journey) (the end-to-end flow, no assembly required).
 - **🧭 Follow the reasoning** → [System Design](/system-design) (case studies by question) → the **Blog** / [Carnets](/carnets) (write-ups & decisions).
@@ -86,3 +85,13 @@ New here? Use the **search** (top-right) to jump straight to a topic — or foll
 - **Write-ups & decisions** → the **Blog** in the top navigation.
 
 </details>
+
+## Common questions
+
+Jump straight to the answer — or use the **search** box (top-right):
+
+- **How was the cluster built?** → [bare metal → Kubernetes, step by step](/platform/build-the-cluster)
+- **How do I deploy an app?** → [Application delivery — zero → prod](/platform/app-deployment/deploy-overview)
+- **How does SSO / login work?** → [How SSO & login work](/platform/security-enterprise/how-sso-works)
+- **Where are the backups?** → [Backups & recovery — where everything lives](/platform/backup-dr/backups-overview)
+

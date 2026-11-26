@@ -143,6 +143,7 @@ const sidebars: SidebarsConfig = {
           label: 'SSO & Access Control',
           collapsed: true,
           items: [
+            'security-enterprise/how-sso-works',
             'security-enterprise/sso-authentik',
             'security-enterprise/identity-two-layer',
             'security-enterprise/mail-authentik-ldap',
@@ -535,6 +536,7 @@ const sidebars: SidebarsConfig = {
       label: 'Backup, DR & Reliability',
       collapsed: true,
       items: [
+        'backup-dr/backups-overview',
         'backup-dr/velero',
         'backup-dr/longhorn-backup',
         'backup-dr/etcd-backup',
