@@ -18,7 +18,7 @@ Three layers, each answering a **different** failure (not "more providers for th
 |---|---|---|---|
 | **Operational** | **MinIO** (controller, LAN `10.0.0.1:9000`) | fast local restore; day-to-day object storage | ✅ live |
 | **Disaster Recovery** (off-site) | **Cloudflare R2** | *physical loss* of the controller/site — rebuild the SI | ✅ live — `minicloud-backup-offsite` (kine/vault/db) · `minicloud-velero-offsite` · `minicloud-cnpg-offsite` · `minicloud-longhorn-offsite` |
-| **Cyber Recovery** (immutable) | **AWS S3 + Object Lock** | *deletion / corruption / ransomware* — a backup an attacker-with-cluster-creds **cannot** erase | ❌ **not built** (target — crown jewels: Vault raft snapshot + kine + critical CNPG) |
+| **Cyber Recovery** (immutable) | **AWS S3 + Object Lock** | *deletion / corruption / ransomware* — a backup an attacker-with-cluster-creds **cannot** erase | ✅ **COMPLETE** 2026-11-26 (`minicloud-cyber-recovery-625830750465`, Object Lock **COMPLIANCE 35d** — undeletable even by root, ADR-0003). Daily `cyber-copy` cron (05:35) pushes **kine + the Vault raft snapshot** via **Vault-minted STS** (add-only, no static key). **Full restore drilled (RTO ≈15 s)**; **off-cluster break-glass recovery proven (RTO 37 s)** with a least-priv age-encrypted key alone (no cluster/Vault). |
 
 > **DR ≠ Cyber Recovery.** R2 is off-site but its objects are **deletable** by anyone holding the creds —
 > it survives a *dead controller*, **not** a *compromised operator / ransomware that wipes the backups*.
@@ -62,7 +62,7 @@ not a measured restore — those are the gaps to close.
 | `backstage-postgresql` | dev portal | logical dump + Velero | ≤24 h | ~10 min | ❌ |
 | `temporal-postgresql` | workflow engine | Velero volume | ≤24 h | ~15 min | ❌ |
 | `ai/postgresql-ai` | AI apps | Velero volume | ≤24 h | ~15 min | ❌ |
-| `vault` | **secrets — critical** | raft snapshot (`db-backups/vault`) + Velero | ≤24 h | ~10 min (+ KMS auto-unseal) | ❌ (unseal path proven; data restore not drilled) |
+| `vault` | **secrets — critical** | raft snapshot (`db-backups/vault`) + Velero + **S3 cyber-vault (immutable)** | ≤24 h | **~15 s** (+ KMS auto-unseal) | ✅ **drill-proven 2026-11-26** (snapshot → throwaway Vault via KMS, witness read back; RTO ≈15 s) |
 | `langfuse-clickhouse` | LLM traces | Velero volume | ≤24 h | ~20 min | ❌ (low priority — **recreatable**) |
 | `ai/qdrant` | vector store | Velero volume | ≤24 h | re-ingest | n/a — **re-ingestable** |
 | **kine** (control plane) | **cluster state — critical** | SQLite backup (integrity-checked) + offsite | ≤24 h | ~5–40 min | ✅ integrity-verified + rebuild runbook (DR Scenario G) |
@@ -100,12 +100,23 @@ To reach level 5 (regularly-tested DR), the ordered gaps:
    `erpnext`, `authentik-cnpg` (a CNPG PITR restore drill) — so their RTO/RPO become *measured*.
 3. **Drill a full CNPG PITR restore** for `authentik-cnpg` (only the replica-rebuild path is proven).
 4. **Vault data-restore drill** (the KMS auto-unseal path is proven; a raft-snapshot data restore is not).
-5. **No immutable / cyber-recovery copy** — every off-site copy is **STANDARD (deletable)**: an operator
-   or attacker holding the MinIO/R2 creds can erase *all* backups. **Action:** an **AWS S3 + Object Lock**
-   vault (independent provider, Governance → Compliance) for the crown jewels (Vault raft snapshot + kine
-   + 1 critical CNPG). Object Lock **only** on these self-managed copies, **never** on tool-GC'd prefixes.
-   Pair it with **scoped IAM** (Backup-Writer: put-only, no delete · Recovery-Reader · Infra-Admin via
-   OpenTofu · Break-glass) — the creds to recover Vault must **not** live only in Vault.
+5. **Immutable / cyber-recovery copy — ✅ LIVE** (2026-11-26). The **AWS S3 + Object Lock** vault
+   (GOVERNANCE 35d, independent provider — ADR-0003, `minicloud-cloud` `s3-cyber-recovery*.tf`) now
+   receives the crown jewels daily: the controller **`cyber-copy` cron (05:35)** mints **short-lived STS
+   via the Vault AWS engine** (`aws/sts/cyber-recovery-write`, assumed-role, add-only — no static key) and
+   copies **kine + the Vault raft snapshot** MinIO→S3 with timestamped, locked keys. Object Lock is on this
+   self-managed vault **only**, never the tool-GC'd prefixes. Verified: object retention GOVERNANCE 35d,
+   add-only (2nd run skips), restore read-path (GET) works. **Restore drill DONE** (2026-11-26): pulled the
+   Vault snapshot from the S3 vault → restored into a throwaway Vault (same image 2.0.2 + same KMS seal) →
+   the **prod root token read a witness value back intact** → **RTO ≈ 15 s warm (53 s incl. image pull)**,
+   well under the ≤30 min P0 target. Script committed `minicloud-ops/scripts/backup/cyber-copy.sh`.
+   **✅ COMPLETE 2026-11-26:** (b) flipped to **COMPLIANCE** (undeletable even by root); (c) the
+   **off-cluster break-glass recovery is proven** — a least-priv `cyber-recovery-break-glass` IAM identity
+   (S3-read + Vault-seal KMS ops), key **age-encrypted off-cluster** (`~/.cyber-recovery-reader.age`),
+   restored Vault **end-to-end with the key alone, no cluster/Vault** (RTO 37 s). **Recovery kit** (keep
+   OFF-cluster — offline copy + Vaultwarden break-glass): the break-glass key `.age` + the Vault root-token
+   `.age` + the age identity + this runbook. COMPLIANCE is a one-way door (bucket can't be `tofu destroy`ed
+   until retention expires — by design).
 6. **No EXTERNAL (off-cluster) monitoring for a full-site outage** — in-cluster freshness **is** already
    alerted (`MinioR2MirrorStale` on the `backup-offsite-mirror` CronJob @26 h, `OffsiteRestoreVerifyStale`,
    `K3sSQLiteBackupStale`, `CNPGBackupStale` — all in `00-prometheusrule.yaml`). But those alerts live
